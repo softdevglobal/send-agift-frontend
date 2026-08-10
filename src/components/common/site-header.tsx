@@ -65,7 +65,10 @@ export function SiteHeader() {
               Hi! <span className="font-medium text-foreground">Sign in</span>
             </Link>
             <span className="text-border">|</span>
-            <Link to="/login" className="transition-colors hover:text-primary">
+            <Link
+              to="/customer/register"
+              className="transition-colors hover:text-primary"
+            >
               Register
             </Link>
             <Link
@@ -249,6 +252,11 @@ export function SiteHeader() {
             <Button asChild className="mt-2">
               <Link to="/login" onClick={() => setOpen(false)}>
                 Sign in
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/customer/register" onClick={() => setOpen(false)}>
+                Register
               </Link>
             </Button>
             <Button asChild variant="outline">

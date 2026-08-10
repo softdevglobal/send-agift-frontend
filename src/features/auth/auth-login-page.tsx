@@ -34,12 +34,20 @@ export function AuthLoginPage({ role }: AuthLoginPageProps) {
             <span className="font-display text-xl tracking-tight">SendAgift</span>
           </Link>
 
-          <Link
-            to={isSeller ? '/login' : '/seller/login'}
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {isSeller ? 'Customer login' : 'Seller login'}
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to={isSeller ? '/seller/register' : '/customer/register'}
+              className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              {isSeller ? 'Register' : 'Create account'}
+            </Link>
+            <Link
+              to={isSeller ? '/login' : '/seller/login'}
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {isSeller ? 'Customer login' : 'Seller login'}
+            </Link>
+          </div>
         </header>
 
         <div className="flex flex-1 items-center px-6 py-8 sm:px-10">

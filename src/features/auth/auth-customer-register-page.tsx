@@ -1,19 +1,19 @@
 import { ArrowLeft, Gift } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { CustomerRegisterForm } from '@/features/auth/customer-register-form'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
-import { SellerRegisterForm } from '@/features/auth/seller-register-form'
 
-export function AuthSellerRegisterPage() {
+export function AuthCustomerRegisterPage() {
   return (
     <main className="flex min-h-svh bg-background">
-      <LoginBrandPanel role="seller" />
+      <LoginBrandPanel role="customer" />
 
-      <section className="relative flex flex-1 flex-col bg-grain bg-cream/60">
+      <section className="relative flex flex-1 flex-col bg-grain bg-background">
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <div className="flex items-center gap-4">
             <Link
-              to="/become-a-seller"
+              to="/customer"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="size-4" />
@@ -34,15 +34,15 @@ export function AuthSellerRegisterPage() {
           </div>
 
           <Link
-            to="/seller/login"
+            to="/login"
             className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            Seller login
+            Customer login
           </Link>
         </header>
 
         <div className="flex flex-1 items-start px-6 py-8 sm:items-center sm:px-10">
-          <SellerRegisterForm />
+          <CustomerRegisterForm />
         </div>
 
         <footer className="px-6 pb-6 text-center text-xs text-muted-foreground sm:px-10 sm:text-left">

@@ -155,21 +155,12 @@ export function LoginForm({ role }: LoginFormProps) {
 
         <p className="text-center text-sm text-muted-foreground">
           {copy.registerHint}{' '}
-          {role === 'seller' ? (
-            <Link
-              to="/seller/register"
-              className="font-medium text-primary transition-colors hover:text-primary/80"
-            >
-              {copy.registerLabel}
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className="font-medium text-primary transition-colors hover:text-primary/80"
-            >
-              {copy.registerLabel}
-            </button>
-          )}
+          <Link
+            to={role === 'seller' ? '/seller/register' : '/customer/register'}
+            className="font-medium text-primary transition-colors hover:text-primary/80"
+          >
+            {copy.registerLabel}
+          </Link>
         </p>
 
         <p className="text-center text-sm text-muted-foreground">

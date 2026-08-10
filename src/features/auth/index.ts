@@ -1,2 +1,5 @@
 export { AuthLoginPage } from './auth-login-page'
+export { AuthCustomerRegisterPage } from './auth-customer-register-page'
 export { AuthSellerRegisterPage } from './auth-seller-register-page'
+export { loginCopy } from './copy'
+export type { AuthRole, LoginCopy } from './types'

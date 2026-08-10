@@ -99,7 +99,7 @@ export function CustomerPage() {
                   size="lg"
                   className="h-11 rounded-full bg-background/80 px-5"
                 >
-                  <Link to="/">Browse gifts</Link>
+                  <Link to="/customer/register">Create account</Link>
                 </Button>
               </div>
             </div>
@@ -170,7 +170,7 @@ export function CustomerPage() {
             </div>
             <div className="mt-10 flex justify-center">
               <Button asChild size="lg" className="h-11 px-6">
-                <Link to="/login">Create customer account</Link>
+                <Link to="/customer/register">Create customer account</Link>
               </Button>
             </div>
           </div>

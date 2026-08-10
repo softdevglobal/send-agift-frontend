@@ -1,13 +1,4 @@
-export const sellerCountries = [
-  { value: 'LK', label: 'Sri Lanka' },
-  { value: 'AU', label: 'Australia' },
-  { value: 'GB', label: 'United Kingdom' },
-  { value: 'US', label: 'United States' },
-  { value: 'AE', label: 'United Arab Emirates' },
-  { value: 'SG', label: 'Singapore' },
-  { value: 'IN', label: 'India' },
-  { value: 'CA', label: 'Canada' },
-] as const
+export { countries as sellerCountries } from '@/features/auth/countries'
 
 export const sellerTypes = [
   { value: 'individual', label: 'Individual / Sole trader' },
@@ -15,6 +6,8 @@ export const sellerTypes = [
   { value: 'partnership', label: 'Partnership' },
   { value: 'brand', label: 'Brand / Marketplace seller' },
 ] as const
+
+export type SellerTypeValue = (typeof sellerTypes)[number]['value']
 
 export type VerificationStatus =
   | 'unverified'
