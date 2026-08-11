@@ -1,7 +1,8 @@
 import type { FormEvent } from 'react'
-import { Gift, Share2 } from 'lucide-react'
+import { Share2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 
@@ -30,12 +31,7 @@ export function SiteFooter() {
     <footer className="border-t border-border bg-muted/60">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div className="space-y-4">
-          <Link to="/" className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Gift className="size-4.5" strokeWidth={1.75} />
-            </span>
-            <span className="font-display text-xl tracking-tight">SendAgift</span>
-          </Link>
+          <BrandLogo imgClassName="h-12" />
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
             A country-controlled social gifting marketplace with trusted
             fulfilment, points, and optional skill competitions.

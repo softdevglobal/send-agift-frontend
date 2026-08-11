@@ -1,6 +1,7 @@
-import { ArrowLeft, Gift } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { BrandLogo } from '@/components/common/brand-logo'
 import { CustomerRegisterForm } from '@/features/auth/customer-register-form'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 
@@ -20,17 +21,7 @@ export function AuthCustomerRegisterPage() {
               Back
             </Link>
 
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-80 lg:hidden"
-            >
-              <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <Gift className="size-4" strokeWidth={1.75} />
-              </span>
-              <span className="font-display text-xl tracking-tight">
-                SendAgift
-              </span>
-            </Link>
+            <BrandLogo className="lg:hidden" imgClassName="h-11" />
           </div>
 
           <Link

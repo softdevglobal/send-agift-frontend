@@ -1,6 +1,6 @@
-import { Gift } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { BrandLogo } from '@/components/common/brand-logo'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 import { LoginForm } from '@/features/auth/login-form'
 import type { AuthRole } from '@/features/auth/types'
@@ -24,15 +24,10 @@ export function AuthLoginPage({ role }: AuthLoginPageProps) {
         )}
       >
         <header className="flex items-center justify-between px-6 py-5 sm:px-10">
-          <Link
-            to="/"
-            className="flex items-center gap-2.5 text-foreground transition-opacity hover:opacity-80 lg:invisible"
-          >
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Gift className="size-4" strokeWidth={1.75} />
-            </span>
-            <span className="font-display text-xl tracking-tight">SendAgift</span>
-          </Link>
+          <BrandLogo
+            className="lg:invisible"
+            imgClassName="h-11"
+          />
 
           <div className="flex items-center gap-4">
             <Link

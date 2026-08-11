@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import {
   ChevronDown,
-  Gift,
   Heart,
   HelpCircle,
   Menu,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Link, NavLink } from 'react-router-dom'
 
+import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { giftCategories } from '@/features/marketing/data'
@@ -90,14 +90,7 @@ export function SiteHeader() {
       </div>
 
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:gap-5 lg:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Gift className="size-4.5" strokeWidth={1.75} />
-          </span>
-          <span className="font-display text-xl tracking-tight sm:text-[1.35rem]">
-            SendAgift
-          </span>
-        </Link>
+        <BrandLogo imgClassName="h-11 sm:h-12" />
 
         <form
           onSubmit={handleSearch}
