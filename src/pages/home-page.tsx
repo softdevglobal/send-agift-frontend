@@ -83,7 +83,7 @@ export function HomePage() {
                   size="lg"
                   className="h-11 rounded-full bg-background/80 px-5"
                 >
-                  <Link to="/customer">Explore catalogue</Link>
+                  <Link to="/become-a-seller">Become a seller</Link>
                 </Button>
               </div>
 

@@ -16,7 +16,9 @@ import { Link, NavLink } from 'react-router-dom'
 import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/features/auth/auth-context'
 import { giftCategories } from '@/features/marketing/data'
+import { homePathForRole } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 const utilityLinks = [
@@ -39,6 +41,8 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
+  const { isAuthenticated, role, logout } = useAuth()
+  const accountTo = role ? homePathForRole(role) : '/login'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -61,16 +65,40 @@ export function SiteHeader() {
             ))}
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="transition-colors hover:text-primary">
-              Hi! <span className="font-medium text-foreground">Sign in</span>
-            </Link>
-            <span className="text-border">|</span>
-            <Link
-              to="/customer/register"
-              className="transition-colors hover:text-primary"
-            >
-              Register
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to={accountTo}
+                  className="transition-colors hover:text-primary"
+                >
+                  Hi!{' '}
+                  <span className="font-medium text-foreground capitalize">
+                    {role}
+                  </span>
+                </Link>
+                <span className="text-border">|</span>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="transition-colors hover:text-primary"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="transition-colors hover:text-primary">
+                  Hi! <span className="font-medium text-foreground">Sign in</span>
+                </Link>
+                <span className="text-border">|</span>
+                <Link
+                  to="/customer/register"
+                  className="transition-colors hover:text-primary"
+                >
+                  Register
+                </Link>
+              </>
+            )}
             <Link
               to="/customer"
               className="inline-flex items-center gap-1 transition-colors hover:text-primary"
@@ -79,7 +107,7 @@ export function SiteHeader() {
               Watchlist
             </Link>
             <Link
-              to="/login"
+              to={accountTo}
               className="inline-flex items-center gap-1 transition-colors hover:text-primary"
             >
               <User className="size-3.5" />
@@ -149,7 +177,7 @@ export function SiteHeader() {
             </Link>
           </Button>
           <Button variant="ghost" size="icon" asChild aria-label="Account">
-            <Link to="/login">
+            <Link to={accountTo}>
               <User className="size-4.5" />
             </Link>
           </Button>
@@ -168,9 +196,9 @@ export function SiteHeader() {
             asChild
             size="sm"
             variant="outline"
-            className="ml-1 hidden h-9 px-3 lg:inline-flex"
+            className="ml-1 hidden h-9 px-3 md:inline-flex"
           >
-            <Link to="/become-a-seller">Sell</Link>
+            <Link to="/become-a-seller">Become a seller</Link>
           </Button>
           <Button
             variant="ghost"
@@ -242,16 +270,38 @@ export function SiteHeader() {
                 {item.name}
               </Link>
             ))}
-            <Button asChild className="mt-2">
-              <Link to="/login" onClick={() => setOpen(false)}>
-                Sign in
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link to="/customer/register" onClick={() => setOpen(false)}>
-                Register
-              </Link>
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <Button asChild className="mt-2">
+                  <Link to={accountTo} onClick={() => setOpen(false)}>
+                    My account
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false)
+                    logout()
+                  }}
+                >
+                  Sign out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild className="mt-2">
+                  <Link to="/login" onClick={() => setOpen(false)}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/customer/register" onClick={() => setOpen(false)}>
+                    Register
+                  </Link>
+                </Button>
+              </>
+            )}
             <Button asChild variant="outline">
               <Link to="/become-a-seller" onClick={() => setOpen(false)}>
                 Become a Seller

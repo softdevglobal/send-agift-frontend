@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from 'react'
-import { LoaderCircle, UserRound } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Eye, EyeOff, LoaderCircle, UserRound } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 
+import { registerCustomer, type AddressInput } from '@/api/customers'
+import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { CountrySelectField } from '@/features/auth/country-select-field'
 import {
-  customerCountries,
   customerStatusLabel,
   customerTypes,
   type CustomerStatus,
 } from '@/features/auth/customer-register-options'
+import { getErrorMessage } from '@/lib/api'
+import { optionalString } from '@/lib/form'
+import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
-
-const selectClassName =
-  'h-11 w-full min-w-0 rounded-lg border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50'
 
 const statusTone: Record<CustomerStatus, string> = {
   pending: 'bg-accent text-accent-foreground ring-primary/20',
@@ -24,40 +26,90 @@ const statusTone: Record<CustomerStatus, string> = {
   suspended: 'bg-destructive/10 text-destructive ring-destructive/25',
 }
 
+function asCustomerStatus(value: string): CustomerStatus {
+  if (value in statusTone) return value as CustomerStatus
+  return 'pending'
+}
+
 export function CustomerRegisterForm() {
-  const [country, setCountry] = useState('')
+  const navigate = useNavigate()
+  const [countryId, setCountryId] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
+  const [phone, setPhone] = useState('')
   const [customerType, setCustomerType] = useState('')
-  const [address, setAddress] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [line1, setLine1] = useState('')
+  const [line2, setLine2] = useState('')
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [postalCode, setPostalCode] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [status, setStatus] = useState<CustomerStatus>('pending')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    setNotice(null)
 
-    if (!country || !customerType) {
+    if (!countryId || !customerType) {
       setError('Please select a country and customer type.')
       return
     }
 
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Create password and confirm password must match.')
+      return
+    }
+
+    const hasAddress = Boolean(line1.trim() || city.trim())
+    if (hasAddress && (!line1.trim() || !city.trim())) {
+      setError('Address needs both street line and city.')
+      return
+    }
+
+    const addresses: AddressInput[] | undefined = hasAddress
+      ? [
+          {
+            country_id: countryId,
+            line1: line1.trim(),
+            city: city.trim(),
+            line2: optionalString(line2),
+            region: optionalString(region),
+            postal_code: optionalString(postalCode),
+            is_default: true,
+          },
+        ]
+      : undefined
+
     setIsSubmitting(true)
 
-    // UI-only for now — backend registration will plug in later
-    await new Promise((resolve) => setTimeout(resolve, 900))
-
-    setIsSubmitting(false)
-    setStatus('active')
-    setNotice(
-      'Customer account created. Your profile is active — no backend call was made.'
-    )
+    try {
+      const created = await registerCustomer({
+        country_id: countryId,
+        email: email.trim(),
+        password,
+        customer_type: customerType,
+        date_of_birth: dateOfBirth,
+        phone: optionalString(phone),
+        display_name: optionalString(displayName),
+        addresses,
+      })
+      setStatus(asCustomerStatus(created.status))
+      navigate('/login?registered=1', { replace: true })
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -83,7 +135,7 @@ export function CustomerRegisterForm() {
       <div
         className={cn(
           'flex items-center justify-between gap-3 rounded-xl px-3.5 py-3 ring-1',
-          statusTone[status]
+          statusTone[status],
         )}
         role="status"
         aria-live="polite"
@@ -103,46 +155,32 @@ export function CustomerRegisterForm() {
       </div>
 
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="customer-country">Country</Label>
-            <select
-              id="customer-country"
-              value={country}
-              onChange={(event) => setCountry(event.target.value)}
-              className={selectClassName}
-              required
-            >
-              <option value="" disabled>
-                Select country
-              </option>
-              {customerCountries.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <CountrySelectField
+          id="customer-country"
+          value={countryId}
+          onChange={setCountryId}
+          disabled={isSubmitting}
+        />
 
-          <div className="space-y-2">
-            <Label htmlFor="customer-type">Customer type</Label>
-            <select
-              id="customer-type"
-              value={customerType}
-              onChange={(event) => setCustomerType(event.target.value)}
-              className={selectClassName}
-              required
-            >
-              <option value="" disabled>
-                Select customer type
+        <div className="space-y-2">
+          <Label htmlFor="customer-type">Customer type</Label>
+          <select
+            id="customer-type"
+            value={customerType}
+            onChange={(event) => setCustomerType(event.target.value)}
+            className={selectClassName}
+            required
+            disabled={isSubmitting}
+          >
+            <option value="" disabled>
+              Select customer type
+            </option>
+            {customerTypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
-              {customerTypes.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
@@ -155,7 +193,7 @@ export function CustomerRegisterForm() {
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -170,6 +208,81 @@ export function CustomerRegisterForm() {
             onChange={(event) => setEmail(event.target.value)}
             className="h-11 bg-surface px-3"
             required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-phone">Phone</Label>
+          <Input
+            id="customer-phone"
+            type="tel"
+            autoComplete="tel"
+            placeholder="+94 77 123 4567"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-dob">Date of birth</Label>
+          <Input
+            id="customer-dob"
+            type="date"
+            autoComplete="bday"
+            value={dateOfBirth}
+            onChange={(event) => setDateOfBirth(event.target.value)}
+            className="h-11 bg-surface px-3"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-create-password">Create password</Label>
+          <div className="relative">
+            <Input
+              id="customer-create-password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="h-11 bg-surface px-3 pr-11"
+              required
+              minLength={8}
+              disabled={isSubmitting}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((value) => !value)}
+              className="absolute top-1/2 right-2.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? (
+                <EyeOff className="size-4" />
+              ) : (
+                <Eye className="size-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-confirm-password">Confirm password</Label>
+          <Input
+            id="customer-confirm-password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Re-enter your password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="h-11 bg-surface px-3"
+            required
+            minLength={8}
+            disabled={isSubmitting}
           />
         </div>
 
@@ -178,12 +291,26 @@ export function CustomerRegisterForm() {
           <Input
             id="customer-address"
             type="text"
-            autoComplete="street-address"
-            placeholder="Street address"
-            value={address}
-            onChange={(event) => setAddress(event.target.value)}
+            autoComplete="address-line1"
+            placeholder="Street address (optional)"
+            value={line1}
+            onChange={(event) => setLine1(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-address-2">Address line 2</Label>
+          <Input
+            id="customer-address-2"
+            type="text"
+            autoComplete="address-line2"
+            placeholder="Apartment, suite (optional)"
+            value={line2}
+            onChange={(event) => setLine2(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
           />
         </div>
 
@@ -198,7 +325,7 @@ export function CustomerRegisterForm() {
               value={city}
               onChange={(event) => setCity(event.target.value)}
               className="h-11 bg-surface px-3"
-              required
+              disabled={isSubmitting}
             />
           </div>
 
@@ -212,7 +339,7 @@ export function CustomerRegisterForm() {
               value={region}
               onChange={(event) => setRegion(event.target.value)}
               className="h-11 bg-surface px-3"
-              required
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -227,7 +354,7 @@ export function CustomerRegisterForm() {
             value={postalCode}
             onChange={(event) => setPostalCode(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
           />
         </div>
       </div>
@@ -248,23 +375,7 @@ export function CustomerRegisterForm() {
         )}
       </Button>
 
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {notice ? (
-        <p
-          role="status"
-          className="rounded-lg bg-accent/70 px-3 py-2 text-sm text-accent-foreground"
-        >
-          {notice}
-        </p>
-      ) : null}
+      <FormAlert error={error} />
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">

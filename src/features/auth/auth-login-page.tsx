@@ -1,17 +1,22 @@
 import { Link } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
+import { Button } from '@/components/ui/button'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 import { LoginForm } from '@/features/auth/login-form'
+import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
 import { cn } from '@/lib/utils'
 
 type AuthLoginPageProps = {
-  role: AuthRole
+  initialRole?: AuthRole
 }
 
-export function AuthLoginPage({ role }: AuthLoginPageProps) {
+export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) {
+  const role = initialRole
+  const copy = loginCopy[role]
   const isSeller = role === 'seller'
+  const isAdmin = role === 'admin'
 
   return (
     <main className="flex min-h-svh bg-background">
@@ -20,28 +25,31 @@ export function AuthLoginPage({ role }: AuthLoginPageProps) {
       <section
         className={cn(
           'relative flex flex-1 flex-col bg-grain',
-          isSeller ? 'bg-cream/60' : 'bg-background'
+          isSeller || isAdmin ? 'bg-cream/60' : 'bg-background',
         )}
       >
         <header className="flex items-center justify-between px-6 py-5 sm:px-10">
-          <BrandLogo
-            className="lg:invisible"
-            imgClassName="h-11"
-          />
+          <BrandLogo className="lg:invisible" imgClassName="h-11" />
 
           <div className="flex items-center gap-4">
             <Link
-              to={isSeller ? '/seller/register' : '/customer/register'}
+              to={copy.registerTo}
               className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
             >
-              {isSeller ? 'Register' : 'Create account'}
+              {isSeller ? 'Register' : isAdmin ? 'Bootstrap' : 'Create account'}
             </Link>
-            <Link
-              to={isSeller ? '/login' : '/seller/login'}
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {isSeller ? 'Customer login' : 'Seller login'}
-            </Link>
+            {isSeller || isAdmin ? (
+              <Link
+                to={copy.switchTo}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {copy.switchLabel}
+              </Link>
+            ) : (
+              <Button asChild size="sm" variant="outline" className="h-9 px-3">
+                <Link to="/become-a-seller">Become a seller</Link>
+              </Button>
+            )}
           </div>
         </header>
 

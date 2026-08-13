@@ -1,4 +1,4 @@
-export type AuthRole = 'customer' | 'seller'
+export type AuthRole = 'customer' | 'seller' | 'admin'
 
 export type LoginCopy = {
   roleLabel: string
@@ -10,6 +10,7 @@ export type LoginCopy = {
   switchTo: string
   registerHint: string
   registerLabel: string
+  registerTo: string
   panelAccent: string
   panelNote: string
 }

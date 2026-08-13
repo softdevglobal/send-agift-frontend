@@ -1,39 +1,63 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
+import { loginAdmin } from '@/api/auth'
+import { loginCustomer } from '@/api/customers'
+import { loginSeller } from '@/api/sellers'
+import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useAuth } from '@/features/auth/auth-context'
 import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
+import { getErrorMessage } from '@/lib/api'
 
 type LoginFormProps = {
   role: AuthRole
 }
 
+async function loginByRole(role: AuthRole, email: string, password: string) {
+  if (role === 'seller') return loginSeller({ email, password })
+  if (role === 'admin') return loginAdmin({ email, password })
+  return loginCustomer({ email, password })
+}
+
 export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
+  const { login } = useAuth()
+  const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const registered = searchParams.get('registered') === '1'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setNotice(null)
+    setError(null)
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+
     setIsSubmitting(true)
 
-    // UI-only for now — backend auth will plug in later
-    await new Promise((resolve) => setTimeout(resolve, 900))
-    setIsSubmitting(false)
-    setNotice(
-      `${copy.roleLabel} sign-in is ready for wiring. No backend call was made.`
-    )
+    try {
+      const result = await loginByRole(role, email.trim(), password)
+      login(result.token, result.role, remember)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Sign in failed.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -90,6 +114,7 @@ export function LoginForm({ role }: LoginFormProps) {
               onChange={(event) => setPassword(event.target.value)}
               className="h-11 bg-surface px-3 pr-11"
               required
+              minLength={8}
             />
             <button
               type="button"
@@ -137,14 +162,14 @@ export function LoginForm({ role }: LoginFormProps) {
         )}
       </Button>
 
-      {notice ? (
-        <p
-          role="status"
-          className="rounded-lg bg-accent/70 px-3 py-2 text-sm text-accent-foreground"
-        >
-          {notice}
-        </p>
-      ) : null}
+      <FormAlert
+        error={error}
+        notice={
+          registered
+            ? 'Account created. Sign in with your new credentials.'
+            : null
+        }
+      />
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
@@ -153,10 +178,21 @@ export function LoginForm({ role }: LoginFormProps) {
           <Separator className="flex-1" />
         </div>
 
+        {role === 'customer' ? (
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="h-11 w-full text-sm"
+          >
+            <Link to="/become-a-seller">Become a seller</Link>
+          </Button>
+        ) : null}
+
         <p className="text-center text-sm text-muted-foreground">
           {copy.registerHint}{' '}
           <Link
-            to={role === 'seller' ? '/seller/register' : '/customer/register'}
+            to={copy.registerTo}
             className="font-medium text-primary transition-colors hover:text-primary/80"
           >
             {copy.registerLabel}
