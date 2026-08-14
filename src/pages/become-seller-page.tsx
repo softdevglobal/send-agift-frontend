@@ -15,6 +15,7 @@ import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
 import { sellerTestimonials } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
+import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
 
 const sellerFeatures = [
@@ -71,11 +72,12 @@ export function BecomeSellerPage() {
   return (
     <SiteLayout>
       <main>
-        <section className="bg-cream">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-16">
-            <div className="animate-fade-up space-y-6">
-              <p className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-                <Store className="size-4" />
+        <section className="relative overflow-hidden bg-[oklch(0.97_0.015_95)]">
+          <HeroPhotoBackdrop />
+          <div className="relative flex items-center px-6 py-12 sm:px-10 lg:min-h-[36rem] lg:px-24 lg:py-16 xl:px-32">
+            <div className="animate-fade-up max-w-xl space-y-6">
+              <p className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
+                <Store className="size-3.5 text-primary" />
                 Seller portal
               </p>
               <h1 className="font-display text-4xl leading-[1.08] tracking-tight sm:text-5xl">
@@ -87,7 +89,7 @@ export function BecomeSellerPage() {
                 growth.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg" className="h-11 gap-2 px-5">
+                <Button asChild size="lg" className="h-11 gap-2 rounded-full px-6">
                   <Link to="/seller/register">
                     Sign up as Seller
                     <ArrowRight className="size-4" />
@@ -97,19 +99,11 @@ export function BecomeSellerPage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="h-11 bg-background px-5"
+                  className="h-11 rounded-full bg-background/80 px-5"
                 >
                   <Link to="/seller/login">Seller sign in</Link>
                 </Button>
               </div>
-            </div>
-
-            <div className="animate-soft-rise relative overflow-hidden rounded-[1.75rem] bg-background shadow-[0_30px_80px_rgba(40,50,30,0.12)] ring-1 ring-border/50">
-              <img
-                src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1200&q=80"
-                alt="Seller preparing products for fulfilment"
-                className="aspect-[4/3] w-full object-cover"
-              />
             </div>
           </div>
         </section>

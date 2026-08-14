@@ -10,7 +10,7 @@ type CategoryItemProps = {
 export function CategoryItem({ category }: CategoryItemProps) {
   return (
     <Link
-      to="/customer"
+      to={`/customer?category=${category.id}`}
       className="group flex w-[7.5rem] shrink-0 flex-col items-center gap-3 sm:w-auto"
     >
       <span

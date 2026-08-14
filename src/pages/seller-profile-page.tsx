@@ -11,21 +11,16 @@ import {
   type SellerAddressType,
   type SellerDetails,
 } from '@/api/sellers'
-import { AccountShell } from '@/components/common/account-shell'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
 import { sellerTypes } from '@/features/auth/seller-register-options'
+import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
-
-const sellerNav = [
-  { to: '/seller/profile', label: 'Profile', end: true },
-  { to: '/seller/shops', label: 'Shops' },
-]
 
 const addressTypes: SellerAddressType[] = ['pickup', 'return', 'both']
 
@@ -152,12 +147,11 @@ export function SellerProfilePage() {
   }
 
   return (
-    <AccountShell
-      eyebrow="Seller"
-      title="Seller profile"
-      description="Manage your legal details, pickup and return addresses, then add shops."
-      nav={sellerNav}
-    >
+    <div>
+      <SellerPageHeader
+        title="Profile"
+        description="Manage your legal details, pickup and return addresses, then add shops."
+      />
       {loading ? (
         <div className="flex justify-center py-16">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
@@ -168,9 +162,9 @@ export function SellerProfilePage() {
 
           <form
             onSubmit={handleSave}
-            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
+            className={`space-y-4 ${sellerPanelClass} p-6`}
           >
-            <h2 className="font-display text-xl">Account</h2>
+            <h2 className="font-display text-xl tracking-tight">Account</h2>
             <p className="text-sm text-muted-foreground">{profile?.email}</p>
             <p className="text-xs text-muted-foreground">
               Verification: {profile?.verification_status} · Status:{' '}
@@ -270,18 +264,15 @@ export function SellerProfilePage() {
             </Button>
           </form>
 
-          <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="font-display text-xl">Addresses</h2>
+          <section className={`space-y-4 ${sellerPanelClass} p-6`}>
+            <h2 className="font-display text-xl tracking-tight">Addresses</h2>
             <p className="text-sm text-muted-foreground">
               Address type must be pickup, return, or both.
             </p>
             {profile?.addresses?.length ? (
               <ul className="space-y-3">
                 {profile.addresses.map((address) => (
-                  <li
-                    key={address.id}
-                    className="flex items-start justify-between gap-4 rounded-xl bg-muted/50 px-4 py-3"
-                  >
+                  <li key={address.id} className={sellerListRowClass}>
                     <div className="text-sm">
                       <p className="font-medium">{address.address_type}</p>
                       <p className="text-muted-foreground">
@@ -371,8 +362,8 @@ export function SellerProfilePage() {
             </form>
           </section>
 
-          <section className="rounded-2xl bg-card p-6 ring-1 ring-destructive/20">
-            <h2 className="font-display text-xl">Delete account</h2>
+          <section className={`${sellerPanelClass} p-6 ring-destructive/20`}>
+            <h2 className="font-display text-xl tracking-tight">Delete account</h2>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
               Permanently delete this seller account.
             </p>
@@ -382,6 +373,6 @@ export function SellerProfilePage() {
           </section>
         </div>
       )}
-    </AccountShell>
+    </div>
   )
 }

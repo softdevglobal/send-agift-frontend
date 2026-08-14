@@ -10,13 +10,13 @@ import {
   type CustomerDetails,
 } from '@/api/customers'
 import { listCountries, type Country } from '@/api/countries'
-import { AccountShell } from '@/components/common/account-shell'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
+import { CustomerPageHeader } from '@/features/customer-commerce'
 import {
   customerStatusLabel,
   customerTypes,
@@ -25,8 +25,6 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
-
-const customerNav = [{ to: '/customer/profile', label: 'Profile', end: true }]
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
@@ -165,12 +163,11 @@ export function CustomerProfilePage() {
   }
 
   return (
-    <AccountShell
-      eyebrow="Customer"
-      title="Your profile"
-      description="Update your details and delivery addresses."
-      nav={customerNav}
-    >
+    <div>
+      <CustomerPageHeader
+        title="Your profile"
+        description="Update your details and delivery addresses."
+      />
       {loading ? (
         <div className="flex justify-center py-16">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
@@ -425,6 +422,6 @@ export function CustomerProfilePage() {
           </section>
         </div>
       )}
-    </AccountShell>
+    </div>
   )
 }

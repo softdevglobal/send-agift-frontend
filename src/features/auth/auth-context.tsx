@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 import {
   clearSession,
@@ -33,6 +33,7 @@ type AuthProviderProps = {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [token, setToken] = useState<string | null>(() => getToken())
   const [role, setRole] = useState<UserRole | null>(() => getRole())
 
@@ -41,9 +42,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(nextToken, nextRole, persist)
       setToken(nextToken)
       setRole(nextRole)
-      navigate(homePathForRole(nextRole), { replace: true })
+      const from = (location.state as { from?: string } | null)?.from
+      const home = homePathForRole(nextRole)
+      const safeFrom =
+        typeof from === 'string' &&
+        from.startsWith('/') &&
+        !from.startsWith('//') &&
+        (from === home || from.startsWith(`${home}/`) || from.startsWith(`${home}?`))
+          ? from
+          : home
+      navigate(safeFrom, { replace: true })
     },
-    [navigate],
+    [location.state, navigate],
   )
 
   const logout = useCallback(() => {

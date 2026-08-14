@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
+import { LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react'
 
 import {
   createSellerShop,
@@ -9,19 +9,14 @@ import {
   type Shop,
   type ShopInput,
 } from '@/api/sellers'
-import { AccountShell } from '@/components/common/account-shell'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { textareaClassName } from '@/lib/form-styles'
-
-const sellerNav = [
-  { to: '/seller/profile', label: 'Profile', end: true },
-  { to: '/seller/shops', label: 'Shops' },
-]
 
 const emptyShop: ShopInput = {
   name: '',
@@ -142,12 +137,25 @@ export function SellerShopsPage() {
   }
 
   return (
-    <AccountShell
-      eyebrow="Seller"
-      title="Shops"
-      description="Create and update shops. Name is required; slug must be unique."
-      nav={sellerNav}
-    >
+    <div>
+      <SellerPageHeader
+        title="Shops"
+        description="Create and manage shops. Name is required; slug must be unique."
+        action={
+          <Button
+            type="button"
+            className="h-10 rounded-full px-4"
+            onClick={() => {
+              setEditingId(null)
+              setForm(emptyShop)
+              document.getElementById('shop-name')?.focus()
+            }}
+          >
+            <Plus className="size-4" />
+            Create a new shop
+          </Button>
+        }
+      />
       {loading ? (
         <div className="flex justify-center py-16">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
@@ -156,15 +164,12 @@ export function SellerShopsPage() {
         <div className="space-y-8">
           <FormAlert error={error} notice={notice} />
 
-          <section className="space-y-3 rounded-2xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="font-display text-xl">Your shops</h2>
+          <section className={`space-y-4 ${sellerPanelClass} p-6`}>
+            <h2 className="font-display text-xl tracking-tight">Your shops</h2>
             {shops.length ? (
-              <ul className="space-y-3">
+              <ul className="space-y-2.5">
                 {shops.map((shop) => (
-                  <li
-                    key={shop.id}
-                    className="flex items-start justify-between gap-4 rounded-xl bg-muted/50 px-4 py-3"
-                  >
+                  <li key={shop.id} className={sellerListRowClass}>
                     <div>
                       <p className="font-medium">{shop.name}</p>
                       <p className="text-sm text-muted-foreground">
@@ -207,9 +212,9 @@ export function SellerShopsPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
+            className={`space-y-4 ${sellerPanelClass} p-6`}
           >
-            <h2 className="font-display text-xl">
+            <h2 className="font-display text-xl tracking-tight">
               {editingId ? 'Edit shop' : 'Add shop'}
             </h2>
             <div className="space-y-2">
@@ -323,6 +328,6 @@ export function SellerShopsPage() {
           </form>
         </div>
       )}
-    </AccountShell>
+    </div>
   )
 }

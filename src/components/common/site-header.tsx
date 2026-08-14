@@ -11,30 +11,20 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/auth-context'
+import { useCart } from '@/features/customer-commerce'
 import { giftCategories } from '@/features/marketing/data'
 import { homePathForRole } from '@/lib/auth'
-import { cn } from '@/lib/utils'
 
 const utilityLinks = [
-  { to: '/customer', label: 'Track order', icon: Truck },
+  { to: '/customer/orders', label: 'Track order', icon: Truck },
   { to: '/become-a-seller', label: 'Sell', icon: Store },
   { to: '/customer', label: 'Help & Contact', icon: HelpCircle },
-]
-
-const categoryNav = [
-  { to: '/customer', label: 'Shop by category' },
-  ...giftCategories.map((category) => ({
-    to: `/customer#${category.id}`,
-    label: category.name,
-  })),
-  { to: '/customer', label: 'Deals' },
-  { to: '/customer', label: 'Competitions' },
 ]
 
 export function SiteHeader() {
@@ -42,10 +32,18 @@ export function SiteHeader() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const { isAuthenticated, role, logout } = useAuth()
+  const { itemCount } = useCart()
+  const navigate = useNavigate()
   const accountTo = role ? homePathForRole(role) : '/login'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    const params = new URLSearchParams()
+    if (query.trim()) params.set('q', query.trim())
+    if (category && category !== 'all') params.set('category', category)
+    const suffix = params.toString()
+    navigate(`/customer${suffix ? `?${suffix}` : ''}`)
+    setOpen(false)
   }
 
   return (
@@ -185,12 +183,17 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="relative"
+            asChild
             aria-label="Cart"
           >
-            <ShoppingBag className="size-4.5" />
-            <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
-              0
-            </span>
+            <Link to="/customer/cart">
+              <ShoppingBag className="size-4.5" />
+              {itemCount > 0 ? (
+                <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                  {itemCount}
+                </span>
+              ) : null}
+            </Link>
           </Button>
           <Button
             asChild
@@ -209,29 +212,6 @@ export function SiteHeader() {
           >
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
-        </div>
-      </div>
-
-      <div className="hidden border-t border-border/60 md:block">
-        <div className="mx-auto flex max-w-6xl items-center gap-5 overflow-x-auto px-4 py-2.5 text-sm sm:px-6 lg:px-8">
-          {categoryNav.map((item, index) => (
-            <NavLink
-              key={`${item.label}-${index}`}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                cn(
-                  'shrink-0 whitespace-nowrap transition-colors hover:text-primary',
-                  index === 0
-                    ? 'font-semibold text-foreground'
-                    : 'text-foreground/75',
-                  isActive && item.to !== '/customer' && 'text-primary'
-                )
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
         </div>
       </div>
 
@@ -263,7 +243,7 @@ export function SiteHeader() {
             {giftCategories.map((item) => (
               <Link
                 key={item.id}
-                to={`/customer#${item.id}`}
+                to={`/customer?category=${item.id}`}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >

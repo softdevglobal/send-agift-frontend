@@ -23,7 +23,7 @@ export function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
           ? '/admin/login'
           : '/login'
 
-    return <Navigate to={loginTo} replace state={{ from: location.pathname }} />
+    return <Navigate to={loginTo} replace state={{ from: `${location.pathname}${location.search}` }} />
   }
 
   const allowed =

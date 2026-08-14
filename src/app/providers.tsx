@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 
 import { AuthProvider } from '@/features/auth/auth-context'
+import { CartProvider } from '@/features/customer-commerce'
 
 type AppProvidersProps = {
   children: ReactNode
@@ -10,7 +11,9 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <BrowserRouter>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <CartProvider>{children}</CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
