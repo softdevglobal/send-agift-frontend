@@ -17,7 +17,7 @@ import {
   giftCategories,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
-import { GiftHeroCollage } from '@/features/marketing/gift-hero-collage'
+import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { ProductCard } from '@/features/marketing/product-card'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
 
@@ -49,16 +49,9 @@ export function HomePage() {
     <SiteLayout>
       <main>
         <section className="relative overflow-hidden bg-[oklch(0.97_0.015_95)]">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -left-20 size-[28rem] rounded-full bg-[oklch(0.92_0.03_125/0.35)]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-32 -right-16 size-[22rem] rounded-full bg-[oklch(0.93_0.025_80/0.3)]"
-          />
-          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:gap-12 lg:px-8 lg:py-16">
-            <div className="animate-fade-up space-y-6">
+          <HeroPhotoBackdrop />
+          <div className="relative flex items-center px-6 py-12 sm:px-10 lg:min-h-[36rem] lg:px-30 lg:py-16 xl:px-36">
+            <div className="animate-fade-up max-w-xl space-y-6">
               <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
                 From moments to memories
               </p>
@@ -83,7 +76,7 @@ export function HomePage() {
                   size="lg"
                   className="h-11 rounded-full bg-background/80 px-5"
                 >
-                  <Link to="/customer">Explore catalogue</Link>
+                  <Link to="/become-a-seller">Become a seller</Link>
                 </Button>
               </div>
 
@@ -98,8 +91,6 @@ export function HomePage() {
                 </div>
               </div>
             </div>
-
-            <GiftHeroCollage />
           </div>
         </section>
 

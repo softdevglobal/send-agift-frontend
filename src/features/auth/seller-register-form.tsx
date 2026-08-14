@@ -1,21 +1,23 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle, ShieldCheck } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
+import { registerSeller } from '@/api/sellers'
+import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { CountrySelectField } from '@/features/auth/country-select-field'
 import {
-  sellerCountries,
   sellerTypes,
   verificationStatusLabel,
   type VerificationStatus,
 } from '@/features/auth/seller-register-options'
+import { getErrorMessage } from '@/lib/api'
+import { optionalString } from '@/lib/form'
+import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
-
-const selectClassName =
-  'h-11 w-full min-w-0 rounded-lg border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50'
 
 const verificationTone: Record<VerificationStatus, string> = {
   unverified: 'bg-muted text-muted-foreground ring-border/60',
@@ -24,8 +26,14 @@ const verificationTone: Record<VerificationStatus, string> = {
   rejected: 'bg-destructive/10 text-destructive ring-destructive/25',
 }
 
+function asVerificationStatus(value: string): VerificationStatus {
+  if (value in verificationTone) return value as VerificationStatus
+  return 'pending'
+}
+
 export function SellerRegisterForm() {
-  const [country, setCountry] = useState('')
+  const navigate = useNavigate()
+  const [countryId, setCountryId] = useState('')
   const [sellerType, setSellerType] = useState('')
   const [legalName, setLegalName] = useState('')
   const [tradingName, setTradingName] = useState('')
@@ -37,16 +45,14 @@ export function SellerRegisterForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>('unverified')
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    setNotice(null)
 
-    if (!country || !sellerType) {
+    if (!countryId || !sellerType) {
       setError('Please select a country and seller type.')
       return
     }
@@ -63,14 +69,23 @@ export function SellerRegisterForm() {
 
     setIsSubmitting(true)
 
-    // UI-only for now — backend registration will plug in later
-    await new Promise((resolve) => setTimeout(resolve, 900))
-
-    setIsSubmitting(false)
-    setVerificationStatus('pending')
-    setNotice(
-      'Seller registration submitted. Your account is pending verification — no backend call was made.'
-    )
+    try {
+      const created = await registerSeller({
+        country_id: countryId,
+        seller_type: sellerType,
+        legal_name: legalName.trim(),
+        email: email.trim(),
+        password,
+        trading_name: optionalString(tradingName),
+        phone: optionalString(phone),
+      })
+      setVerificationStatus(asVerificationStatus(created.verification_status))
+      navigate('/seller/login?registered=1', { replace: true })
+    } catch (err) {
+      setError(getErrorMessage(err, 'Registration failed.'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -96,7 +111,7 @@ export function SellerRegisterForm() {
       <div
         className={cn(
           'flex items-center justify-between gap-3 rounded-xl px-3.5 py-3 ring-1',
-          verificationTone[verificationStatus]
+          verificationTone[verificationStatus],
         )}
         role="status"
         aria-live="polite"
@@ -118,46 +133,32 @@ export function SellerRegisterForm() {
       </div>
 
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="seller-country">Country</Label>
-            <select
-              id="seller-country"
-              value={country}
-              onChange={(event) => setCountry(event.target.value)}
-              className={selectClassName}
-              required
-            >
-              <option value="" disabled>
-                Select country
-              </option>
-              {sellerCountries.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <CountrySelectField
+          id="seller-country"
+          value={countryId}
+          onChange={setCountryId}
+          disabled={isSubmitting}
+        />
 
-          <div className="space-y-2">
-            <Label htmlFor="seller-type">Seller type</Label>
-            <select
-              id="seller-type"
-              value={sellerType}
-              onChange={(event) => setSellerType(event.target.value)}
-              className={selectClassName}
-              required
-            >
-              <option value="" disabled>
-                Select seller type
+        <div className="space-y-2">
+          <Label htmlFor="seller-type">Seller type</Label>
+          <select
+            id="seller-type"
+            value={sellerType}
+            onChange={(event) => setSellerType(event.target.value)}
+            className={selectClassName}
+            required
+            disabled={isSubmitting}
+          >
+            <option value="" disabled>
+              Select seller type
+            </option>
+            {sellerTypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
-              {sellerTypes.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-2">
@@ -171,6 +172,7 @@ export function SellerRegisterForm() {
             onChange={(event) => setLegalName(event.target.value)}
             className="h-11 bg-surface px-3"
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -184,7 +186,7 @@ export function SellerRegisterForm() {
             value={tradingName}
             onChange={(event) => setTradingName(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -199,6 +201,7 @@ export function SellerRegisterForm() {
             onChange={(event) => setEmail(event.target.value)}
             className="h-11 bg-surface px-3"
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -212,7 +215,7 @@ export function SellerRegisterForm() {
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -229,6 +232,7 @@ export function SellerRegisterForm() {
               className="h-11 bg-surface px-3 pr-11"
               required
               minLength={8}
+              disabled={isSubmitting}
             />
             <button
               type="button"
@@ -258,6 +262,7 @@ export function SellerRegisterForm() {
               className="h-11 bg-surface px-3 pr-11"
               required
               minLength={8}
+              disabled={isSubmitting}
             />
             <button
               type="button"
@@ -293,23 +298,7 @@ export function SellerRegisterForm() {
         )}
       </Button>
 
-      {error ? (
-        <p
-          role="alert"
-          className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {error}
-        </p>
-      ) : null}
-
-      {notice ? (
-        <p
-          role="status"
-          className="rounded-lg bg-accent/70 px-3 py-2 text-sm text-accent-foreground"
-        >
-          {notice}
-        </p>
-      ) : null}
+      <FormAlert error={error} />
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">

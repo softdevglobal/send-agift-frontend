@@ -51,11 +51,31 @@ const panelGifts: Record<
         'left-[18%] bottom-[-8%] w-[38%] rotate-3 blur-[1.5px] opacity-70',
     },
   ],
+  admin: [
+    {
+      src: '/images/hero/gift-gold.png',
+      alt: '',
+      className:
+        'left-[-4%] top-[6%] w-[50%] -rotate-6 blur-[2px] opacity-70',
+    },
+    {
+      src: '/images/hero/gift-blue.png',
+      alt: '',
+      className:
+        'right-[-2%] top-[4%] w-[40%] rotate-8 blur-sm opacity-65',
+    },
+    {
+      src: '/images/hero/gift-stack.png',
+      alt: '',
+      className:
+        'left-[16%] bottom-[-8%] w-[38%] rotate-2 blur-[1.5px] opacity-70',
+    },
+  ],
 }
 
 export function LoginBrandPanel({ role }: LoginBrandPanelProps) {
   const copy = loginCopy[role]
-  const isSeller = role === 'seller'
+  const isSeller = role === 'seller' || role === 'admin'
   const gifts = panelGifts[role]
 
   return (
