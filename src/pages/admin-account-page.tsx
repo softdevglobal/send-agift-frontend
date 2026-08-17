@@ -2,17 +2,13 @@ import { useEffect, useState } from 'react'
 import { LoaderCircle } from 'lucide-react'
 
 import { getAdminMe, type Admin } from '@/api/admin'
-import { AccountShell } from '@/components/common/account-shell'
 import { FormAlert } from '@/components/common/form-alert'
+import { AdminPageHeader, adminPanelClass } from '@/features/admin'
 import { useAuth } from '@/features/auth/auth-context'
 import { getErrorMessage } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
-const adminNav = [
-  { to: '/admin', label: 'Account', end: true },
-  { to: '/admin/countries', label: 'Countries' },
-]
-
-export function AdminPage() {
+export function AdminAccountPage() {
   const { role } = useAuth()
   const [admin, setAdmin] = useState<Admin | null>(null)
   const [loading, setLoading] = useState(true)
@@ -48,12 +44,11 @@ export function AdminPage() {
     : []
 
   return (
-    <AccountShell
-      eyebrow="Admin"
-      title="Your account"
-      description="Signed-in admin profile from GET /admin/me."
-      nav={adminNav}
-    >
+    <>
+      <AdminPageHeader
+        title="Your account"
+        description="Signed-in admin profile from GET /admin/me."
+      />
       {loading ? (
         <div className="flex justify-center py-16">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
@@ -62,7 +57,7 @@ export function AdminPage() {
         <div className="space-y-6">
           <FormAlert error={error} />
           {admin ? (
-            <dl className="grid gap-4 rounded-2xl bg-card p-6 sm:grid-cols-2 ring-1 ring-border/60">
+            <dl className={cn(adminPanelClass, 'grid gap-4 p-6 sm:grid-cols-2')}>
               {fields.map(([label, value]) => (
                 <div key={label}>
                   <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
@@ -75,6 +70,6 @@ export function AdminPage() {
           ) : null}
         </div>
       )}
-    </AccountShell>
+    </>
   )
 }
