@@ -8,4 +8,9 @@ export {
   adminRailClass,
   adminSoonBadgeClass,
 } from './admin-styles'
-export { adminRoleLabel, adminDisplayName, adminInitials } from './admin-utils'
+export {
+  adminRoleLabel,
+  adminDisplayName,
+  adminInitials,
+  formatDate,
+} from './admin-utils'

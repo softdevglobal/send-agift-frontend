@@ -13,7 +13,7 @@ export function AdminAdminsPage() {
         soon
         icon={ShieldCheck}
         title="Team management is not wired up yet"
-        description="New admins are currently created through POST /admin/register with the bootstrap secret. Role management will move here once a listing endpoint exists."
+        description="New admins are added through the account bootstrap flow, using the console's setup secret. Role management will move here once the team directory is ready."
       />
     </>
   )

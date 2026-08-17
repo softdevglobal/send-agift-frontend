@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
   Check,
   Clock,
   Coins,
+  Eye,
   Globe2,
   LoaderCircle,
   Pencil,
@@ -28,7 +30,16 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AdminPageHeader, adminPanelClass } from '@/features/admin'
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { cn } from '@/lib/utils'
@@ -70,6 +81,13 @@ function flagEmoji(iso: string): string {
   return String.fromCodePoint(...points)
 }
 
+function statusTone(status: string): string {
+  const normalized = status.trim().toLowerCase()
+  if (normalized === 'active') return 'bg-accent text-primary'
+  if (normalized === 'inactive') return 'bg-muted text-muted-foreground'
+  return 'bg-muted text-muted-foreground'
+}
+
 export function AdminCountriesPage() {
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
@@ -81,7 +99,8 @@ export function AdminCountriesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [step, setStep] = useState<WizardStep>('details')
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [viewCountry, setViewCountry] = useState<Country | null>(null)
+  const [viewOpen, setViewOpen] = useState(false)
 
   const load = useCallback(async () => {
     const list = await listCountries()
@@ -117,12 +136,18 @@ export function AdminCountriesPage() {
   }
 
   function openEdit(country: Country) {
+    setViewOpen(false)
     setEditingId(country.id)
     setForm(toInput(country))
     setFormError(null)
     setNotice(null)
     setStep('details')
     setDialogOpen(true)
+  }
+
+  function openView(country: Country) {
+    setViewCountry(country)
+    setViewOpen(true)
   }
 
   function handleDialogChange(open: boolean) {
@@ -181,7 +206,7 @@ export function AdminCountriesPage() {
         setNotice('Country updated.')
       } else {
         await createCountry(body)
-        setNotice('Country created. Copy its ID for registration forms.')
+        setNotice('Country created.')
       }
       await load()
       handleDialogChange(false)
@@ -197,6 +222,7 @@ export function AdminCountriesPage() {
     setNotice(null)
     try {
       await deleteCountry(id)
+      if (viewCountry?.id === id) setViewOpen(false)
       await load()
       setNotice('Country deleted.')
     } catch (err) {
@@ -204,21 +230,11 @@ export function AdminCountriesPage() {
     }
   }
 
-  async function copyId(id: string) {
-    try {
-      await navigator.clipboard.writeText(id)
-      setCopiedId(id)
-      window.setTimeout(() => setCopiedId(null), 1500)
-    } catch {
-      setError('Could not copy country ID.')
-    }
-  }
-
   return (
     <>
       <AdminPageHeader
         title="Countries"
-        description="Create markets used by customer and seller registration. Register forms load this list from GET /countries."
+        description="Create the markets customers and sellers can register into. New countries appear on registration forms as soon as they're added."
         action={
           <Button type="button" className="h-11 rounded-full px-5" onClick={openCreate}>
             <Plus className="size-4" />
@@ -236,62 +252,73 @@ export function AdminCountriesPage() {
           <FormAlert error={error} notice={notice} />
 
           {countries.length ? (
-            <section className={cn(adminPanelClass, 'overflow-x-auto')}>
-              <table className="w-full min-w-[40rem] text-left text-sm">
-                <thead className="border-b border-border/70 text-xs tracking-wide text-muted-foreground uppercase">
-                  <tr>
-                    <th className="px-4 py-3 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">ISO</th>
-                    <th className="px-4 py-3 font-medium">Currency</th>
-                    <th className="px-4 py-3 font-medium">Timezone</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">ID</th>
-                    <th className="px-4 py-3 font-medium" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {countries.map((country) => (
-                    <tr key={country.id} className="border-b border-border/50 last:border-0">
-                      <td className="px-4 py-3 font-medium">{country.name}</td>
-                      <td className="px-4 py-3">{country.iso_code}</td>
-                      <td className="px-4 py-3">{country.default_currency}</td>
-                      <td className="px-4 py-3">{country.default_timezone}</td>
-                      <td className="px-4 py-3">{country.status}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          className="font-mono text-xs text-primary hover:underline"
-                          onClick={() => copyId(country.id)}
-                        >
-                          {copiedId === country.id ? 'Copied' : 'Copy ID'}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Edit ${country.name}`}
-                            onClick={() => openEdit(country)}
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label={`Delete ${country.name}`}
-                            onClick={() => handleDelete(country.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <section className={cn(adminPanelClass, 'divide-y divide-border/50')}>
+              {countries.map((country) => (
+                <div
+                  key={country.id}
+                  className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30 sm:px-5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => openView(country)}
+                    className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                  >
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-2xl">
+                      {flagEmoji(country.iso_code)}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium">{country.name}</p>
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
+                          {country.iso_code}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {country.default_currency} · {country.default_timezone}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        'hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex',
+                        statusTone(country.status),
+                      )}
+                    >
+                      <span className="size-1.5 rounded-full bg-current" />
+                      {country.status || 'unknown'}
+                    </span>
+                  </button>
+
+                  <div className="flex shrink-0 items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`View ${country.name}`}
+                      onClick={() => openView(country)}
+                    >
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Edit ${country.name}`}
+                      onClick={() => openEdit(country)}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Delete ${country.name}`}
+                      onClick={() => handleDelete(country.id)}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </section>
           ) : (
             <section
@@ -571,6 +598,116 @@ export function AdminCountriesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <Sheet open={viewOpen} onOpenChange={setViewOpen}>
+        <SheetContent className="gap-0 p-0">
+          {viewCountry ? (
+            <>
+              <div className="relative overflow-hidden bg-primary px-6 pt-10 pb-7 text-primary-foreground">
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-white/10"
+                />
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-16 -left-10 size-40 rounded-full bg-white/10"
+                />
+                <SheetHeader className="relative">
+                  <div className="flex items-center gap-4">
+                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/25">
+                      <span className="font-display text-2xl tracking-tight">
+                        {viewCountry.iso_code}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <SheetTitle className="text-primary-foreground">
+                        {viewCountry.name}
+                      </SheetTitle>
+                      <SheetDescription className="text-primary-foreground/75">
+                        Market configuration
+                      </SheetDescription>
+                    </div>
+                  </div>
+                </SheetHeader>
+              </div>
+
+              <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium',
+                    statusTone(viewCountry.status),
+                  )}
+                >
+                  <span className="size-1.5 rounded-full bg-current" />
+                  {viewCountry.status || 'unknown'}
+                </span>
+
+                <dl className="grid grid-cols-2 gap-4">
+                  <div className={cn(adminPanelClass, 'p-4')}>
+                    <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <Coins className="size-3.5" />
+                      Currency
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium">
+                      {viewCountry.default_currency}
+                    </dd>
+                  </div>
+                  <div className={cn(adminPanelClass, 'p-4')}>
+                    <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <Clock className="size-3.5" />
+                      Timezone
+                    </dt>
+                    <dd className="mt-1 truncate text-sm font-medium">
+                      {viewCountry.default_timezone}
+                    </dd>
+                  </div>
+                  <div className={cn(adminPanelClass, 'p-4')}>
+                    <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <Calendar className="size-3.5" />
+                      Created
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium">
+                      {formatDate(viewCountry.created_at)}
+                    </dd>
+                  </div>
+                  <div className={cn(adminPanelClass, 'p-4')}>
+                    <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      <Calendar className="size-3.5" />
+                      Updated
+                    </dt>
+                    <dd className="mt-1 text-sm font-medium">
+                      {formatDate(viewCountry.updated_at)}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-muted/40 px-6 py-4">
+                <SheetClose asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1"
+                    onClick={() => openEdit(viewCountry)}
+                  >
+                    <Pencil className="size-4" />
+                    Edit
+                  </Button>
+                </SheetClose>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => handleDelete(viewCountry.id)}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </Button>
+              </SheetFooter>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </>
   )
 }

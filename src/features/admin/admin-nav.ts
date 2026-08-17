@@ -2,7 +2,6 @@ import {
   Globe2,
   LayoutDashboard,
   ShieldCheck,
-  ShoppingBag,
   Store,
   UserCircle,
   Users,
@@ -35,7 +34,6 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/sellers', label: 'Sellers', icon: Store, soon: true },
       { to: '/admin/customers', label: 'Customers', icon: Users, soon: true },
-      { to: '/admin/orders', label: 'Orders', icon: ShoppingBag, soon: true },
     ],
   },
   {

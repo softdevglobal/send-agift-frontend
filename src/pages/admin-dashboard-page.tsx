@@ -1,13 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import {
-  ArrowRight,
-  Globe2,
-  LoaderCircle,
-  Plus,
-  ShoppingBag,
-  Store,
-  Users,
-} from 'lucide-react'
+import { ArrowRight, Globe2, LoaderCircle, Plus, Store, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { getAdminMe, type Admin } from '@/api/admin'
@@ -133,7 +125,7 @@ export function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-3">
         <Metric
           icon={<Globe2 className="size-4.5" />}
           label="Countries"
@@ -149,12 +141,6 @@ export function AdminDashboardPage() {
         <Metric
           icon={<Users className="size-4.5" />}
           label="Customers"
-          value="—"
-          hint="Endpoint not wired yet"
-        />
-        <Metric
-          icon={<ShoppingBag className="size-4.5" />}
-          label="Orders"
           value="—"
           hint="Endpoint not wired yet"
         />
