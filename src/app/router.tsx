@@ -1,12 +1,17 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
+import { AdminShell } from '@/features/admin'
 import { GuestRoute, ProtectedRoute } from '@/features/auth/protected-route'
 import { CustomerShell } from '@/features/customer-commerce'
 import { SellerShell } from '@/features/seller'
+import { AdminAccountPage } from '@/pages/admin-account-page'
+import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
+import { AdminCustomersPage } from '@/pages/admin-customers-page'
+import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
-import { AdminPage } from '@/pages/admin-page'
 import { AdminRegisterPage } from '@/pages/admin-register-page'
+import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
 import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
@@ -143,18 +148,17 @@ export function AppRouter() {
         path="/admin"
         element={
           <ProtectedRoute roles={['admin', 'superadmin']}>
-            <AdminPage />
+            <AdminShell />
           </ProtectedRoute>
         }
-      />
-      <Route
-        path="/admin/countries"
-        element={
-          <ProtectedRoute roles={['admin', 'superadmin']}>
-            <AdminCountriesPage />
-          </ProtectedRoute>
-        }
-      />
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="sellers" element={<AdminSellersPage />} />
+        <Route path="customers" element={<AdminCustomersPage />} />
+        <Route path="countries" element={<AdminCountriesPage />} />
+        <Route path="admins" element={<AdminAdminsPage />} />
+        <Route path="account" element={<AdminAccountPage />} />
+      </Route>
     </Routes>
   )
 }

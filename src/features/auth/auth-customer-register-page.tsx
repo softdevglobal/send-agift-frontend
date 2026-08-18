@@ -7,10 +7,10 @@ import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 
 export function AuthCustomerRegisterPage() {
   return (
-    <main className="flex min-h-svh bg-background">
+    <main className="flex h-svh overflow-hidden bg-background">
       <LoginBrandPanel role="customer" />
 
-      <section className="relative flex flex-1 flex-col bg-grain bg-background">
+      <section className="relative flex flex-1 flex-col overflow-y-auto bg-grain bg-background">
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <div className="flex items-center gap-4">
             <Link

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { CountrySelectField } from '@/features/auth/country-select-field'
+import { PhoneField } from '@/features/auth/phone-field'
 import {
   sellerTypes,
   verificationStatusLabel,
@@ -207,14 +208,10 @@ export function SellerRegisterForm() {
 
         <div className="space-y-2">
           <Label htmlFor="seller-phone">Phone</Label>
-          <Input
+          <PhoneField
             id="seller-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder="+94 77 123 4567"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="h-11 bg-surface px-3"
+            onChange={setPhone}
             disabled={isSubmitting}
           />
         </div>

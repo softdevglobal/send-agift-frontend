@@ -81,7 +81,7 @@ export function LoginBrandPanel({ role }: LoginBrandPanelProps) {
   return (
     <aside
       className={cn(
-        'relative hidden min-h-svh overflow-hidden lg:flex lg:w-[48%] xl:w-[52%]',
+        'relative hidden h-full overflow-hidden lg:flex lg:w-[48%] xl:w-[52%]',
         isSeller
           ? 'bg-[linear-gradient(155deg,oklch(0.3_0.05_145)_0%,oklch(0.24_0.03_125)_50%,oklch(0.28_0.04_100)_100%)]'
           : 'bg-[linear-gradient(155deg,oklch(0.36_0.07_125)_0%,oklch(0.26_0.04_120)_48%,oklch(0.3_0.05_95)_100%)]'
