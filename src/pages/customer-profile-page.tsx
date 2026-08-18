@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
+import { PhoneField } from '@/features/auth/phone-field'
 import { CustomerPageHeader } from '@/features/customer-commerce'
 import {
   customerStatusLabel,
@@ -260,13 +261,7 @@ export function CustomerProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="profile-phone">Phone</Label>
-                <Input
-                  id="profile-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
+                <PhoneField id="profile-phone" value={phone} onChange={setPhone} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-dob">Date of birth</Label>

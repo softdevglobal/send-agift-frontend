@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
+import { PhoneField } from '@/features/auth/phone-field'
 import { sellerTypes } from '@/features/auth/seller-register-options'
 import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
@@ -258,13 +259,7 @@ export function SellerProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="seller-phone">Phone</Label>
-                <Input
-                  id="seller-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
+                <PhoneField id="seller-phone" value={phone} onChange={setPhone} />
               </div>
             </div>
             <div className="space-y-2">

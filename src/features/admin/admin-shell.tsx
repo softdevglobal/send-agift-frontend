@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Gift, LogOut, Menu, Search, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
-import { getSellerMe, type SellerDetails } from '@/api/sellers'
+import { getAdminMe, type Admin } from '@/api/admin'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -14,19 +14,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { adminNavGroups } from '@/features/admin/admin-nav'
+import { adminInitials, adminRoleLabel } from '@/features/admin/admin-utils'
 import { useAuth } from '@/features/auth/auth-context'
-import { sellerNavGroups } from '@/features/seller/seller-nav'
-import {
-  sellerDisplayName,
-  sellerInitials,
-  sellerVerificationLabel,
-} from '@/features/seller/seller-utils'
 import { cn } from '@/lib/utils'
 
-function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="flex flex-1 flex-col gap-6">
-      {sellerNavGroups.map((group) => (
+      {adminNavGroups.map((group) => (
         <div key={group.label}>
           <p className="px-3 pb-2 text-[10px] font-medium tracking-[0.18em] text-white/40 uppercase">
             {group.label}
@@ -60,6 +56,9 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                       <item.icon className="size-4" />
                     </span>
                     <span className="flex-1 truncate">{item.label}</span>
+                    {item.soon ? (
+                      <span className="size-1.5 rounded-full bg-white/25" />
+                    ) : null}
                   </>
                 )}
               </NavLink>
@@ -71,19 +70,19 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-export function SellerShell() {
-  const { logout } = useAuth()
+export function AdminShell() {
+  const { role, logout } = useAuth()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [profile, setProfile] = useState<SellerDetails | null>(null)
+  const [admin, setAdmin] = useState<Admin | null>(null)
   const [signOutOpen, setSignOutOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    getSellerMe()
+    getAdminMe()
       .then((data) => {
-        if (!cancelled) setProfile(data)
+        if (!cancelled) setAdmin(data)
       })
       .catch(() => {
         // Sidebar identity is decorative — pages surface their own load errors.
@@ -101,9 +100,7 @@ export function SellerShell() {
     event.preventDefault()
   }
 
-  const statusLabel = profile
-    ? sellerVerificationLabel(profile.verification_status)
-    : null
+  const roleLabel = adminRoleLabel(role)
 
   return (
     <div className="flex min-h-svh bg-cream">
@@ -136,7 +133,7 @@ export function SellerShell() {
               SendAGift
             </p>
             <p className="text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
-              Seller portal
+              Console
             </p>
           </div>
           <Button
@@ -152,21 +149,19 @@ export function SellerShell() {
         </div>
 
         <div className="relative flex-1 overflow-y-auto">
-          <SellerNavLinks onNavigate={() => setMenuOpen(false)} />
+          <AdminNavLinks onNavigate={() => setMenuOpen(false)} />
         </div>
 
         <div className="relative mt-6 border-t border-white/10 pt-4">
           <div className="flex items-center gap-3 px-2">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/15">
-              {profile ? sellerInitials(profile) : 'S'}
+              {adminInitials(admin)}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">
-                {profile ? sellerDisplayName(profile) : 'Signed in'}
+                {admin?.display_name?.trim() || admin?.email || 'Signed in'}
               </p>
-              <p className="truncate text-[11px] text-white/45">
-                {statusLabel ?? 'Seller'}
-              </p>
+              <p className="truncate text-[11px] text-white/45">{roleLabel}</p>
             </div>
           </div>
           <Button
@@ -186,7 +181,7 @@ export function SellerShell() {
           <DialogHeader>
             <DialogTitle>Sign out?</DialogTitle>
             <DialogDescription>
-              You'll need to sign in again to access the seller portal.
+              You'll need to sign in again to access the admin console.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -221,25 +216,23 @@ export function SellerShell() {
               onSubmit={handleSearch}
               className="relative min-w-0 flex-1 md:max-w-sm"
             >
-              <label className="sr-only" htmlFor="seller-search">
-                Search the portal
+              <label className="sr-only" htmlFor="admin-search">
+                Search the console
               </label>
               <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id="seller-search"
+                id="admin-search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search gifts, shops…"
+                placeholder="Search countries, sellers…"
                 className="h-10 rounded-full border-border/60 bg-muted/40 pr-4 pl-10 shadow-none"
               />
             </form>
 
             <div className="ml-auto flex items-center gap-2">
-              {statusLabel ? (
-                <span className="hidden rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground sm:inline">
-                  {statusLabel}
-                </span>
-              ) : null}
+              <span className="hidden rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground sm:inline">
+                {roleLabel}
+              </span>
             </div>
           </div>
         </header>

@@ -17,6 +17,11 @@ export type SellerNavItem = {
   end?: boolean
 }
 
+export type SellerNavGroup = {
+  label: string
+  items: SellerNavItem[]
+}
+
 export const sellerPrimaryNav: SellerNavItem[] = [
   { to: '/seller', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/seller/shops', label: 'Shops', icon: Store },
@@ -29,4 +34,9 @@ export const sellerPrimaryNav: SellerNavItem[] = [
 
 export const sellerAccountNav: SellerNavItem[] = [
   { to: '/seller/profile', label: 'Profile', icon: User },
+]
+
+export const sellerNavGroups: SellerNavGroup[] = [
+  { label: 'Selling', items: sellerPrimaryNav },
+  { label: 'Account', items: sellerAccountNav },
 ]

@@ -19,12 +19,12 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
   const isAdmin = role === 'admin'
 
   return (
-    <main className="flex min-h-svh bg-background">
+    <main className="flex h-svh overflow-hidden bg-background">
       <LoginBrandPanel role={role} />
 
       <section
         className={cn(
-          'relative flex flex-1 flex-col bg-grain',
+          'relative flex flex-1 flex-col overflow-y-auto bg-grain',
           isSeller || isAdmin ? 'bg-cream/60' : 'bg-background',
         )}
       >
