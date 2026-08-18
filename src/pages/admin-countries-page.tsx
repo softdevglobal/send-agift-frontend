@@ -254,16 +254,19 @@ export function AdminCountriesPage() {
           <FormAlert error={error} notice={notice} />
 
           {countries.length ? (
-            <section className={cn(adminPanelClass, 'divide-y divide-border/50')}>
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {countries.map((country) => (
                 <div
                   key={country.id}
-                  className="group flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-muted/30 sm:px-5"
+                  className={cn(
+                    adminPanelClass,
+                    'group flex flex-col gap-3 p-4 transition-shadow hover:shadow-[0_14px_44px_rgba(40,50,30,0.1)]',
+                  )}
                 >
                   <button
                     type="button"
                     onClick={() => openView(country)}
-                    className="flex min-w-0 flex-1 items-center gap-4 text-left"
+                    className="flex min-w-0 items-start gap-3 text-left"
                   >
                     <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-2xl">
                       {flagEmoji(country.iso_code)}
@@ -279,45 +282,48 @@ export function AdminCountriesPage() {
                         {country.default_currency} · {country.default_timezone}
                       </p>
                     </div>
+                  </button>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-3">
                     <span
                       className={cn(
-                        'hidden shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium sm:inline-flex',
+                        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
                         statusTone(country.status),
                       )}
                     >
                       <span className="size-1.5 rounded-full bg-current" />
                       {country.status || 'unknown'}
                     </span>
-                  </button>
 
-                  <div className="flex shrink-0 items-center gap-1 opacity-70 transition-opacity group-hover:opacity-100">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`View ${country.name}`}
-                      onClick={() => openView(country)}
-                    >
-                      <Eye className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Edit ${country.name}`}
-                      onClick={() => openEdit(country)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Delete ${country.name}`}
-                      onClick={() => handleDelete(country.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
+                    <div className="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`View ${country.name}`}
+                        onClick={() => openView(country)}
+                      >
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit ${country.name}`}
+                        onClick={() => openEdit(country)}
+                      >
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete ${country.name}`}
+                        onClick={() => handleDelete(country.id)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

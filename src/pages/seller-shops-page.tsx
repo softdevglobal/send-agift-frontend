@@ -16,8 +16,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
-import { optionalString } from '@/lib/form'
+import { optionalString, slugify } from '@/lib/form'
 import { textareaClassName } from '@/lib/form-styles'
+import { cn } from '@/lib/utils'
+
+const statusOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+] as const
 
 const emptyShop: ShopInput = {
   name: '',
@@ -25,7 +31,7 @@ const emptyShop: ShopInput = {
   description: '',
   return_address_mode: '',
   customer_visible_location: '',
-  status: '',
+  status: 'active',
   address_id: '',
   image_url: '',
 }
@@ -37,7 +43,7 @@ function toShopInput(shop: Shop): ShopInput {
     description: shop.description ?? '',
     return_address_mode: shop.return_address_mode ?? '',
     customer_visible_location: shop.customer_visible_location ?? '',
-    status: shop.status ?? '',
+    status: shop.status ?? 'active',
     address_id: shop.address_id ?? '',
     image_url: shop.image_url ?? '',
   }
@@ -65,6 +71,8 @@ export function SellerShopsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [form, setForm] = useState<ShopInput>(emptyShop)
   const [editingId, setEditingId] = useState<string | null>(null)
+  /** Once the slug is edited by hand (or loaded from an existing shop) it stops tracking the name. */
+  const [slugTouched, setSlugTouched] = useState(false)
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
@@ -96,6 +104,19 @@ export function SellerShopsPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  function handleNameChange(name: string) {
+    setForm((current) => ({
+      ...current,
+      name,
+      slug: slugTouched ? current.slug : slugify(name),
+    }))
+  }
+
+  function resetForm() {
+    setForm(emptyShop)
+    setSlugTouched(false)
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
@@ -114,7 +135,7 @@ export function SellerShopsPage() {
         await createSellerShop(body)
         setNotice('Shop created.')
       }
-      setForm(emptyShop)
+      resetForm()
       setEditingId(null)
       await load()
     } catch (err) {
@@ -131,7 +152,7 @@ export function SellerShopsPage() {
       await deleteSellerShop(id)
       if (editingId === id) {
         setEditingId(null)
-        setForm(emptyShop)
+        resetForm()
       }
       await load()
       setNotice('Shop deleted.')
@@ -151,7 +172,7 @@ export function SellerShopsPage() {
             className="h-10 rounded-full px-4"
             onClick={() => {
               setEditingId(null)
-              setForm(emptyShop)
+              resetForm()
               document.getElementById('shop-name')?.focus()
             }}
           >
@@ -212,6 +233,8 @@ export function SellerShopsPage() {
                         onClick={() => {
                           setEditingId(shop.id)
                           setForm(toShopInput(shop))
+                          // Keep the published slug stable when the name is edited.
+                          setSlugTouched(true)
                           setNotice(null)
                           setError(null)
                         }}
@@ -248,29 +271,62 @@ export function SellerShopsPage() {
               <Input
                 id="shop-name"
                 value={form.name}
-                onChange={(event) => updateField('name', event.target.value)}
+                onChange={(event) => handleNameChange(event.target.value)}
                 className="h-11 bg-surface px-3"
                 required
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="shop-slug">Slug</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="shop-slug">Slug</Label>
+                  {!slugTouched && form.slug ? (
+                    <span className="text-[11px] text-muted-foreground">
+                      Auto from name
+                    </span>
+                  ) : null}
+                </div>
                 <Input
                   id="shop-slug"
                   value={form.slug ?? ''}
-                  onChange={(event) => updateField('slug', event.target.value)}
+                  onChange={(event) => {
+                    setSlugTouched(true)
+                    updateField('slug', event.target.value)
+                  }}
                   className="h-11 bg-surface px-3"
+                  placeholder="auto-generated-from-name"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="shop-status">Status</Label>
-                <Input
-                  id="shop-status"
-                  value={form.status ?? ''}
-                  onChange={(event) => updateField('status', event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
+                <Label>Status</Label>
+                <div
+                  role="group"
+                  aria-label="Status"
+                  className="relative inline-flex rounded-full bg-muted p-1"
+                >
+                  <div
+                    aria-hidden
+                    className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                    style={{
+                      transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
+                    }}
+                  />
+                  {statusOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => updateField('status', option.value)}
+                      className={cn(
+                        'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                        form.status === option.value
+                          ? 'text-foreground'
+                          : 'text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="space-y-2">
@@ -355,7 +411,7 @@ export function SellerShopsPage() {
                   className="h-10"
                   onClick={() => {
                     setEditingId(null)
-                    setForm(emptyShop)
+                    resetForm()
                   }}
                 >
                   Cancel
