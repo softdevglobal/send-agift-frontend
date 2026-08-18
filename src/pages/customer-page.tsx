@@ -18,6 +18,7 @@ import {
   listPublishedCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
+import { getPublicSellerByShopId, subscribePublicSellers } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
 function filterPublished(
@@ -35,7 +36,15 @@ function filterPublished(
       tags.includes(normalizedCategory)
     if (!matchesCategory) return false
     if (!normalizedQuery) return true
-    const haystack = [product.name, product.description ?? '', ...tags]
+    const seller = getPublicSellerByShopId(product.shop_id)
+    const haystack = [
+      product.name,
+      product.description ?? '',
+      seller?.name ?? '',
+      seller?.legal_name ?? '',
+      seller?.trading_name ?? '',
+      ...tags,
+    ]
       .join(' ')
       .toLowerCase()
     return haystack.includes(normalizedQuery)
@@ -58,7 +67,12 @@ export function CustomerPage() {
     }
 
     loadCatalog()
-    return subscribePublishedCatalog(loadCatalog)
+    const unsubCatalog = subscribePublishedCatalog(loadCatalog)
+    const unsubSellers = subscribePublicSellers(loadCatalog)
+    return () => {
+      unsubCatalog()
+      unsubSellers()
+    }
   }, [])
 
   const products = useMemo(
@@ -81,7 +95,7 @@ export function CustomerPage() {
     <div>
       <CustomerPageHeader
         title="Discover gifts"
-        description="Browse published gifts and tap the heart to save them to your wishlist."
+        description="Browse published gifts, read the description, and visit the seller to see ratings, reviews, and contact details."
       />
 
       <div className="mb-6 flex gap-2 overflow-x-auto pb-1">

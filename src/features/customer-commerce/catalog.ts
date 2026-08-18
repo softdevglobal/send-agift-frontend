@@ -2,7 +2,12 @@ import type { Product } from '@/api/types'
 import { giftCategories } from '@/features/marketing/data'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { minorToMajor } from '@/lib/money'
-import { getPublishedCatalogProduct } from '@/lib/published-catalog'
+import {
+  getPublishedCatalogProduct,
+  listPublishedCatalog,
+  sellerSnapshotFromProduct,
+} from '@/lib/published-catalog'
+import { getPublicSellerForShop } from '@/lib/public-sellers'
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'
@@ -176,19 +181,44 @@ export const catalogProducts: CatalogProduct[] = [
 ]
 
 export function catalogProductFromApi(product: Product): CatalogProduct {
+  const snapshot = sellerSnapshotFromProduct(product)
+  const seller = getPublicSellerForShop(product.shop_id)
+  const legalName = seller?.legal_name?.trim() || snapshot.legalName
+  const tradingName = seller?.trading_name?.trim() || snapshot.tradingName
+  const sellerName = tradingName || legalName || seller?.name || snapshot.sellerName
   return {
     id: product.id,
     name: product.name,
     price: minorToMajor(product.price_amount, product.currency),
     image: product.image_url || PLACEHOLDER_IMAGE,
     categoryId: (product.occasion_tags?.[0] ?? '').toLowerCase(),
-    sellerName: '',
+    sellerName,
+    sellerLegalName: legalName || undefined,
+    sellerTradingName: tradingName || undefined,
+    sellerId: seller?.id || snapshot.sellerId,
+    sellerImageUrl: seller?.image_url || snapshot.imageUrl,
+    shopId: product.shop_id,
+    shopName: snapshot.shopName,
     description: product.description ?? '',
     rating: 0,
     reviews: 0,
     currency: product.currency,
     priceAmount: product.price_amount,
   }
+}
+
+export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[] {
+  return listPublishedCatalog()
+    .filter((product) => {
+      const snapshot = sellerSnapshotFromProduct(product)
+      const owner = getPublicSellerForShop(product.shop_id)
+      return (
+        owner?.id === sellerId ||
+        snapshot.sellerId === sellerId ||
+        product.shop_id === sellerId
+      )
+    })
+    .map(catalogProductFromApi)
 }
 
 export function registerCatalogProducts(products: CatalogProduct[]) {

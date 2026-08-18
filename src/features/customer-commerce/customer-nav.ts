@@ -24,3 +24,13 @@ export const customerPrimaryNav: CustomerNavItem[] = [
 export const customerAccountNav: CustomerNavItem[] = [
   { to: '/customer/profile', label: 'Profile', icon: User },
 ]
+
+export type CustomerNavGroup = {
+  label: string
+  items: CustomerNavItem[]
+}
+
+export const customerNavGroups: CustomerNavGroup[] = [
+  { label: 'Shopping', items: customerPrimaryNav },
+  { label: 'Account', items: customerAccountNav },
+]

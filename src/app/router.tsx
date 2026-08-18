@@ -23,6 +23,7 @@ import { CustomerPage } from '@/pages/customer-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
+import { CustomerSellerPage } from '@/pages/customer-seller-page'
 import { HomePage } from '@/pages/home-page'
 import { ProductDetailPage } from '@/pages/product-detail-page'
 import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
@@ -96,6 +97,7 @@ export function AppRouter() {
         >
           <Route index element={<CustomerPage />} />
           <Route path="gifts/:productId" element={<ProductDetailPage />} />
+          <Route path="sellers/:sellerId" element={<CustomerSellerPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
           <Route path="checkout/result" element={<CheckoutResultPage />} />

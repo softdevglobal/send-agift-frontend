@@ -12,7 +12,7 @@ import {
   updateSellerProduct,
   type Product,
 } from '@/api/products'
-import { getSellerMe, type Shop } from '@/api/sellers'
+import { getSellerMe, type SellerDetails, type Shop } from '@/api/sellers'
 import {
   KNOWN_CURRENCIES,
   PRODUCT_STATUSES,
@@ -37,6 +37,7 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { syncShopPublishedProducts } from '@/lib/published-catalog'
+import { publishPublicSeller } from '@/lib/public-sellers'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
 
@@ -194,6 +195,7 @@ function productToForm(product: Product, inventory?: InventoryInput): ProductFor
 
 export function SellerProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [sellerProfile, setSellerProfile] = useState<SellerDetails | null>(null)
   const [shops, setShops] = useState<Shop[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -219,8 +221,13 @@ export function SellerProductsPage() {
     const list = await listShopProducts(shopId)
     const next = Array.isArray(list) ? list : []
     setProducts(next)
-    syncShopPublishedProducts(shopId, next)
-  }, [])
+    const shop = sellerProfile?.shops?.find((item) => item.id === shopId)
+    syncShopPublishedProducts(
+      shopId,
+      next,
+      sellerProfile ? { seller: sellerProfile, shop } : undefined,
+    )
+  }, [sellerProfile])
 
   useEffect(() => {
     let cancelled = false
@@ -228,6 +235,8 @@ export function SellerProductsPage() {
     getSellerMe()
       .then((me) => {
         if (cancelled) return
+        publishPublicSeller(me)
+        setSellerProfile(me)
         setShops(me.shops ?? [])
       })
       .catch((err) => {
@@ -253,7 +262,12 @@ export function SellerProductsPage() {
       .then((results) => {
         if (cancelled) return
         for (const result of results) {
-          syncShopPublishedProducts(result.id, result.products)
+          const shop = shops.find((item) => item.id === result.id)
+          syncShopPublishedProducts(
+            result.id,
+            result.products,
+            sellerProfile ? { seller: sellerProfile, shop } : undefined,
+          )
         }
       })
       .catch(() => {
@@ -262,7 +276,7 @@ export function SellerProductsPage() {
     return () => {
       cancelled = true
     }
-  }, [shops])
+  }, [sellerProfile, shops])
 
   useEffect(() => {
     if (!shops.length) return
