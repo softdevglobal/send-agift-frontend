@@ -22,6 +22,7 @@ import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerPage } from '@/pages/customer-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
+import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { HomePage } from '@/pages/home-page'
 import { ProductDetailPage } from '@/pages/product-detail-page'
 import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
@@ -30,6 +31,7 @@ import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
@@ -99,6 +101,7 @@ export function AppRouter() {
           <Route path="checkout/result" element={<CheckoutResultPage />} />
           <Route path="orders" element={<CustomerOrdersPage />} />
           <Route path="orders/:orderId" element={<CustomerOrderDetailPage />} />
+          <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
           <Route path="profile" element={<CustomerProfilePage />} />
         </Route>
       </Route>
@@ -138,6 +141,7 @@ export function AppRouter() {
       >
         <Route index element={<SellerDashboardPage />} />
         <Route path="shops" element={<SellerShopsPage />} />
+        <Route path="products" element={<SellerProductsPage />} />
         <Route path="orders" element={<SellerOrdersPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />

@@ -1,23 +1,7 @@
 import { api } from '@/lib/api'
+import type { Country } from '@/api/types'
 
-export type CountryInput = {
-  iso_code: string
-  name: string
-  default_currency: string
-  default_timezone: string
-  status?: string
-}
-
-export type Country = {
-  id: string
-  iso_code: string
-  name: string
-  default_currency: string
-  default_timezone: string
-  status: string
-  created_at: string
-  updated_at: string
-}
+export type { Country, CountryInput } from '@/api/types'
 
 export function listCountries() {
   return api<Country[]>('/countries', { auth: false })

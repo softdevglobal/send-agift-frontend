@@ -1,44 +1,21 @@
 import { api } from '@/lib/api'
 import type { LoginRequest, LoginResponse } from '@/api/auth'
+import type {
+  Address,
+  AddressInput,
+  Customer,
+  CustomerDetails,
+  MessageResponse,
+} from '@/api/types'
 
-export type AddressInput = {
-  country_id: string
-  line1: string
-  city: string
-  label?: string
-  address_type?: string
-  line2?: string
-  region?: string
-  postal_code?: string
-  latitude?: number
-  longitude?: number
-  is_default?: boolean
-}
+export type {
+  Address,
+  AddressInput,
+  Customer,
+  CustomerDetails,
+} from '@/api/types'
 
-export type CustomerAddress = AddressInput & {
-  id: string
-  created_at?: string
-  updated_at?: string
-}
-
-export type Customer = {
-  id: string
-  country_id: string
-  email: string
-  phone?: string
-  display_name?: string
-  customer_type: string
-  date_of_birth?: string
-  age_verified_at?: string
-  identity_verified_at?: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
-export type CustomerDetails = Customer & {
-  addresses: CustomerAddress[]
-}
+export type CustomerAddress = Address
 
 export type CustomerRegisterRequest = {
   country_id: string
@@ -46,8 +23,9 @@ export type CustomerRegisterRequest = {
   password: string
   phone?: string
   display_name?: string
-  customer_type: string
-  date_of_birth: string
+  customer_type?: string
+  date_of_birth?: string
+  image_url?: string
   addresses?: AddressInput[]
 }
 
@@ -56,13 +34,12 @@ export type CustomerUpdateRequest = {
   phone?: string
   display_name?: string
   customer_type: string
-  date_of_birth: string
+  date_of_birth?: string
   status: string
+  image_url?: string
 }
 
-export type MessageResponse = {
-  message: string
-}
+export type { MessageResponse }
 
 export function loginCustomer(body: LoginRequest) {
   return api<LoginResponse>('/customers/login', {
@@ -85,7 +62,7 @@ export function getCustomerMe() {
 }
 
 export function updateCustomerMe(body: CustomerUpdateRequest) {
-  return api<CustomerDetails>('/customers/me', {
+  return api<Customer>('/customers/me', {
     method: 'PUT',
     body,
   })
@@ -98,7 +75,7 @@ export function deleteCustomerMe() {
 }
 
 export function addCustomerAddress(body: AddressInput) {
-  return api<CustomerAddress>('/customers/me/addresses', {
+  return api<Address>('/customers/me/addresses', {
     method: 'POST',
     body,
   })

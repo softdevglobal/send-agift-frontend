@@ -43,6 +43,7 @@ export function CustomerProfilePage() {
   const [customerType, setCustomerType] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
 
   const [line1, setLine1] = useState('')
   const [line2, setLine2] = useState('')
@@ -65,6 +66,7 @@ export function CustomerProfilePage() {
     setCustomerType(me.customer_type)
     setDateOfBirth(toDateInputValue(me.date_of_birth))
     setStatus(me.status)
+    setImageUrl(me.image_url ?? '')
   }, [])
 
   useEffect(() => {
@@ -91,12 +93,17 @@ export function CustomerProfilePage() {
       const updated = await updateCustomerMe({
         country_id: countryId,
         customer_type: customerType,
-        date_of_birth: dateOfBirth,
+        date_of_birth: optionalString(dateOfBirth),
         status,
         phone: optionalString(phone),
         display_name: optionalString(displayName),
+        image_url: optionalString(imageUrl),
       })
-      setProfile(updated)
+      setProfile((prev) =>
+        prev
+          ? { ...prev, ...updated, addresses: prev.addresses }
+          : { ...updated, addresses: [] },
+      )
       setNotice('Profile saved.')
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save profile.'))
@@ -182,7 +189,16 @@ export function CustomerProfilePage() {
             className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
           >
             <h2 className="font-display text-xl">Account</h2>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            <div className="flex items-center gap-4">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="size-16 rounded-full object-cover ring-1 ring-border"
+                />
+              ) : null}
+              <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -255,9 +271,19 @@ export function CustomerProfilePage() {
                   value={dateOfBirth}
                   onChange={(event) => setDateOfBirth(event.target.value)}
                   className="h-11 bg-surface px-3"
-                  required
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="profile-image">Image URL</Label>
+              <Input
+                id="profile-image"
+                type="url"
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                className="h-11 bg-surface px-3"
+                placeholder="https://"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="profile-status">Status</Label>

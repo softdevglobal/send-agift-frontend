@@ -41,8 +41,9 @@ export function CustomerRegisterForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [phone, setPhone] = useState('')
-  const [customerType, setCustomerType] = useState('')
+  const [customerType, setCustomerType] = useState('individual')
   const [dateOfBirth, setDateOfBirth] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [line1, setLine1] = useState('')
   const [line2, setLine2] = useState('')
   const [city, setCity] = useState('')
@@ -56,8 +57,8 @@ export function CustomerRegisterForm() {
     event.preventDefault()
     setError(null)
 
-    if (!countryId || !customerType) {
-      setError('Please select a country and customer type.')
+    if (!countryId) {
+      setError('Please select a country.')
       return
     }
 
@@ -98,10 +99,11 @@ export function CustomerRegisterForm() {
         country_id: countryId,
         email: email.trim(),
         password,
-        customer_type: customerType,
-        date_of_birth: dateOfBirth,
+        customer_type: customerType || 'individual',
+        date_of_birth: optionalString(dateOfBirth),
         phone: optionalString(phone),
         display_name: optionalString(displayName),
+        image_url: optionalString(imageUrl),
         addresses,
       })
       setStatus(asCustomerStatus(created.status))
@@ -232,7 +234,19 @@ export function CustomerRegisterForm() {
             value={dateOfBirth}
             onChange={(event) => setDateOfBirth(event.target.value)}
             className="h-11 bg-surface px-3"
-            required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="customer-image">Image URL</Label>
+          <Input
+            id="customer-image"
+            type="url"
+            placeholder="https://"
+            value={imageUrl}
+            onChange={(event) => setImageUrl(event.target.value)}
+            className="h-11 bg-surface px-3"
             disabled={isSubmitting}
           />
         </div>

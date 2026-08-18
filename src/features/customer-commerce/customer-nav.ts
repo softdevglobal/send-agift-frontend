@@ -1,4 +1,5 @@
 import {
+  Heart,
   LayoutDashboard,
   ShoppingBag,
   ShoppingCart,
@@ -15,6 +16,7 @@ export type CustomerNavItem = {
 
 export const customerPrimaryNav: CustomerNavItem[] = [
   { to: '/customer', label: 'Discover gifts', icon: LayoutDashboard, end: true },
+  { to: '/customer/saved-gifts', label: 'Saved gifts', icon: Heart },
   { to: '/customer/cart', label: 'Cart', icon: ShoppingCart },
   { to: '/customer/orders', label: 'Orders', icon: ShoppingBag },
 ]

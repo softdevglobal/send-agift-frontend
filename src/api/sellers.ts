@@ -1,75 +1,41 @@
 import { api } from '@/lib/api'
 import type { LoginRequest, LoginResponse } from '@/api/auth'
+import type {
+  Address,
+  AddressInput,
+  MessageResponse,
+  Seller,
+  SellerDetails,
+  Shop,
+  ShopInput,
+} from '@/api/types'
 
-type MessageResponse = {
-  message: string
-}
+export type {
+  Address,
+  AddressInput,
+  Seller,
+  SellerDetails,
+  Shop,
+  ShopInput,
+} from '@/api/types'
 
 export type SellerAddressType = 'pickup' | 'return' | 'both'
 
-export type SellerAddressInput = {
-  country_id: string
-  line1: string
-  city: string
+export type SellerAddressInput = AddressInput & {
   address_type: SellerAddressType
-  label?: string
-  line2?: string
-  region?: string
-  postal_code?: string
-  latitude?: number
-  longitude?: number
-  is_default?: boolean
 }
 
-export type SellerAddress = SellerAddressInput & {
-  id: string
-  created_at?: string
-  updated_at?: string
-}
-
-export type ShopInput = {
-  name: string
-  slug?: string
-  description?: string
-  return_address_mode?: string
-  customer_visible_location?: string
-  status?: string
-  address_id?: string
-}
-
-export type Shop = ShopInput & {
-  id: string
-  created_at?: string
-  updated_at?: string
-}
-
-export type Seller = {
-  id: string
-  country_id: string
-  seller_type: string
-  legal_name: string
-  trading_name?: string
-  email: string
-  phone?: string
-  verification_status: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
-export type SellerDetails = Seller & {
-  addresses: SellerAddress[]
-  shops: Shop[]
-}
+export type SellerAddress = Address
 
 export type SellerRegisterRequest = {
   country_id: string
-  seller_type: string
+  seller_type?: string
   legal_name: string
   email: string
   password: string
   trading_name?: string
   phone?: string
+  image_url?: string
   addresses?: SellerAddressInput[]
   shop?: ShopInput
 }
@@ -80,6 +46,7 @@ export type SellerUpdateRequest = {
   legal_name: string
   trading_name?: string
   phone?: string
+  image_url?: string
 }
 
 export function loginSeller(body: LoginRequest) {
@@ -103,7 +70,7 @@ export function getSellerMe() {
 }
 
 export function updateSellerMe(body: SellerUpdateRequest) {
-  return api<SellerDetails>('/sellers/me', {
+  return api<Seller>('/sellers/me', {
     method: 'PUT',
     body,
   })
@@ -116,7 +83,7 @@ export function deleteSellerMe() {
 }
 
 export function addSellerAddress(body: SellerAddressInput) {
-  return api<SellerAddress>('/sellers/me/addresses', {
+  return api<Address>('/sellers/me/addresses', {
     method: 'POST',
     body,
   })

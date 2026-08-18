@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { LoaderCircle, Pencil, Plus, Trash2 } from 'lucide-react'
+import { LoaderCircle, Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import {
   createSellerShop,
@@ -26,6 +27,7 @@ const emptyShop: ShopInput = {
   customer_visible_location: '',
   status: '',
   address_id: '',
+  image_url: '',
 }
 
 function toShopInput(shop: Shop): ShopInput {
@@ -37,6 +39,7 @@ function toShopInput(shop: Shop): ShopInput {
     customer_visible_location: shop.customer_visible_location ?? '',
     status: shop.status ?? '',
     address_id: shop.address_id ?? '',
+    image_url: shop.image_url ?? '',
   }
 }
 
@@ -49,6 +52,7 @@ function serializeShop(input: ShopInput): ShopInput {
     customer_visible_location: optionalString(input.customer_visible_location ?? ''),
     status: optionalString(input.status ?? ''),
     address_id: optionalString(input.address_id ?? ''),
+    image_url: optionalString(input.image_url ?? ''),
   }
 }
 
@@ -170,14 +174,36 @@ export function SellerShopsPage() {
               <ul className="space-y-2.5">
                 {shops.map((shop) => (
                   <li key={shop.id} className={sellerListRowClass}>
-                    <div>
-                      <p className="font-medium">{shop.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {[shop.slug, shop.status].filter(Boolean).join(' · ') ||
-                          shop.id}
-                      </p>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {shop.image_url ? (
+                          <img
+                            src={shop.image_url}
+                            alt=""
+                            className="size-full object-cover"
+                          />
+                        ) : null}
+                      </div>
+                      <div>
+                        <p className="font-medium">{shop.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {[shop.slug, shop.status].filter(Boolean).join(' · ') ||
+                            shop.id}
+                        </p>
+                      </div>
                     </div>
                     <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Manage products"
+                        asChild
+                      >
+                        <Link to={`/seller/products?shop=${shop.id}`}>
+                          <Package className="size-4" />
+                        </Link>
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
@@ -297,6 +323,17 @@ export function SellerShopsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shop-image">Image URL</Label>
+              <Input
+                id="shop-image"
+                type="url"
+                value={form.image_url ?? ''}
+                onChange={(event) => updateField('image_url', event.target.value)}
+                className="h-11 bg-surface px-3"
+                placeholder="https://"
+              />
             </div>
             <div className="flex flex-wrap gap-2">
               <Button type="submit" disabled={saving} className="h-10">
