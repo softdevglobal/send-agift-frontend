@@ -4,7 +4,7 @@ export const adminPanelClass =
 export const adminListRowClass =
   'flex items-start justify-between gap-4 rounded-xl border border-border/40 bg-surface/90 px-4 py-3.5 transition-colors hover:border-border hover:bg-muted/40'
 
-/** Deep olive rail — keeps the admin console visually distinct from the seller portal. */
+/** Deep olive rail shared by the admin console and seller portal sidebars. */
 export const adminRailClass = 'bg-[oklch(0.24_0.02_120)] text-[oklch(0.96_0.01_95)]'
 
 export const adminSoonBadgeClass =
