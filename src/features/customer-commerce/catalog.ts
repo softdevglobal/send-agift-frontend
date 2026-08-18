@@ -1,6 +1,13 @@
+import type { Product } from '@/api/types'
 import { giftCategories } from '@/features/marketing/data'
-
 import type { CatalogProduct } from '@/features/customer-commerce/types'
+import { minorToMajor } from '@/lib/money'
+import { getPublishedCatalogProduct } from '@/lib/published-catalog'
+
+const PLACEHOLDER_IMAGE =
+  'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'
+
+const liveCatalog = new Map<string, CatalogProduct>()
 
 export const catalogProducts: CatalogProduct[] = [
   {
@@ -168,7 +175,37 @@ export const catalogProducts: CatalogProduct[] = [
   },
 ]
 
+export function catalogProductFromApi(product: Product): CatalogProduct {
+  return {
+    id: product.id,
+    name: product.name,
+    price: minorToMajor(product.price_amount, product.currency),
+    image: product.image_url || PLACEHOLDER_IMAGE,
+    categoryId: (product.occasion_tags?.[0] ?? '').toLowerCase(),
+    sellerName: '',
+    description: product.description ?? '',
+    rating: 0,
+    reviews: 0,
+    currency: product.currency,
+    priceAmount: product.price_amount,
+  }
+}
+
+export function registerCatalogProducts(products: CatalogProduct[]) {
+  for (const product of products) {
+    liveCatalog.set(product.id, product)
+  }
+}
+
 export function getCatalogProduct(id: string) {
+  const live = liveCatalog.get(id)
+  if (live) return live
+  const published = getPublishedCatalogProduct(id)
+  if (published) {
+    const mapped = catalogProductFromApi(published)
+    liveCatalog.set(mapped.id, mapped)
+    return mapped
+  }
   return catalogProducts.find((product) => product.id === id) ?? null
 }
 

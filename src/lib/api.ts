@@ -53,9 +53,17 @@ async function parseBody(response: Response): Promise<unknown> {
   }
 }
 
+function loginPathForLocation(pathname: string): string {
+  if (pathname.startsWith('/seller')) return '/seller/login'
+  if (pathname.startsWith('/admin')) return '/admin/login'
+  return '/login'
+}
+
 function redirectToLogin(): void {
-  if (window.location.pathname === '/login') return
-  window.location.assign('/login')
+  const { pathname } = window.location
+  const loginPath = loginPathForLocation(pathname)
+  if (pathname === loginPath) return
+  window.location.assign(loginPath)
 }
 
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {

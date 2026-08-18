@@ -3,6 +3,7 @@ import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 
 import { createCountry, deleteCountry, updateCountry } from '@/api/admin'
 import { listCountries, type Country, type CountryInput } from '@/api/countries'
+import { KNOWN_CURRENCIES } from '@/api/types'
 import { AccountShell } from '@/components/common/account-shell'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
+import { selectClassName } from '@/lib/form-styles'
 
 const adminNav = [
   { to: '/admin', label: 'Account', end: true },
@@ -250,16 +252,32 @@ export function AdminCountriesPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="currency">Default currency</Label>
-                <Input
+                <select
                   id="currency"
                   value={form.default_currency}
                   onChange={(event) =>
                     updateField('default_currency', event.target.value)
                   }
-                  className="h-11 bg-surface px-3 uppercase"
+                  className={selectClassName}
                   required
-                  placeholder="LKR"
-                />
+                >
+                  <option value="" disabled>
+                    Select currency
+                  </option>
+                  {KNOWN_CURRENCIES.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                  {form.default_currency &&
+                  !KNOWN_CURRENCIES.includes(
+                    form.default_currency as (typeof KNOWN_CURRENCIES)[number],
+                  ) ? (
+                    <option value={form.default_currency}>
+                      {form.default_currency}
+                    </option>
+                  ) : null}
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="timezone">Default timezone</Label>

@@ -4,6 +4,8 @@ export type CatalogProduct = GiftProduct & {
   categoryId: string
   description: string
   sellerName: string
+  currency?: string
+  priceAmount?: number
 }
 
 export type CartItem = {

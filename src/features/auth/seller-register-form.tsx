@@ -34,11 +34,12 @@ function asVerificationStatus(value: string): VerificationStatus {
 export function SellerRegisterForm() {
   const navigate = useNavigate()
   const [countryId, setCountryId] = useState('')
-  const [sellerType, setSellerType] = useState('')
+  const [sellerType, setSellerType] = useState('individual')
   const [legalName, setLegalName] = useState('')
   const [tradingName, setTradingName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -52,8 +53,8 @@ export function SellerRegisterForm() {
     event.preventDefault()
     setError(null)
 
-    if (!countryId || !sellerType) {
-      setError('Please select a country and seller type.')
+    if (!countryId) {
+      setError('Please select a country.')
       return
     }
 
@@ -72,12 +73,13 @@ export function SellerRegisterForm() {
     try {
       const created = await registerSeller({
         country_id: countryId,
-        seller_type: sellerType,
+        seller_type: sellerType || 'individual',
         legal_name: legalName.trim(),
         email: email.trim(),
         password,
         trading_name: optionalString(tradingName),
         phone: optionalString(phone),
+        image_url: optionalString(imageUrl),
       })
       setVerificationStatus(asVerificationStatus(created.verification_status))
       navigate('/seller/login?registered=1', { replace: true })
@@ -214,6 +216,19 @@ export function SellerRegisterForm() {
             placeholder="+94 77 123 4567"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="seller-image">Image URL</Label>
+          <Input
+            id="seller-image"
+            type="url"
+            placeholder="https://"
+            value={imageUrl}
+            onChange={(event) => setImageUrl(event.target.value)}
             className="h-11 bg-surface px-3"
             disabled={isSubmitting}
           />

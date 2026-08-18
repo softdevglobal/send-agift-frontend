@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 import { getErrorMessage } from '@/lib/api'
+import { optionalString } from '@/lib/form'
 
 export function AuthAdminRegisterPage() {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ export function AuthAdminRegisterPage() {
   const [displayName, setDisplayName] = useState('')
   const [password, setPassword] = useState('')
   const [bootstrapSecret, setBootstrapSecret] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -39,6 +41,7 @@ export function AuthAdminRegisterPage() {
           email: email.trim(),
           password,
           display_name: displayName.trim(),
+          image_url: optionalString(imageUrl),
         },
         bootstrapSecret.trim() || undefined,
       )
@@ -133,6 +136,18 @@ export function AuthAdminRegisterPage() {
                   className="h-11 bg-surface px-3"
                   required
                   minLength={8}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="admin-image">Image URL</Label>
+                <Input
+                  id="admin-image"
+                  type="url"
+                  placeholder="https://"
+                  value={imageUrl}
+                  onChange={(event) => setImageUrl(event.target.value)}
+                  className="h-11 bg-surface px-3"
                   disabled={isSubmitting}
                 />
               </div>

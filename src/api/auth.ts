@@ -15,6 +15,7 @@ export type AdminRegisterRequest = {
   email: string
   password: string
   display_name: string
+  image_url?: string
 }
 
 export type AdminRegisterResponse = {

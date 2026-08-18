@@ -39,6 +39,7 @@ export function SellerProfilePage() {
   const [legalName, setLegalName] = useState('')
   const [tradingName, setTradingName] = useState('')
   const [phone, setPhone] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
 
   const [line1, setLine1] = useState('')
   const [city, setCity] = useState('')
@@ -55,6 +56,7 @@ export function SellerProfilePage() {
     setLegalName(me.legal_name)
     setTradingName(me.trading_name ?? '')
     setPhone(me.phone ?? '')
+    setImageUrl(me.image_url ?? '')
   }, [])
 
   useEffect(() => {
@@ -84,8 +86,13 @@ export function SellerProfilePage() {
         legal_name: legalName.trim(),
         trading_name: optionalString(tradingName),
         phone: optionalString(phone),
+        image_url: optionalString(imageUrl),
       })
-      setProfile(updated)
+      setProfile((prev) =>
+        prev
+          ? { ...prev, ...updated, addresses: prev.addresses, shops: prev.shops }
+          : { ...updated, addresses: [], shops: [] },
+      )
       setNotice('Profile saved.')
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save profile.'))
@@ -165,7 +172,16 @@ export function SellerProfilePage() {
             className={`space-y-4 ${sellerPanelClass} p-6`}
           >
             <h2 className="font-display text-xl tracking-tight">Account</h2>
-            <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            <div className="flex items-center gap-4">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt=""
+                  className="size-16 rounded-full object-cover ring-1 ring-border"
+                />
+              ) : null}
+              <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            </div>
             <p className="text-xs text-muted-foreground">
               Verification: {profile?.verification_status} · Status:{' '}
               {profile?.status}
@@ -250,6 +266,17 @@ export function SellerProfilePage() {
                   className="h-11 bg-surface px-3"
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="seller-image">Image URL</Label>
+              <Input
+                id="seller-image"
+                type="url"
+                value={imageUrl}
+                onChange={(event) => setImageUrl(event.target.value)}
+                className="h-11 bg-surface px-3"
+                placeholder="https://"
+              />
             </div>
 
             <Button type="submit" disabled={saving} className="h-10">

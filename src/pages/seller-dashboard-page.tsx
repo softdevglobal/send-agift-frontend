@@ -123,9 +123,17 @@ export function SellerDashboardPage() {
         />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background">
-              {sellerInitials(profile)}
-            </div>
+            {profile.image_url ? (
+              <img
+                src={profile.image_url}
+                alt=""
+                className="size-14 rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background"
+              />
+            ) : (
+              <div className="flex size-14 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background">
+                {sellerInitials(profile)}
+              </div>
+            )}
             <div>
               <p className="text-sm text-muted-foreground">Welcome back</p>
               <h1 className="font-display text-3xl tracking-tight">{name}</h1>
@@ -259,9 +267,22 @@ export function SellerDashboardPage() {
               <ul className="space-y-2 p-3">
                 {shops.map((shop) => (
                   <li key={shop.id} className={cn(sellerListRowClass, 'items-center')}>
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-9 items-center justify-center rounded-lg bg-accent text-primary">
-                        <Store className="size-4" />
+                    <Link
+                      to={`/seller/products?shop=${shop.id}`}
+                      className="flex min-w-0 items-center gap-3"
+                    >
+                      <div className="size-9 overflow-hidden rounded-lg bg-accent text-primary">
+                        {shop.image_url ? (
+                          <img
+                            src={shop.image_url}
+                            alt=""
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex size-full items-center justify-center">
+                            <Store className="size-4" />
+                          </div>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">{shop.name}</p>
@@ -270,7 +291,7 @@ export function SellerDashboardPage() {
                             'Draft'}
                         </p>
                       </div>
-                    </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

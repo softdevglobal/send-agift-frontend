@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce/cart-context'
+import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import {
   customerAccountNav,
   customerPrimaryNav,
@@ -21,6 +22,7 @@ import { cn } from '@/lib/utils'
 
 function CustomerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const { itemCount } = useCart()
+  const { gifts } = useSavedGifts()
 
   return (
     <>
@@ -49,6 +51,11 @@ function CustomerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
           {item.to === '/customer/cart' && itemCount > 0 ? (
             <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
               {itemCount}
+            </span>
+          ) : null}
+          {item.to === '/customer/saved-gifts' && gifts.length > 0 ? (
+            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
+              {gifts.length}
             </span>
           ) : null}
         </NavLink>
