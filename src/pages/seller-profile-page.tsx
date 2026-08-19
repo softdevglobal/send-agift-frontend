@@ -606,12 +606,7 @@ export function SellerProfilePage() {
                 />
 
                 {profile?.addresses?.length ? (
-                  <ul
-                    className={cn(
-                      'grid gap-3',
-                      profile.addresses.length > 1 && 'sm:grid-cols-2',
-                    )}
-                  >
+                  <ul className="grid gap-3">
                     {profile.addresses.map((address) => {
                       const meta = metaForType(address.address_type)
                       return (

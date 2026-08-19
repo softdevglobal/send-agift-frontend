@@ -88,10 +88,10 @@ export type Shop = {
   name: string
   slug: string
   description?: string
-  return_address_mode: string
   customer_visible_location?: string
   status: string
   address_id?: string
+  return_address_id?: string
   created_at: string
   updated_at: string
   image_url?: string
@@ -103,10 +103,10 @@ export type ShopInput = {
   name: string
   slug?: string
   description?: string
-  return_address_mode?: string
   customer_visible_location?: string
   status?: string
   address_id?: string
+  return_address_id?: string
   image_url?: string
 }
 

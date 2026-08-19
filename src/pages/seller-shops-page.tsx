@@ -8,6 +8,7 @@ import {
 } from 'react'
 import {
   Camera,
+  Eye,
   ImagePlus,
   LoaderCircle,
   MapPin,
@@ -16,7 +17,9 @@ import {
   Plus,
   Store,
   Trash2,
+  Truck,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -26,6 +29,7 @@ import {
   deleteSellerShop,
   getSellerMe,
   updateSellerShop,
+  type Address,
   type Shop,
   type ShopInput,
 } from '@/api/sellers'
@@ -55,10 +59,10 @@ const emptyShop: ShopInput = {
   name: '',
   slug: '',
   description: '',
-  return_address_mode: '',
   customer_visible_location: '',
   status: 'active',
   address_id: '',
+  return_address_id: '',
   image_url: '',
 }
 
@@ -67,12 +71,89 @@ function toShopInput(shop: Shop): ShopInput {
     name: shop.name,
     slug: shop.slug ?? '',
     description: shop.description ?? '',
-    return_address_mode: shop.return_address_mode ?? '',
     customer_visible_location: shop.customer_visible_location ?? '',
     status: shop.status ?? 'active',
     address_id: shop.address_id ?? '',
+    return_address_id: shop.return_address_id ?? '',
     image_url: shop.image_url ?? '',
   }
+}
+
+function FormSectionHeader({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: LucideIcon
+  title: string
+  description?: string
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary ring-1 ring-primary/10">
+        <Icon className="size-4" />
+      </span>
+      <div>
+        <h3 className="font-medium">{title}</h3>
+        {description ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+/** Mirrors the real shop card exactly, so sellers see what customers will see as they type. */
+function ShopPreviewCard({ form }: { form: ShopInput }) {
+  const isActive = (form.status ?? 'active') === 'active'
+  return (
+    <div className={cn(sellerPanelClass, 'flex flex-col overflow-hidden')}>
+      <div className="relative aspect-video overflow-hidden bg-muted">
+        {form.image_url ? (
+          <img src={form.image_url} alt="" className="size-full object-cover" />
+        ) : (
+          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+            <Store className="size-8" />
+          </div>
+        )}
+        <span
+          className={cn(
+            'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
+            isActive
+              ? 'bg-primary/90 text-primary-foreground'
+              : 'bg-foreground/70 text-background',
+          )}
+        >
+          {isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="font-display text-lg tracking-tight">
+          {form.name.trim() || 'Your shop name'}
+        </h3>
+        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+          /{form.slug?.trim() || 'your-shop-slug'}
+        </p>
+        {form.description?.trim() ? (
+          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+            {form.description}
+          </p>
+        ) : null}
+        {form.customer_visible_location?.trim() ? (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="size-3 shrink-0" />
+            <span className="truncate">{form.customer_visible_location}</span>
+          </p>
+        ) : null}
+        <div className="mt-4 flex items-center gap-2 border-t border-border/50 pt-4">
+          <span className="flex h-9 flex-1 items-center justify-center gap-2 rounded-full border border-input text-sm text-muted-foreground">
+            <Package className="size-4" />
+            Products
+          </span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function serializeShop(input: ShopInput): ShopInput {
@@ -80,17 +161,17 @@ function serializeShop(input: ShopInput): ShopInput {
     name: input.name.trim(),
     slug: optionalString(input.slug ?? ''),
     description: optionalString(input.description ?? ''),
-    return_address_mode: optionalString(input.return_address_mode ?? ''),
     customer_visible_location: optionalString(input.customer_visible_location ?? ''),
     status: optionalString(input.status ?? ''),
     address_id: optionalString(input.address_id ?? ''),
+    return_address_id: optionalString(input.return_address_id ?? ''),
     image_url: optionalString(input.image_url ?? ''),
   }
 }
 
 export function SellerShopsPage() {
   const [shops, setShops] = useState<Shop[]>([])
-  const [addresses, setAddresses] = useState<{ id: string; line1: string }[]>([])
+  const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [uploadingImage, setUploadingImage] = useState(false)
@@ -108,19 +189,14 @@ export function SellerShopsPage() {
     null,
   )
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const formRef = useRef<HTMLFormElement>(null)
+  const formRef = useRef<HTMLDivElement>(null)
   const savedTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
     publishPublicSeller(me)
     setShops(me.shops ?? [])
-    setAddresses(
-      (me.addresses ?? []).map((address) => ({
-        id: address.id,
-        line1: address.line1,
-      })),
-    )
+    setAddresses(me.addresses ?? [])
   }, [])
 
   useEffect(() => {
@@ -270,6 +346,9 @@ export function SellerShopsPage() {
   }
 
   const activeCount = shops.filter((shop) => shop.status === 'active').length
+  const returnCapableAddresses = addresses.filter(
+    (address) => address.address_type === 'return' || address.address_type === 'both',
+  )
 
   return (
     <div>
@@ -434,227 +513,272 @@ export function SellerShopsPage() {
           )}
 
           {showForm ? (
-            <form
+            <div
               ref={formRef}
-              onSubmit={handleSubmit}
-              className={cn(
-                sellerPanelClass,
-                'animate-in fade-in slide-in-from-top-2 space-y-5 p-6 duration-300',
-              )}
+              className="animate-in fade-in slide-in-from-top-2 grid gap-6 duration-300 lg:grid-cols-[minmax(0,1.65fr)_minmax(16rem,1fr)] lg:items-start"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
-                  <Store className="size-4" />
-                </span>
-                <div>
-                  <h2 className="font-display text-xl tracking-tight">
-                    {editingId ? 'Edit shop' : 'New shop'}
-                  </h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Name is required. The slug must be unique across all shops.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Cover image</Label>
-                <button
-                  type="button"
-                  disabled={uploadingImage}
-                  onClick={() => imageInputRef.current?.click()}
-                  className="group/cover relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-md"
-                >
-                  {form.image_url ? (
-                    <img src={form.image_url} alt="" className="size-full object-cover" />
-                  ) : (
-                    <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <ImagePlus className="size-6" />
-                      <span className="text-sm font-medium">Upload a cover</span>
-                      <span className="text-xs">Cropped to 16:9</span>
-                    </span>
-                  )}
-                  <span
-                    className={cn(
-                      'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
-                      uploadingImage
-                        ? 'opacity-100'
-                        : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
-                    )}
-                  >
-                    {uploadingImage ? (
-                      <LoaderCircle className="size-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Camera className="size-4" />
-                        {form.image_url ? 'Change cover' : 'Upload cover'}
-                      </>
-                    )}
+              <form
+                onSubmit={handleSubmit}
+                className={cn(sellerPanelClass, 'space-y-7 p-6')}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
+                    <Store className="size-4" />
                   </span>
-                </button>
-                <input
-                  ref={imageInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                {form.image_url ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="h-8 px-2 text-xs text-muted-foreground"
-                    onClick={() => updateField('image_url', '')}
-                  >
-                    <Trash2 className="size-3.5" />
-                    Remove cover
-                  </Button>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="shop-name">Name</Label>
-                <Input
-                  id="shop-name"
-                  value={form.name}
-                  onChange={(event) => handleNameChange(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  placeholder="PD Gifts"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="shop-slug">Slug</Label>
-                    {!slugTouched && form.slug ? (
-                      <span className="text-[11px] text-muted-foreground">
-                        Auto from name
-                      </span>
-                    ) : null}
-                  </div>
-                  <Input
-                    id="shop-slug"
-                    value={form.slug ?? ''}
-                    onChange={(event) => {
-                      setSlugTouched(true)
-                      updateField('slug', event.target.value)
-                    }}
-                    className="h-11 bg-surface px-3 font-mono text-sm"
-                    placeholder="auto-generated-from-name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <div
-                    role="group"
-                    aria-label="Status"
-                    className="relative inline-flex rounded-full bg-muted p-1"
-                  >
-                    <div
-                      aria-hidden
-                      className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
-                      style={{
-                        transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
-                      }}
-                    />
-                    {statusOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => updateField('status', option.value)}
-                        className={cn(
-                          'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
-                          form.status === option.value
-                            ? 'text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
-                        )}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="shop-description">Description</Label>
-                <textarea
-                  id="shop-description"
-                  value={form.description ?? ''}
-                  onChange={(event) => updateField('description', event.target.value)}
-                  className={textareaClassName}
-                  placeholder="What makes this shop worth browsing?"
-                />
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="shop-address">Pickup address</Label>
-                  <select
-                    id="shop-address"
-                    value={form.address_id ?? ''}
-                    onChange={(event) => updateField('address_id', event.target.value)}
-                    className={selectClassName}
-                  >
-                    <option value="">No linked address</option>
-                    {addresses.map((address) => (
-                      <option key={address.id} value={address.id}>
-                        {address.line1}
-                      </option>
-                    ))}
-                  </select>
-                  {addresses.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No addresses yet —{' '}
-                      <Link to="/seller/profile" className="text-primary hover:underline">
-                        add one on your profile
-                      </Link>
-                      .
+                  <div>
+                    <h2 className="font-display text-xl tracking-tight">
+                      {editingId ? 'Edit shop' : 'New shop'}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">
+                      Name is required. The slug must be unique across all shops.
                     </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <FormSectionHeader
+                    icon={ImagePlus}
+                    title="Cover image"
+                    description="The banner customers see first when browsing this shop."
+                  />
+                  <button
+                    type="button"
+                    disabled={uploadingImage}
+                    onClick={() => imageInputRef.current?.click()}
+                    className="group/cover relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-md"
+                  >
+                    {form.image_url ? (
+                      <img src={form.image_url} alt="" className="size-full object-cover" />
+                    ) : (
+                      <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <ImagePlus className="size-6" />
+                        <span className="text-sm font-medium">Upload a cover</span>
+                        <span className="text-xs">Cropped to 16:9</span>
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
+                        uploadingImage
+                          ? 'opacity-100'
+                          : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
+                      )}
+                    >
+                      {uploadingImage ? (
+                        <LoaderCircle className="size-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Camera className="size-4" />
+                          {form.image_url ? 'Change cover' : 'Upload cover'}
+                        </>
+                      )}
+                    </span>
+                  </button>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                  {form.image_url ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs text-muted-foreground"
+                      onClick={() => updateField('image_url', '')}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Remove cover
+                    </Button>
                   ) : null}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shop-visible-location">Customer-visible location</Label>
-                  <Input
-                    id="shop-visible-location"
-                    value={form.customer_visible_location ?? ''}
-                    onChange={(event) =>
-                      updateField('customer_visible_location', event.target.value)
-                    }
-                    className="h-11 bg-surface px-3"
-                    placeholder="Kandy, Sri Lanka"
+
+                <div className="space-y-5">
+                  <FormSectionHeader
+                    icon={Store}
+                    title="Shop details"
+                    description="Name, slug, and how it appears to customers."
                   />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-name">Name</Label>
+                    <Input
+                      id="shop-name"
+                      value={form.name}
+                      onChange={(event) => handleNameChange(event.target.value)}
+                      className="h-11 bg-surface px-3"
+                      placeholder="PD Gifts"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="shop-slug">Slug</Label>
+                        {!slugTouched && form.slug ? (
+                          <span className="text-[11px] text-muted-foreground">
+                            Auto from name
+                          </span>
+                        ) : null}
+                      </div>
+                      <Input
+                        id="shop-slug"
+                        value={form.slug ?? ''}
+                        onChange={(event) => {
+                          setSlugTouched(true)
+                          updateField('slug', event.target.value)
+                        }}
+                        className="h-11 bg-surface px-3 font-mono text-sm"
+                        placeholder="auto-generated-from-name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <div
+                        role="group"
+                        aria-label="Status"
+                        className="relative inline-flex rounded-full bg-muted p-1"
+                      >
+                        <div
+                          aria-hidden
+                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                          style={{
+                            transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
+                          }}
+                        />
+                        {statusOptions.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => updateField('status', option.value)}
+                            className={cn(
+                              'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                              form.status === option.value
+                                ? 'text-foreground'
+                                : 'text-muted-foreground hover:text-foreground',
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-description">Description</Label>
+                    <textarea
+                      id="shop-description"
+                      value={form.description ?? ''}
+                      onChange={(event) => updateField('description', event.target.value)}
+                      className={textareaClassName}
+                      placeholder="What makes this shop worth browsing?"
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="shop-return-mode">Return address mode</Label>
-                <Input
-                  id="shop-return-mode"
-                  value={form.return_address_mode ?? ''}
-                  onChange={(event) =>
-                    updateField('return_address_mode', event.target.value)
-                  }
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
+                <div className="space-y-5">
+                  <FormSectionHeader
+                    icon={Truck}
+                    title="Location & returns"
+                    description="Where orders ship from, and where returns go."
+                  />
 
-              <div className="flex flex-wrap gap-2">
-                <SaveButton status={status}>
-                  {editingId ? 'Update shop' : 'Create shop'}
-                </SaveButton>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10"
-                  disabled={status !== 'idle'}
-                  onClick={resetForm}
-                >
-                  Cancel
-                </Button>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="shop-address">Pickup address</Label>
+                      <select
+                        id="shop-address"
+                        value={form.address_id ?? ''}
+                        onChange={(event) => updateField('address_id', event.target.value)}
+                        className={selectClassName}
+                      >
+                        <option value="">No linked address</option>
+                        {addresses.map((address) => (
+                          <option key={address.id} value={address.id}>
+                            {address.line1}
+                          </option>
+                        ))}
+                      </select>
+                      {addresses.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">
+                          No addresses yet —{' '}
+                          <Link to="/seller/profile" className="text-primary hover:underline">
+                            add one on your profile
+                          </Link>
+                          .
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="shop-visible-location">Customer-visible location</Label>
+                      <Input
+                        id="shop-visible-location"
+                        value={form.customer_visible_location ?? ''}
+                        onChange={(event) =>
+                          updateField('customer_visible_location', event.target.value)
+                        }
+                        className="h-11 bg-surface px-3"
+                        placeholder="Kandy, Sri Lanka"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-return-address">Return address</Label>
+                    <select
+                      id="shop-return-address"
+                      value={form.return_address_id ?? ''}
+                      onChange={(event) =>
+                        updateField('return_address_id', event.target.value)
+                      }
+                      className={selectClassName}
+                    >
+                      <option value="">Same as pickup address</option>
+                      {returnCapableAddresses.map((address) => (
+                        <option key={address.id} value={address.id}>
+                          {address.label || address.line1}
+                        </option>
+                      ))}
+                    </select>
+                    {returnCapableAddresses.length === 0 ? (
+                      <p className="text-xs text-muted-foreground">
+                        No return addresses yet —{' '}
+                        <Link to="/seller/profile" className="text-primary hover:underline">
+                          add one on your profile
+                        </Link>{' '}
+                        and mark it "Return" or "Both".
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <SaveButton status={status}>
+                    {editingId ? 'Update shop' : 'Create shop'}
+                  </SaveButton>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10"
+                    disabled={status !== 'idle'}
+                    onClick={resetForm}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+
+              <div className="space-y-3 lg:sticky lg:top-6">
+                <div className="flex items-center gap-2 px-1 text-sm font-medium text-muted-foreground">
+                  <Eye className="size-4" />
+                  Live preview
+                </div>
+                <ShopPreviewCard form={form} />
               </div>
-            </form>
+            </div>
           ) : null}
         </div>
       )}
