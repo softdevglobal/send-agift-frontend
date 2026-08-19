@@ -1,7 +1,26 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { LoaderCircle, Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
+import {
+  Camera,
+  ImagePlus,
+  LoaderCircle,
+  MapPin,
+  Package,
+  Pencil,
+  Plus,
+  Store,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { uploadPublicImage } from '@/api/media'
 import {
   createSellerShop,
   deleteSellerShop,
@@ -11,15 +30,21 @@ import {
   type ShopInput,
 } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { ImageCropDialog } from '@/components/common/image-crop-dialog'
+import { SaveButton, type SaveStatus } from '@/components/common/save-button'
+import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
+import { SellerPageHeader, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
 import { publishPublicSeller } from '@/lib/public-sellers'
-import { textareaClassName } from '@/lib/form-styles'
+import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
+
+/** Shop covers are cropped to a wide banner so the card grid stays even. */
+const COVER_ASPECT = 16 / 9
 
 const statusOptions = [
   { value: 'active', label: 'Active' },
@@ -67,13 +92,24 @@ export function SellerShopsPage() {
   const [shops, setShops] = useState<Shop[]>([])
   const [addresses, setAddresses] = useState<{ id: string; line1: string }[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState<SaveStatus>('idle')
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [toast, setToast] = useState<{
+    message: string
+    variant: 'success' | 'error'
+  } | null>(null)
   const [form, setForm] = useState<ShopInput>(emptyShop)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
   /** Once the slug is edited by hand (or loaded from an existing shop) it stops tracking the name. */
   const [slugTouched, setSlugTouched] = useState(false)
+  const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
+    null,
+  )
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  const savedTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
@@ -102,6 +138,24 @@ export function SellerShopsPage() {
     }
   }, [load])
 
+  useEffect(() => {
+    const timers = savedTimers
+    return () => {
+      timers.current.forEach(clearTimeout)
+    }
+  }, [])
+
+  /** Holds the tick on screen briefly, then runs any follow-up (e.g. closing the form). */
+  function flashSaved(onDone?: () => void) {
+    setStatus('saved')
+    const timer = setTimeout(() => {
+      savedTimers.current = savedTimers.current.filter((t) => t !== timer)
+      setStatus('idle')
+      onDone?.()
+    }, 1100)
+    savedTimers.current.push(timer)
+  }
+
   function updateField<K extends keyof ShopInput>(key: K, value: ShopInput[K]) {
     setForm((current) => ({ ...current, [key]: value }))
   }
@@ -117,230 +171,463 @@ export function SellerShopsPage() {
   function resetForm() {
     setForm(emptyShop)
     setSlugTouched(false)
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  function startCreate() {
+    setForm(emptyShop)
+    setSlugTouched(false)
+    setEditingId(null)
+    setShowForm(true)
+    setError(null)
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById('shop-name')?.focus()
+    })
+  }
+
+  function startEdit(shop: Shop) {
+    setEditingId(shop.id)
+    setForm(toShopInput(shop))
+    // Keep the published slug stable when the name is edited.
+    setSlugTouched(true)
+    setShowForm(true)
+    setError(null)
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setPendingImage({ src: URL.createObjectURL(file), name: file.name })
+  }
+
+  function handleCropCancel() {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
+    setPendingImage(null)
+  }
+
+  async function handleCropConfirm(croppedFile: File) {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
+    setPendingImage(null)
+    setError(null)
+    setUploadingImage(true)
+    try {
+      const url = await uploadPublicImage(croppedFile, 'shop-image')
+      updateField('image_url', url)
+      setToast({ message: 'Cover uploaded.', variant: 'success' })
+    } catch (err) {
+      const message = getErrorMessage(err, 'Could not upload image.')
+      setError(message)
+      setToast({ message, variant: 'error' })
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
-    setNotice(null)
     if (!form.name.trim()) {
       setError('Shop name is required.')
       return
     }
-    setSaving(true)
+    setStatus('saving')
     try {
       const body = serializeShop(form)
       if (editingId) {
         await updateSellerShop(editingId, body)
-        setNotice('Shop updated.')
       } else {
         await createSellerShop(body)
-        setNotice('Shop created.')
       }
-      resetForm()
-      setEditingId(null)
+      const saved = editingId ? 'Shop updated.' : 'Shop created.'
       await load()
+      // Let the tick finish before the form collapses, so the confirmation is seen.
+      flashSaved(resetForm)
+      setToast({ message: saved, variant: 'success' })
     } catch (err) {
+      setStatus('idle')
       setError(getErrorMessage(err, 'Could not save shop.'))
-    } finally {
-      setSaving(false)
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(shop: Shop) {
+    const confirmed = window.confirm(`Delete "${shop.name}"? This cannot be undone.`)
+    if (!confirmed) return
     setError(null)
-    setNotice(null)
     try {
-      await deleteSellerShop(id)
-      if (editingId === id) {
-        setEditingId(null)
-        resetForm()
-      }
+      await deleteSellerShop(shop.id)
+      if (editingId === shop.id) resetForm()
       await load()
-      setNotice('Shop deleted.')
+      setToast({ message: 'Shop deleted.', variant: 'success' })
     } catch (err) {
       setError(getErrorMessage(err, 'Could not delete shop.'))
     }
   }
 
+  const activeCount = shops.filter((shop) => shop.status === 'active').length
+
   return (
     <div>
       <SellerPageHeader
         title="Shops"
-        description="Create and manage shops. Name is required; slug must be unique."
+        description="Each shop is a storefront customers browse. Give it a cover, a name, and a pickup address."
         action={
-          <Button
-            type="button"
-            className="h-10 rounded-full px-4"
-            onClick={() => {
-              setEditingId(null)
-              resetForm()
-              document.getElementById('shop-name')?.focus()
-            }}
-          >
-            <Plus className="size-4" />
-            Create a new shop
-          </Button>
+          showForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-full px-4"
+              onClick={resetForm}
+            >
+              <X className="size-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
+              <Plus className="size-4" />
+              Create a shop
+            </Button>
+          )
         }
       />
+
       {loading ? (
-        <div className="flex justify-center py-16">
+        <div className="flex justify-center py-24">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="space-y-8">
-          <FormAlert error={error} notice={notice} />
+        <div className="space-y-6">
+          <FormAlert error={error} />
 
-          <section className={`space-y-4 ${sellerPanelClass} p-6`}>
-            <h2 className="font-display text-xl tracking-tight">Your shops</h2>
-            {shops.length ? (
-              <ul className="space-y-2.5">
+          {shops.length ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                {shops.length} {shops.length === 1 ? 'shop' : 'shops'} · {activeCount}{' '}
+                active
+              </p>
+
+              <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                 {shops.map((shop) => (
-                  <li key={shop.id} className={sellerListRowClass}>
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
-                        {shop.image_url ? (
-                          <img
-                            src={shop.image_url}
-                            alt=""
-                            className="size-full object-cover"
-                          />
-                        ) : null}
-                      </div>
-                      <div>
-                        <p className="font-medium">{shop.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {[shop.slug, shop.status].filter(Boolean).join(' · ') ||
-                            shop.id}
-                        </p>
-                      </div>
+                  <li
+                    key={shop.id}
+                    className={cn(
+                      sellerPanelClass,
+                      'group flex flex-col overflow-hidden transition-shadow hover:shadow-[0_14px_40px_rgba(40,50,30,0.10)]',
+                      editingId === shop.id && 'ring-2 ring-primary/30',
+                    )}
+                  >
+                    <div className="relative aspect-video overflow-hidden bg-muted">
+                      {shop.image_url ? (
+                        <img
+                          src={shop.image_url}
+                          alt=""
+                          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                          <Store className="size-8" />
+                        </div>
+                      )}
+                      <span
+                        className={cn(
+                          'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
+                          shop.status === 'active'
+                            ? 'bg-primary/90 text-primary-foreground'
+                            : 'bg-foreground/70 text-background',
+                        )}
+                      >
+                        {shop.status === 'active' ? 'Active' : 'Inactive'}
+                      </span>
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Manage products"
-                        asChild
-                      >
-                        <Link to={`/seller/products?shop=${shop.id}`}>
-                          <Package className="size-4" />
-                        </Link>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Edit shop"
-                        onClick={() => {
-                          setEditingId(shop.id)
-                          setForm(toShopInput(shop))
-                          // Keep the published slug stable when the name is edited.
-                          setSlugTouched(true)
-                          setNotice(null)
-                          setError(null)
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Delete shop"
-                        onClick={() => handleDelete(shop.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+
+                    <div className="flex flex-1 flex-col p-5">
+                      <h3 className="font-display text-lg tracking-tight">{shop.name}</h3>
+                      {shop.slug ? (
+                        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
+                          /{shop.slug}
+                        </p>
+                      ) : null}
+                      {shop.description ? (
+                        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                          {shop.description}
+                        </p>
+                      ) : null}
+                      {shop.customer_visible_location ? (
+                        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <MapPin className="size-3 shrink-0" />
+                          <span className="truncate">
+                            {shop.customer_visible_location}
+                          </span>
+                        </p>
+                      ) : null}
+
+                      <div className="mt-4 flex items-center gap-2 border-t border-border/50 pt-4">
+                        <Button
+                          asChild
+                          variant="outline"
+                          className="h-9 flex-1 rounded-full"
+                        >
+                          <Link to={`/seller/products?shop=${shop.id}`}>
+                            <Package className="size-4" />
+                            Products
+                          </Link>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Edit ${shop.name}`}
+                          onClick={() => startEdit(shop)}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Delete ${shop.name}`}
+                          onClick={() => handleDelete(shop)}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </div>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No shops yet.</p>
-            )}
-          </section>
-
-          <form
-            onSubmit={handleSubmit}
-            className={`space-y-4 ${sellerPanelClass} p-6`}
-          >
-            <h2 className="font-display text-xl tracking-tight">
-              {editingId ? 'Edit shop' : 'Add shop'}
-            </h2>
-            <div className="space-y-2">
-              <Label htmlFor="shop-name">Name</Label>
-              <Input
-                id="shop-name"
-                value={form.name}
-                onChange={(event) => handleNameChange(event.target.value)}
-                className="h-11 bg-surface px-3"
-                required
+            </>
+          ) : showForm ? null : (
+            <div
+              className={cn(
+                sellerPanelClass,
+                'relative overflow-hidden px-6 py-16 text-center sm:py-20',
+              )}
+            >
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.45),transparent_70%)]"
               />
+              <div className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10">
+                <Store className="size-6" />
+              </div>
+              <h2 className="relative font-display text-xl tracking-tight">
+                No shops yet
+              </h2>
+              <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+                Create your first shop to start listing gifts. You can add a cover image
+                and change details any time.
+              </p>
+              <Button
+                type="button"
+                className="relative mt-6 h-10 rounded-full px-5"
+                onClick={startCreate}
+              >
+                <Plus className="size-4" />
+                Create your first shop
+              </Button>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="shop-slug">Slug</Label>
-                  {!slugTouched && form.slug ? (
-                    <span className="text-[11px] text-muted-foreground">
-                      Auto from name
-                    </span>
-                  ) : null}
+          )}
+
+          {showForm ? (
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className={cn(
+                sellerPanelClass,
+                'animate-in fade-in slide-in-from-top-2 space-y-5 p-6 duration-300',
+              )}
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
+                  <Store className="size-4" />
+                </span>
+                <div>
+                  <h2 className="font-display text-xl tracking-tight">
+                    {editingId ? 'Edit shop' : 'New shop'}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Name is required. The slug must be unique across all shops.
+                  </p>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Cover image</Label>
+                <button
+                  type="button"
+                  disabled={uploadingImage}
+                  onClick={() => imageInputRef.current?.click()}
+                  className="group/cover relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-md"
+                >
+                  {form.image_url ? (
+                    <img src={form.image_url} alt="" className="size-full object-cover" />
+                  ) : (
+                    <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <ImagePlus className="size-6" />
+                      <span className="text-sm font-medium">Upload a cover</span>
+                      <span className="text-xs">Cropped to 16:9</span>
+                    </span>
+                  )}
+                  <span
+                    className={cn(
+                      'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
+                      uploadingImage
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
+                    )}
+                  >
+                    {uploadingImage ? (
+                      <LoaderCircle className="size-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Camera className="size-4" />
+                        {form.image_url ? 'Change cover' : 'Upload cover'}
+                      </>
+                    )}
+                  </span>
+                </button>
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+                {form.image_url ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-8 px-2 text-xs text-muted-foreground"
+                    onClick={() => updateField('image_url', '')}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Remove cover
+                  </Button>
+                ) : null}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="shop-name">Name</Label>
                 <Input
-                  id="shop-slug"
-                  value={form.slug ?? ''}
-                  onChange={(event) => {
-                    setSlugTouched(true)
-                    updateField('slug', event.target.value)
-                  }}
+                  id="shop-name"
+                  value={form.name}
+                  onChange={(event) => handleNameChange(event.target.value)}
                   className="h-11 bg-surface px-3"
-                  placeholder="auto-generated-from-name"
+                  placeholder="PD Gifts"
+                  required
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <div
-                  role="group"
-                  aria-label="Status"
-                  className="relative inline-flex rounded-full bg-muted p-1"
-                >
-                  <div
-                    aria-hidden
-                    className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
-                    style={{
-                      transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="shop-slug">Slug</Label>
+                    {!slugTouched && form.slug ? (
+                      <span className="text-[11px] text-muted-foreground">
+                        Auto from name
+                      </span>
+                    ) : null}
+                  </div>
+                  <Input
+                    id="shop-slug"
+                    value={form.slug ?? ''}
+                    onChange={(event) => {
+                      setSlugTouched(true)
+                      updateField('slug', event.target.value)
                     }}
+                    className="h-11 bg-surface px-3 font-mono text-sm"
+                    placeholder="auto-generated-from-name"
                   />
-                  {statusOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => updateField('status', option.value)}
-                      className={cn(
-                        'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
-                        form.status === option.value
-                          ? 'text-foreground'
-                          : 'text-muted-foreground hover:text-foreground',
-                      )}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <div
+                    role="group"
+                    aria-label="Status"
+                    className="relative inline-flex rounded-full bg-muted p-1"
+                  >
+                    <div
+                      aria-hidden
+                      className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                      style={{
+                        transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
+                      }}
+                    />
+                    {statusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => updateField('status', option.value)}
+                        className={cn(
+                          'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                          form.status === option.value
+                            ? 'text-foreground'
+                            : 'text-muted-foreground hover:text-foreground',
+                        )}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shop-description">Description</Label>
-              <textarea
-                id="shop-description"
-                value={form.description ?? ''}
-                onChange={(event) => updateField('description', event.target.value)}
-                className={textareaClassName}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+
+              <div className="space-y-2">
+                <Label htmlFor="shop-description">Description</Label>
+                <textarea
+                  id="shop-description"
+                  value={form.description ?? ''}
+                  onChange={(event) => updateField('description', event.target.value)}
+                  className={textareaClassName}
+                  placeholder="What makes this shop worth browsing?"
+                />
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="shop-address">Pickup address</Label>
+                  <select
+                    id="shop-address"
+                    value={form.address_id ?? ''}
+                    onChange={(event) => updateField('address_id', event.target.value)}
+                    className={selectClassName}
+                  >
+                    <option value="">No linked address</option>
+                    {addresses.map((address) => (
+                      <option key={address.id} value={address.id}>
+                        {address.line1}
+                      </option>
+                    ))}
+                  </select>
+                  {addresses.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      No addresses yet —{' '}
+                      <Link to="/seller/profile" className="text-primary hover:underline">
+                        add one on your profile
+                      </Link>
+                      .
+                    </p>
+                  ) : null}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shop-visible-location">Customer-visible location</Label>
+                  <Input
+                    id="shop-visible-location"
+                    value={form.customer_visible_location ?? ''}
+                    onChange={(event) =>
+                      updateField('customer_visible_location', event.target.value)
+                    }
+                    className="h-11 bg-surface px-3"
+                    placeholder="Kandy, Sri Lanka"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="shop-return-mode">Return address mode</Label>
                 <Input
@@ -352,77 +639,45 @@ export function SellerShopsPage() {
                   className="h-11 bg-surface px-3"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="shop-visible-location">
-                  Customer-visible location
-                </Label>
-                <Input
-                  id="shop-visible-location"
-                  value={form.customer_visible_location ?? ''}
-                  onChange={(event) =>
-                    updateField('customer_visible_location', event.target.value)
-                  }
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shop-address">Address</Label>
-              <select
-                id="shop-address"
-                value={form.address_id ?? ''}
-                onChange={(event) => updateField('address_id', event.target.value)}
-                className="h-11 w-full min-w-0 rounded-lg border border-input bg-surface px-3 text-sm"
-              >
-                <option value="">No linked address</option>
-                {addresses.map((address) => (
-                  <option key={address.id} value={address.id}>
-                    {address.line1}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="shop-image">Image URL</Label>
-              <Input
-                id="shop-image"
-                type="url"
-                value={form.image_url ?? ''}
-                onChange={(event) => updateField('image_url', event.target.value)}
-                className="h-11 bg-surface px-3"
-                placeholder="https://"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={saving} className="h-10">
-                {saving ? (
-                  <>
-                    <LoaderCircle className="animate-spin" />
-                    Saving…
-                  </>
-                ) : editingId ? (
-                  'Update shop'
-                ) : (
-                  'Create shop'
-                )}
-              </Button>
-              {editingId ? (
+
+              <div className="flex flex-wrap gap-2">
+                <SaveButton status={status}>
+                  {editingId ? 'Update shop' : 'Create shop'}
+                </SaveButton>
                 <Button
                   type="button"
                   variant="outline"
                   className="h-10"
-                  onClick={() => {
-                    setEditingId(null)
-                    resetForm()
-                  }}
+                  disabled={status !== 'idle'}
+                  onClick={resetForm}
                 >
                   Cancel
                 </Button>
-              ) : null}
-            </div>
-          </form>
+              </div>
+            </form>
+          ) : null}
         </div>
       )}
+
+      {toast ? (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onClose={() => setToast(null)}
+        />
+      ) : null}
+      {pendingImage ? (
+        <ImageCropDialog
+          open
+          imageSrc={pendingImage.src}
+          fileName={pendingImage.name}
+          aspect={COVER_ASPECT}
+          cropShape="rect"
+          title="Adjust cover"
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      ) : null}
     </div>
   )
 }

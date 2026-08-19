@@ -18,6 +18,10 @@ type ImageCropDialogProps = {
   fileName: string
   onCancel: () => void
   onConfirm: (file: File) => void
+  /** Width / height of the crop box. Defaults to a square avatar crop. */
+  aspect?: number
+  cropShape?: 'round' | 'rect'
+  title?: string
 }
 
 export function ImageCropDialog({
@@ -26,6 +30,9 @@ export function ImageCropDialog({
   fileName,
   onCancel,
   onConfirm,
+  aspect = 1,
+  cropShape = 'round',
+  title = 'Adjust photo',
 }: ImageCropDialogProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
@@ -51,7 +58,7 @@ export function ImageCropDialog({
     <Dialog open={open} onOpenChange={(next) => !next && onCancel()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Adjust photo</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>Drag to reposition, scroll or pinch to zoom.</DialogDescription>
         </DialogHeader>
 
@@ -60,9 +67,9 @@ export function ImageCropDialog({
             image={imageSrc}
             crop={crop}
             zoom={zoom}
-            aspect={1}
-            cropShape="round"
-            showGrid={false}
+            aspect={aspect}
+            cropShape={cropShape}
+            showGrid={cropShape === 'rect'}
             onCropChange={setCrop}
             onZoomChange={setZoom}
             onCropComplete={handleCropComplete}
