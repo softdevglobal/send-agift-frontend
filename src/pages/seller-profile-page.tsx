@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import {
   ArrowLeftRight,
+  ArrowRight,
+  Building2,
   Camera,
   Check,
   LoaderCircle,
@@ -9,12 +11,14 @@ import {
   PackageCheck,
   Pencil,
   Plus,
+  Store,
   Trash2,
   TriangleAlert,
   Undo2,
   X,
   type LucideIcon,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import { uploadPublicImage } from '@/api/media'
@@ -68,6 +72,58 @@ const addressTypeMeta: Record<
 
 function metaForType(type: string) {
   return addressTypeMeta[type as SellerAddressType] ?? addressTypeMeta.both
+}
+
+/** Where each setup step gets completed, when it lives outside this page. */
+const setupStepLinks: Record<string, string> = {
+  shop: '/seller/shops',
+}
+
+function monthYear(iso?: string) {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+}
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: {
+  icon: LucideIcon
+  title: string
+  description?: string
+  action?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
+          <Icon className="size-4" />
+        </span>
+        <div>
+          <h2 className="font-display text-xl tracking-tight">{title}</h2>
+          {description ? (
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+      </div>
+      {action}
+    </div>
+  )
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="font-display text-xl tracking-tight">{value}</p>
+      <p className="mt-0.5 text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
+        {label}
+      </p>
+    </div>
+  )
 }
 
 export function SellerProfilePage() {
@@ -327,39 +383,66 @@ export function SellerProfilePage() {
               className="pointer-events-none absolute -bottom-20 left-10 size-48 rounded-full bg-[oklch(0.93_0.04_80/0.35)]"
             />
             <div className="relative flex flex-wrap items-center gap-5">
-              <button
-                type="button"
-                disabled={uploadingImage}
-                onClick={() => imageInputRef.current?.click()}
-                aria-label={imageUrl ? 'Change profile photo' : 'Upload profile photo'}
-                className="group relative shrink-0 rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-              >
-                {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="size-20 rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background sm:size-24"
-                  />
-                ) : (
-                  <div className="flex size-20 items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background sm:size-24">
-                    {profile ? sellerInitials(profile) : 'S'}
-                  </div>
-                )}
-                <span
-                  className={cn(
-                    'absolute inset-0 flex items-center justify-center rounded-full bg-foreground/55 text-background transition-opacity',
-                    uploadingImage
-                      ? 'opacity-100'
-                      : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
-                  )}
+              {/* The completion ring wraps the avatar, so identity and setup progress read as one. */}
+              <div className="relative flex size-28 shrink-0 items-center justify-center sm:size-32">
+                <svg
+                  viewBox="0 0 36 36"
+                  className="absolute inset-0 size-full -rotate-90"
+                  aria-hidden
                 >
-                  {uploadingImage ? (
-                    <LoaderCircle className="size-5 animate-spin" />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    strokeWidth="1.5"
+                    className="stroke-border"
+                  />
+                  <circle
+                    cx="18"
+                    cy="18"
+                    r="15.915"
+                    fill="none"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeDasharray={`${progress?.percent ?? 0} 100`}
+                    className="stroke-primary transition-[stroke-dasharray] duration-700 ease-out"
+                  />
+                </svg>
+                <button
+                  type="button"
+                  disabled={uploadingImage}
+                  onClick={() => imageInputRef.current?.click()}
+                  aria-label={imageUrl ? 'Change profile photo' : 'Upload profile photo'}
+                  className="group relative rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt=""
+                      className="size-[5.5rem] rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] sm:size-[6.25rem]"
+                    />
                   ) : (
-                    <Camera className="size-5" />
+                    <div className="flex size-[5.5rem] items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] sm:size-[6.25rem]">
+                      {profile ? sellerInitials(profile) : 'S'}
+                    </div>
                   )}
-                </span>
-              </button>
+                  <span
+                    className={cn(
+                      'absolute inset-0 flex items-center justify-center rounded-full bg-foreground/55 text-background transition-opacity',
+                      uploadingImage
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
+                    )}
+                  >
+                    {uploadingImage ? (
+                      <LoaderCircle className="size-5 animate-spin" />
+                    ) : (
+                      <Camera className="size-5" />
+                    )}
+                  </span>
+                </button>
+              </div>
               <input
                 ref={imageInputRef}
                 type="file"
@@ -391,6 +474,16 @@ export function SellerProfilePage() {
                 </div>
               </div>
             </div>
+
+            <div className="relative mt-6 grid grid-cols-2 gap-4 border-t border-border/50 pt-5 sm:grid-cols-4">
+              <HeroStat label="Complete" value={`${progress?.percent ?? 0}%`} />
+              <HeroStat label="Shops" value={String(profile?.shops?.length ?? 0)} />
+              <HeroStat
+                label="Addresses"
+                value={String(profile?.addresses?.length ?? 0)}
+              />
+              <HeroStat label="Member since" value={monthYear(profile?.created_at)} />
+            </div>
           </section>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
@@ -399,12 +492,11 @@ export function SellerProfilePage() {
                 onSubmit={handleSave}
                 className={`space-y-4 ${sellerPanelClass} p-6`}
               >
-                <div>
-                  <h2 className="font-display text-xl tracking-tight">Business details</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    The legal identity behind your shops.
-                  </p>
-                </div>
+                <SectionHeader
+                  icon={Building2}
+                  title="Business details"
+                  description="The legal identity behind your shops."
+                />
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -484,38 +576,42 @@ export function SellerProfilePage() {
               </form>
 
               <section className={`space-y-5 ${sellerPanelClass} p-6`}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="font-display text-xl tracking-tight">Addresses</h2>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Where couriers collect orders and customers send returns.
-                    </p>
-                  </div>
-                  {showAddressForm ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-9 rounded-full px-3"
-                      onClick={resetAddressForm}
-                    >
-                      <X className="size-4" />
-                      Cancel
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-9 rounded-full px-4"
-                      onClick={() => setShowAddressForm(true)}
-                    >
-                      <Plus className="size-4" />
-                      Add address
-                    </Button>
-                  )}
-                </div>
+                <SectionHeader
+                  icon={MapPin}
+                  title="Addresses"
+                  description="Where couriers collect orders and customers send returns."
+                  action={
+                    showAddressForm ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="h-9 rounded-full px-3"
+                        onClick={resetAddressForm}
+                      >
+                        <X className="size-4" />
+                        Cancel
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-full px-4"
+                        onClick={() => setShowAddressForm(true)}
+                      >
+                        <Plus className="size-4" />
+                        Add address
+                      </Button>
+                    )
+                  }
+                />
 
                 {profile?.addresses?.length ? (
-                  <ul className="grid gap-3 sm:grid-cols-2">
+                  <ul
+                    className={cn(
+                      'grid gap-3',
+                      profile.addresses.length > 1 && 'sm:grid-cols-2',
+                    )}
+                  >
                     {profile.addresses.map((address) => {
                       const meta = metaForType(address.address_type)
                       return (
@@ -733,65 +829,94 @@ export function SellerProfilePage() {
             <div className="space-y-6">
               {profile && progress ? (
                 <section className={cn(sellerPanelClass, 'p-5')}>
-                  <h2 className="font-medium">Profile strength</h2>
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="relative flex size-20 shrink-0 items-center justify-center">
-                      <svg viewBox="0 0 36 36" className="size-20 -rotate-90">
-                        <circle
-                          cx="18"
-                          cy="18"
-                          r="15.915"
-                          fill="none"
-                          strokeWidth="3"
-                          className="stroke-muted"
-                        />
-                        <circle
-                          cx="18"
-                          cy="18"
-                          r="15.915"
-                          fill="none"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeDasharray={`${progress.percent} 100`}
-                          className="stroke-primary transition-[stroke-dasharray] duration-700 ease-out"
-                        />
-                      </svg>
-                      <span className="absolute font-display text-lg tracking-tight">
-                        {progress.percent}%
-                      </span>
-                    </div>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      {progress.done} of {progress.total} steps done. Finish these to
-                      start selling.
+                  <div className="flex items-baseline justify-between gap-3">
+                    <h2 className="font-medium">Finish setup</h2>
+                    <p className="text-sm text-muted-foreground">
+                      {progress.done}/{progress.total}
                     </p>
                   </div>
-                  <ul className="mt-5 space-y-2.5">
-                    {sellerSetupSteps(profile).map((step) => (
-                      <li key={step.id} className="flex items-center gap-2.5 text-sm">
-                        <span
-                          className={cn(
-                            'flex size-5 shrink-0 items-center justify-center rounded-full',
-                            step.done
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground',
+                  <ul className="mt-4 space-y-1">
+                    {sellerSetupSteps(profile).map((step) => {
+                      const href = step.done ? undefined : setupStepLinks[step.id]
+                      const row = (
+                        <>
+                          <span
+                            className={cn(
+                              'flex size-5 shrink-0 items-center justify-center rounded-full',
+                              step.done
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            <Check className="size-3" />
+                          </span>
+                          <span
+                            className={cn(
+                              'flex-1',
+                              step.done
+                                ? 'text-muted-foreground line-through'
+                                : 'font-medium text-foreground',
+                            )}
+                          >
+                            {step.label}
+                          </span>
+                          {href ? (
+                            <ArrowRight className="size-3.5 text-muted-foreground transition-transform group-hover/step:translate-x-0.5" />
+                          ) : null}
+                        </>
+                      )
+                      return (
+                        <li key={step.id}>
+                          {href ? (
+                            <Link
+                              to={href}
+                              className="group/step flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-muted/50"
+                            >
+                              {row}
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-2.5 px-2 py-1.5 text-sm">
+                              {row}
+                            </div>
                           )}
-                        >
-                          <Check className="size-3" />
-                        </span>
-                        <span
-                          className={
-                            step.done
-                              ? 'text-muted-foreground line-through'
-                              : 'text-foreground'
-                          }
-                        >
-                          {step.label}
-                        </span>
-                      </li>
-                    ))}
+                        </li>
+                      )
+                    })}
                   </ul>
                 </section>
               ) : null}
+
+              <section className={cn(sellerPanelClass, 'p-5')}>
+                <h2 className="font-medium">Account</h2>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Status</dt>
+                    <dd className="font-medium capitalize">{profile?.status ?? '—'}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Seller type</dt>
+                    <dd className="truncate font-medium">
+                      {sellerTypes.find((item) => item.value === sellerType)?.label ??
+                        sellerType ??
+                        '—'}
+                    </dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <dt className="text-muted-foreground">Shops</dt>
+                    <dd className="font-medium">{profile?.shops?.length ?? 0}</dd>
+                  </div>
+                </dl>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="mt-5 h-9 w-full rounded-full"
+                >
+                  <Link to="/seller/shops">
+                    <Store className="size-4" />
+                    Manage shops
+                  </Link>
+                </Button>
+              </section>
 
               <section
                 className={cn(sellerPanelClass, 'p-5 ring-destructive/20')}
