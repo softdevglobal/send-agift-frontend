@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
+import { publishPublicSeller } from '@/lib/public-sellers'
 import { textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
@@ -76,6 +77,7 @@ export function SellerShopsPage() {
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
+    publishPublicSeller(me)
     setShops(me.shops ?? [])
     setAddresses(
       (me.addresses ?? []).map((address) => ({

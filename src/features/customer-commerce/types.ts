@@ -4,6 +4,12 @@ export type CatalogProduct = GiftProduct & {
   categoryId: string
   description: string
   sellerName: string
+  sellerLegalName?: string
+  sellerTradingName?: string
+  sellerId?: string
+  sellerImageUrl?: string
+  shopId?: string
+  shopName?: string
   currency?: string
   priceAmount?: number
 }

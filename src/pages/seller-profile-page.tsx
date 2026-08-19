@@ -21,6 +21,7 @@ import { sellerTypes } from '@/features/auth/seller-register-options'
 import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
+import { publishPublicSeller } from '@/lib/public-sellers'
 import { selectClassName } from '@/lib/form-styles'
 
 const addressTypes: SellerAddressType[] = ['pickup', 'return', 'both']
@@ -50,6 +51,7 @@ export function SellerProfilePage() {
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([getSellerMe(), listCountries()])
+    publishPublicSeller(me)
     setProfile(me)
     setCountries(Array.isArray(countryList) ? countryList : [])
     setCountryId(me.country_id)
@@ -89,11 +91,11 @@ export function SellerProfilePage() {
         phone: optionalString(phone),
         image_url: optionalString(imageUrl),
       })
-      setProfile((prev) =>
-        prev
-          ? { ...prev, ...updated, addresses: prev.addresses, shops: prev.shops }
-          : { ...updated, addresses: [], shops: [] },
-      )
+      const next = profile
+        ? { ...profile, ...updated, addresses: profile.addresses, shops: profile.shops }
+        : { ...updated, addresses: [], shops: [] }
+      setProfile(next)
+      publishPublicSeller(next)
       setNotice('Profile saved.')
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save profile.'))

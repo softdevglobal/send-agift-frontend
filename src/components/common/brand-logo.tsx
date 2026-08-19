@@ -9,18 +9,25 @@ type BrandLogoProps = {
   /** Image height classes, e.g. "h-9" or "h-11" */
   imgClassName?: string
   to?: string | false
+  /** Softens the black logo plate against dark dashboard sidebars. */
+  onDark?: boolean
 }
 
 export function BrandLogo({
   className,
   imgClassName = 'h-11',
   to = '/',
+  onDark = false,
 }: BrandLogoProps) {
   const image = (
     <img
       src={LOGO_SRC}
       alt="SendAgift"
-      className={cn('w-auto object-contain object-left', imgClassName)}
+      className={cn(
+        'w-auto max-w-full object-contain object-left',
+        onDark && 'mix-blend-screen',
+        imgClassName,
+      )}
     />
   )
 
