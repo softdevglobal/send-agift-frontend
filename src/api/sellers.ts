@@ -89,6 +89,13 @@ export function addSellerAddress(body: SellerAddressInput) {
   })
 }
 
+export function updateSellerAddress(id: string, body: SellerAddressInput) {
+  return api<Address>(`/sellers/me/addresses/${id}`, {
+    method: 'PUT',
+    body,
+  })
+}
+
 export function deleteSellerAddress(id: string) {
   return api<MessageResponse>(`/sellers/me/addresses/${id}`, {
     method: 'DELETE',

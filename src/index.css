@@ -57,6 +57,8 @@
     --animate-fade-in: fade-in 0.8s ease both;
     --animate-drift: drift 18s ease-in-out infinite alternate;
     --animate-soft-rise: soft-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    --animate-draw-circle: draw-circle 0.4s ease-out both;
+    --animate-draw-check: draw-check 0.3s 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 :root {
@@ -169,6 +171,17 @@
 @keyframes drift {
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(2%, -1.5%, 0) scale(1.04); }
+}
+
+/* Save-confirmation mark: the ring draws itself, then the tick follows. */
+@keyframes draw-circle {
+  from { stroke-dashoffset: 64; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes draw-check {
+  from { stroke-dashoffset: 22; }
+  to { stroke-dashoffset: 0; }
 }
 
 @layer base {
