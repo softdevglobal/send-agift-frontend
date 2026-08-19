@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label'
 import { SellerPageHeader, sellerListRowClass, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
+import { publishPublicSeller } from '@/lib/public-sellers'
 import { textareaClassName } from '@/lib/form-styles'
 
 const emptyShop: ShopInput = {
@@ -68,6 +69,7 @@ export function SellerShopsPage() {
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
+    publishPublicSeller(me)
     setShops(me.shops ?? [])
     setAddresses(
       (me.addresses ?? []).map((address) => ({

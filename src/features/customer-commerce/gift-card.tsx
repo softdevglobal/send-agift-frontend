@@ -1,13 +1,15 @@
-import { ShoppingCart, Star } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/features/customer-commerce/cart-context'
 import { SaveGiftButton } from '@/features/customer-commerce/save-gift-button'
+import { SellerIdentity } from '@/features/customer-commerce/seller-identity'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
 import { formatPriceAmount } from '@/lib/money'
+import { getSellerReviewStats } from '@/lib/seller-reviews'
 
 type GiftCardProps = {
   product: CatalogProduct | GiftProduct
@@ -33,7 +35,25 @@ export function GiftCard({ product, href }: GiftCardProps) {
   const category = isCatalogProduct(product)
     ? categoryName(product.categoryId)
     : null
-  const showRating = product.reviews > 0
+  const description = isCatalogProduct(product) ? product.description.trim() : ''
+  const sellerName = isCatalogProduct(product)
+    ? product.sellerTradingName?.trim() ||
+      product.sellerName.trim() ||
+      product.sellerLegalName?.trim() ||
+      product.shopName?.trim() ||
+      'Seller'
+    : ''
+  const sellerLegalName = isCatalogProduct(product)
+    ? product.sellerLegalName?.trim()
+    : undefined
+  const sellerTradingName = isCatalogProduct(product)
+    ? product.sellerTradingName?.trim()
+    : undefined
+  const sellerId = isCatalogProduct(product)
+    ? product.sellerId || product.shopId
+    : undefined
+  const sellerImageUrl = isCatalogProduct(product) ? product.sellerImageUrl : undefined
+  const sellerStats = sellerId ? getSellerReviewStats(sellerId) : null
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60 transition-transform duration-300 hover:-translate-y-1">
@@ -55,18 +75,28 @@ export function GiftCard({ product, href }: GiftCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
+        {sellerName ? (
+          <SellerIdentity
+            name={sellerName}
+            tradingName={sellerTradingName}
+            legalName={sellerLegalName}
+            href={sellerId ? `/customer/sellers/${sellerId}` : undefined}
+            imageUrl={sellerImageUrl}
+            rating={sellerStats?.average ?? 0}
+            reviewCount={sellerStats?.count ?? 0}
+          />
+        ) : null}
+
         <div className="space-y-1.5">
           <Link to={to} className="hover:text-primary">
-            <h3 className="text-sm font-semibold text-foreground">{product.name}</h3>
+            <h3 className="line-clamp-2 text-sm font-semibold text-foreground">{product.name}</h3>
           </Link>
-          {showRating ? (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Star className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-medium text-foreground">{product.rating}</span>
-              <span>({product.reviews})</span>
-            </div>
+          {description ? (
+            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+              {description}
+            </p>
           ) : null}
-          <div className="flex items-baseline gap-2">
+          <div className="flex items-baseline gap-2 pt-0.5">
             <span className="text-base font-semibold">{priceLabel(product)}</span>
             {product.compareAt ? (
               <span className="text-sm text-muted-foreground line-through">

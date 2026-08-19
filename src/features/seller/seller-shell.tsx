@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Gift, LogOut, Menu, Search, X } from 'lucide-react'
+import { LogOut, Menu, Search, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
+import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,6 +22,7 @@ import {
   sellerInitials,
   sellerVerificationLabel,
 } from '@/features/seller/seller-utils'
+import { publishPublicSeller } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
 function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -83,7 +85,9 @@ export function SellerShell() {
     let cancelled = false
     getSellerMe()
       .then((data) => {
-        if (!cancelled) setProfile(data)
+        if (cancelled) return
+        publishPublicSeller(data)
+        setProfile(data)
       })
       .catch(() => {
         // Sidebar identity is decorative — pages surface their own load errors.
@@ -127,15 +131,10 @@ export function SellerShell() {
           className="pointer-events-none absolute -top-24 -left-10 size-56 rounded-full bg-[oklch(0.72_0.09_125/0.14)] blur-2xl"
         />
 
-        <div className="relative mb-7 flex items-center gap-3 px-2">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-[oklch(0.72_0.09_125)] text-[oklch(0.22_0.03_125)] shadow-[0_8px_20px_oklch(0.72_0.09_125/0.25)]">
-            <Gift className="size-5" />
-          </div>
-          <div className="min-w-0">
-            <p className="font-display text-lg leading-tight tracking-tight text-white">
-              SendAGift
-            </p>
-            <p className="text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
+        <div className="relative mb-7 flex items-start gap-2 px-2">
+          <div className="min-w-0 flex-1">
+            <BrandLogo to="/seller" onDark className="max-w-full" imgClassName="h-9" />
+            <p className="mt-1.5 text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
               Seller portal
             </p>
           </div>
@@ -143,7 +142,7 @@ export function SellerShell() {
             type="button"
             variant="ghost"
             size="icon"
-            className="ml-auto text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+            className="shrink-0 text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           >

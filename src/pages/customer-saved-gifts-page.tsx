@@ -11,6 +11,7 @@ import {
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
+import { getPublicSellerByShopId } from '@/lib/public-sellers'
 import { useState } from 'react'
 
 export function CustomerSavedGiftsPage() {
@@ -65,12 +66,22 @@ export function CustomerSavedGiftsPage() {
                       <p className="truncate font-medium">
                         {gift.product?.name ?? 'Saved gift'}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      {gift.product?.description ? (
+                        <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">
+                          {gift.product.description}
+                        </p>
+                      ) : null}
+                      <p className="mt-0.5 text-sm text-muted-foreground">
                         {gift.product
-                          ? formatPriceAmount(
-                              gift.product.price_amount,
-                              gift.product.currency,
-                            )
+                          ? [
+                              formatPriceAmount(
+                                gift.product.price_amount,
+                                gift.product.currency,
+                              ),
+                              getPublicSellerByShopId(gift.product.shop_id)?.name,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')
                           : gift.product_id}
                       </p>
                     </div>
