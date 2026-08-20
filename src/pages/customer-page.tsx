@@ -5,6 +5,13 @@ import { useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   CustomerEmptyState,
   CustomerPageHeader,
   GiftCard,
@@ -13,14 +20,12 @@ import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
-import { selectClassName } from '@/lib/form-styles'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
   type PublishedProduct,
 } from '@/lib/published-catalog'
 import { subscribePublicSellers } from '@/lib/public-sellers'
-import { cn } from '@/lib/utils'
 
 type SortKey = 'latest' | 'price-asc' | 'price-desc'
 
@@ -143,16 +148,22 @@ export function CustomerPage() {
                 className="h-10 w-48 rounded-full border-border/60 bg-muted/40 pr-4 pl-9 shadow-none sm:w-56"
               />
             </form>
-            <select
+            <Select
               value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              aria-label="Sort gifts"
-              className={cn(selectClassName, 'h-10 w-36 rounded-full bg-muted/40 pr-9')}
+              onValueChange={(value) => setSort(value as SortKey)}
             >
-              <option value="latest">Latest</option>
-              <option value="price-asc">Price: Low</option>
-              <option value="price-desc">Price: High</option>
-            </select>
+              <SelectTrigger
+                aria-label="Sort gifts"
+                className="h-10 w-[9.75rem] rounded-full border-border/60 bg-muted/40 px-4 shadow-none"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="rounded-xl">
+                <SelectItem value="latest">Latest</SelectItem>
+                <SelectItem value="price-asc">Price: Low</SelectItem>
+                <SelectItem value="price-desc">Price: High</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         }
       />

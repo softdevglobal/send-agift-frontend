@@ -7,7 +7,16 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from 'react'
-import { Camera, ImagePlus, LoaderCircle, Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  Camera,
+  ImagePlus,
+  LoaderCircle,
+  Package,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { uploadPublicImage } from '@/api/media'
@@ -215,12 +224,14 @@ export function SellerProductsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [form, setForm] = useState<ProductFormState>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
   const [inventoryReady, setInventoryReady] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
     null,
   )
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const selectedShopId = searchParams.get('shop') ?? shops[0]?.id ?? ''
 
@@ -350,12 +361,30 @@ export function SellerProductsPage() {
     }
   }
 
+  function resetForm() {
+    setForm(emptyForm)
+    setEditingId(null)
+    setInventoryReady(false)
+    setShowForm(false)
+  }
+
+  function startCreate() {
+    setForm(emptyForm)
+    setEditingId(null)
+    setInventoryReady(false)
+    setShowForm(true)
+    setError(null)
+    setNotice(null)
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById('product-name')?.focus()
+    })
+  }
+
   function handleSelectShop(shopId: string) {
     setError(null)
     setNotice(null)
-    setEditingId(null)
-    setInventoryReady(false)
-    setForm(emptyForm)
+    resetForm()
     setSearchParams(shopId ? { shop: shopId } : {})
   }
 
@@ -384,9 +413,7 @@ export function SellerProductsPage() {
         await createShopProduct(selectedShopId, body)
         setNotice('Product created.')
       }
-      setForm(emptyForm)
-      setEditingId(null)
-      setInventoryReady(false)
+      resetForm()
       await loadProducts(selectedShopId)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save product.'))
@@ -411,6 +438,11 @@ export function SellerProductsPage() {
       setEditingId(id)
       setInventoryReady(Boolean(inventory))
       setForm(productToForm(details, inventory))
+      setShowForm(true)
+      requestAnimationFrame(() => {
+        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document.getElementById('product-name')?.focus()
+      })
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load product.'))
     }
@@ -421,11 +453,7 @@ export function SellerProductsPage() {
     setNotice(null)
     try {
       await deleteSellerProduct(id)
-      if (editingId === id) {
-        setEditingId(null)
-        setInventoryReady(false)
-        setForm(emptyForm)
-      }
+      if (editingId === id) resetForm()
       await loadProducts(selectedShopId)
       setNotice('Product deleted.')
     } catch (err) {
@@ -460,19 +488,22 @@ export function SellerProductsPage() {
         title="Products"
         description="Create gifts per shop. Set status to published so they appear in the customer catalog."
         action={
-          <Button
-            type="button"
-            className="h-10 rounded-full px-4"
-            onClick={() => {
-              setEditingId(null)
-              setInventoryReady(false)
-              setForm(emptyForm)
-              document.getElementById('product-name')?.focus()
-            }}
-          >
-            <Plus className="size-4" />
-            Add product
-          </Button>
+          showForm ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-full px-4"
+              onClick={resetForm}
+            >
+              <X className="size-4" />
+              Cancel
+            </Button>
+          ) : (
+            <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
+              <Plus className="size-4" />
+              Add product
+            </Button>
+          )
         }
       />
       {loading ? (
@@ -502,12 +533,18 @@ export function SellerProductsPage() {
             ) : null}
           </div>
 
-          <section className={`space-y-4 ${sellerPanelClass} p-6`}>
-            <h2 className="font-display text-xl tracking-tight">Catalog</h2>
-            {products.length ? (
+          {products.length ? (
+            <section className={`space-y-4 ${sellerPanelClass} p-6`}>
+              <h2 className="font-display text-xl tracking-tight">Catalog</h2>
               <ul className="space-y-2.5">
                 {products.map((product) => (
-                  <li key={product.id} className={sellerListRowClass}>
+                  <li
+                    key={product.id}
+                    className={cn(
+                      sellerListRowClass,
+                      editingId === product.id && 'ring-2 ring-primary/30',
+                    )}
+                  >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                         {product.image_url ? (
@@ -557,14 +594,30 @@ export function SellerProductsPage() {
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No products in this shop yet.</p>
-            )}
-          </section>
+            </section>
+          ) : showForm ? null : (
+            <SellerEmptyState
+              icon={Package}
+              title="No products yet"
+              description="Add a gift for this shop. Set status to published so customers can see it."
+              action={
+                <Button
+                  type="button"
+                  className="h-10 rounded-full px-5"
+                  onClick={startCreate}
+                >
+                  <Plus className="size-4" />
+                  Add your first product
+                </Button>
+              }
+            />
+          )}
 
+          {showForm ? (
           <form
+            ref={formRef}
             onSubmit={handleSubmit}
-            className={`space-y-4 ${sellerPanelClass} p-6`}
+            className={`animate-in fade-in slide-in-from-top-2 space-y-4 duration-300 ${sellerPanelClass} p-6`}
           >
             <h2 className="font-display text-xl tracking-tight">
               {editingId ? 'Edit product' : 'Add product'}
@@ -841,22 +894,18 @@ export function SellerProductsPage() {
                   'Create product'
                 )}
               </Button>
-              {editingId ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10"
-                  onClick={() => {
-                    setEditingId(null)
-                    setInventoryReady(false)
-                    setForm(emptyForm)
-                  }}
-                >
-                  Cancel
-                </Button>
-              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10"
+                disabled={saving}
+                onClick={resetForm}
+              >
+                Cancel
+              </Button>
             </div>
           </form>
+          ) : null}
         </div>
       )}
       {pendingImage ? (
