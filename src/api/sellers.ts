@@ -46,7 +46,7 @@ export type SellerUpdateRequest = {
   legal_name: string
   trading_name?: string
   phone?: string
-  image_url?: string
+  image_url?: string | null
 }
 
 export function loginSeller(body: LoginRequest) {

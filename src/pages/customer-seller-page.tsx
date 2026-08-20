@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   ArrowLeft,
   BadgeCheck,
+  ChevronRight,
   LoaderCircle,
   Mail,
   MapPin,
@@ -17,22 +18,23 @@ import { Label } from '@/components/ui/label'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
-  GiftCard,
   customerDisplayName,
   customerPanelClass,
   listCatalogProductsForSeller,
 } from '@/features/customer-commerce'
 import { StarRating, StarRatingInput } from '@/features/customer-commerce/star-rating'
+import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { sellerTypes } from '@/features/auth/seller-register-options'
 import { sellerVerificationLabel } from '@/features/seller/seller-utils'
 import { getErrorMessage } from '@/lib/api'
 import { textareaClassName } from '@/lib/form-styles'
 import {
   publicSellerInitials,
-  resolvePublicSeller,
   subscribePublicSellers,
   type PublicSeller,
+  type PublicShop,
 } from '@/lib/public-sellers'
+import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
 import {
   getCustomerSellerReview,
   getSellerReviewStats,
@@ -42,6 +44,43 @@ import {
   type SellerReview,
 } from '@/lib/seller-reviews'
 import { cn } from '@/lib/utils'
+
+function shopsWithProducts(seller: PublicSeller, products: CatalogProduct[]) {
+  const productsByShop = new Map<string, CatalogProduct[]>()
+  for (const product of products) {
+    const shopId = product.shopId || 'other'
+    const list = productsByShop.get(shopId) ?? []
+    list.push(product)
+    productsByShop.set(shopId, list)
+  }
+
+  const seen = new Set<string>()
+  const sections: { shop: PublicShop; products: CatalogProduct[] }[] = []
+
+  for (const shop of seller.shops) {
+    seen.add(shop.id)
+    const shopProducts = productsByShop.get(shop.id) ?? []
+    if (shop.status === 'inactive' && shopProducts.length === 0) continue
+    sections.push({ shop, products: shopProducts })
+  }
+
+  for (const [shopId, shopProducts] of productsByShop) {
+    if (seen.has(shopId)) continue
+    const first = shopProducts[0]
+    sections.push({
+      shop: {
+        id: shopId,
+        name: first?.shopName || 'Shop',
+        slug: '',
+        description: first?.shopDescription,
+        customer_visible_location: first?.shopLocation,
+      },
+      products: shopProducts,
+    })
+  }
+
+  return sections
+}
 
 function sellerTypeLabel(value: string) {
   return sellerTypes.find((item) => item.value === value)?.label ?? value
@@ -58,7 +97,7 @@ function formatReviewDate(value: string) {
 export function CustomerSellerPage() {
   const { sellerId } = useParams()
   const [seller, setSeller] = useState<PublicSeller | null>(() =>
-    sellerId ? resolvePublicSeller(sellerId) : null,
+    sellerId ? sellerFromCatalog(sellerId) : null,
   )
   const [reviews, setReviews] = useState<SellerReview[]>(() =>
     sellerId ? listSellerReviews(sellerId) : [],
@@ -74,14 +113,16 @@ export function CustomerSellerPage() {
     if (!sellerId) return
     const id = sellerId
     function refresh() {
-      setSeller(resolvePublicSeller(id))
+      setSeller(sellerFromCatalog(id))
       setReviews(listSellerReviews(id))
     }
     refresh()
     const unsubSellers = subscribePublicSellers(refresh)
+    const unsubCatalog = subscribePublishedCatalog(refresh)
     const unsubReviews = subscribeSellerReviews(refresh)
     return () => {
       unsubSellers()
+      unsubCatalog()
       unsubReviews()
     }
   }, [sellerId])
@@ -110,6 +151,10 @@ export function CustomerSellerPage() {
   const products = useMemo(
     () => (seller ? listCatalogProductsForSeller(seller.id) : []),
     [seller],
+  )
+  const shopSections = useMemo(
+    () => (seller ? shopsWithProducts(seller, products) : []),
+    [seller, products],
   )
   const stats = seller ? getSellerReviewStats(seller.id) : { average: 0, count: 0 }
   const locations = seller
@@ -191,7 +236,7 @@ export function CustomerSellerPage() {
           seller.legal_name &&
           seller.legal_name !== (seller.trading_name?.trim() || seller.name)
             ? seller.legal_name
-            : `${sellerTypeLabel(seller.seller_type) || 'Seller'} · ${products.length} published gift${products.length === 1 ? '' : 's'}`
+            : `${sellerTypeLabel(seller.seller_type) || 'Seller'} · ${seller.shops.length} shop${seller.shops.length === 1 ? '' : 's'} · ${products.length} gift${products.length === 1 ? '' : 's'}`
         }
         action={
           <Button asChild variant="outline" className="h-10 rounded-full px-4">
@@ -226,11 +271,11 @@ export function CustomerSellerPage() {
                   <BadgeCheck className="size-3.5" />
                   Verified seller
                 </span>
-              ) : (
+              ) : seller.verification_status ? (
                 <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                   {sellerVerificationLabel(seller.verification_status)}
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {seller.legal_name &&
@@ -305,21 +350,70 @@ export function CustomerSellerPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="font-display text-xl tracking-tight">Gifts from this seller</h2>
-        <p className="mt-1 mb-5 text-sm text-muted-foreground">
-          {products.length} published gift{products.length === 1 ? '' : 's'}
-        </p>
-        {products.length ? (
+        <div className="mb-5">
+          <h2 className="font-display text-xl tracking-tight">Shops</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {shopSections.length} shop{shopSections.length === 1 ? '' : 's'} · {products.length}{' '}
+            published gift{products.length === 1 ? '' : 's'}. Open a shop to see its gifts.
+          </p>
+        </div>
+
+        {shopSections.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {products.map((product) => (
-              <GiftCard key={product.id} product={product} />
+            {shopSections.map((section) => (
+              <Link
+                key={section.shop.id}
+                to={`/customer/sellers/${seller.id}/shops/${section.shop.id}`}
+                className={cn(
+                  customerPanelClass,
+                  'group overflow-hidden transition-transform duration-300 hover:-translate-y-1',
+                )}
+              >
+                <div className="aspect-[16/9] overflow-hidden bg-muted">
+                  {section.shop.image_url ? (
+                    <img
+                      src={section.shop.image_url}
+                      alt=""
+                      className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                    />
+                  ) : (
+                    <div className="flex size-full min-h-28 items-center justify-center text-muted-foreground">
+                      <Store className="size-8" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-display text-xl tracking-tight">{section.shop.name}</h3>
+                  {section.shop.customer_visible_location ? (
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="size-3.5 shrink-0" />
+                      <span className="truncate">{section.shop.customer_visible_location}</span>
+                    </p>
+                  ) : null}
+                  {section.shop.description ? (
+                    <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+                      {section.shop.description}
+                    </p>
+                  ) : null}
+                  <p className="mt-3 flex items-center justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground">
+                      {section.products.length} gift
+                      {section.products.length === 1 ? '' : 's'}
+                    </span>
+                    <span className="inline-flex items-center gap-0.5 font-medium text-primary">
+                      View gifts
+                      <ChevronRight className="size-4" />
+                    </span>
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
         ) : (
           <CustomerEmptyState
             icon={Store}
-            title="No published gifts yet"
-            description="When this seller publishes gifts, they will appear here."
+            title="No shops yet"
+            description="When this seller creates shops and publishes gifts, they will appear here."
           />
         )}
       </section>

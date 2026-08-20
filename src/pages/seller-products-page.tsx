@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
-import { LoaderCircle, Package, Pencil, Plus, Trash2 } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
+import { Camera, ImagePlus, LoaderCircle, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { uploadPublicImage } from '@/api/media'
 import {
   createShopProduct,
   deleteSellerProduct,
@@ -24,6 +33,7 @@ import {
   type ProductStatus,
 } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -36,10 +46,12 @@ import {
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
-import { syncShopPublishedProducts } from '@/lib/published-catalog'
-import { publishPublicSeller } from '@/lib/public-sellers'
+import { publishSellerToMarketplace, syncShopPublishedProducts } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
+import { cn } from '@/lib/utils'
+
+const PRODUCT_IMAGE_ASPECT = 4 / 3
 
 type ProductFormState = {
   name: string
@@ -137,11 +149,10 @@ function toProductInput(
   const slug = optionalString(form.slug)
   const description = optionalString(form.description)
   const productType = optionalString(form.product_type)
-  const imageUrl = optionalString(form.image_url)
   if (slug) input.slug = slug
   if (description) input.description = description
   if (productType) input.product_type = productType
-  if (imageUrl) input.image_url = imageUrl
+  input.image_url = optionalString(form.image_url) ?? null
 
   if (form.price_major.trim() !== '') {
     const major = Number(form.price_major)
@@ -205,6 +216,11 @@ export function SellerProductsPage() {
   const [form, setForm] = useState<ProductFormState>(emptyForm)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [inventoryReady, setInventoryReady] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
+    null,
+  )
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const selectedShopId = searchParams.get('shop') ?? shops[0]?.id ?? ''
 
@@ -235,7 +251,7 @@ export function SellerProductsPage() {
     getSellerMe()
       .then((me) => {
         if (cancelled) return
-        publishPublicSeller(me)
+        publishSellerToMarketplace(me)
         setSellerProfile(me)
         setShops(me.shops ?? [])
       })
@@ -303,6 +319,35 @@ export function SellerProductsPage() {
     value: ProductFormState[K],
   ) {
     setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    setPendingImage({ src: URL.createObjectURL(file), name: file.name })
+  }
+
+  function handleCropCancel() {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
+    setPendingImage(null)
+  }
+
+  async function handleCropConfirm(croppedFile: File) {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
+    setPendingImage(null)
+    setError(null)
+    setNotice(null)
+    setUploadingImage(true)
+    try {
+      const url = await uploadPublicImage(croppedFile, 'product-image')
+      updateField('image_url', url)
+      setNotice('Image uploaded.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not upload image.'))
+    } finally {
+      setUploadingImage(false)
+    }
   }
 
   function handleSelectShop(shopId: string) {
@@ -665,16 +710,59 @@ export function SellerProductsPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="product-image">Image URL</Label>
-              <Input
-                id="product-image"
-                type="url"
-                value={form.image_url}
-                onChange={(event) => updateField('image_url', event.target.value)}
-                className="h-11 bg-surface px-3"
-                placeholder="https://"
+            <div className="space-y-3">
+              <Label>Product image</Label>
+              <button
+                type="button"
+                disabled={uploadingImage}
+                onClick={() => imageInputRef.current?.click()}
+                className="group/cover relative block aspect-[4/3] w-full max-w-xs overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                {form.image_url ? (
+                  <img src={form.image_url} alt="" className="size-full object-cover" />
+                ) : (
+                  <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <ImagePlus className="size-6" />
+                    <span className="text-sm font-medium">Upload an image</span>
+                    <span className="text-xs">Cropped to 4:3</span>
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
+                    uploadingImage
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
+                  )}
+                >
+                  {uploadingImage ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Camera className="size-4" />
+                      {form.image_url ? 'Change image' : 'Upload image'}
+                    </>
+                  )}
+                </span>
+              </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
               />
+              {form.image_url ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-8 px-2 text-xs text-muted-foreground"
+                  onClick={() => updateField('image_url', '')}
+                >
+                  <Trash2 className="size-3.5" />
+                  Remove image
+                </Button>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -771,6 +859,18 @@ export function SellerProductsPage() {
           </form>
         </div>
       )}
+      {pendingImage ? (
+        <ImageCropDialog
+          open
+          imageSrc={pendingImage.src}
+          fileName={pendingImage.name}
+          aspect={PRODUCT_IMAGE_ASPECT}
+          cropShape="rect"
+          title="Adjust product image"
+          onCancel={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      ) : null}
     </div>
   )
 }

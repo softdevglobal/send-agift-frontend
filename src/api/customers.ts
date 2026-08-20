@@ -6,6 +6,10 @@ import type {
   Customer,
   CustomerDetails,
   MessageResponse,
+  Recipient,
+  RecipientAddress,
+  RecipientDetails,
+  RecipientInput,
 } from '@/api/types'
 
 export type {
@@ -13,6 +17,10 @@ export type {
   AddressInput,
   Customer,
   CustomerDetails,
+  Recipient,
+  RecipientAddress,
+  RecipientDetails,
+  RecipientInput,
 } from '@/api/types'
 
 export type CustomerAddress = Address
@@ -85,4 +93,62 @@ export function deleteCustomerAddress(id: string) {
   return api<MessageResponse>(`/customers/me/addresses/${id}`, {
     method: 'DELETE',
   })
+}
+
+export function listRecipients() {
+  return api<Recipient[]>('/customers/me/recipients')
+}
+
+export function createRecipient(body: RecipientInput) {
+  return api<RecipientDetails>('/customers/me/recipients', {
+    method: 'POST',
+    body,
+  })
+}
+
+export function getRecipient(id: string) {
+  return api<RecipientDetails>(`/customers/me/recipients/${id}`)
+}
+
+export function updateRecipient(id: string, body: Omit<RecipientInput, 'addresses'>) {
+  return api<RecipientDetails>(`/customers/me/recipients/${id}`, {
+    method: 'PUT',
+    body,
+  })
+}
+
+export function deleteRecipient(id: string) {
+  return api<MessageResponse>(`/customers/me/recipients/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function addRecipientAddress(recipientId: string, body: AddressInput) {
+  return api<RecipientAddress>(`/customers/me/recipients/${recipientId}/addresses`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function updateRecipientAddress(
+  recipientId: string,
+  addressId: string,
+  body: AddressInput,
+) {
+  return api<RecipientAddress>(
+    `/customers/me/recipients/${recipientId}/addresses/${addressId}`,
+    {
+      method: 'PUT',
+      body,
+    },
+  )
+}
+
+export function deleteRecipientAddress(recipientId: string, addressId: string) {
+  return api<MessageResponse>(
+    `/customers/me/recipients/${recipientId}/addresses/${addressId}`,
+    {
+      method: 'DELETE',
+    },
+  )
 }

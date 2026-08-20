@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { LoaderCircle, Trash2 } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
 
 import {
   addCustomerAddress,
@@ -29,6 +30,7 @@ import { selectClassName } from '@/lib/form-styles'
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
+  const location = useLocation()
   const [profile, setProfile] = useState<CustomerDetails | null>(null)
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
@@ -83,6 +85,11 @@ export function CustomerProfilePage() {
       cancelled = true
     }
   }, [load])
+
+  useEffect(() => {
+    if (loading || location.hash !== '#addresses') return
+    document.getElementById('addresses')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [loading, location.hash])
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -320,7 +327,10 @@ export function CustomerProfilePage() {
             </Button>
           </form>
 
-          <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60">
+          <section
+            id="addresses"
+            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
+          >
             <h2 className="font-display text-xl">Addresses</h2>
             {profile?.addresses?.length ? (
               <ul className="space-y-3">

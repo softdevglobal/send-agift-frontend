@@ -55,7 +55,7 @@ import {
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
-import { publishPublicSeller } from '@/lib/public-sellers'
+import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
@@ -163,7 +163,7 @@ export function SellerProfilePage() {
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([getSellerMe(), listCountries()])
-    publishPublicSeller(me)
+    publishSellerToMarketplace(me)
     setProfile(me)
     setCountries(Array.isArray(countryList) ? countryList : [])
     setCountryId(me.country_id)
@@ -214,14 +214,14 @@ export function SellerProfilePage() {
       legal_name: legalName.trim(),
       trading_name: optionalString(tradingName),
       phone: optionalString(phone),
-      image_url: optionalString(imageUrl),
+      image_url: optionalString(imageUrl) ?? null,
       ...overrides,
     })
     const next = profile
       ? { ...profile, ...updated, addresses: profile.addresses, shops: profile.shops }
       : { ...updated, addresses: [], shops: [] }
     setProfile(next)
-    publishPublicSeller(next)
+      publishSellerToMarketplace(next)
   }
 
   async function handleSave(event: FormEvent<HTMLFormElement>) {
@@ -261,6 +261,22 @@ export function SellerProfilePage() {
       setToast({ message: 'Photo uploaded.', variant: 'success' })
     } catch (err) {
       const message = getErrorMessage(err, 'Could not upload image.')
+      setError(message)
+      setToast({ message, variant: 'error' })
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  async function handleRemoveImage() {
+    setError(null)
+    setUploadingImage(true)
+    try {
+      setImageUrl('')
+      await persistProfile({ image_url: null })
+      setToast({ message: 'Photo removed.', variant: 'success' })
+    } catch (err) {
+      const message = getErrorMessage(err, 'Could not remove image.')
       setError(message)
       setToast({ message, variant: 'error' })
     } finally {
@@ -414,7 +430,7 @@ export function SellerProfilePage() {
                   disabled={uploadingImage}
                   onClick={() => imageInputRef.current?.click()}
                   aria-label={imageUrl ? 'Change profile photo' : 'Upload profile photo'}
-                  className="group relative rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="relative rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {imageUrl ? (
                     <img
@@ -427,18 +443,11 @@ export function SellerProfilePage() {
                       {profile ? sellerInitials(profile) : 'S'}
                     </div>
                   )}
-                  <span
-                    className={cn(
-                      'absolute inset-0 flex items-center justify-center rounded-full bg-foreground/55 text-background transition-opacity',
-                      uploadingImage
-                        ? 'opacity-100'
-                        : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100',
-                    )}
-                  >
+                  <span className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full bg-card text-foreground shadow-sm ring-2 ring-background">
                     {uploadingImage ? (
-                      <LoaderCircle className="size-5 animate-spin" />
+                      <LoaderCircle className="size-3.5 animate-spin" />
                     ) : (
-                      <Camera className="size-5" />
+                      <Camera className="size-3.5" />
                     )}
                   </span>
                 </button>
@@ -471,6 +480,30 @@ export function SellerProfilePage() {
                     <Mail className="size-3" />
                     {profile?.email}
                   </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-full px-4"
+                    disabled={uploadingImage}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Camera className="size-4" />
+                    {imageUrl ? 'Change photo' : 'Add photo'}
+                  </Button>
+                  {imageUrl ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-9 rounded-full px-3 text-muted-foreground"
+                      disabled={uploadingImage}
+                      onClick={handleRemoveImage}
+                    >
+                      <Trash2 className="size-4" />
+                      Remove
+                    </Button>
+                  ) : null}
                 </div>
               </div>
             </div>

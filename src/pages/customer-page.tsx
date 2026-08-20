@@ -1,9 +1,9 @@
 import { Gift, LoaderCircle, Search } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import type { Product } from '@/api/types'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
@@ -13,16 +13,19 @@ import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
-import { giftCategories } from '@/features/marketing/data'
+import { selectClassName } from '@/lib/form-styles'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
+  type PublishedProduct,
 } from '@/lib/published-catalog'
-import { getPublicSellerByShopId, subscribePublicSellers } from '@/lib/public-sellers'
+import { subscribePublicSellers } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
+type SortKey = 'latest' | 'price-asc' | 'price-desc'
+
 function filterPublished(
-  products: Product[],
+  products: PublishedProduct[],
   { query, category }: { query: string; category: string },
 ) {
   const normalizedQuery = query.trim().toLowerCase()
@@ -36,13 +39,13 @@ function filterPublished(
       tags.includes(normalizedCategory)
     if (!matchesCategory) return false
     if (!normalizedQuery) return true
-    const seller = getPublicSellerByShopId(product.shop_id)
     const haystack = [
       product.name,
       product.description ?? '',
-      seller?.name ?? '',
-      seller?.legal_name ?? '',
-      seller?.trading_name ?? '',
+      product.seller_name ?? '',
+      product.seller_legal_name ?? '',
+      product.seller_trading_name ?? '',
+      product.shop_name ?? '',
       ...tags,
     ]
       .join(' ')
@@ -51,12 +54,29 @@ function filterPublished(
   })
 }
 
+function sortPublished(products: PublishedProduct[], sort: SortKey) {
+  const next = [...products]
+  if (sort === 'price-asc') {
+    return next.sort((a, b) => a.price_amount - b.price_amount)
+  }
+  if (sort === 'price-desc') {
+    return next.sort((a, b) => b.price_amount - a.price_amount)
+  }
+  return next.sort((a, b) => b.created_at.localeCompare(a.created_at))
+}
+
 export function CustomerPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
-  const [catalog, setCatalog] = useState<Product[]>([])
+  const [catalog, setCatalog] = useState<PublishedProduct[]>([])
   const [loading, setLoading] = useState(true)
+  const [nameQuery, setNameQuery] = useState(query)
+  const [sort, setSort] = useState<SortKey>('latest')
+
+  useEffect(() => {
+    setNameQuery((current) => (current.trim() === query ? current : query))
+  }, [query])
 
   useEffect(() => {
     function loadCatalog() {
@@ -76,51 +96,66 @@ export function CustomerPage() {
   }, [])
 
   const products = useMemo(
-    () => filterPublished(catalog, { query, category }).map(catalogProductFromApi),
-    [catalog, category, query],
+    () =>
+      sortPublished(filterPublished(catalog, { query, category }), sort).map(
+        catalogProductFromApi,
+      ),
+    [catalog, category, query, sort],
   )
 
-  function setCategory(next: string) {
+  function applyNameSearch(nextQuery: string) {
     const params = new URLSearchParams(searchParams)
-    if (!next || next === 'all') params.delete('category')
-    else params.set('category', next)
-    setSearchParams(params)
+    if (nextQuery.trim()) params.set('q', nextQuery.trim())
+    else params.delete('q')
+    setSearchParams(params, { replace: true })
+  }
+
+  function handleNameSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    applyNameSearch(nameQuery)
   }
 
   function clearFilters() {
+    setNameQuery('')
     setSearchParams({})
   }
 
   return (
     <div>
       <CustomerPageHeader
-        title="Discover gifts"
-        description="Browse published gifts, read the description, and visit the seller to see ratings, reviews, and contact details."
+        title="Gifts"
+        eyebrow={false}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <form onSubmit={handleNameSearch} className="relative">
+              <label className="sr-only" htmlFor="gifts-name-search">
+                Search by name
+              </label>
+              <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="gifts-name-search"
+                value={nameQuery}
+                onChange={(event) => {
+                  setNameQuery(event.target.value)
+                  applyNameSearch(event.target.value)
+                }}
+                placeholder="Search by name"
+                className="h-10 w-48 rounded-full border-border/60 bg-muted/40 pr-4 pl-9 shadow-none sm:w-56"
+              />
+            </form>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortKey)}
+              aria-label="Sort gifts"
+              className={cn(selectClassName, 'h-10 w-36 rounded-full bg-muted/40 pr-9')}
+            >
+              <option value="latest">Latest</option>
+              <option value="price-asc">Price: Low</option>
+              <option value="price-desc">Price: High</option>
+            </select>
+          </div>
+        }
       />
-
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
-        <Button
-          type="button"
-          size="sm"
-          variant={category === 'all' ? 'default' : 'outline'}
-          className="h-9 shrink-0 rounded-full px-3.5"
-          onClick={() => setCategory('all')}
-        >
-          All gifts
-        </Button>
-        {giftCategories.map((item) => (
-          <Button
-            key={item.id}
-            type="button"
-            size="sm"
-            variant={category === item.id ? 'default' : 'outline'}
-            className="h-9 shrink-0 rounded-full px-3.5"
-            onClick={() => setCategory(item.id)}
-          >
-            {item.name}
-          </Button>
-        ))}
-      </div>
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -140,7 +175,7 @@ export function CustomerPage() {
           )}
 
           {products.length ? (
-            <div className={cn('grid gap-5 sm:grid-cols-2 lg:grid-cols-3')}>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {products.map((product) => (
                 <GiftCard key={product.id} product={product} />
               ))}

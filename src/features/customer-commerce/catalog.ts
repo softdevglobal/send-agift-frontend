@@ -5,9 +5,10 @@ import { minorToMajor } from '@/lib/money'
 import {
   getPublishedCatalogProduct,
   listPublishedCatalog,
-  sellerSnapshotFromProduct,
+  sellerFromCatalog,
+  type PublishedProduct,
 } from '@/lib/published-catalog'
-import { getPublicSellerForShop } from '@/lib/public-sellers'
+import { getPublicSeller, getPublicSellerForShop } from '@/lib/public-sellers'
 
 const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'
@@ -180,12 +181,30 @@ export const catalogProducts: CatalogProduct[] = [
   },
 ]
 
+function publicSellerForPublished(product: PublishedProduct) {
+  return (
+    (product.seller_id ? getPublicSeller(product.seller_id) : null) ||
+    getPublicSellerForShop(product.shop_id)
+  )
+}
+
+function sellerImageForPublished(product: PublishedProduct) {
+  if (product.seller_image_url) return product.seller_image_url
+  return publicSellerForPublished(product)?.image_url
+}
+
+function shopNameForPublished(product: PublishedProduct) {
+  if (product.shop_name?.trim()) return product.shop_name.trim()
+  const seller = publicSellerForPublished(product)
+  return seller?.shops.find((shop) => shop.id === product.shop_id)?.name
+}
+
 export function catalogProductFromApi(product: Product): CatalogProduct {
-  const snapshot = sellerSnapshotFromProduct(product)
-  const seller = getPublicSellerForShop(product.shop_id)
-  const legalName = seller?.legal_name?.trim() || snapshot.legalName
-  const tradingName = seller?.trading_name?.trim() || snapshot.tradingName
-  const sellerName = tradingName || legalName || seller?.name || snapshot.sellerName
+  const published = product as PublishedProduct
+  const legalName = published.seller_legal_name?.trim() || ''
+  const tradingName = published.seller_trading_name?.trim() || ''
+  const sellerName =
+    tradingName || legalName || published.seller_name?.trim() || published.shop_name?.trim() || ''
   return {
     id: product.id,
     name: product.name,
@@ -195,10 +214,14 @@ export function catalogProductFromApi(product: Product): CatalogProduct {
     sellerName,
     sellerLegalName: legalName || undefined,
     sellerTradingName: tradingName || undefined,
-    sellerId: seller?.id || snapshot.sellerId,
-    sellerImageUrl: seller?.image_url || snapshot.imageUrl,
+    sellerId: published.seller_id || product.shop_id,
+    sellerImageUrl: sellerImageForPublished(published),
+    sellerEmail: published.seller_email,
+    sellerPhone: published.seller_phone,
     shopId: product.shop_id,
-    shopName: snapshot.shopName,
+    shopName: shopNameForPublished(published),
+    shopDescription: published.shop_description,
+    shopLocation: published.shop_location,
     description: product.description ?? '',
     rating: 0,
     reviews: 0,
@@ -208,17 +231,23 @@ export function catalogProductFromApi(product: Product): CatalogProduct {
 }
 
 export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[] {
+  const seller = sellerFromCatalog(sellerId)
+  const sellerIds = new Set<string>([sellerId])
+  if (seller?.id) sellerIds.add(seller.id)
+  const shopIds = new Set(seller?.shops.map((shop) => shop.id) ?? [])
+  shopIds.add(sellerId)
+
   return listPublishedCatalog()
-    .filter((product) => {
-      const snapshot = sellerSnapshotFromProduct(product)
-      const owner = getPublicSellerForShop(product.shop_id)
-      return (
-        owner?.id === sellerId ||
-        snapshot.sellerId === sellerId ||
-        product.shop_id === sellerId
-      )
-    })
+    .filter(
+      (product) =>
+        (product.seller_id != null && sellerIds.has(product.seller_id)) ||
+        shopIds.has(product.shop_id),
+    )
     .map(catalogProductFromApi)
+}
+
+export function getCatalogSeller(id: string) {
+  return sellerFromCatalog(id)
 }
 
 export function registerCatalogProducts(products: CatalogProduct[]) {

@@ -19,6 +19,7 @@ export {
   filterCatalog,
   getCatalogProduct,
   listCatalogProductsForSeller,
+  getCatalogSeller,
   registerCatalogProducts,
 } from './catalog'
 export { StarRating, StarRatingInput } from './star-rating'
