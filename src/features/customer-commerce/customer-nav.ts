@@ -2,7 +2,6 @@ import {
   Heart,
   LayoutDashboard,
   ShoppingBag,
-  ShoppingCart,
   User,
   type LucideIcon,
 } from 'lucide-react'
@@ -14,11 +13,17 @@ export type CustomerNavItem = {
   end?: boolean
 }
 
+export const customerDashboardNav: CustomerNavItem = {
+  to: '/customer',
+  label: 'Dashboard',
+  icon: LayoutDashboard,
+  end: true,
+}
+
 export const customerPrimaryNav: CustomerNavItem[] = [
-  { to: '/customer', label: 'Discover gifts', icon: LayoutDashboard, end: true },
-  { to: '/customer/saved-gifts', label: 'Saved gifts', icon: Heart },
-  { to: '/customer/cart', label: 'Cart', icon: ShoppingCart },
-  { to: '/customer/orders', label: 'Orders', icon: ShoppingBag },
+  customerDashboardNav,
+  { to: '/customer/orders', label: 'Orders & Returns', icon: ShoppingBag },
+  { to: '/customer/saved-gifts', label: 'My Wishlist', icon: Heart },
 ]
 
 export const customerAccountNav: CustomerNavItem[] = [
@@ -26,11 +31,18 @@ export const customerAccountNav: CustomerNavItem[] = [
 ]
 
 export type CustomerNavGroup = {
-  label: string
+  label?: string
   items: CustomerNavItem[]
 }
 
 export const customerNavGroups: CustomerNavGroup[] = [
-  { label: 'Shopping', items: customerPrimaryNav },
+  { items: [customerDashboardNav] },
+  {
+    label: 'Orders',
+    items: [
+      { to: '/customer/orders', label: 'Orders & Returns', icon: ShoppingBag },
+      { to: '/customer/saved-gifts', label: 'My Wishlist', icon: Heart },
+    ],
+  },
   { label: 'Account', items: customerAccountNav },
 ]
