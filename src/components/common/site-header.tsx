@@ -42,7 +42,9 @@ export function SiteHeader() {
     if (query.trim()) params.set('q', query.trim())
     if (category && category !== 'all') params.set('category', category)
     const suffix = params.toString()
-    navigate(`/customer${suffix ? `?${suffix}` : ''}`)
+    // /customer is customer-only; send everyone else to the public catalog.
+    const base = isAuthenticated && role === 'customer' ? '/customer' : '/products'
+    navigate(`${base}${suffix ? `?${suffix}` : ''}`)
     setOpen(false)
   }
 

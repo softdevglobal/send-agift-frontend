@@ -10,6 +10,7 @@ import {
   Camera,
   Eye,
   ImagePlus,
+  Link2,
   LoaderCircle,
   MapPin,
   Package,
@@ -18,6 +19,7 @@ import {
   Store,
   Trash2,
   Truck,
+  Undo2,
   X,
   type LucideIcon,
 } from 'lucide-react'
@@ -40,6 +42,13 @@ import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { SellerPageHeader, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
@@ -169,6 +178,13 @@ function serializeShop(input: ShopInput): ShopInput {
   }
 }
 
+function formatAddress(address?: Address) {
+  if (!address) return null
+  return [address.line1, address.line2, address.city, address.region, address.postal_code]
+    .filter(Boolean)
+    .join(', ')
+}
+
 export function SellerShopsPage() {
   const [shops, setShops] = useState<Shop[]>([])
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -183,6 +199,7 @@ export function SellerShopsPage() {
   const [form, setForm] = useState<ShopInput>(emptyShop)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [previewShop, setPreviewShop] = useState<Shop | null>(null)
   /** Once the slug is edited by hand (or loaded from an existing shop) it stops tracking the name. */
   const [slugTouched, setSlugTouched] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
@@ -455,6 +472,15 @@ export function SellerShopsPage() {
                             <Package className="size-4" />
                             Products
                           </Link>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Preview ${shop.name}`}
+                          onClick={() => setPreviewShop(shop)}
+                        >
+                          <Eye className="size-4" />
                         </Button>
                         <Button
                           type="button"
@@ -802,6 +828,118 @@ export function SellerShopsPage() {
           onConfirm={handleCropConfirm}
         />
       ) : null}
+
+      <Sheet
+        open={previewShop !== null}
+        onOpenChange={(open) => !open && setPreviewShop(null)}
+      >
+        <SheetContent className="overflow-y-auto p-0">
+          {previewShop ? (
+            <>
+              <div className="relative aspect-video shrink-0 overflow-hidden bg-muted">
+                {previewShop.image_url ? (
+                  <img
+                    src={previewShop.image_url}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                    <Store className="size-8" />
+                  </div>
+                )}
+                <span
+                  className={cn(
+                    'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
+                    previewShop.status === 'active'
+                      ? 'bg-primary/90 text-primary-foreground'
+                      : 'bg-foreground/70 text-background',
+                  )}
+                >
+                  {previewShop.status === 'active' ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <div className="space-y-6 p-6">
+                <SheetHeader className="p-0">
+                  <SheetTitle>{previewShop.name}</SheetTitle>
+                  {previewShop.description ? (
+                    <SheetDescription>{previewShop.description}</SheetDescription>
+                  ) : null}
+                </SheetHeader>
+
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2.5">
+                    <Link2 className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="truncate font-mono text-muted-foreground">
+                      /{previewShop.slug || '—'}
+                    </span>
+                  </div>
+                  {previewShop.customer_visible_location ? (
+                    <div className="flex items-center gap-2.5">
+                      <MapPin className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="text-foreground">
+                        {previewShop.customer_visible_location}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="space-y-3 rounded-xl border border-border/50 bg-surface/60 p-4">
+                  <div className="flex items-start gap-2.5">
+                    <Truck className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Pickup address
+                      </p>
+                      <p className="mt-0.5 text-sm">
+                        {formatAddress(
+                          addresses.find((a) => a.id === previewShop.address_id),
+                        ) || 'Not set'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2.5 border-t border-border/50 pt-3">
+                    <Undo2 className="size-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Return address
+                      </p>
+                      <p className="mt-0.5 text-sm">
+                        {formatAddress(
+                          addresses.find((a) => a.id === previewShop.return_address_id),
+                        ) || 'Same as pickup address'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Button asChild className="h-10 rounded-full">
+                    <Link to={`/seller/products?shop=${previewShop.id}`}>
+                      <Package className="size-4" />
+                      Manage products
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 rounded-full"
+                    onClick={() => {
+                      const shop = previewShop
+                      setPreviewShop(null)
+                      startEdit(shop)
+                    }}
+                  >
+                    <Pencil className="size-4" />
+                    Edit shop
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

@@ -25,6 +25,8 @@ import { CustomerRegisterPage } from '@/pages/customer-register-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
 import { HomePage } from '@/pages/home-page'
+import { ProductsPage } from '@/pages/products-page'
+import { ProductViewPage } from '@/pages/product-view-page'
 import { ProductDetailPage } from '@/pages/product-detail-page'
 import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
@@ -61,6 +63,8 @@ export function AppRouter() {
         path="/checkout/result"
         element={<Navigate to="/customer/checkout/result" replace />}
       />
+      <Route path="/products" element={<ProductsPage />} />
+      <Route path="/products/:productId" element={<ProductViewPage />} />
       <Route path="/become-a-seller" element={<BecomeSellerPage />} />
 
       <Route

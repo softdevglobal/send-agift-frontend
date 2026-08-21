@@ -5,6 +5,7 @@ import {
   ShieldCheck,
   Truck,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { SectionHeading } from '@/components/common/section-heading'
@@ -15,11 +16,21 @@ import {
   bestSellingGifts,
   customerTestimonials,
   giftCategories,
+  type GiftProduct,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { ProductCard } from '@/features/marketing/product-card'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
+import {
+  catalogProductFromApi,
+  registerCatalogProducts,
+} from '@/features/customer-commerce/catalog'
+import {
+  listPublishedCatalog,
+  subscribePublishedCatalog,
+} from '@/lib/published-catalog'
+import { subscribePublicSellers } from '@/lib/public-sellers'
 
 const homeFeatures = [
   {
@@ -45,6 +56,30 @@ const homeFeatures = [
 ]
 
 export function HomePage() {
+  // Real published gifts take over this shelf; the sample set is only a
+  // placeholder for a store that has not published anything yet.
+  const [published, setPublished] = useState<GiftProduct[]>([])
+
+  useEffect(() => {
+    function loadCatalog() {
+      const products = listPublishedCatalog()
+      const mapped = products.map(catalogProductFromApi)
+      registerCatalogProducts(mapped)
+      setPublished(mapped)
+    }
+
+    loadCatalog()
+    const unsubCatalog = subscribePublishedCatalog(loadCatalog)
+    const unsubSellers = subscribePublicSellers(loadCatalog)
+    return () => {
+      unsubCatalog()
+      unsubSellers()
+    }
+  }, [])
+
+  const hasPublished = published.length > 0
+  const shelfGifts = hasPublished ? published.slice(0, 4) : bestSellingGifts
+
   return (
     <SiteLayout>
       <main>
@@ -112,12 +147,12 @@ export function HomePage() {
         <section className="bg-muted/40">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
             <SectionHeading
-              title="Best Selling Gifts"
+              title={hasPublished ? 'Fresh from our sellers' : 'Best Selling Gifts'}
               actionLabel="View All Products"
-              actionTo="/customer"
+              actionTo="/products"
             />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {bestSellingGifts.map((product) => (
+              {shelfGifts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
