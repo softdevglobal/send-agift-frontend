@@ -320,7 +320,10 @@ export function CustomerProfilePage() {
             </Button>
           </form>
 
-          <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60">
+          <section
+            id="addresses"
+            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
+          >
             <h2 className="font-display text-xl">Addresses</h2>
             {profile?.addresses?.length ? (
               <ul className="space-y-3">
