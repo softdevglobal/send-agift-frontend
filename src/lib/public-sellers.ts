@@ -1,9 +1,4 @@
 import type { SellerDetails, Shop } from '@/api/types'
-import {
-  attachSellerShopsToPublishedCatalog,
-  listPublishedCatalog,
-  sellerSnapshotFromProduct,
-} from '@/lib/published-catalog'
 
 const STORAGE_KEY = 'sag.publicSellers'
 const CHANGE_EVENT = 'sag:public-sellers'
@@ -102,12 +97,15 @@ function toPublicShop(shop: Shop): PublicShop {
   }
 }
 
-export function publicSellerName(seller: Pick<PublicSeller, 'trading_name' | 'legal_name' | 'name'>) {
-  return seller.trading_name?.trim() || seller.name?.trim() || seller.legal_name
+export function publicSellerName(
+  seller: Pick<PublicSeller, 'name'> & Partial<Pick<PublicSeller, 'trading_name' | 'legal_name'>>,
+) {
+  return seller.trading_name?.trim() || seller.name?.trim() || seller.legal_name?.trim() || 'Seller'
 }
 
-export function publicSellerInitials(seller: Pick<PublicSeller, 'name'>) {
-  const parts = seller.name.split(/\s+/).filter(Boolean)
+export function publicSellerInitials(seller: Pick<PublicSeller, 'name'> & Partial<Pick<PublicSeller, 'legal_name' | 'trading_name'>>) {
+  const name = publicSellerName(seller)
+  const parts = name.split(/\s+/).filter(Boolean)
   if (parts.length === 0) return 'S'
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
@@ -136,52 +134,11 @@ export function publishPublicSeller(profile: SellerDetails) {
   }
   store.sellers[seller.id] = seller
   writeStore(store)
-  attachSellerShopsToPublishedCatalog(profile, profile.shops ?? [])
   return seller
-}
-
-export function resolvePublicSeller(id: string): PublicSeller | null {
-  const direct = getPublicSeller(id)
-  if (direct) return direct
-  const byShop = getPublicSellerByShopId(id)
-  if (byShop) return byShop
-
-  const products = listPublishedCatalog().filter((product) => {
-    const snapshot = sellerSnapshotFromProduct(product)
-    return snapshot.sellerId === id || product.shop_id === id
-  })
-  if (!products.length) return null
-
-  const first = sellerSnapshotFromProduct(products[0])
-  const shopIds = [...new Set(products.map((product) => product.shop_id))]
-  return {
-    id: first.sellerId || id,
-    name: first.sellerName,
-    legal_name: first.legalName || first.sellerName,
-    trading_name: first.tradingName || undefined,
-    email: '',
-    image_url: first.imageUrl,
-    seller_type: '',
-    verification_status: '',
-    shops: shopIds.map((shopId) => {
-      const product = products.find((item) => item.shop_id === shopId)
-      const snapshot = product ? sellerSnapshotFromProduct(product) : first
-      return {
-        id: shopId,
-        name: snapshot.shopName || snapshot.sellerName,
-        slug: '',
-        image_url: snapshot.imageUrl,
-      }
-    }),
-  }
 }
 
 export function getPublicSeller(id: string): PublicSeller | null {
   return readStore().sellers[id] ?? null
-}
-
-export function getPublicSellerByShopId(shopId: string): PublicSeller | null {
-  return getPublicSellerForShop(shopId)
 }
 
 export function getPublicSellerForShop(shopId: string): PublicSeller | null {
@@ -194,6 +151,10 @@ export function getPublicSellerForShop(shopId: string): PublicSeller | null {
   if (byShop) return byShop
   if (sellers.length === 1) return sellers[0]
   return null
+}
+
+export function getPublicSellerByShopId(shopId: string): PublicSeller | null {
+  return getPublicSellerForShop(shopId)
 }
 
 export function listPublicSellers(): PublicSeller[] {

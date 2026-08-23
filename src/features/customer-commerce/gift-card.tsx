@@ -9,6 +9,7 @@ import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
 import { formatPriceAmount } from '@/lib/money'
+import { getPublicSeller, getPublicSellerForShop } from '@/lib/public-sellers'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
 
 type GiftCardProps = {
@@ -32,28 +33,26 @@ function priceLabel(product: CatalogProduct | GiftProduct) {
 export function GiftCard({ product, href }: GiftCardProps) {
   const { addItem } = useCart()
   const to = href ?? `/customer/gifts/${product.id}`
-  const category = isCatalogProduct(product)
-    ? categoryName(product.categoryId)
-    : null
+  const category = isCatalogProduct(product) ? categoryName(product.categoryId) : null
   const description = isCatalogProduct(product) ? product.description.trim() : ''
+  const sellerId = isCatalogProduct(product) ? product.sellerId || product.shopId : undefined
+  const tradingName = isCatalogProduct(product) ? product.sellerTradingName : undefined
+  const legalName = isCatalogProduct(product) ? product.sellerLegalName : undefined
   const sellerName = isCatalogProduct(product)
-    ? product.sellerTradingName?.trim() ||
-      product.sellerName.trim() ||
-      product.sellerLegalName?.trim() ||
-      product.shopName?.trim() ||
-      'Seller'
+    ? tradingName || product.sellerName || legalName || 'Seller'
     : ''
-  const sellerLegalName = isCatalogProduct(product)
-    ? product.sellerLegalName?.trim()
-    : undefined
-  const sellerTradingName = isCatalogProduct(product)
-    ? product.sellerTradingName?.trim()
-    : undefined
-  const sellerId = isCatalogProduct(product)
-    ? product.sellerId || product.shopId
-    : undefined
-  const sellerImageUrl = isCatalogProduct(product) ? product.sellerImageUrl : undefined
   const sellerStats = sellerId ? getSellerReviewStats(sellerId) : null
+  const publicSeller = isCatalogProduct(product)
+    ? (product.sellerId ? getPublicSeller(product.sellerId) : null) ||
+      (product.shopId ? getPublicSellerForShop(product.shopId) : null)
+    : null
+  const sellerImageUrl = isCatalogProduct(product)
+    ? product.sellerImageUrl || publicSeller?.image_url
+    : undefined
+  const shopName = isCatalogProduct(product)
+    ? product.shopName?.trim() ||
+      publicSeller?.shops.find((shop) => shop.id === product.shopId)?.name
+    : undefined
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60 transition-transform duration-300 hover:-translate-y-1">
@@ -75,15 +74,17 @@ export function GiftCard({ product, href }: GiftCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
-        {sellerName ? (
+        {isCatalogProduct(product) ? (
           <SellerIdentity
             name={sellerName}
-            tradingName={sellerTradingName}
-            legalName={sellerLegalName}
+            tradingName={tradingName}
+            legalName={legalName}
+            shopName={shopName}
             href={sellerId ? `/customer/sellers/${sellerId}` : undefined}
             imageUrl={sellerImageUrl}
             rating={sellerStats?.average ?? 0}
             reviewCount={sellerStats?.count ?? 0}
+            size="md"
           />
         ) : null}
 

@@ -16,8 +16,10 @@ import { SaveGiftButton } from '@/features/customer-commerce/save-gift-button'
 import { SellerIdentity } from '@/features/customer-commerce/seller-identity'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import { formatPriceAmount } from '@/lib/money'
-import { getPublishedCatalogProduct } from '@/lib/published-catalog'
-import { resolvePublicSeller } from '@/lib/public-sellers'
+import {
+  getPublishedCatalogProduct,
+  sellerFromCatalog,
+} from '@/lib/published-catalog'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
 import { cn } from '@/lib/utils'
 
@@ -53,21 +55,14 @@ export function ProductDetailPage() {
     setLoading(false)
   }, [productId])
 
-  const seller = useMemo(() => {
-    if (!product) return null
-    const sellerId = product.sellerId || product.shopId
-    if (!sellerId) return null
-    return resolvePublicSeller(sellerId)
-  }, [product])
-
-  const sellerId = product?.sellerId || product?.shopId || seller?.id
-  const sellerTradingName = seller?.trading_name || product?.sellerTradingName
-  const sellerLegalName = seller?.legal_name || product?.sellerLegalName
+  const sellerId = product?.sellerId || product?.shopId
+  const seller = sellerId ? sellerFromCatalog(sellerId) : null
+  const tradingName = seller?.trading_name || product?.sellerTradingName
+  const legalName = seller?.legal_name || product?.sellerLegalName
   const sellerName =
-    sellerTradingName?.trim() ||
-    seller?.name ||
+    tradingName?.trim() ||
     product?.sellerName ||
-    sellerLegalName?.trim() ||
+    legalName?.trim() ||
     product?.shopName ||
     'Seller'
   const sellerImageUrl = seller?.image_url || product?.sellerImageUrl
@@ -136,8 +131,9 @@ export function ProductDetailPage() {
           <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">
             <SellerIdentity
               name={sellerName}
-              tradingName={sellerTradingName}
-              legalName={sellerLegalName}
+              tradingName={tradingName}
+              legalName={legalName}
+              shopName={product.shopName}
               href={sellerId ? `/customer/sellers/${sellerId}` : undefined}
               imageUrl={sellerImageUrl}
               rating={sellerStats?.average ?? 0}
@@ -229,9 +225,7 @@ export function ProductDetailPage() {
       {moreFromSeller.length > 0 ? (
         <section className="mt-10">
           <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="font-display text-xl tracking-tight">
-              More from {sellerName}
-            </h2>
+            <h2 className="font-display text-xl tracking-tight">More from {sellerName}</h2>
             {sellerId ? (
               <Button asChild variant="ghost" className="h-9 rounded-full px-3">
                 <Link to={`/customer/sellers/${sellerId}`}>

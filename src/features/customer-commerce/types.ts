@@ -8,8 +8,12 @@ export type CatalogProduct = GiftProduct & {
   sellerTradingName?: string
   sellerId?: string
   sellerImageUrl?: string
+  sellerEmail?: string
+  sellerPhone?: string
   shopId?: string
   shopName?: string
+  shopDescription?: string
+  shopLocation?: string
   currency?: string
   priceAmount?: number
 }

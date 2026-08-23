@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   ShoppingBag,
   User,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export const customerPrimaryNav: CustomerNavItem[] = [
 
 export const customerAccountNav: CustomerNavItem[] = [
   { to: '/customer/profile', label: 'Profile', icon: User },
+  { to: '/customer/recipients', label: 'Recipients', icon: Users },
 ]
 
 export type CustomerNavGroup = {

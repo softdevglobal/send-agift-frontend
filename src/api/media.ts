@@ -1,33 +1,69 @@
 import { api } from '@/lib/api'
+import {
+  MEDIA_FOLDERS,
+  type MediaFolder,
+  type PresignUploadRequest,
+  type PresignUploadResponse,
+  type SignedMediaUrlResponse,
+} from '@/api/types'
 
-export type MediaFolder = 'seller-profile' | 'shop-image' | 'product-image'
+export type { MediaFolder, PresignUploadRequest, PresignUploadResponse }
 
-type PresignUploadResponse = {
-  upload_url: string
-  key: string
-  public_url?: string
+const CONTENT_TYPE_BY_EXT: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+}
+
+function isMediaFolder(value: string): value is MediaFolder {
+  return (MEDIA_FOLDERS as readonly string[]).includes(value)
+}
+
+function contentTypeOf(file: File): string {
+  if (file.type.trim()) return file.type
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return CONTENT_TYPE_BY_EXT[ext] ?? ''
+}
+
+export function getSignedMediaUrl(key: string) {
+  return api<SignedMediaUrlResponse>(`/media/url?key=${encodeURIComponent(key)}`)
 }
 
 /** Uploads a file directly to S3 via a presigned URL and returns its public URL. */
 export async function uploadPublicImage(file: File, folder: MediaFolder): Promise<string> {
-  console.log('[media] requesting presigned upload url', { folder, filename: file.name, type: file.type })
+  if (!isMediaFolder(folder)) {
+    throw new Error('unsupported folder')
+  }
+
+  const filename = file.name.trim()
+  const contentType = contentTypeOf(file)
+  if (!filename || !contentType) {
+    throw new Error('filename and content_type are required')
+  }
+
+  const body: PresignUploadRequest = {
+    filename,
+    content_type: contentType,
+    folder,
+  }
+
   const presign = await api<PresignUploadResponse>('/media/presign-upload', {
     method: 'POST',
-    body: { filename: file.name, content_type: file.type, folder },
+    body,
   })
-  console.log('[media] presign response', presign)
 
   const uploadResponse = await fetch(presign.upload_url, {
     method: 'PUT',
-    headers: { 'Content-Type': file.type },
+    headers: { 'Content-Type': contentType },
     body: file,
   })
-  console.log('[media] s3 put response', uploadResponse.status, uploadResponse.statusText)
   if (!uploadResponse.ok) {
     throw new Error('Could not upload image.')
   }
 
-  if (!presign.public_url) {
+  if (!presign.public_url?.trim()) {
     throw new Error('Upload succeeded but no public URL was returned.')
   }
   return presign.public_url

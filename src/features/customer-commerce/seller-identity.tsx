@@ -8,6 +8,7 @@ type SellerIdentityProps = {
   name?: string
   tradingName?: string
   legalName?: string
+  shopName?: string
   href?: string
   imageUrl?: string
   rating?: number
@@ -20,6 +21,7 @@ export function SellerIdentity({
   name,
   tradingName,
   legalName,
+  shopName,
   href,
   imageUrl,
   rating = 0,
@@ -30,7 +32,9 @@ export function SellerIdentity({
   const primary =
     tradingName?.trim() || name?.trim() || legalName?.trim() || 'Seller'
   const legal = legalName?.trim()
-  const showLegal = Boolean(legal && legal !== primary)
+  const shop = shopName?.trim()
+  const showShop = Boolean(shop && shop !== primary)
+  const showLegal = Boolean(legal && legal !== primary && legal !== shop)
   const avatarClass = size === 'md' ? 'size-11 rounded-full' : 'size-6 rounded-full'
   const content = (
     <>
@@ -65,6 +69,11 @@ export function SellerIdentity({
             <StarRating value={rating} count={reviewCount} variant="compact" />
           ) : null}
         </span>
+        {showShop ? (
+          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+            {shop}
+          </span>
+        ) : null}
         {showLegal ? (
           <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
             {legal}

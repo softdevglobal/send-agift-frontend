@@ -2,9 +2,15 @@ import { Gift, LoaderCircle, Search } from 'lucide-react'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import type { Product } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
@@ -14,18 +20,17 @@ import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
-import { selectClassName } from '@/lib/form-styles'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
+  type PublishedProduct,
 } from '@/lib/published-catalog'
-import { getPublicSellerByShopId, subscribePublicSellers } from '@/lib/public-sellers'
-import { cn } from '@/lib/utils'
+import { subscribePublicSellers } from '@/lib/public-sellers'
 
 type SortKey = 'latest' | 'price-asc' | 'price-desc'
 
 function filterPublished(
-  products: Product[],
+  products: PublishedProduct[],
   { query, category }: { query: string; category: string },
 ) {
   const normalizedQuery = query.trim().toLowerCase()
@@ -39,13 +44,13 @@ function filterPublished(
       tags.includes(normalizedCategory)
     if (!matchesCategory) return false
     if (!normalizedQuery) return true
-    const seller = getPublicSellerByShopId(product.shop_id)
     const haystack = [
       product.name,
       product.description ?? '',
-      seller?.name ?? '',
-      seller?.legal_name ?? '',
-      seller?.trading_name ?? '',
+      product.seller_name ?? '',
+      product.seller_legal_name ?? '',
+      product.seller_trading_name ?? '',
+      product.shop_name ?? '',
       ...tags,
     ]
       .join(' ')
@@ -54,7 +59,7 @@ function filterPublished(
   })
 }
 
-function sortPublished(products: Product[], sort: SortKey) {
+function sortPublished(products: PublishedProduct[], sort: SortKey) {
   const next = [...products]
   if (sort === 'price-asc') {
     return next.sort((a, b) => a.price_amount - b.price_amount)
@@ -69,7 +74,7 @@ export function CustomerPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
-  const [catalog, setCatalog] = useState<Product[]>([])
+  const [catalog, setCatalog] = useState<PublishedProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [nameQuery, setNameQuery] = useState(query)
   const [sort, setSort] = useState<SortKey>('latest')
@@ -143,16 +148,22 @@ export function CustomerPage() {
                 className="h-10 w-48 rounded-full border-border/60 bg-muted/40 pr-4 pl-9 shadow-none sm:w-56"
               />
             </form>
-            <select
+            <Select
               value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              aria-label="Sort gifts"
-              className={cn(selectClassName, 'h-10 w-36 rounded-full bg-muted/40 pr-9')}
+              onValueChange={(value) => setSort(value as SortKey)}
             >
-              <option value="latest">Latest</option>
-              <option value="price-asc">Price: Low</option>
-              <option value="price-desc">Price: High</option>
-            </select>
+              <SelectTrigger
+                aria-label="Sort gifts"
+                className="h-10 w-[9.75rem] rounded-full border-border/60 bg-muted/40 px-4 shadow-none"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="rounded-xl">
+                <SelectItem value="latest">Latest</SelectItem>
+                <SelectItem value="price-asc">Price: Low</SelectItem>
+                <SelectItem value="price-desc">Price: High</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         }
       />

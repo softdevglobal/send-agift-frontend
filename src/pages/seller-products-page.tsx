@@ -58,8 +58,7 @@ import { Label } from '@/components/ui/label'
 import { SellerEmptyState, SellerPageHeader, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
-import { syncShopPublishedProducts } from '@/lib/published-catalog'
-import { publishPublicSeller } from '@/lib/public-sellers'
+import { publishSellerToMarketplace, syncShopPublishedProducts } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -160,11 +159,10 @@ function toProductInput(
   const slug = optionalString(form.slug)
   const description = optionalString(form.description)
   const productType = optionalString(form.product_type)
-  const imageUrl = optionalString(form.image_url)
   if (slug) input.slug = slug
   if (description) input.description = description
   if (productType) input.product_type = productType
-  if (imageUrl) input.image_url = imageUrl
+  input.image_url = optionalString(form.image_url) ?? null
 
   if (form.price_major.trim() !== '') {
     const major = Number(form.price_major)
@@ -384,7 +382,7 @@ export function SellerProductsPage() {
     getSellerMe()
       .then((me) => {
         if (cancelled) return
-        publishPublicSeller(me)
+        publishSellerToMarketplace(me)
         setSellerProfile(me)
         setShops(me.shops ?? [])
       })

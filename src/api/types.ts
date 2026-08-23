@@ -20,15 +20,15 @@ export type CountryInput = {
 export type Address = {
   id: string
   country_id: string
-  label?: string
+  label?: string | null
   address_type: string
   line1: string
-  line2?: string
+  line2?: string | null
   city: string
-  region?: string
-  postal_code?: string
-  latitude?: number
-  longitude?: number
+  region?: string | null
+  postal_code?: string | null
+  latitude?: number | null
+  longitude?: number | null
   is_default: boolean
   created_at: string
   updated_at: string
@@ -36,15 +36,15 @@ export type Address = {
 
 export type AddressInput = {
   country_id: string
-  label?: string
+  label?: string | null
   address_type?: string
   line1: string
-  line2?: string
+  line2?: string | null
   city: string
-  region?: string
-  postal_code?: string
-  latitude?: number
-  longitude?: number
+  region?: string | null
+  postal_code?: string | null
+  latitude?: number | null
+  longitude?: number | null
   is_default?: boolean
 }
 
@@ -105,9 +105,9 @@ export type ShopInput = {
   description?: string
   customer_visible_location?: string
   status?: string
-  address_id?: string
-  return_address_id?: string
-  image_url?: string
+  address_id?: string | null
+  return_address_id?: string | null
+  image_url?: string | null
 }
 
 export type ProductStatus = 'draft' | 'published' | 'paused' | 'rejected'
@@ -166,6 +166,72 @@ export type ProductInput = {
   prep_minutes?: number
   image_url?: string | null
   inventory?: InventoryInput
+}
+
+export type Recipient = {
+  id: string
+  customer_id: string
+  name: string
+  relationship?: string | null
+  email?: string | null
+  phone?: string | null
+  image_url?: string | null
+  default_address_id?: string | null
+  preferences: unknown
+  created_at: string
+  updated_at: string
+}
+
+export type RecipientAddress = {
+  id: string
+  recipient_id: string
+  country_id: string
+  label?: string | null
+  address_type: string
+  line1: string
+  line2?: string | null
+  city: string
+  region?: string | null
+  postal_code?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  is_default: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type RecipientDetails = Recipient & { addresses: RecipientAddress[] }
+
+export type RecipientInput = {
+  name: string
+  relationship?: string | null
+  email?: string | null
+  phone?: string | null
+  image_url?: string | null
+  default_address_id?: string | null
+  preferences?: Record<string, unknown>
+  /** Create only. Ignored on PUT — use recipient address endpoints. */
+  addresses?: AddressInput[]
+}
+
+export const MEDIA_FOLDERS = ['seller-profile', 'shop-image', 'product-image'] as const
+
+export type MediaFolder = (typeof MEDIA_FOLDERS)[number]
+
+export type PresignUploadRequest = {
+  filename: string
+  content_type: string
+  folder: MediaFolder
+}
+
+export type PresignUploadResponse = {
+  upload_url: string
+  key: string
+  public_url?: string
+}
+
+export type SignedMediaUrlResponse = {
+  url: string
 }
 
 export type SavedGift = {

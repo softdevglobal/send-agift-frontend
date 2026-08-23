@@ -27,9 +27,10 @@ import { useAuth } from '@/features/auth/auth-context'
 import { formatPriceAmount } from '@/lib/money'
 import {
   getPublishedCatalogProduct,
+  sellerFromCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
-import { resolvePublicSeller, subscribePublicSellers } from '@/lib/public-sellers'
+import { subscribePublicSellers } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
 export function ProductViewPage() {
@@ -71,7 +72,7 @@ export function ProductViewPage() {
   const seller = useMemo(() => {
     if (!product) return null
     const id = product.sellerId || product.shopId
-    return id ? resolvePublicSeller(id) : null
+    return id ? sellerFromCatalog(id) : null
   }, [product])
 
   const sellerId = product?.sellerId || product?.shopId || seller?.id

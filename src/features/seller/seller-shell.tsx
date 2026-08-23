@@ -22,7 +22,7 @@ import {
   sellerInitials,
   sellerVerificationLabel,
 } from '@/features/seller/seller-utils'
-import { publishPublicSeller } from '@/lib/public-sellers'
+import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { cn } from '@/lib/utils'
 
 function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -86,7 +86,7 @@ export function SellerShell() {
     getSellerMe()
       .then((data) => {
         if (cancelled) return
-        publishPublicSeller(data)
+        publishSellerToMarketplace(data)
         setProfile(data)
       })
       .catch(() => {

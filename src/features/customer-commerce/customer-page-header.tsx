@@ -14,7 +14,13 @@ export function CustomerPageHeader({
   eyebrow = true,
 }: CustomerPageHeaderProps) {
   return (
-    <div className={description ? 'mb-7 flex flex-wrap items-start justify-between gap-4' : 'mb-7 flex flex-wrap items-center justify-between gap-4'}>
+    <div
+      className={
+        description
+          ? 'mb-7 flex flex-wrap items-start justify-between gap-4'
+          : 'mb-7 flex flex-wrap items-center justify-between gap-4'
+      }
+    >
       <div className="space-y-1.5">
         {eyebrow ? (
           <p className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase">

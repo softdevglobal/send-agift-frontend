@@ -158,7 +158,7 @@ export function CustomerShell() {
 
   useEffect(() => {
     setMenuOpen(false)
-  }, [location.pathname])
+  }, [location.pathname, location.hash])
 
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
@@ -382,9 +382,7 @@ export function CustomerShell() {
                 <p className="truncate text-sm font-medium text-white">
                   {profile ? customerDisplayName(profile) : 'Signed in'}
                 </p>
-                <p className="truncate text-[11px] text-white/45">
-                  {phoneLabel}
-                </p>
+                <p className="truncate text-[11px] text-white/45">{phoneLabel}</p>
               </div>
             </div>
             {statusLabel ? (

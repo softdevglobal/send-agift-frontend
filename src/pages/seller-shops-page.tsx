@@ -52,7 +52,7 @@ import {
 import { SellerPageHeader, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
-import { publishPublicSeller } from '@/lib/public-sellers'
+import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
@@ -172,9 +172,9 @@ function serializeShop(input: ShopInput): ShopInput {
     description: optionalString(input.description ?? ''),
     customer_visible_location: optionalString(input.customer_visible_location ?? ''),
     status: optionalString(input.status ?? ''),
-    address_id: optionalString(input.address_id ?? ''),
-    return_address_id: optionalString(input.return_address_id ?? ''),
-    image_url: optionalString(input.image_url ?? ''),
+    address_id: optionalString(input.address_id ?? '') ?? null,
+    return_address_id: optionalString(input.return_address_id ?? '') ?? null,
+    image_url: optionalString(input.image_url ?? '') ?? null,
   }
 }
 
@@ -211,7 +211,7 @@ export function SellerShopsPage() {
 
   const load = useCallback(async () => {
     const me = await getSellerMe()
-    publishPublicSeller(me)
+    publishSellerToMarketplace(me)
     setShops(me.shops ?? [])
     setAddresses(me.addresses ?? [])
   }, [])
@@ -363,9 +363,6 @@ export function SellerShopsPage() {
   }
 
   const activeCount = shops.filter((shop) => shop.status === 'active').length
-  const returnCapableAddresses = addresses.filter(
-    (address) => address.address_type === 'return' || address.address_type === 'both',
-  )
 
   return (
     <div>
@@ -724,7 +721,7 @@ export function SellerShopsPage() {
                         <option value="">No linked address</option>
                         {addresses.map((address) => (
                           <option key={address.id} value={address.id}>
-                            {address.line1}
+                            {address.label ? `${address.label} — ${address.line1}` : address.line1}
                           </option>
                         ))}
                       </select>
@@ -762,20 +759,20 @@ export function SellerShopsPage() {
                       }
                       className={selectClassName}
                     >
-                      <option value="">Same as pickup address</option>
-                      {returnCapableAddresses.map((address) => (
+                      <option value="">No linked address</option>
+                      {addresses.map((address) => (
                         <option key={address.id} value={address.id}>
-                          {address.label || address.line1}
+                          {address.label ? `${address.label} — ${address.line1}` : address.line1}
                         </option>
                       ))}
                     </select>
-                    {returnCapableAddresses.length === 0 ? (
+                    {addresses.length === 0 ? (
                       <p className="text-xs text-muted-foreground">
-                        No return addresses yet —{' '}
+                        No addresses yet —{' '}
                         <Link to="/seller/profile" className="text-primary hover:underline">
                           add one on your profile
-                        </Link>{' '}
-                        and mark it "Return" or "Both".
+                        </Link>
+                        .
                       </p>
                     ) : null}
                   </div>
