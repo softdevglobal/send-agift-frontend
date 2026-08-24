@@ -169,7 +169,7 @@ export function CustomerSellerPage() {
     : null
 
   if (!sellerId) {
-    return <Navigate to="/customer" replace />
+    return <Navigate to="/products" replace />
   }
 
   if (!seller) {
@@ -179,7 +179,7 @@ export function CustomerSellerPage() {
           title="Seller"
           action={
             <Button asChild variant="outline" className="h-10 rounded-full px-4">
-              <Link to="/customer">
+              <Link to="/products">
                 <ArrowLeft className="size-4" />
                 All gifts
               </Link>
@@ -192,7 +192,7 @@ export function CustomerSellerPage() {
           description="This seller is not in the public directory yet. Open the gift again after the seller has published their shop."
           action={
             <Button asChild className="h-10 rounded-full px-4">
-              <Link to="/customer">Browse gifts</Link>
+              <Link to="/products">Browse gifts</Link>
             </Button>
           }
         />
@@ -240,7 +240,7 @@ export function CustomerSellerPage() {
         }
         action={
           <Button asChild variant="outline" className="h-10 rounded-full px-4">
-            <Link to="/customer">
+            <Link to="/products">
               <ArrowLeft className="size-4" />
               All gifts
             </Link>
@@ -363,7 +363,7 @@ export function CustomerSellerPage() {
             {shopSections.map((section) => (
               <Link
                 key={section.shop.id}
-                to={`/customer/sellers/${seller.id}/shops/${section.shop.id}`}
+                to={`/sellers/${seller.id}/shops/${section.shop.id}`}
                 className={cn(
                   customerPanelClass,
                   'group overflow-hidden transition-transform duration-300 hover:-translate-y-1',

@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { LoaderCircle, Trash2 } from 'lucide-react'
-import { useLocation } from 'react-router-dom'
+import { LoaderCircle } from 'lucide-react'
 
 import {
-  addCustomerAddress,
-  deleteCustomerAddress,
   deleteCustomerMe,
   getCustomerMe,
   updateCustomerMe,
@@ -13,7 +10,6 @@ import {
 import { listCountries, type Country } from '@/api/countries'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
@@ -30,12 +26,10 @@ import { selectClassName } from '@/lib/form-styles'
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
-  const location = useLocation()
   const [profile, setProfile] = useState<CustomerDetails | null>(null)
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [addingAddress, setAddingAddress] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -46,14 +40,6 @@ export function CustomerProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState('')
   const [imageUrl, setImageUrl] = useState('')
-
-  const [line1, setLine1] = useState('')
-  const [line2, setLine2] = useState('')
-  const [city, setCity] = useState('')
-  const [region, setRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
-  const [label, setLabel] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([
@@ -86,11 +72,6 @@ export function CustomerProfilePage() {
     }
   }, [load])
 
-  useEffect(() => {
-    if (loading || location.hash !== '#addresses') return
-    document.getElementById('addresses')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [loading, location.hash])
-
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
@@ -119,50 +100,6 @@ export function CustomerProfilePage() {
     }
   }
 
-  async function handleAddAddress(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    setNotice(null)
-    setAddingAddress(true)
-    try {
-      await addCustomerAddress({
-        country_id: countryId,
-        line1: line1.trim(),
-        city: city.trim(),
-        line2: optionalString(line2),
-        region: optionalString(region),
-        postal_code: optionalString(postalCode),
-        label: optionalString(label),
-        is_default: isDefault,
-      })
-      setLine1('')
-      setLine2('')
-      setCity('')
-      setRegion('')
-      setPostalCode('')
-      setLabel('')
-      setIsDefault(false)
-      await load()
-      setNotice('Address added.')
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not add address.'))
-    } finally {
-      setAddingAddress(false)
-    }
-  }
-
-  async function handleDeleteAddress(id: string) {
-    setError(null)
-    setNotice(null)
-    try {
-      await deleteCustomerAddress(id)
-      await load()
-      setNotice('Address deleted.')
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not delete address.'))
-    }
-  }
-
   async function handleDeleteAccount() {
     const confirmed = window.confirm(
       'Delete your customer account? This cannot be undone.',
@@ -180,8 +117,8 @@ export function CustomerProfilePage() {
   return (
     <div>
       <CustomerPageHeader
-        title="Your profile"
-        description="Update your details and delivery addresses."
+        title="Account settings"
+        description="Your contact details and account preferences."
       />
       {loading ? (
         <div className="flex justify-center py-16">
@@ -326,121 +263,6 @@ export function CustomerProfilePage() {
               )}
             </Button>
           </form>
-
-          <section
-            id="addresses"
-            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
-          >
-            <h2 className="font-display text-xl">Addresses</h2>
-            {profile?.addresses?.length ? (
-              <ul className="space-y-3">
-                {profile.addresses.map((address) => (
-                  <li
-                    key={address.id}
-                    className="flex items-start justify-between gap-4 rounded-xl bg-muted/50 px-4 py-3"
-                  >
-                    <div className="text-sm">
-                      <p className="font-medium">
-                        {address.label || address.address_type || 'Address'}
-                        {address.is_default ? ' · Default' : ''}
-                      </p>
-                      <p className="text-muted-foreground">
-                        {[address.line1, address.line2, address.city, address.region, address.postal_code]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      aria-label="Delete address"
-                      onClick={() => handleDeleteAddress(address.id)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">No addresses yet.</p>
-            )}
-
-            <form onSubmit={handleAddAddress} className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="addr-line1">Line 1</Label>
-                <Input
-                  id="addr-line1"
-                  value={line1}
-                  onChange={(event) => setLine1(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="addr-line2">Line 2</Label>
-                <Input
-                  id="addr-line2"
-                  value={line2}
-                  onChange={(event) => setLine2(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addr-city">City</Label>
-                <Input
-                  id="addr-city"
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addr-region">Region</Label>
-                <Input
-                  id="addr-region"
-                  value={region}
-                  onChange={(event) => setRegion(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addr-postal">Postal code</Label>
-                <Input
-                  id="addr-postal"
-                  value={postalCode}
-                  onChange={(event) => setPostalCode(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="addr-label">Label</Label>
-                <Input
-                  id="addr-label"
-                  value={label}
-                  onChange={(event) => setLabel(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  placeholder="Home"
-                />
-              </div>
-              <div className="flex items-center gap-2 sm:col-span-2">
-                <Checkbox
-                  id="addr-default"
-                  checked={isDefault}
-                  onCheckedChange={(value) => setIsDefault(value === true)}
-                />
-                <Label htmlFor="addr-default" className="font-normal">
-                  Default address
-                </Label>
-              </div>
-              <div className="sm:col-span-2">
-                <Button type="submit" disabled={addingAddress} className="h-10">
-                  {addingAddress ? 'Adding…' : 'Add address'}
-                </Button>
-              </div>
-            </form>
-          </section>
 
           <section className="rounded-2xl bg-card p-6 ring-1 ring-destructive/20">
             <h2 className="font-display text-xl">Delete account</h2>

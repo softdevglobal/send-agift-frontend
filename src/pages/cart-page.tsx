@@ -28,7 +28,7 @@ export function CartPage() {
           description="Browse the catalog and add a gift to get started."
           action={
             <Button asChild className="h-10 rounded-full px-4">
-              <Link to="/customer">Discover gifts</Link>
+              <Link to="/products">Discover gifts</Link>
             </Button>
           }
         />
@@ -51,7 +51,7 @@ export function CartPage() {
               className={cn(customerPanelClass, 'flex gap-4 p-3 sm:p-4')}
             >
               <Link
-                to={`/customer/gifts/${line.product.id}`}
+                to={`/products/${line.product.id}`}
                 className="size-20 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-24"
               >
                 <img
@@ -64,7 +64,7 @@ export function CartPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <Link
-                      to={`/customer/gifts/${line.product.id}`}
+                      to={`/products/${line.product.id}`}
                       className="font-medium hover:text-primary"
                     >
                       {line.product.name}
@@ -139,7 +139,7 @@ export function CartPage() {
             Free shipping on orders of $75 or more.
           </p>
           <Button asChild className="mt-5 h-11 w-full rounded-full">
-            <Link to="/customer/checkout">Continue to checkout</Link>
+            <Link to="/checkout">Continue to checkout</Link>
           </Button>
         </aside>
       </div>

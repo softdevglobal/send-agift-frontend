@@ -46,7 +46,7 @@ export function CustomerSavedGiftsPage() {
               {gifts.map((gift) => (
                 <li key={gift.id} className={customerListRowClass}>
                   <Link
-                    to={`/customer/gifts/${gift.product_id}`}
+                    to={`/products/${gift.product_id}`}
                     className="flex min-w-0 flex-1 items-center gap-4"
                   >
                     <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
@@ -110,7 +110,7 @@ export function CustomerSavedGiftsPage() {
               description="Browse gifts and tap the heart on a product to save it here."
               action={
                 <Button asChild className="h-10 rounded-full px-4">
-                  <Link to="/customer">Discover gifts</Link>
+                  <Link to="/products">Discover gifts</Link>
                 </Button>
               }
             />

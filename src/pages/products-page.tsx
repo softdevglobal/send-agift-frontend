@@ -6,12 +6,12 @@ import type { Product } from '@/api/types'
 import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { GiftCard } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import { giftCategories } from '@/features/marketing/data'
-import { ProductCard } from '@/features/marketing/product-card'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
@@ -137,9 +137,9 @@ export function ProductsPage() {
         </p>
 
         {products.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <GiftCard key={product.id} product={product} />
             ))}
           </div>
         ) : (

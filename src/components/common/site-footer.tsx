@@ -8,15 +8,15 @@ import { Input } from '@/components/ui/input'
 
 const quickLinks = [
   { to: '/', label: 'Home' },
-  { to: '/customer', label: 'Customer' },
+  { to: '/products', label: 'Customer' },
   { to: '/become-a-seller', label: 'Become a Seller' },
   { to: '/login', label: 'Sign in' },
 ]
 
 const serviceLinks = [
-  { to: '/customer', label: 'Track order' },
-  { to: '/customer', label: 'Returns & refunds' },
-  { to: '/customer', label: 'Points & competitions' },
+  { to: '/products', label: 'Track order' },
+  { to: '/products', label: 'Returns & refunds' },
+  { to: '/products', label: 'Points & competitions' },
   { to: '/become-a-seller', label: 'Seller support' },
 ]
 

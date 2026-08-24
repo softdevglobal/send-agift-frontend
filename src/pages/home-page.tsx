@@ -20,8 +20,8 @@ import {
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
-import { ProductCard } from '@/features/marketing/product-card'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
+import { GiftCard } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
@@ -100,7 +100,7 @@ export function HomePage() {
 
               <div className="flex flex-wrap gap-3">
                 <Button asChild size="lg" className="h-11 gap-2 rounded-full px-6">
-                  <Link to="/customer">
+                  <Link to="/products">
                     Shop Now
                     <ArrowRight className="size-4" />
                   </Link>
@@ -135,7 +135,7 @@ export function HomePage() {
           <SectionHeading
             title="Shop by Categories"
             actionLabel="View All Categories"
-            actionTo="/customer"
+            actionTo="/products"
           />
           <div className="flex gap-6 overflow-x-auto pb-2 sm:grid sm:grid-cols-3 sm:gap-8 sm:overflow-visible md:grid-cols-6">
             {giftCategories.map((category) => (
@@ -153,7 +153,7 @@ export function HomePage() {
             />
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {shelfGifts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <GiftCard key={product.id} product={product} />
               ))}
             </div>
           </div>
@@ -174,7 +174,7 @@ export function HomePage() {
               </p>
               <div>
                 <Button asChild size="lg" className="h-11 px-5">
-                  <Link to="/customer">Shop the Sale</Link>
+                  <Link to="/products">Shop the Sale</Link>
                 </Button>
               </div>
             </div>

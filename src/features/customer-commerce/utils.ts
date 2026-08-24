@@ -15,8 +15,3 @@ export function shippingForSubtotal(subtotal: number) {
 export function categoryName(categoryId: string) {
   return giftCategories.find((item) => item.id === categoryId)?.name ?? categoryId
 }
-
-export function createOrderId() {
-  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()
-  return `ORD-${suffix}`
-}

@@ -17,6 +17,7 @@ import {
 } from '@/api/savedGifts'
 import { useAuth } from '@/features/auth/auth-context'
 import { ApiError } from '@/lib/api'
+import { isUuid } from '@/lib/uuid'
 
 type SavedGiftsContextValue = {
   gifts: SavedGiftDetails[]
@@ -28,13 +29,6 @@ type SavedGiftsContextValue = {
 }
 
 const SavedGiftsContext = createContext<SavedGiftsContextValue | null>(null)
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-function isProductUuid(value: string) {
-  return UUID_RE.test(value)
-}
 
 type SavedGiftsProviderProps = {
   children: ReactNode
@@ -98,7 +92,7 @@ export function SavedGiftsProvider({ children }: SavedGiftsProviderProps) {
         })
         return
       }
-      if (!isProductUuid(productId)) return
+      if (!isUuid(productId)) return
 
       const existing = savedByProductId.get(productId)
       setPendingProductId(productId)

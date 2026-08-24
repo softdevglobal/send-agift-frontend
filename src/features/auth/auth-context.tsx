@@ -31,6 +31,38 @@ type AuthProviderProps = {
   children: ReactNode
 }
 
+/** Areas that belong to a single role — never send another role into them. */
+const ROLE_AREAS: Record<string, UserRole[]> = {
+  '/admin': ['admin', 'superadmin'],
+  '/seller': ['seller'],
+  '/account': ['customer'],
+  '/checkout': ['customer'],
+}
+
+/**
+ * Resolve where to land after signing in. Honours the path the user was
+ * bounced from, but only when their role is allowed there — customers own the
+ * whole storefront, so a simple "starts with home" check is not enough now
+ * that their home is '/'.
+ */
+function safeRedirect(
+  from: string | undefined,
+  role: UserRole,
+  home: string,
+): string {
+  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) {
+    return home
+  }
+  const path = from.split('?')[0]
+  for (const [area, allowed] of Object.entries(ROLE_AREAS)) {
+    if (path === area || path.startsWith(`${area}/`)) {
+      return allowed.includes(role) ? from : home
+    }
+  }
+  // Public storefront paths are fine for any role, but only customers browse them.
+  return role === 'customer' ? from : home
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -44,14 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setRole(nextRole)
       const from = (location.state as { from?: string } | null)?.from
       const home = homePathForRole(nextRole)
-      const safeFrom =
-        typeof from === 'string' &&
-        from.startsWith('/') &&
-        !from.startsWith('//') &&
-        (from === home || from.startsWith(`${home}/`) || from.startsWith(`${home}?`))
-          ? from
-          : home
-      navigate(safeFrom, { replace: true })
+      navigate(safeRedirect(from, nextRole, home), { replace: true })
     },
     [location.state, navigate],
   )
@@ -60,7 +85,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     clearSession()
     setToken(null)
     setRole(null)
-    navigate('/login', { replace: true })
+    // Signing out drops you back on the public storefront, not a login wall.
+    navigate('/', { replace: true })
   }, [navigate])
 
   const value = useMemo<AuthContextValue>(

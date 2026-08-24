@@ -8,13 +8,15 @@ import {
   PackageX,
   Plus,
   ShoppingBag,
-  Store,
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
 import {
+  GiftCard,
+  SaveGiftButton,
+  SellerIdentity,
   catalogProductFromApi,
   getCatalogProduct,
   listCatalogProductsForSeller,
@@ -22,8 +24,8 @@ import {
   useCart,
 } from '@/features/customer-commerce'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
-import { ProductCard } from '@/features/marketing/product-card'
 import { useAuth } from '@/features/auth/auth-context'
+import { getSellerReviewStats } from '@/lib/seller-reviews'
 import { formatPriceAmount } from '@/lib/money'
 import {
   getPublishedCatalogProduct,
@@ -86,6 +88,8 @@ export function ProductViewPage() {
     product?.shopName ||
     'Seller'
 
+  const sellerStats = sellerId ? getSellerReviewStats(sellerId) : null
+
   const moreFromSeller = useMemo(() => {
     if (!sellerId || !product) return []
     return listCatalogProductsForSeller(sellerId)
@@ -147,11 +151,15 @@ export function ProductViewPage() {
         </Button>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
+          <div className="relative overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
             <img
               src={product.image}
               alt={product.name}
               className="aspect-square w-full object-cover"
+            />
+            <SaveGiftButton
+              productId={product.id}
+              className="absolute top-3 right-3 z-10"
             />
           </div>
 
@@ -174,22 +182,27 @@ export function ProductViewPage() {
               ) : null}
             </div>
 
-            <div className="mt-5 flex items-center gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">
-              <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-accent text-primary">
-                {product.sellerImageUrl || seller?.image_url ? (
-                  <img
-                    src={product.sellerImageUrl || seller?.image_url}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <Store className="size-4" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs text-muted-foreground">Sold by</p>
-                <p className="truncate font-medium">{sellerName}</p>
-              </div>
+            <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">
+              <SellerIdentity
+                name={sellerName}
+                tradingName={seller?.trading_name || product.sellerTradingName}
+                legalName={seller?.legal_name || product.sellerLegalName}
+                shopName={product.shopName}
+                href={sellerId ? `/sellers/${sellerId}` : undefined}
+                imageUrl={product.sellerImageUrl || seller?.image_url}
+                rating={sellerStats?.average ?? 0}
+                reviewCount={sellerStats?.count ?? 0}
+                size="md"
+                className="min-w-0 flex-1"
+              />
+              {sellerId ? (
+                <Button asChild variant="outline" className="h-9 shrink-0 rounded-full px-3">
+                  <Link to={`/sellers/${sellerId}`}>
+                    View profile
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+              ) : null}
             </div>
 
             {description ? (
@@ -255,7 +268,7 @@ export function ProductViewPage() {
                       variant="outline"
                       className="mt-4 h-10 rounded-full px-4"
                     >
-                      <Link to="/customer/cart">View cart</Link>
+                      <Link to="/cart">View cart</Link>
                     </Button>
                   ) : null}
                 </>
@@ -278,7 +291,7 @@ export function ProductViewPage() {
                       variant="outline"
                       className="h-10 rounded-full px-4"
                     >
-                      <Link to="/customer/register">Create account</Link>
+                      <Link to="/register">Create account</Link>
                     </Button>
                   </div>
                 </div>
@@ -294,15 +307,15 @@ export function ProductViewPage() {
                 More from {sellerName}
               </h2>
               <Button asChild variant="ghost" className="h-9 rounded-full px-3">
-                <Link to="/products">
-                  All gifts
+                <Link to={sellerId ? `/sellers/${sellerId}` : '/products'}>
+                  {sellerId ? 'View seller' : 'All gifts'}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {moreFromSeller.map((item) => (
-                <ProductCard key={item.id} product={item} />
+                <GiftCard key={item.id} product={item} />
               ))}
             </div>
           </section>

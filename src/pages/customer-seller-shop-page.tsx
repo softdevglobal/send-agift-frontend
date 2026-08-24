@@ -77,10 +77,10 @@ export function CustomerSellerShopPage() {
   )
 
   if (!sellerId) {
-    return <Navigate to="/customer" replace />
+    return <Navigate to="/products" replace />
   }
 
-  const sellerHref = `/customer/sellers/${sellerId}`
+  const sellerHref = `/sellers/${sellerId}`
   const sellerName = seller?.trading_name?.trim() || seller?.name || 'Seller'
 
   if (!seller) {
@@ -90,7 +90,7 @@ export function CustomerSellerShopPage() {
           title="Shop"
           action={
             <Button asChild variant="outline" className="h-10 rounded-full px-4">
-              <Link to="/customer">
+              <Link to="/products">
                 <ArrowLeft className="size-4" />
                 All gifts
               </Link>
@@ -103,7 +103,7 @@ export function CustomerSellerShopPage() {
           description="This seller is not in the public directory yet."
           action={
             <Button asChild className="h-10 rounded-full px-4">
-              <Link to="/customer">Browse gifts</Link>
+              <Link to="/products">Browse gifts</Link>
             </Button>
           }
         />

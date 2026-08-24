@@ -243,6 +243,88 @@ export type SavedGift = {
 
 export type SavedGiftDetails = SavedGift & { product: Product }
 
+export const ORDER_STATUSES = [
+  'draft',
+  'pending_payment',
+  'paid',
+  'accepted',
+  'preparing',
+  'dispatched',
+  'delivered',
+  'cancelled',
+  'refunded',
+] as const
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
+
+export const FULFILMENT_STATUSES = [
+  'pending',
+  'accepted',
+  'preparing',
+  'ready',
+  'dispatched',
+  'delivered',
+  'cancelled',
+] as const
+
+export type FulfilmentStatus = (typeof FULFILMENT_STATUSES)[number]
+
+export type Order = {
+  id: string
+  order_number: string
+  customer_id: string
+  recipient_id?: string | null
+  country_id: string
+  customer_type: string
+  /** RFC3339 timestamp — the date part is the delivery day. */
+  delivery_date: string
+  status: OrderStatus
+  /** Minor units of `currency`. */
+  subtotal_amount: number
+  delivery_amount: number
+  total_amount: number
+  currency: string
+  gift_message?: string | null
+  media_greeting_id?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type OrderItem = {
+  id: string
+  order_id: string
+  seller_id: string
+  shop_id: string
+  product_id: string
+  quantity: number
+  unit_amount: number
+  total_amount: number
+  fulfilment_status: FulfilmentStatus
+  created_at: string
+  updated_at: string
+}
+
+export type OrderDetails = Order & { items: OrderItem[] }
+
+export type OrderItemInput = {
+  product_id: string
+  quantity: number
+}
+
+export type OrderCreateInput = {
+  recipient_id?: string | null
+  country_id: string
+  /** 'personal' | 'corporate'. Defaults to 'personal' server-side. */
+  customer_type?: string
+  /** YYYY-MM-DD */
+  delivery_date: string
+  gift_message?: string | null
+  media_greeting_id?: string | null
+  /** Minor units. Line prices come from the product, not the client. */
+  delivery_amount?: number
+  items: OrderItemInput[]
+}
+
 export type Admin = {
   id: string
   email: string

@@ -32,7 +32,7 @@ function priceLabel(product: CatalogProduct | GiftProduct) {
 
 export function GiftCard({ product, href }: GiftCardProps) {
   const { addItem } = useCart()
-  const to = href ?? `/customer/gifts/${product.id}`
+  const to = href ?? `/products/${product.id}`
   const category = isCatalogProduct(product) ? categoryName(product.categoryId) : null
   const description = isCatalogProduct(product) ? product.description.trim() : ''
   const sellerId = isCatalogProduct(product) ? product.sellerId || product.shopId : undefined
@@ -80,7 +80,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
             tradingName={tradingName}
             legalName={legalName}
             shopName={shopName}
-            href={sellerId ? `/customer/sellers/${sellerId}` : undefined}
+            href={sellerId ? `/sellers/${sellerId}` : undefined}
             imageUrl={sellerImageUrl}
             rating={sellerStats?.average ?? 0}
             reviewCount={sellerStats?.count ?? 0}

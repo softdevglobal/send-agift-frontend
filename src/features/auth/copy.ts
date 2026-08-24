@@ -12,7 +12,7 @@ export const loginCopy: Record<AuthRole, LoginCopy> = {
     switchTo: '/seller/login',
     registerHint: 'New here?',
     registerLabel: 'Create a customer account',
-    registerTo: '/customer/register',
+    registerTo: '/register',
     panelAccent: 'Country-controlled gifting',
     panelNote: 'Shop curated gifts, follow orders, and join approved competitions.',
   },

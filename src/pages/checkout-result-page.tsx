@@ -1,31 +1,63 @@
-import { CheckCircle2 } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CheckCircle2, LoaderCircle } from 'lucide-react'
 import { Link, Navigate, useSearchParams } from 'react-router-dom'
 
+import { getOrder, type OrderDetails } from '@/api/orders'
 import { Button } from '@/components/ui/button'
+import { CustomerPageHeader, customerPanelClass } from '@/features/customer-commerce'
 import {
-  CustomerPageHeader,
-  customerPanelClass,
-  formatMoney,
-  getOrder,
-} from '@/features/customer-commerce'
+  formatDeliveryDate,
+  orderStatusLabel,
+} from '@/features/customer-commerce/order-display'
+import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 export function CheckoutResultPage() {
   const [searchParams] = useSearchParams()
   const orderId = searchParams.get('orderId')
-  const order = orderId ? getOrder(orderId) : null
+  const [order, setOrder] = useState<OrderDetails | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  if (!order) {
-    return <Navigate to="/customer/orders" replace />
+  useEffect(() => {
+    let cancelled = false
+    if (!orderId) {
+      setLoading(false)
+      return
+    }
+    getOrder(orderId)
+      .then((details) => {
+        if (!cancelled) setOrder(details)
+      })
+      .catch(() => {
+        if (!cancelled) setOrder(null)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [orderId])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-24">
+        <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
-  const paidOnDelivery = order.paymentStatus === 'pay_on_delivery'
+  if (!order) {
+    return <Navigate to="/account/orders" replace />
+  }
+
+  const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
     <div>
       <CustomerPageHeader
-        title="Order confirmed"
-        description="This was a demo checkout. No payment provider was charged."
+        title="Order placed"
+        description="Your order is with the seller. You can track it from your order history."
       />
 
       <section className={cn(customerPanelClass, 'relative overflow-hidden p-6 sm:p-8')}>
@@ -33,23 +65,23 @@ export function CheckoutResultPage() {
           <CheckCircle2 className="size-6" />
         </div>
         <h2 className="mt-4 font-display text-2xl tracking-tight">
-          {paidOnDelivery ? 'Order placed — pay on delivery' : 'Demo payment recorded'}
+          {orderStatusLabel(order.status)}
         </h2>
         <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
-          Order <span className="font-medium text-foreground">{order.id}</span> is
-          processing. Delivery updates will appear in your order history on this
-          device.
+          Order{' '}
+          <span className="font-medium text-foreground">{order.order_number}</span> is
+          set to deliver on {formatDeliveryDate(order.delivery_date)}.
         </p>
         <p className="mt-4 text-sm">
-          Total {formatMoney(order.total)} · {order.items.length} item
-          {order.items.length === 1 ? '' : 's'}
+          Total {formatPriceAmount(order.total_amount, order.currency)} · {itemCount} item
+          {itemCount === 1 ? '' : 's'}
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild className="h-10 rounded-full px-4">
-            <Link to={`/customer/orders/${order.id}`}>View order</Link>
+            <Link to={`/account/orders/${order.id}`}>View order</Link>
           </Button>
           <Button asChild variant="outline" className="h-10 rounded-full px-4">
-            <Link to="/customer">Keep shopping</Link>
+            <Link to="/products">Keep shopping</Link>
           </Button>
         </div>
       </section>

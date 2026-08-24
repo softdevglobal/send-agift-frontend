@@ -1,105 +1,130 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 
-import { getCustomerMe, type CustomerAddress } from '@/api/customers'
+import { listCountries, type Country } from '@/api/countries'
+import { getCustomerMe, listRecipients, type Recipient } from '@/api/customers'
+import { createOrder } from '@/api/orders'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  CustomerPageHeader,
-  customerPanelClass,
-  formatMoney,
-  saveOrder,
-  useCart,
-} from '@/features/customer-commerce'
-import type {
-  PaymentMethod,
-  PaymentStatus,
-} from '@/features/customer-commerce/types'
-import { createOrderId } from '@/features/customer-commerce/utils'
-import { optionalString } from '@/lib/form'
+import { CustomerPageHeader, customerPanelClass, useCart } from '@/features/customer-commerce'
+import { toDateInputValue } from '@/features/customer-commerce/order-display'
+import { getErrorMessage } from '@/lib/api'
+import { selectClassName, textareaClassName } from '@/lib/form-styles'
+import { formatPriceAmount, majorToMinor } from '@/lib/money'
+import { isUuid } from '@/lib/uuid'
 import { cn } from '@/lib/utils'
 
-const paymentOptions: {
-  id: PaymentMethod
-  label: string
-  hint: string
-}[] = [
-  {
-    id: 'card',
-    label: 'Card (demo)',
-    hint: 'No card number is collected or stored.',
-  },
-  {
-    id: 'wallet',
-    label: 'Digital wallet (demo)',
-    hint: 'Simulates an approved wallet charge.',
-  },
-  {
-    id: 'cod',
-    label: 'Pay on delivery',
-    hint: 'Pay when the gift arrives.',
-  },
-]
+function tomorrow() {
+  const date = new Date()
+  date.setDate(date.getDate() + 1)
+  return toDateInputValue(date)
+}
 
-function addressLabel(address: CustomerAddress) {
-  return [address.line1, address.city, address.region, address.postal_code]
-    .filter(Boolean)
-    .join(', ')
+function recipientLabel(recipient: Recipient) {
+  return recipient.relationship
+    ? `${recipient.name} · ${recipient.relationship}`
+    : recipient.name
 }
 
 export function CheckoutPage() {
   const navigate = useNavigate()
-  const { lines, subtotal, shipping, total, clearCart } = useCart()
-  const [addresses, setAddresses] = useState<CustomerAddress[]>([])
+  const { lines, subtotal, shipping, clearCart } = useCart()
+
+  const [countries, setCountries] = useState<Country[]>([])
+  const [recipients, setRecipients] = useState<Recipient[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [placed, setPlaced] = useState(false)
 
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [line1, setLine1] = useState('')
-  const [line2, setLine2] = useState('')
-  const [city, setCity] = useState('')
-  const [region, setRegion] = useState('')
-  const [postalCode, setPostalCode] = useState('')
-  const [note, setNote] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card')
+  const [recipientId, setRecipientId] = useState('')
+  const [countryId, setCountryId] = useState('')
+  const [customerType, setCustomerType] = useState('personal')
+  const [deliveryDate, setDeliveryDate] = useState(tomorrow)
+  const [giftMessage, setGiftMessage] = useState('')
 
   useEffect(() => {
     let cancelled = false
-    getCustomerMe()
-      .then((me) => {
+    setLoading(true)
+    Promise.all([
+      getCustomerMe(),
+      listRecipients().catch(() => [] as Recipient[]),
+      listCountries().catch(() => [] as Country[]),
+    ])
+      .then(([me, recipientList, countryList]) => {
         if (cancelled) return
-        setEmail((current) => current || me.email)
-        setName((current) => current || me.display_name || '')
-        setPhone((current) => current || me.phone || '')
-        const list = me.addresses ?? []
-        setAddresses(list)
-        const preferred =
-          list.find((item) => item.is_default) ?? list[0] ?? null
-        if (preferred) {
-          setLine1((current) => current || preferred.line1)
-          setLine2((current) => current || preferred.line2 || '')
-          setCity((current) => current || preferred.city)
-          setRegion((current) => current || preferred.region || '')
-          setPostalCode((current) => current || preferred.postal_code || '')
+        setRecipients(Array.isArray(recipientList) ? recipientList : [])
+        setCountries(Array.isArray(countryList) ? countryList : [])
+        setCountryId((current) => current || me.country_id)
+        if (me.customer_type === 'personal' || me.customer_type === 'corporate') {
+          setCustomerType(me.customer_type)
         }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setError('Could not load saved addresses. You can still enter delivery details.')
-        }
+      .catch((err) => {
+        if (!cancelled) setError(getErrorMessage(err, 'Could not load your account details.'))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
       })
     return () => {
       cancelled = true
     }
   }, [])
 
-  if (placed) {
+  // Only API-backed products can be ordered — demo catalog entries have no server record.
+  const unorderable = useMemo(
+    () => lines.filter((line) => !isUuid(line.product.id)),
+    [lines],
+  )
+
+  const currencies = useMemo(
+    () => [...new Set(lines.map((line) => line.product.currency).filter(Boolean))],
+    [lines],
+  )
+  const currency = currencies[0] ?? 'USD'
+  const mixedCurrency = currencies.length > 1
+
+  const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
+
+  const blocker = unorderable.length
+    ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
+    : mixedCurrency
+      ? 'All items in one order must share the same currency. Split your cart and order separately.'
+      : null
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (blocker) return
+    setError(null)
+    setSubmitting(true)
+    try {
+      const order = await createOrder({
+        recipient_id: recipientId || null,
+        country_id: countryId,
+        customer_type: customerType,
+        delivery_date: deliveryDate,
+        gift_message: giftMessage.trim() || null,
+        delivery_amount: majorToMinor(shipping, currency),
+        items: lines.map((line) => ({
+          product_id: line.product.id,
+          quantity: line.quantity,
+        })),
+      })
+      setPlaced(true)
+      clearCart()
+      navigate(`/checkout/result?orderId=${encodeURIComponent(order.id)}`, {
+        replace: true,
+      })
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not place your order.'))
+      setSubmitting(false)
+    }
+  }
+
+  if (placed || loading) {
     return (
       <div className="flex justify-center py-24">
         <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
@@ -108,69 +133,17 @@ export function CheckoutPage() {
   }
 
   if (!lines.length) {
-    return <Navigate to="/customer/cart" replace />
-  }
-
-  function applyAddress(address: CustomerAddress) {
-    setLine1(address.line1)
-    setLine2(address.line2 ?? '')
-    setCity(address.city)
-    setRegion(address.region ?? '')
-    setPostalCode(address.postal_code ?? '')
-  }
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    setSubmitting(true)
-
-    const paymentStatus: PaymentStatus =
-      paymentMethod === 'cod' ? 'pay_on_delivery' : 'demo_paid'
-
-    const order = saveOrder({
-      id: createOrderId(),
-      createdAt: new Date().toISOString(),
-      status: 'processing',
-      paymentStatus,
-      paymentMethod,
-      items: lines.map((line) => ({
-        productId: line.product.id,
-        name: line.product.name,
-        price: line.product.price,
-        quantity: line.quantity,
-        image: line.product.image,
-      })),
-      subtotal,
-      shipping,
-      total,
-      recipient: {
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        line1: line1.trim(),
-        line2: optionalString(line2),
-        city: city.trim(),
-        region: optionalString(region),
-        postalCode: optionalString(postalCode),
-        note: optionalString(note),
-      },
-    })
-
-    setPlaced(true)
-    clearCart()
-    navigate(`/customer/checkout/result?orderId=${encodeURIComponent(order.id)}`, {
-      replace: true,
-    })
+    return <Navigate to="/cart" replace />
   }
 
   return (
     <div>
       <CustomerPageHeader
         title="Checkout"
-        description="Confirm delivery details and complete a demo payment. No payment provider is charged."
+        description="Confirm who this gift is for and when it should arrive. The order is created awaiting payment."
       />
 
-      <FormAlert error={error} className="mb-5" />
+      <FormAlert error={error ?? blocker} className="mb-5" />
 
       <form
         onSubmit={handleSubmit}
@@ -178,159 +151,113 @@ export function CheckoutPage() {
       >
         <div className="space-y-6">
           <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
-            <h2 className="font-medium">Delivery</h2>
-            {addresses.length ? (
-              <div className="space-y-2">
-                <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
-                  Saved addresses
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {addresses.map((address) => (
-                    <Button
-                      key={address.id}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-auto max-w-full rounded-full px-3 py-1.5 text-left text-xs"
-                      onClick={() => applyAddress(address)}
-                    >
-                      {address.label || 'Address'} · {addressLabel(address)}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+            <div>
+              <h2 className="font-medium">Recipient</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Pick someone from your saved recipients, or send the gift to yourself.
+              </p>
+            </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="checkout-name">Recipient name</Label>
-                <Input
-                  id="checkout-name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-email">Email</Label>
-                <Input
-                  id="checkout-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-phone">Phone</Label>
-                <Input
-                  id="checkout-phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="checkout-line1">Address line 1</Label>
-                <Input
-                  id="checkout-line1"
-                  value={line1}
-                  onChange={(event) => setLine1(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="checkout-line2">Address line 2</Label>
-                <Input
-                  id="checkout-line2"
-                  value={line2}
-                  onChange={(event) => setLine2(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-city">City</Label>
-                <Input
-                  id="checkout-city"
-                  value={city}
-                  onChange={(event) => setCity(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-region">Region</Label>
-                <Input
-                  id="checkout-region"
-                  value={region}
-                  onChange={(event) => setRegion(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="checkout-postal">Postal code</Label>
-                <Input
-                  id="checkout-postal"
-                  value={postalCode}
-                  onChange={(event) => setPostalCode(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="checkout-note">Gift note (optional)</Label>
-                <Input
-                  id="checkout-note"
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  placeholder="Happy birthday — thinking of you"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="checkout-recipient">Send to</Label>
+              <select
+                id="checkout-recipient"
+                value={recipientId}
+                onChange={(event) => setRecipientId(event.target.value)}
+                className={selectClassName}
+              >
+                <option value="">Myself</option>
+                {recipients.map((recipient) => (
+                  <option key={recipient.id} value={recipient.id}>
+                    {recipientLabel(recipient)}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground">
+                Need someone new?{' '}
+                <Link
+                  to="/account/recipients"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Manage recipients
+                </Link>
+              </p>
             </div>
           </section>
 
           <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
-            <div>
-              <h2 className="font-medium">Payment</h2>
-              <p className="mt-1 rounded-lg bg-accent/70 px-3 py-2 text-sm text-accent-foreground">
-                Demo checkout only. SendAgift does not contact a payment processor
-                or save payment credentials.
-              </p>
-            </div>
-            <fieldset className="space-y-2">
-              <legend className="sr-only">Payment method</legend>
-              {paymentOptions.map((option) => (
-                <label
-                  key={option.id}
-                  className={cn(
-                    'flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 text-sm',
-                    paymentMethod === option.id
-                      ? 'border-primary bg-accent/60'
-                      : 'border-border/60 hover:bg-muted/40',
-                  )}
-                >
-                  <input
-                    type="radio"
-                    name="payment-method"
-                    value={option.id}
-                    checked={paymentMethod === option.id}
-                    onChange={() => setPaymentMethod(option.id)}
-                    className="mt-1"
+            <h2 className="font-medium">Delivery</h2>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="checkout-country">Delivery country</Label>
+                {countries.length ? (
+                  <select
+                    id="checkout-country"
+                    value={countryId}
+                    onChange={(event) => setCountryId(event.target.value)}
+                    className={selectClassName}
+                    required
+                  >
+                    <option value="">Select a country</option>
+                    {countries.map((country) => (
+                      <option key={country.id} value={country.id}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Input
+                    id="checkout-country"
+                    value={countryId}
+                    onChange={(event) => setCountryId(event.target.value)}
+                    className="h-11 bg-surface px-3"
+                    placeholder="Country id"
+                    required
                   />
-                  <span>
-                    <span className="font-medium">{option.label}</span>
-                    <span className="mt-0.5 block text-muted-foreground">
-                      {option.hint}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="checkout-delivery-date">Delivery date</Label>
+                <Input
+                  id="checkout-delivery-date"
+                  type="date"
+                  value={deliveryDate}
+                  min={toDateInputValue(new Date())}
+                  onChange={(event) => setDeliveryDate(event.target.value)}
+                  className="h-11 bg-surface px-3"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="checkout-customer-type">Order type</Label>
+                <select
+                  id="checkout-customer-type"
+                  value={customerType}
+                  onChange={(event) => setCustomerType(event.target.value)}
+                  className={selectClassName}
+                >
+                  <option value="personal">Personal</option>
+                  <option value="corporate">Corporate</option>
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Some products are only sold to personal or corporate buyers.
+                </p>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="checkout-gift-message">Gift message (optional)</Label>
+                <textarea
+                  id="checkout-gift-message"
+                  value={giftMessage}
+                  onChange={(event) => setGiftMessage(event.target.value)}
+                  className={textareaClassName}
+                  placeholder="Happy birthday — thinking of you"
+                />
+              </div>
+            </div>
           </section>
         </div>
 
@@ -343,27 +270,31 @@ export function CheckoutPage() {
                   <span className="block truncate font-medium">{line.product.name}</span>
                   <span className="text-muted-foreground">Qty {line.quantity}</span>
                 </span>
-                <span>{formatMoney(line.lineTotal)}</span>
+                <span>{money(line.lineTotal)}</span>
               </li>
             ))}
           </ul>
           <dl className="mt-4 space-y-2 border-t border-border/60 pt-4 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd>{formatMoney(subtotal)}</dd>
+              <dd>{money(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Shipping</dt>
-              <dd>{shipping === 0 ? 'Free' : formatMoney(shipping)}</dd>
+              <dt className="text-muted-foreground">Delivery</dt>
+              <dd>{shipping === 0 ? 'Free' : money(shipping)}</dd>
             </div>
             <div className="flex justify-between gap-4 font-medium">
               <dt>Total</dt>
-              <dd>{formatMoney(total)}</dd>
+              <dd>{money(subtotal + shipping)}</dd>
             </div>
           </dl>
+          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+            Line prices are confirmed by the seller when the order is created, so the
+            final total may differ slightly.
+          </p>
           <Button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || Boolean(blocker)}
             className="mt-5 h-11 w-full rounded-full"
           >
             {submitting ? (
@@ -372,12 +303,12 @@ export function CheckoutPage() {
                 Placing order…
               </>
             ) : (
-              'Place demo order'
+              'Place order'
             )}
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             Or{' '}
-            <Link to="/customer/cart" className="font-medium text-primary hover:underline">
+            <Link to="/cart" className="font-medium text-primary hover:underline">
               return to cart
             </Link>
           </p>

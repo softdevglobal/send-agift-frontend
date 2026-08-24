@@ -13,18 +13,19 @@ import {
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
+import { AccountMenu } from '@/components/common/account-menu'
 import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { accountNavItems } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { giftCategories } from '@/features/marketing/data'
-import { homePathForRole } from '@/lib/auth'
 
 const utilityLinks = [
-  { to: '/customer/orders', label: 'Track order', icon: Truck },
+  { to: '/account/orders', label: 'Track order', icon: Truck },
   { to: '/become-a-seller', label: 'Sell', icon: Store },
-  { to: '/customer', label: 'Help & Contact', icon: HelpCircle },
+  { to: '/products', label: 'Help & Contact', icon: HelpCircle },
 ]
 
 export function SiteHeader() {
@@ -34,7 +35,7 @@ export function SiteHeader() {
   const { isAuthenticated, role, logout } = useAuth()
   const { itemCount } = useCart()
   const navigate = useNavigate()
-  const accountTo = role ? homePathForRole(role) : '/login'
+  const isCustomer = isAuthenticated && role === 'customer'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -42,9 +43,7 @@ export function SiteHeader() {
     if (query.trim()) params.set('q', query.trim())
     if (category && category !== 'all') params.set('category', category)
     const suffix = params.toString()
-    // /customer is customer-only; send everyone else to the public catalog.
-    const base = isAuthenticated && role === 'customer' ? '/customer' : '/products'
-    navigate(`${base}${suffix ? `?${suffix}` : ''}`)
+    navigate(`/products${suffix ? `?${suffix}` : ''}`)
     setOpen(false)
   }
 
@@ -66,48 +65,33 @@ export function SiteHeader() {
           </div>
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
-              <>
-                <Link
-                  to={accountTo}
-                  className="transition-colors hover:text-primary"
-                >
-                  Hi!{' '}
-                  <span className="font-medium text-foreground capitalize">
-                    {role}
-                  </span>
-                </Link>
-                <span className="text-border">|</span>
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="transition-colors hover:text-primary"
-                >
-                  Sign out
-                </button>
-              </>
+              <button
+                type="button"
+                onClick={logout}
+                className="transition-colors hover:text-primary"
+              >
+                Sign out
+              </button>
             ) : (
               <>
                 <Link to="/login" className="transition-colors hover:text-primary">
                   Hi! <span className="font-medium text-foreground">Sign in</span>
                 </Link>
                 <span className="text-border">|</span>
-                <Link
-                  to="/customer/register"
-                  className="transition-colors hover:text-primary"
-                >
+                <Link to="/register" className="transition-colors hover:text-primary">
                   Register
                 </Link>
               </>
             )}
             <Link
-              to="/customer"
+              to={isCustomer ? '/account/saved-gifts' : '/login'}
               className="inline-flex items-center gap-1 transition-colors hover:text-primary"
             >
               <Heart className="size-3.5" />
               Watchlist
             </Link>
             <Link
-              to={accountTo}
+              to={isCustomer ? '/account/orders' : '/login'}
               className="inline-flex items-center gap-1 transition-colors hover:text-primary"
             >
               <User className="size-3.5" />
@@ -172,15 +156,11 @@ export function SiteHeader() {
             asChild
             aria-label="Watchlist"
           >
-            <Link to="/customer">
+            <Link to={isCustomer ? '/account/saved-gifts' : '/login'}>
               <Heart className="size-4.5" />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" asChild aria-label="Account">
-            <Link to={accountTo}>
-              <User className="size-4.5" />
-            </Link>
-          </Button>
+          <AccountMenu />
           <Button
             variant="ghost"
             size="icon"
@@ -188,7 +168,7 @@ export function SiteHeader() {
             asChild
             aria-label="Cart"
           >
-            <Link to="/customer/cart">
+            <Link to="/cart">
               <ShoppingBag className="size-4.5" />
               {itemCount > 0 ? (
                 <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
@@ -245,31 +225,43 @@ export function SiteHeader() {
             {giftCategories.map((item) => (
               <Link
                 key={item.id}
-                to={`/customer?category=${item.id}`}
+                to={`/products?category=${item.id}`}
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 {item.name}
               </Link>
             ))}
-            {isAuthenticated ? (
+            {isCustomer ? (
               <>
-                <Button asChild className="mt-2">
-                  <Link to={accountTo} onClick={() => setOpen(false)}>
-                    My account
+                <p className="mt-3 px-3 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
+                  My account
+                </p>
+                {accountNavItems.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+                  >
+                    <item.icon className="size-4 text-muted-foreground" />
+                    {item.label}
                   </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setOpen(false)
-                    logout()
-                  }}
-                >
-                  Sign out
-                </Button>
+                ))}
               </>
+            ) : null}
+            {isAuthenticated ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-2"
+                onClick={() => {
+                  setOpen(false)
+                  logout()
+                }}
+              >
+                Sign out
+              </Button>
             ) : (
               <>
                 <Button asChild className="mt-2">
@@ -278,7 +270,7 @@ export function SiteHeader() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/customer/register" onClick={() => setOpen(false)}>
+                  <Link to="/register" onClick={() => setOpen(false)}>
                     Register
                   </Link>
                 </Button>

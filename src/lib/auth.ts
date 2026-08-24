@@ -52,5 +52,6 @@ export function isAdminRole(role: UserRole | null): boolean {
 export function homePathForRole(role: UserRole): string {
   if (role === 'seller') return '/seller/profile'
   if (isAdminRole(role)) return '/admin'
-  return '/customer'
+  // Customers browse the same public storefront as guests — no separate portal.
+  return '/'
 }

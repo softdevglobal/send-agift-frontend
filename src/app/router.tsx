@@ -1,9 +1,11 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 
+import { PageLayout } from '@/components/common/page-layout'
+import { AccountLayout } from '@/features/account/account-layout'
 import { AdminShell } from '@/features/admin'
 import { GuestRoute, ProtectedRoute } from '@/features/auth/protected-route'
-import { CustomerShell } from '@/features/customer-commerce'
 import { SellerShell } from '@/features/seller'
+import { AccountAddressesPage } from '@/pages/account-addresses-page'
 import { AdminAccountPage } from '@/pages/admin-account-page'
 import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
@@ -19,7 +21,6 @@ import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
 import { CustomerOrdersPage } from '@/pages/customer-orders-page'
-import { CustomerPage } from '@/pages/customer-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
@@ -29,7 +30,6 @@ import { CustomerSellerShopPage } from '@/pages/customer-seller-shop-page'
 import { HomePage } from '@/pages/home-page'
 import { ProductsPage } from '@/pages/products-page'
 import { ProductViewPage } from '@/pages/product-view-page'
-import { ProductDetailPage } from '@/pages/product-detail-page'
 import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
@@ -41,33 +41,59 @@ import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
 
-function RedirectShopProduct() {
+function RedirectProduct() {
   const { productId } = useParams()
-  return <Navigate to={`/customer/gifts/${productId}`} replace />
+  return <Navigate to={`/products/${productId}`} replace />
+}
+
+function RedirectSeller() {
+  const { sellerId } = useParams()
+  return <Navigate to={`/sellers/${sellerId}`} replace />
+}
+
+function RedirectSellerShop() {
+  const { sellerId, shopId } = useParams()
+  return <Navigate to={`/sellers/${sellerId}/shops/${shopId}`} replace />
+}
+
+function RedirectOrder() {
+  const { orderId } = useParams()
+  return <Navigate to={`/account/orders/${orderId}`} replace />
 }
 
 export function AppRouter() {
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          <GuestRoute>
-            <HomePage />
-          </GuestRoute>
-        }
-      />
-      <Route path="/shop" element={<Navigate to="/customer" replace />} />
-      <Route path="/shop/:productId" element={<RedirectShopProduct />} />
-      <Route path="/cart" element={<Navigate to="/customer/cart" replace />} />
-      <Route path="/checkout" element={<Navigate to="/customer/checkout" replace />} />
-      <Route
-        path="/checkout/result"
-        element={<Navigate to="/customer/checkout/result" replace />}
-      />
+      {/* Storefront — the same pages for guests and signed-in customers. */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/products/:productId" element={<ProductViewPage />} />
       <Route path="/become-a-seller" element={<BecomeSellerPage />} />
+
+      <Route element={<PageLayout />}>
+        <Route path="/sellers/:sellerId" element={<CustomerSellerPage />} />
+        <Route
+          path="/sellers/:sellerId/shops/:shopId"
+          element={<CustomerSellerShopPage />}
+        />
+        <Route path="/cart" element={<CartPage />} />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute roles={['customer']}>
+              <CheckoutPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout/result"
+          element={
+            <ProtectedRoute roles={['customer']}>
+              <CheckoutResultPage />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
 
       <Route
         path="/login"
@@ -85,39 +111,57 @@ export function AppRouter() {
           </GuestRoute>
         }
       />
-      <Route path="/customer">
-        <Route
-          path="register"
-          element={
-            <GuestRoute>
-              <CustomerRegisterPage />
-            </GuestRoute>
-          }
-        />
-        <Route
-          element={
-            <ProtectedRoute roles={['customer']}>
-              <CustomerShell />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<CustomerPage />} />
-          <Route path="gifts/:productId" element={<ProductDetailPage />} />
-          <Route path="sellers/:sellerId" element={<CustomerSellerPage />} />
-          <Route
-            path="sellers/:sellerId/shops/:shopId"
-            element={<CustomerSellerShopPage />}
-          />
-          <Route path="cart" element={<CartPage />} />
-          <Route path="checkout" element={<CheckoutPage />} />
-          <Route path="checkout/result" element={<CheckoutResultPage />} />
-          <Route path="orders" element={<CustomerOrdersPage />} />
-          <Route path="orders/:orderId" element={<CustomerOrderDetailPage />} />
-          <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
-          <Route path="recipients" element={<CustomerRecipientsPage />} />
-          <Route path="profile" element={<CustomerProfilePage />} />
-        </Route>
+
+      {/* Signed-in account area. */}
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <AccountLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/account/orders" replace />} />
+        <Route path="orders" element={<CustomerOrdersPage />} />
+        <Route path="orders/:orderId" element={<CustomerOrderDetailPage />} />
+        <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
+        <Route path="addresses" element={<AccountAddressesPage />} />
+        <Route path="recipients" element={<CustomerRecipientsPage />} />
+        <Route path="profile" element={<CustomerProfilePage />} />
       </Route>
+
+      {/* Legacy customer-portal paths. */}
+      <Route path="/shop" element={<Navigate to="/products" replace />} />
+      <Route path="/shop/:productId" element={<RedirectProduct />} />
+      <Route path="/customer" element={<Navigate to="/products" replace />} />
+      <Route path="/customer/gifts/:productId" element={<RedirectProduct />} />
+      <Route path="/customer/sellers/:sellerId" element={<RedirectSeller />} />
+      <Route
+        path="/customer/sellers/:sellerId/shops/:shopId"
+        element={<RedirectSellerShop />}
+      />
+      <Route path="/customer/cart" element={<Navigate to="/cart" replace />} />
+      <Route path="/customer/checkout" element={<Navigate to="/checkout" replace />} />
+      <Route
+        path="/customer/checkout/result"
+        element={<Navigate to="/checkout/result" replace />}
+      />
+      <Route path="/customer/orders" element={<Navigate to="/account/orders" replace />} />
+      <Route path="/customer/orders/:orderId" element={<RedirectOrder />} />
+      <Route
+        path="/customer/saved-gifts"
+        element={<Navigate to="/account/saved-gifts" replace />}
+      />
+      <Route
+        path="/customer/recipients"
+        element={<Navigate to="/account/recipients" replace />}
+      />
+      <Route
+        path="/customer/profile"
+        element={<Navigate to="/account/profile" replace />}
+      />
+      <Route path="/customer/register" element={<Navigate to="/register" replace />} />
+
       <Route
         path="/seller/login"
         element={
