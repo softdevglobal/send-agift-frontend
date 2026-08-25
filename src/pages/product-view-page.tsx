@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import {
   GiftCard,
   SaveGiftButton,
-  SellerIdentity,
+  ShopIdentity,
   catalogProductFromApi,
   getCatalogProduct,
   listCatalogProductsForSeller,
@@ -32,7 +32,7 @@ import {
   sellerFromCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
-import { subscribePublicSellers } from '@/lib/public-sellers'
+import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
 export function ProductViewPage() {
@@ -85,17 +85,29 @@ export function ProductViewPage() {
     product?.sellerName ||
     seller?.legal_name?.trim() ||
     product?.sellerLegalName?.trim() ||
-    product?.shopName ||
     'Seller'
+
+  // Customers browse shops, not seller accounts, so the gift is attributed to
+  // the shop it belongs to and links through to that shop's page.
+  const shopId = product?.shopId
+  const shop = useMemo(() => (shopId ? getPublicShop(shopId) : null), [shopId])
+  const shopName = shop?.shop.name?.trim() || product?.shopName?.trim() || 'Shop'
+  const shopLocation =
+    shop?.shop.customer_visible_location?.trim() || product?.shopLocation?.trim()
+  const shopHref =
+    sellerId && shopId ? `/sellers/${sellerId}/shops/${shopId}` : undefined
 
   const sellerStats = sellerId ? getSellerReviewStats(sellerId) : null
 
-  const moreFromSeller = useMemo(() => {
+  // "More from this shop" — sibling gifts in the same shop, not everything the
+  // seller sells across all their shops.
+  const moreFromShop = useMemo(() => {
     if (!sellerId || !product) return []
     return listCatalogProductsForSeller(sellerId)
       .filter((item) => item.id !== product.id)
+      .filter((item) => (shopId ? item.shopId === shopId : true))
       .slice(0, 4)
-  }, [product, sellerId])
+  }, [product, sellerId, shopId])
 
   if (loading) {
     return (
@@ -183,22 +195,21 @@ export function ProductViewPage() {
             </div>
 
             <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">
-              <SellerIdentity
-                name={sellerName}
-                tradingName={seller?.trading_name || product.sellerTradingName}
-                legalName={seller?.legal_name || product.sellerLegalName}
-                shopName={product.shopName}
-                href={sellerId ? `/sellers/${sellerId}` : undefined}
+              <ShopIdentity
+                shopName={shopName}
+                sellerName={sellerName}
+                location={shopLocation}
+                href={shopHref}
                 imageUrl={product.sellerImageUrl || seller?.image_url}
                 rating={sellerStats?.average ?? 0}
                 reviewCount={sellerStats?.count ?? 0}
                 size="md"
                 className="min-w-0 flex-1"
               />
-              {sellerId ? (
+              {shopHref ? (
                 <Button asChild variant="outline" className="h-9 shrink-0 rounded-full px-3">
-                  <Link to={`/sellers/${sellerId}`}>
-                    View profile
+                  <Link to={shopHref}>
+                    View shop
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -300,21 +311,21 @@ export function ProductViewPage() {
           </div>
         </div>
 
-        {moreFromSeller.length > 0 ? (
+        {moreFromShop.length > 0 ? (
           <section className="mt-14">
             <div className="mb-5 flex items-end justify-between gap-3">
               <h2 className="font-display text-xl tracking-tight sm:text-2xl">
-                More from {sellerName}
+                More from {shopName}
               </h2>
               <Button asChild variant="ghost" className="h-9 rounded-full px-3">
-                <Link to={sellerId ? `/sellers/${sellerId}` : '/products'}>
-                  {sellerId ? 'View seller' : 'All gifts'}
+                <Link to={shopHref ?? '/products'}>
+                  {shopHref ? 'View shop' : 'All gifts'}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
             </div>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {moreFromSeller.map((item) => (
+              {moreFromShop.map((item) => (
                 <GiftCard key={item.id} product={item} />
               ))}
             </div>
