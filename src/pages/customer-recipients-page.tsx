@@ -33,9 +33,11 @@ import {
   type RecipientInput,
 } from '@/api/customers'
 import { uploadPublicImage } from '@/api/media'
+import type { PlaceDetails } from '@/api/places'
 import type { AddressInput } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
+import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -62,6 +64,8 @@ type AddressFormState = {
   city: string
   region: string
   postal_code: string
+  latitude: number | null
+  longitude: number | null
   is_default: boolean
 }
 
@@ -75,6 +79,8 @@ function emptyAddressForm(countryId = ''): AddressFormState {
     city: '',
     region: '',
     postal_code: '',
+    latitude: null,
+    longitude: null,
     is_default: false,
   }
 }
@@ -105,6 +111,8 @@ function toAddressInput(form: AddressFormState): AddressInput {
     line2: optionalString(form.line2) ?? null,
     region: optionalString(form.region) ?? null,
     postal_code: optionalString(form.postal_code) ?? null,
+    latitude: form.latitude,
+    longitude: form.longitude,
     is_default: form.is_default,
   }
 }
@@ -260,6 +268,26 @@ export function CustomerRecipientsPage() {
     setAddressForm((current) => ({ ...current, [key]: value }))
   }
 
+  /** Fills the address form from a Google place, including its coordinates. */
+  function applyPlaceToAddressForm(place: PlaceDetails) {
+    setAddressForm((current) => {
+      const matched = countries.find(
+        (country) => country.iso_code.toUpperCase() === place.country_code?.toUpperCase(),
+      )
+      return {
+        ...current,
+        country_id: matched?.id ?? current.country_id,
+        line1: place.line1 ?? '',
+        line2: place.line2 ?? '',
+        city: place.city ?? '',
+        region: place.region ?? '',
+        postal_code: place.postal_code ?? '',
+        latitude: place.latitude ?? null,
+        longitude: place.longitude ?? null,
+      }
+    })
+  }
+
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -380,6 +408,8 @@ export function CustomerRecipientsPage() {
       city: address.city,
       region: address.region ?? '',
       postal_code: address.postal_code ?? '',
+      latitude: address.latitude ?? null,
+      longitude: address.longitude ?? null,
       is_default: address.is_default,
     })
     setEditingAddressId(address.id)
@@ -693,6 +723,7 @@ export function CustomerRecipientsPage() {
                       form={addressForm}
                       countries={countries}
                       onChange={updateAddressField}
+                      onSelectPlace={applyPlaceToAddressForm}
                       idPrefix="create"
                     />
                   </fieldset>
@@ -795,6 +826,7 @@ export function CustomerRecipientsPage() {
                         form={addressForm}
                         countries={countries}
                         onChange={updateAddressField}
+                        onSelectPlace={applyPlaceToAddressForm}
                         idPrefix="edit"
                       />
                       <div className="flex flex-wrap gap-2">
@@ -837,13 +869,18 @@ function AddressFields({
   form,
   countries,
   onChange,
+  onSelectPlace,
   idPrefix,
 }: {
   form: AddressFormState
   countries: Country[]
   onChange: <K extends keyof AddressFormState>(key: K, value: AddressFormState[K]) => void
+  onSelectPlace: (place: PlaceDetails) => void
   idPrefix: string
 }) {
+  // Restricts Google's results to the country picked above.
+  const countryCode = countries.find((country) => country.id === form.country_id)?.iso_code
+
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
@@ -891,6 +928,12 @@ function AddressFields({
           placeholder="shipping"
         />
       </div>
+      <PlaceAutocomplete
+        id={`${idPrefix}-addr-search`}
+        className="sm:col-span-2"
+        countryCode={countryCode}
+        onSelect={onSelectPlace}
+      />
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor={`${idPrefix}-addr-line1`}>Line 1</Label>
         <Input

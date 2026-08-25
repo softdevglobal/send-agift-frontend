@@ -30,6 +30,8 @@ type ApiOptions = {
   headers?: Record<string, string>
   /** When false, skip the Authorization header (login/register). Default true. */
   auth?: boolean
+  /** Aborts the request — used to drop stale as-you-type lookups. */
+  signal?: AbortSignal
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -67,7 +69,7 @@ function redirectToLogin(): void {
 }
 
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const { method = 'GET', body, headers = {}, auth = true } = options
+  const { method = 'GET', body, headers = {}, auth = true, signal } = options
   const token = getToken()
 
   const requestHeaders = new Headers(headers)
@@ -85,6 +87,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     method,
     headers: requestHeaders,
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal,
   })
 
   const parsed = await parseBody(response)

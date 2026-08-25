@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { LoaderCircle, MapPin, Trash2 } from 'lucide-react'
 
 import { listCountries, type Country } from '@/api/countries'
@@ -8,7 +8,9 @@ import {
   getCustomerMe,
   type CustomerDetails,
 } from '@/api/customers'
+import type { PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
+import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -35,6 +37,31 @@ export function AccountAddressesPage() {
   const [postalCode, setPostalCode] = useState('')
   const [label, setLabel] = useState('')
   const [isDefault, setIsDefault] = useState(false)
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+
+  // Restricts Google's results to the country picked above.
+  const countryCode = useMemo(
+    () => countries.find((country) => country.id === countryId)?.iso_code,
+    [countries, countryId],
+  )
+
+  /** Fills the form from a Google place, including its coordinates. */
+  function applyPlace(place: PlaceDetails) {
+    setLine1(place.line1 ?? '')
+    setLine2(place.line2 ?? '')
+    setCity(place.city ?? '')
+    setRegion(place.region ?? '')
+    setPostalCode(place.postal_code ?? '')
+    setLatitude(place.latitude ?? null)
+    setLongitude(place.longitude ?? null)
+
+    // Google may resolve a place in a different country than the one selected.
+    const matched = countries.find(
+      (country) => country.iso_code.toUpperCase() === place.country_code?.toUpperCase(),
+    )
+    if (matched) setCountryId(matched.id)
+  }
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([getCustomerMe(), listCountries()])
@@ -72,6 +99,8 @@ export function AccountAddressesPage() {
         region: optionalString(region),
         postal_code: optionalString(postalCode),
         label: optionalString(label),
+        latitude,
+        longitude,
         is_default: isDefault,
       })
       setLine1('')
@@ -81,6 +110,8 @@ export function AccountAddressesPage() {
       setPostalCode('')
       setLabel('')
       setIsDefault(false)
+      setLatitude(null)
+      setLongitude(null)
       await load()
       setNotice('Address added.')
     } catch (err) {
@@ -200,6 +231,12 @@ export function AccountAddressesPage() {
                   />
                 )}
               </div>
+              <PlaceAutocomplete
+                id="addr-search"
+                className="sm:col-span-2"
+                countryCode={countryCode}
+                onSelect={applyPlace}
+              />
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="addr-line1">Line 1</Label>
                 <Input

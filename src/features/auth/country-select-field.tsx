@@ -9,6 +9,8 @@ type CountrySelectFieldProps = {
   id: string
   value: string
   onChange: (value: string) => void
+  /** Receives the full selected country — used for its ISO code. */
+  onCountrySelected?: (country: Country | null) => void
   disabled?: boolean
 }
 
@@ -16,6 +18,7 @@ export function CountrySelectField({
   id,
   value,
   onChange,
+  onCountrySelected,
   disabled,
 }: CountrySelectFieldProps) {
   const [countries, setCountries] = useState<Country[]>([])
@@ -57,7 +60,12 @@ export function CountrySelectField({
       <select
         id={id}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          onChange(event.target.value)
+          onCountrySelected?.(
+            countries.find((country) => country.id === event.target.value) ?? null,
+          )
+        }}
         className={selectClassName}
         required
         disabled={disabled || loading || Boolean(error) || countries.length === 0}

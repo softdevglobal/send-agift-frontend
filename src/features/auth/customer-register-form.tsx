@@ -3,7 +3,9 @@ import { Eye, EyeOff, LoaderCircle, UserRound } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { registerCustomer, type AddressInput } from '@/api/customers'
+import type { PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
+import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,9 +51,23 @@ export function CustomerRegisterForm() {
   const [city, setCity] = useState('')
   const [region, setRegion] = useState('')
   const [postalCode, setPostalCode] = useState('')
+  const [countryCode, setCountryCode] = useState<string | undefined>(undefined)
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<CustomerStatus>('pending')
+
+  /** Fills the address fields from a Google place, including its coordinates. */
+  function applyPlace(place: PlaceDetails) {
+    setLine1(place.line1 ?? '')
+    setLine2(place.line2 ?? '')
+    setCity(place.city ?? '')
+    setRegion(place.region ?? '')
+    setPostalCode(place.postal_code ?? '')
+    setLatitude(place.latitude ?? null)
+    setLongitude(place.longitude ?? null)
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -87,6 +103,8 @@ export function CustomerRegisterForm() {
             line2: optionalString(line2),
             region: optionalString(region),
             postal_code: optionalString(postalCode),
+            latitude,
+            longitude,
             is_default: true,
           },
         ]
@@ -162,6 +180,7 @@ export function CustomerRegisterForm() {
           id="customer-country"
           value={countryId}
           onChange={setCountryId}
+          onCountrySelected={(country) => setCountryCode(country?.iso_code)}
           disabled={isSubmitting}
         />
 
@@ -296,6 +315,14 @@ export function CustomerRegisterForm() {
             disabled={isSubmitting}
           />
         </div>
+
+        <PlaceAutocomplete
+          id="customer-address-search"
+          countryCode={countryCode}
+          disabled={isSubmitting}
+          helperText="Optional — pick a result to fill the address fields below."
+          onSelect={applyPlace}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="customer-address">Address</Label>

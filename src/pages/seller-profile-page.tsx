@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from 'react'
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -34,7 +42,9 @@ import {
   type SellerDetails,
   type SellerUpdateRequest,
 } from '@/api/sellers'
+import type { PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
+import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
@@ -160,6 +170,25 @@ export function SellerProfilePage() {
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null)
   /** The form does not expose is_default, so carry it through an edit unchanged. */
   const [editingIsDefault, setEditingIsDefault] = useState(false)
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
+
+  // Restricts Google's results to the seller's country.
+  const countryCode = useMemo(
+    () => countries.find((country) => country.id === countryId)?.iso_code,
+    [countries, countryId],
+  )
+
+  /** Fills the address form from a Google place, including its coordinates. */
+  function applyPlace(place: PlaceDetails) {
+    setLine1(place.line1 ?? '')
+    setLine2(place.line2 ?? '')
+    setCity(place.city ?? '')
+    setRegion(place.region ?? '')
+    setPostalCode(place.postal_code ?? '')
+    setLatitude(place.latitude ?? null)
+    setLongitude(place.longitude ?? null)
+  }
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([getSellerMe(), listCountries()])
@@ -292,6 +321,8 @@ export function SellerProfilePage() {
     setRegion('')
     setPostalCode('')
     setAddressType('pickup')
+    setLatitude(null)
+    setLongitude(null)
     setShowAddressForm(false)
     setEditingAddressId(null)
     setEditingIsDefault(false)
@@ -305,6 +336,8 @@ export function SellerProfilePage() {
     setRegion(address.region ?? '')
     setPostalCode(address.postal_code ?? '')
     setAddressType((address.address_type as SellerAddressType) ?? 'pickup')
+    setLatitude(address.latitude ?? null)
+    setLongitude(address.longitude ?? null)
     setEditingAddressId(address.id)
     setEditingIsDefault(address.is_default)
     setShowAddressForm(true)
@@ -324,6 +357,8 @@ export function SellerProfilePage() {
       address_type: addressType,
       region: optionalString(region),
       postal_code: optionalString(postalCode),
+      latitude,
+      longitude,
       is_default: editingIsDefault,
     }
     try {
@@ -778,6 +813,13 @@ export function SellerProfilePage() {
                         placeholder="Main warehouse"
                       />
                     </div>
+
+                    <PlaceAutocomplete
+                      id="s-addr-search"
+                      countryCode={countryCode}
+                      onSelect={applyPlace}
+                      helperText="Pick a result to fill the address fields, or type them in below."
+                    />
 
                     <div className="space-y-2">
                       <Label htmlFor="s-addr-line1">Line 1</Label>

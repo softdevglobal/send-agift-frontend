@@ -48,6 +48,33 @@ export type AddressInput = {
   is_default?: boolean
 }
 
+export type PlaceSuggestion = {
+  place_id: string
+  description: string
+  main_text: string
+  secondary_text: string
+}
+
+export type PlaceAutocompleteResponse = {
+  suggestions: PlaceSuggestion[]
+}
+
+/** A Google place already split into the fields an AddressInput expects. */
+export type PlaceDetails = {
+  place_id: string
+  name?: string
+  formatted_address: string
+  line1: string
+  line2?: string
+  city: string
+  region?: string
+  postal_code?: string
+  country_code?: string
+  country_name?: string
+  latitude?: number
+  longitude?: number
+}
+
 export type Customer = {
   id: string
   country_id: string

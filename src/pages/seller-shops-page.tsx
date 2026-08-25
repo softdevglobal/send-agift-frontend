@@ -37,6 +37,7 @@ import {
 } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
+import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
@@ -735,18 +736,20 @@ export function SellerShopsPage() {
                         </p>
                       ) : null}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="shop-visible-location">Customer-visible location</Label>
-                      <Input
-                        id="shop-visible-location"
-                        value={form.customer_visible_location ?? ''}
-                        onChange={(event) =>
-                          updateField('customer_visible_location', event.target.value)
-                        }
-                        className="h-11 bg-surface px-3"
-                        placeholder="Kandy, Sri Lanka"
-                      />
-                    </div>
+                    <PlaceAutocomplete
+                      id="shop-visible-location"
+                      label="Customer-visible location"
+                      placeholder="Kandy, Sri Lanka"
+                      helperText="The town or city shoppers see on your shop page."
+                      types="cities"
+                      value={form.customer_visible_location ?? ''}
+                      onQueryChange={(value) =>
+                        updateField('customer_visible_location', value)
+                      }
+                      // The label is all this field stores, so skip the billed
+                      // Place Details lookup.
+                      resolveDetails={false}
+                    />
                   </div>
 
                   <div className="space-y-2">
