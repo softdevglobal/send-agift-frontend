@@ -1,11 +1,7 @@
 import { useState } from 'react'
 import { LoaderCircle, Shield } from 'lucide-react'
 
-import {
-  createCountryCapabilities,
-  deleteCountryCapabilities,
-  updateCountryCapabilities,
-} from '@/api/admin'
+import { createCountryCapabilities, updateCountryCapabilities } from '@/api/admin'
 import {
   COUNTRY_CAPABILITY_FLAGS,
   DEFAULT_COUNTRY_CAPABILITY_INPUT,
@@ -76,7 +72,7 @@ type CountryCapabilitiesPanelProps = {
   countryId: string
   /** From GET /admin/country-capabilities — skip GET-one when this is missing. */
   existing?: CountryCapability | null
-  onChanged?: (capability: CountryCapability | null) => void
+  onChanged?: (capability: CountryCapability) => void
 }
 
 export function CountryCapabilitiesPanel({
@@ -89,9 +85,13 @@ export function CountryCapabilitiesPanel({
   )
   const [capability, setCapability] = useState<CountryCapability | null>(existing)
   const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
+  const savedFlags = capability
+    ? flagsFromCapability(capability)
+    : DEFAULT_COUNTRY_CAPABILITY_INPUT
+  const isDirty = COUNTRY_CAPABILITY_FLAGS.some((flag) => flags[flag] !== savedFlags[flag])
 
   function toggle(flag: CountryCapabilityFlag, enabled: boolean) {
     setFlags((current) => ({ ...current, [flag]: enabled }))
@@ -117,29 +117,12 @@ export function CountryCapabilitiesPanel({
       }
       setCapability(saved)
       setFlags(flagsFromCapability(saved))
-      setNotice('Capabilities saved.')
+      setNotice('Changes saved.')
       onChanged?.(saved)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save capabilities.'))
     } finally {
       setSaving(false)
-    }
-  }
-
-  async function handleDelete() {
-    setError(null)
-    setNotice(null)
-    setDeleting(true)
-    try {
-      await deleteCountryCapabilities(countryId)
-      setCapability(null)
-      setFlags({ ...DEFAULT_COUNTRY_CAPABILITY_INPUT })
-      setNotice('Country capability deleted.')
-      onChanged?.(null)
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not delete capabilities.'))
-    } finally {
-      setDeleting(false)
     }
   }
 
@@ -152,9 +135,7 @@ export function CountryCapabilitiesPanel({
             Feature gates
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {capability
-              ? 'Toggle what this market allows, then save. Rule version increments on each update.'
-              : 'No capabilities yet — save to create the first rule set for this country.'}
+            Toggle what this market allows, then save changes.
           </p>
         </div>
         <span
@@ -194,38 +175,21 @@ export function CountryCapabilitiesPanel({
         })}
       </ul>
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" className="h-10" disabled={saving || deleting} onClick={() => void handleSave()}>
-          {saving ? (
-            <>
-              <LoaderCircle className="animate-spin" />
-              Saving…
-            </>
-          ) : capability ? (
-            'Save capabilities'
-          ) : (
-            'Create capabilities'
-          )}
-        </Button>
-        {capability ? (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-10 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled={saving || deleting}
-            onClick={() => void handleDelete()}
-          >
-            {deleting ? (
-              <>
-                <LoaderCircle className="animate-spin" />
-                Removing…
-              </>
-            ) : (
-              'Remove capabilities'
-            )}
-          </Button>
-        ) : null}
-      </div>
+      <Button
+        type="button"
+        className="h-10"
+        disabled={saving || !isDirty}
+        onClick={() => void handleSave()}
+      >
+        {saving ? (
+          <>
+            <LoaderCircle className="animate-spin" />
+            Saving…
+          </>
+        ) : (
+          'Save changes'
+        )}
+      </Button>
     </section>
   )
 }

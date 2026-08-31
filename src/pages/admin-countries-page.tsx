@@ -764,12 +764,10 @@ export function AdminCountriesPage() {
                   countryId={viewCountry.id}
                   existing={capabilities[viewCountry.id] ?? null}
                   onChanged={(capability) => {
-                    setCapabilities((current) => {
-                      const next = { ...current }
-                      if (capability) next[viewCountry.id] = capability
-                      else delete next[viewCountry.id]
-                      return next
-                    })
+                    setCapabilities((current) => ({
+                      ...current,
+                      [viewCountry.id]: capability,
+                    }))
                   }}
                 />
               </div>
