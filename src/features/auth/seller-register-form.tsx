@@ -2,8 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle, ShieldCheck } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { registerSeller } from '@/api/sellers'
+import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
+import { registerSeller, type SellerAddressType } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,10 +17,16 @@ import {
   verificationStatusLabel,
   type VerificationStatus,
 } from '@/features/auth/seller-register-options'
-import { getErrorMessage } from '@/lib/api'
+import { ApiError, getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
+
+const addressTypes: { value: SellerAddressType; label: string }[] = [
+  { value: 'pickup', label: 'Pickup' },
+  { value: 'return', label: 'Return' },
+  { value: 'both', label: 'Pickup and return' },
+]
 
 const verificationTone: Record<VerificationStatus, string> = {
   unverified: 'bg-muted text-muted-foreground ring-border/60',
@@ -45,10 +53,38 @@ export function SellerRegisterForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [countryCode, setCountryCode] = useState<string | undefined>(undefined)
+  const [addressType, setAddressType] = useState<SellerAddressType>('pickup')
+  const [line1, setLine1] = useState('')
+  const [line2, setLine2] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('')
+  const [postalCode, setPostalCode] = useState('')
+  const [latitude, setLatitude] = useState<number | null>(null)
+  const [longitude, setLongitude] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [blockedByCountry, setBlockedByCountry] = useState<Record<string, string>>({})
   const [verificationStatus, setVerificationStatus] =
     useState<VerificationStatus>('unverified')
+
+  const registrationBlocked = Boolean(countryId && blockedByCountry[countryId])
+
+  function applyPlace(place: PlaceDetails) {
+    const fields = addressFieldsFromPlace(place)
+    setLine1(fields.line1)
+    setLine2(fields.line2)
+    setCity(fields.city)
+    setRegion(fields.region)
+    setPostalCode(fields.postal_code)
+    setLatitude(fields.latitude)
+    setLongitude(fields.longitude)
+  }
+
+  function handleCountryChange(id: string) {
+    setCountryId(id)
+    setError(blockedByCountry[id] ?? null)
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -59,6 +95,11 @@ export function SellerRegisterForm() {
       return
     }
 
+    if (registrationBlocked) {
+      setError(blockedByCountry[countryId])
+      return
+    }
+
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -66,6 +107,12 @@ export function SellerRegisterForm() {
 
     if (password !== confirmPassword) {
       setError('Create password and confirm password must match.')
+      return
+    }
+
+    const hasAddress = Boolean(line1.trim() || city.trim())
+    if (hasAddress && (!line1.trim() || !city.trim())) {
+      setError('Address needs both street line and city.')
       return
     }
 
@@ -81,11 +128,31 @@ export function SellerRegisterForm() {
         trading_name: optionalString(tradingName),
         phone: optionalString(phone),
         image_url: optionalString(imageUrl),
+        addresses: hasAddress
+          ? [
+              {
+                country_id: countryId,
+                address_type: addressType,
+                line1: line1.trim(),
+                city: city.trim(),
+                line2: optionalString(line2),
+                region: optionalString(region),
+                postal_code: optionalString(postalCode),
+                latitude,
+                longitude,
+                is_default: true,
+              },
+            ]
+          : undefined,
       })
       setVerificationStatus(asVerificationStatus(created.verification_status))
       navigate('/seller/login?registered=1', { replace: true })
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed.'))
+      const message = getErrorMessage(err, 'Registration failed.')
+      setError(message)
+      if (err instanceof ApiError && err.status === 403 && countryId) {
+        setBlockedByCountry((current) => ({ ...current, [countryId]: message }))
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -139,7 +206,8 @@ export function SellerRegisterForm() {
         <CountrySelectField
           id="seller-country"
           value={countryId}
-          onChange={setCountryId}
+          onChange={handleCountryChange}
+          onCountrySelected={(country) => setCountryCode(country?.iso_code)}
           disabled={isSubmitting}
         />
 
@@ -292,12 +360,109 @@ export function SellerRegisterForm() {
             </button>
           </div>
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="seller-address-type">Address type</Label>
+          <select
+            id="seller-address-type"
+            value={addressType}
+            onChange={(event) => setAddressType(event.target.value as SellerAddressType)}
+            className={selectClassName}
+            disabled={isSubmitting}
+          >
+            {addressTypes.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <AddressAutocomplete
+          id="seller-address-search"
+          countryCode={countryCode}
+          disabled={isSubmitting}
+          helperText="Optional — pick a result to fill the address fields below."
+          onSelect={applyPlace}
+        />
+
+        <div className="space-y-2">
+          <Label htmlFor="seller-address">Address</Label>
+          <Input
+            id="seller-address"
+            type="text"
+            autoComplete="address-line1"
+            placeholder="Street address (optional)"
+            value={line1}
+            onChange={(event) => setLine1(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="seller-address-2">Address line 2</Label>
+          <Input
+            id="seller-address-2"
+            type="text"
+            autoComplete="address-line2"
+            placeholder="Apartment, suite (optional)"
+            value={line2}
+            onChange={(event) => setLine2(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="seller-city">City</Label>
+            <Input
+              id="seller-city"
+              type="text"
+              autoComplete="address-level2"
+              placeholder="City"
+              value={city}
+              onChange={(event) => setCity(event.target.value)}
+              className="h-11 bg-surface px-3"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="seller-region">Region</Label>
+            <Input
+              id="seller-region"
+              type="text"
+              autoComplete="address-level1"
+              placeholder="State / province"
+              value={region}
+              onChange={(event) => setRegion(event.target.value)}
+              className="h-11 bg-surface px-3"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="seller-postal-code">Postal code</Label>
+          <Input
+            id="seller-postal-code"
+            type="text"
+            autoComplete="postal-code"
+            placeholder="Postal / ZIP code"
+            value={postalCode}
+            onChange={(event) => setPostalCode(event.target.value)}
+            className="h-11 bg-surface px-3"
+            disabled={isSubmitting}
+          />
+        </div>
       </div>
 
       <Button
         type="submit"
         size="lg"
-        disabled={isSubmitting}
+        disabled={isSubmitting || registrationBlocked}
         className="h-11 w-full text-sm"
       >
         {isSubmitting ? (

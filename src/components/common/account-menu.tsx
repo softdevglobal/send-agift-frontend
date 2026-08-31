@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { accountNavGroups } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { customerDisplayName, customerInitials } from '@/features/customer-commerce'
-import { homePathForRole } from '@/lib/auth'
+import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 type AccountMenuProps = {
@@ -202,7 +202,9 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 Sign in to track orders, save gifts, and manage addresses.
               </p>
               <Button asChild className="mt-3 h-9 w-full rounded-full">
-                <Link to="/login">Sign in</Link>
+                <Link to="/login" state={returnToState(location.pathname, location.search)}>
+                  Sign in
+                </Link>
               </Button>
               <p className="mt-2.5 text-center text-xs text-muted-foreground">
                 New here?{' '}

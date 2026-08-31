@@ -17,6 +17,49 @@ export type CountryInput = {
   status?: string
 }
 
+export const COUNTRY_CAPABILITY_FLAGS = [
+  'customer_registration_enabled',
+  'seller_registration_enabled',
+  'seller_payouts_enabled',
+  'domestic_delivery_enabled',
+  'international_delivery_enabled',
+  'memberships_enabled',
+  'points_earning_enabled',
+  'points_usage_enabled',
+  'skill_competitions_enabled',
+  'app_store_available',
+] as const
+
+export type CountryCapabilityFlag = (typeof COUNTRY_CAPABILITY_FLAGS)[number]
+
+export type CountryCapabilityInput = Record<CountryCapabilityFlag, boolean>
+
+export const DEFAULT_COUNTRY_CAPABILITY_INPUT: CountryCapabilityInput = {
+  customer_registration_enabled: true,
+  seller_registration_enabled: true,
+  seller_payouts_enabled: true,
+  domestic_delivery_enabled: true,
+  international_delivery_enabled: true,
+  memberships_enabled: true,
+  points_earning_enabled: true,
+  points_usage_enabled: true,
+  skill_competitions_enabled: false,
+  app_store_available: true,
+}
+
+export type CountryCapability = CountryCapabilityInput & {
+  id: string
+  country_id: string
+  rule_version: number
+  created_at: string
+  updated_at: string
+}
+
+export type CountryCapabilityEntry = {
+  country: Country
+  capability: CountryCapability
+}
+
 export type Address = {
   id: string
   country_id: string
@@ -254,7 +297,7 @@ export type PresignUploadRequest = {
 export type PresignUploadResponse = {
   upload_url: string
   key: string
-  public_url?: string
+  public_url: string
 }
 
 export type SignedMediaUrlResponse = {

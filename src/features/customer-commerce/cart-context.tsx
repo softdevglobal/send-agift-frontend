@@ -6,7 +6,9 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
+import { useAuth } from '@/features/auth/auth-context'
 import { getCatalogProduct } from '@/features/customer-commerce/catalog'
 import {
   clearCartStorage,
@@ -15,6 +17,7 @@ import {
 } from '@/features/customer-commerce/cart-storage'
 import type { CartItem, CartLine } from '@/features/customer-commerce/types'
 import { shippingForSubtotal } from '@/features/customer-commerce/utils'
+import { returnToState } from '@/lib/auth'
 
 type CartContextValue = {
   items: CartItem[]
@@ -50,7 +53,11 @@ type CartProviderProps = {
 }
 
 export function CartProvider({ children }: CartProviderProps) {
+  const { isAuthenticated, role } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
   const [items, setItems] = useState<CartItem[]>(() => readCart())
+  const isCustomer = isAuthenticated && role === 'customer'
 
   const persist = useCallback((next: CartItem[]) => {
     setItems(next)
@@ -59,6 +66,14 @@ export function CartProvider({ children }: CartProviderProps) {
 
   const addItem = useCallback(
     (productId: string, quantity = 1) => {
+      if (!isCustomer) {
+        if (!isAuthenticated) {
+          navigate('/login', {
+            state: returnToState(location.pathname, location.search),
+          })
+        }
+        return
+      }
       if (!getCatalogProduct(productId) || quantity < 1) return
       persist(
         (() => {
@@ -72,7 +87,7 @@ export function CartProvider({ children }: CartProviderProps) {
         })(),
       )
     },
-    [items, persist],
+    [isAuthenticated, isCustomer, items, location.pathname, location.search, navigate, persist],
   )
 
   const setQuantity = useCallback(

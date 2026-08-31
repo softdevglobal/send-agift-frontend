@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ type AuthLoginPageProps = {
 export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) {
   const role = initialRole
   const copy = loginCopy[role]
+  const location = useLocation()
   const isSeller = role === 'seller'
   const isAdmin = role === 'admin'
 
@@ -24,11 +25,11 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
 
       <section
         className={cn(
-          'relative flex flex-1 flex-col overflow-y-auto bg-grain',
+          'relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-grain',
           isSeller || isAdmin ? 'bg-cream/60' : 'bg-background',
         )}
       >
-        <header className="flex items-center justify-between px-6 py-5 sm:px-10">
+        <header className="flex shrink-0 items-center justify-between px-6 py-5 sm:px-10">
           <BrandLogo className="lg:invisible" imgClassName="h-11" />
 
           <div className="flex items-center gap-4">
@@ -41,6 +42,7 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
             {isSeller || isAdmin ? (
               <Link
                 to={copy.switchTo}
+                state={location.state}
                 className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {copy.switchLabel}
@@ -53,11 +55,11 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
           </div>
         </header>
 
-        <div className="flex flex-1 items-center px-6 py-8 sm:px-10">
+        <div className="my-auto w-full px-6 py-8 sm:px-10">
           <LoginForm role={role} />
         </div>
 
-        <footer className="px-6 pb-6 text-center text-xs text-muted-foreground sm:px-10 sm:text-left">
+        <footer className="shrink-0 px-6 pb-6 text-center text-xs text-muted-foreground sm:px-10 sm:text-left">
           By continuing you agree to SendAgift country terms and privacy notices.
         </footer>
       </section>

@@ -3,9 +3,9 @@ import { Eye, EyeOff, LoaderCircle, UserRound } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import { registerCustomer, type AddressInput } from '@/api/customers'
-import type { PlaceDetails } from '@/api/places'
+import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
-import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,7 +17,7 @@ import {
   customerTypes,
   type CustomerStatus,
 } from '@/features/auth/customer-register-options'
-import { getErrorMessage } from '@/lib/api'
+import { getErrorMessage, ApiError } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
@@ -56,17 +56,26 @@ export function CustomerRegisterForm() {
   const [longitude, setLongitude] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [blockedByCountry, setBlockedByCountry] = useState<Record<string, string>>({})
   const [status, setStatus] = useState<CustomerStatus>('pending')
+
+  const registrationBlocked = Boolean(countryId && blockedByCountry[countryId])
 
   /** Fills the address fields from a Google place, including its coordinates. */
   function applyPlace(place: PlaceDetails) {
-    setLine1(place.line1 ?? '')
-    setLine2(place.line2 ?? '')
-    setCity(place.city ?? '')
-    setRegion(place.region ?? '')
-    setPostalCode(place.postal_code ?? '')
-    setLatitude(place.latitude ?? null)
-    setLongitude(place.longitude ?? null)
+    const fields = addressFieldsFromPlace(place)
+    setLine1(fields.line1)
+    setLine2(fields.line2)
+    setCity(fields.city)
+    setRegion(fields.region)
+    setPostalCode(fields.postal_code)
+    setLatitude(fields.latitude)
+    setLongitude(fields.longitude)
+  }
+
+  function handleCountryChange(id: string) {
+    setCountryId(id)
+    setError(blockedByCountry[id] ?? null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -75,6 +84,11 @@ export function CustomerRegisterForm() {
 
     if (!countryId) {
       setError('Please select a country.')
+      return
+    }
+
+    if (registrationBlocked) {
+      setError(blockedByCountry[countryId])
       return
     }
 
@@ -127,7 +141,11 @@ export function CustomerRegisterForm() {
       setStatus(asCustomerStatus(created.status))
       navigate('/login?registered=1', { replace: true })
     } catch (err) {
-      setError(getErrorMessage(err, 'Registration failed.'))
+      const message = getErrorMessage(err, 'Registration failed.')
+      setError(message)
+      if (err instanceof ApiError && err.status === 403 && countryId) {
+        setBlockedByCountry((current) => ({ ...current, [countryId]: message }))
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -179,7 +197,7 @@ export function CustomerRegisterForm() {
         <CountrySelectField
           id="customer-country"
           value={countryId}
-          onChange={setCountryId}
+          onChange={handleCountryChange}
           onCountrySelected={(country) => setCountryCode(country?.iso_code)}
           disabled={isSubmitting}
         />
@@ -316,7 +334,7 @@ export function CustomerRegisterForm() {
           />
         </div>
 
-        <PlaceAutocomplete
+        <AddressAutocomplete
           id="customer-address-search"
           countryCode={countryCode}
           disabled={isSubmitting}
@@ -400,7 +418,7 @@ export function CustomerRegisterForm() {
       <Button
         type="submit"
         size="lg"
-        disabled={isSubmitting}
+        disabled={isSubmitting || registrationBlocked}
         className="h-11 w-full text-sm"
       >
         {isSubmitting ? (

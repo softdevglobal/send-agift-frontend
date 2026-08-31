@@ -33,11 +33,11 @@ import {
   type RecipientInput,
 } from '@/api/customers'
 import { uploadPublicImage } from '@/api/media'
-import type { PlaceDetails } from '@/api/places'
+import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
 import type { AddressInput } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
-import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -268,24 +268,19 @@ export function CustomerRecipientsPage() {
     setAddressForm((current) => ({ ...current, [key]: value }))
   }
 
-  /** Fills the address form from a Google place, including its coordinates. */
+  /** Fills the address form from a Google place. Country stays the one selected above. */
   function applyPlaceToAddressForm(place: PlaceDetails) {
-    setAddressForm((current) => {
-      const matched = countries.find(
-        (country) => country.iso_code.toUpperCase() === place.country_code?.toUpperCase(),
-      )
-      return {
-        ...current,
-        country_id: matched?.id ?? current.country_id,
-        line1: place.line1 ?? '',
-        line2: place.line2 ?? '',
-        city: place.city ?? '',
-        region: place.region ?? '',
-        postal_code: place.postal_code ?? '',
-        latitude: place.latitude ?? null,
-        longitude: place.longitude ?? null,
-      }
-    })
+    const fields = addressFieldsFromPlace(place)
+    setAddressForm((current) => ({
+      ...current,
+      line1: fields.line1,
+      line2: fields.line2,
+      city: fields.city,
+      region: fields.region,
+      postal_code: fields.postal_code,
+      latitude: fields.latitude,
+      longitude: fields.longitude,
+    }))
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
@@ -928,7 +923,7 @@ function AddressFields({
           placeholder="shipping"
         />
       </div>
-      <PlaceAutocomplete
+      <AddressAutocomplete
         id={`${idPrefix}-addr-search`}
         className="sm:col-span-2"
         countryCode={countryCode}

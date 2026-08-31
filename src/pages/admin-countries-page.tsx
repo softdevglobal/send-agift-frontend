@@ -15,9 +15,9 @@ import {
   Trash2,
 } from 'lucide-react'
 
-import { createCountry, deleteCountry, updateCountry } from '@/api/admin'
+import { createCountry, deleteCountry, listCountryCapabilities, updateCountry } from '@/api/admin'
 import { listCountries, type Country, type CountryInput } from '@/api/countries'
-import { KNOWN_CURRENCIES } from '@/api/types'
+import { KNOWN_CURRENCIES, type CountryCapability } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -40,8 +40,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
-import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
-import { getErrorMessage } from '@/lib/api'
+import {
+  AdminPageHeader,
+  CountryCapabilitiesPanel,
+  adminPanelClass,
+  formatDate,
+} from '@/features/admin'
+import { ApiError, getErrorMessage } from '@/lib/api'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
@@ -92,6 +97,7 @@ function statusTone(status: string): string {
 
 export function AdminCountriesPage() {
   const [countries, setCountries] = useState<Country[]>([])
+  const [capabilities, setCapabilities] = useState<Record<string, CountryCapability>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -107,6 +113,17 @@ export function AdminCountriesPage() {
   const load = useCallback(async () => {
     const list = await listCountries()
     setCountries(Array.isArray(list) ? list : [])
+    try {
+      const entries = await listCountryCapabilities()
+      const map: Record<string, CountryCapability> = {}
+      for (const entry of Array.isArray(entries) ? entries : []) {
+        const countryId = entry.capability?.country_id || entry.country?.id
+        if (countryId && entry.capability) map[countryId] = entry.capability
+      }
+      setCapabilities(map)
+    } catch {
+      setCapabilities({})
+    }
   }, [])
 
   useEffect(() => {
@@ -228,7 +245,12 @@ export function AdminCountriesPage() {
       await load()
       setNotice('Country deleted.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not delete country.'))
+      const message = getErrorMessage(err, 'Could not delete country.')
+      setError(
+        err instanceof ApiError && err.status === 500
+          ? 'This country cannot be deleted while customers, sellers, or other records still use it.'
+          : message,
+      )
     }
   }
 
@@ -236,7 +258,7 @@ export function AdminCountriesPage() {
     <>
       <AdminPageHeader
         title="Countries"
-        description="Create the markets customers and sellers can register into. New countries appear on registration forms as soon as they're added."
+        description="Create markets customers and sellers can register into, then toggle what each country allows."
         action={
           <Button type="button" className="h-11 rounded-full px-5" onClick={openCreate}>
             <Plus className="size-4" />
@@ -281,6 +303,38 @@ export function AdminCountriesPage() {
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">
                         {country.default_currency} · {country.default_timezone}
                       </p>
+                      {capabilities[country.id] ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          <span
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                              capabilities[country.id].customer_registration_enabled
+                                ? 'bg-accent text-primary'
+                                : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            Customers{' '}
+                            {capabilities[country.id].customer_registration_enabled
+                              ? 'on'
+                              : 'off'}
+                          </span>
+                          <span
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                              capabilities[country.id].seller_registration_enabled
+                                ? 'bg-accent text-primary'
+                                : 'bg-muted text-muted-foreground',
+                            )}
+                          >
+                            Sellers{' '}
+                            {capabilities[country.id].seller_registration_enabled ? 'on' : 'off'}
+                          </span>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-[10px] tracking-wide text-muted-foreground uppercase">
+                          Gates not set
+                        </p>
+                      )}
                     </div>
                   </button>
 
@@ -704,6 +758,20 @@ export function AdminCountriesPage() {
                     </dd>
                   </div>
                 </dl>
+
+                <CountryCapabilitiesPanel
+                  key={viewCountry.id}
+                  countryId={viewCountry.id}
+                  existing={capabilities[viewCountry.id] ?? null}
+                  onChanged={(capability) => {
+                    setCapabilities((current) => {
+                      const next = { ...current }
+                      if (capability) next[viewCountry.id] = capability
+                      else delete next[viewCountry.id]
+                      return next
+                    })
+                  }}
+                />
               </div>
 
               <SheetFooter className="flex-row gap-2 border-t border-border/60 bg-muted/40 px-6 py-4">

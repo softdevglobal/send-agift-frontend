@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
@@ -14,11 +14,14 @@ import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/auth-context'
 import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
-import { getErrorMessage } from '@/lib/api'
+import { ApiError, getErrorMessage } from '@/lib/api'
+import { isUserRole, type UserRole } from '@/lib/auth'
 
 type LoginFormProps = {
   role: AuthRole
 }
+
+const LOGIN_ROLES: AuthRole[] = ['customer', 'seller', 'admin']
 
 async function loginByRole(role: AuthRole, email: string, password: string) {
   if (role === 'seller') return loginSeller({ email, password })
@@ -26,9 +29,52 @@ async function loginByRole(role: AuthRole, email: string, password: string) {
   return loginCustomer({ email, password })
 }
 
+function loginOrder(preferred: AuthRole): AuthRole[] {
+  // `/auth/login` returns the account's real role, so it runs first from every
+  // sign-in page. Role-specific customer/seller endpoints follow as fallback.
+  const rest = LOGIN_ROLES.filter((item) => item !== 'admin' && item !== preferred)
+  if (preferred === 'admin') return ['admin', ...rest]
+  return ['admin', preferred, ...rest]
+}
+
+function isRetryableLoginError(error: unknown): boolean {
+  return error instanceof ApiError && [400, 401, 403, 404].includes(error.status)
+}
+
+function sessionRoleFromResult(endpoint: AuthRole, apiRole: unknown): UserRole {
+  if (typeof apiRole === 'string' && isUserRole(apiRole)) return apiRole
+  return endpoint === 'admin' ? 'admin' : endpoint
+}
+
+async function loginWithCredentials(
+  preferred: AuthRole,
+  email: string,
+  password: string,
+): Promise<{ token: string; role: UserRole }> {
+  let lastError: unknown
+
+  for (const endpoint of loginOrder(preferred)) {
+    try {
+      const result = await loginByRole(endpoint, email, password)
+      if (typeof result?.token === 'string' && result.token) {
+        return {
+          token: result.token,
+          role: sessionRoleFromResult(endpoint, result.role),
+        }
+      }
+    } catch (error) {
+      lastError = error
+      if (!isRetryableLoginError(error)) throw error
+    }
+  }
+
+  throw lastError ?? new Error('Sign in failed.')
+}
+
 export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
   const { login } = useAuth()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -36,13 +82,28 @@ export function LoginForm({ role }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
 
   const registered = searchParams.get('registered') === '1'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    setHint(null)
 
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setError('Enter your email.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Enter a valid email.')
+      return
+    }
+    if (!password) {
+      setError('Enter your password.')
+      return
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
@@ -51,11 +112,10 @@ export function LoginForm({ role }: LoginFormProps) {
     setIsSubmitting(true)
 
     try {
-      const result = await loginByRole(role, email.trim(), password)
+      const result = await loginWithCredentials(role, trimmedEmail, password)
       login(result.token, result.role, remember)
     } catch (err) {
       setError(getErrorMessage(err, 'Sign in failed.'))
-    } finally {
       setIsSubmitting(false)
     }
   }
@@ -100,6 +160,12 @@ export function LoginForm({ role }: LoginFormProps) {
             <button
               type="button"
               className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
+              onClick={() => {
+                setError(null)
+                setHint(
+                  'Password reset isn’t available yet. Use the email you registered with, or contact support.',
+                )
+              }}
             >
               Forgot password?
             </button>
@@ -146,6 +212,16 @@ export function LoginForm({ role }: LoginFormProps) {
         </div>
       </div>
 
+      <FormAlert
+        error={error}
+        notice={
+          hint ??
+          (registered
+            ? 'Account created. Sign in with your new credentials.'
+            : null)
+        }
+      />
+
       <Button
         type="submit"
         size="lg"
@@ -161,15 +237,6 @@ export function LoginForm({ role }: LoginFormProps) {
           copy.submitLabel
         )}
       </Button>
-
-      <FormAlert
-        error={error}
-        notice={
-          registered
-            ? 'Account created. Sign in with your new credentials.'
-            : null
-        }
-      />
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">
@@ -203,6 +270,7 @@ export function LoginForm({ role }: LoginFormProps) {
           {copy.switchPrompt}{' '}
           <Link
             to={copy.switchTo}
+            state={location.state}
             className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
           >
             {copy.switchLabel}
