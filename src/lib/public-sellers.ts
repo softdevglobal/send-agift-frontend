@@ -157,6 +157,16 @@ export function getPublicSellerByShopId(shopId: string): PublicSeller | null {
   return getPublicSellerForShop(shopId)
 }
 
+/** Looks up one shop plus the seller that owns it. */
+export function getPublicShop(
+  shopId: string,
+): { shop: PublicShop; seller: PublicSeller } | null {
+  const seller = getPublicSellerForShop(shopId)
+  if (!seller) return null
+  const shop = seller.shops.find((item) => item.id === shopId)
+  return shop ? { shop, seller } : null
+}
+
 export function listPublicSellers(): PublicSeller[] {
   return Object.values(readStore().sellers)
 }

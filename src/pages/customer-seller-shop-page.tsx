@@ -10,6 +10,7 @@ import {
   customerPanelClass,
   listCatalogProductsForSeller,
 } from '@/features/customer-commerce'
+import { publicSellerInitials } from '@/lib/public-sellers'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import {
   subscribePublicSellers,
@@ -146,7 +147,7 @@ export function CustomerSellerShopPage() {
     <div>
       <CustomerPageHeader
         title={shop.name}
-        description={`${sellerName} · ${shopProducts.length} gift${shopProducts.length === 1 ? '' : 's'}`}
+        description={`${shopProducts.length} gift${shopProducts.length === 1 ? '' : 's'}`}
         action={
           <Button asChild variant="outline" className="h-10 rounded-full px-4">
             <Link to={sellerHref}>
@@ -157,31 +158,50 @@ export function CustomerSellerShopPage() {
         }
       />
 
+      {/* Facebook-style header: the shop's own image spans the top as a cover
+          photo, with the seller's profile picture overlapping its lower edge. */}
       <section className={cn(customerPanelClass, 'mb-8 overflow-hidden')}>
-        <div className="flex flex-col sm:flex-row">
-          <div className="aspect-[16/9] shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-auto sm:w-56">
-            {shop.image_url ? (
-              <img src={shop.image_url} alt="" className="size-full object-cover" />
+        <div className="relative aspect-[3/1] w-full bg-muted">
+          {shop.image_url ? (
+            <img src={shop.image_url} alt="" className="size-full object-cover" />
+          ) : (
+            <div className="flex size-full items-center justify-center bg-accent/40 text-muted-foreground">
+              <Store className="size-10" />
+            </div>
+          )}
+
+          <div className="absolute -bottom-10 left-5 sm:-bottom-12 sm:left-7">
+            {seller.image_url ? (
+              <img
+                src={seller.image_url}
+                alt=""
+                className="size-20 rounded-full object-cover ring-4 ring-card sm:size-24"
+              />
             ) : (
-              <div className="flex size-full min-h-28 items-center justify-center text-muted-foreground">
-                <Store className="size-8" />
-              </div>
+              <span className="flex size-20 items-center justify-center rounded-full bg-accent text-xl font-semibold text-primary ring-4 ring-card sm:size-24">
+                {publicSellerInitials({ name: sellerName })}
+              </span>
             )}
           </div>
-          <div className="min-w-0 flex-1 p-5">
-            <h2 className="font-display text-xl tracking-tight">{shop.name}</h2>
-            {shop.customer_visible_location ? (
-              <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                <MapPin className="size-3.5 shrink-0" />
-                <span className="truncate">{shop.customer_visible_location}</span>
-              </p>
-            ) : null}
-            {shop.description ? (
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {shop.description}
-              </p>
-            ) : null}
-          </div>
+        </div>
+
+        {/* Padded past the avatar so the name never sits under it. */}
+        <div className="px-5 pt-12 pb-5 sm:px-7 sm:pt-14">
+          <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Sold by <span className="font-medium text-foreground">{sellerName}</span>
+          </p>
+          {shop.customer_visible_location ? (
+            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="size-3.5 shrink-0" />
+              <span className="truncate">{shop.customer_visible_location}</span>
+            </p>
+          ) : null}
+          {shop.description ? (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {shop.description}
+            </p>
+          ) : null}
         </div>
       </section>
 

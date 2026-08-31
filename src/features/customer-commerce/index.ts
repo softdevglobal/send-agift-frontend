@@ -3,6 +3,7 @@ export { CustomerPageHeader } from './customer-page-header'
 export { CustomerEmptyState } from './customer-empty-state'
 export { GiftCard } from './gift-card'
 export { SellerIdentity } from './seller-identity'
+export { ShopIdentity } from './shop-identity'
 export { SaveGiftButton } from './save-gift-button'
 export { SavedGiftsProvider, useSavedGifts } from './saved-gifts-context'
 export {

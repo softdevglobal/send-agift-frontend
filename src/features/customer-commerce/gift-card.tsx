@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/features/customer-commerce/cart-context'
 import { SaveGiftButton } from '@/features/customer-commerce/save-gift-button'
-import { SellerIdentity } from '@/features/customer-commerce/seller-identity'
+import { ShopIdentity } from '@/features/customer-commerce/shop-identity'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
@@ -49,10 +49,17 @@ export function GiftCard({ product, href }: GiftCardProps) {
   const sellerImageUrl = isCatalogProduct(product)
     ? product.sellerImageUrl || publicSeller?.image_url
     : undefined
+  const publicShop =
+    isCatalogProduct(product) && product.shopId
+      ? publicSeller?.shops.find((shop) => shop.id === product.shopId)
+      : undefined
   const shopName = isCatalogProduct(product)
-    ? product.shopName?.trim() ||
-      publicSeller?.shops.find((shop) => shop.id === product.shopId)?.name
+    ? publicShop?.name?.trim() || product.shopName?.trim() || 'Shop'
     : undefined
+  // Cards link to the shop the gift belongs to, not the seller account.
+  const shopId = isCatalogProduct(product) ? product.shopId : undefined
+  const shopHref =
+    sellerId && shopId ? `/sellers/${sellerId}/shops/${shopId}` : undefined
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60 transition-transform duration-300 hover:-translate-y-1">
@@ -75,12 +82,10 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         {isCatalogProduct(product) ? (
-          <SellerIdentity
-            name={sellerName}
-            tradingName={tradingName}
-            legalName={legalName}
+          <ShopIdentity
             shopName={shopName}
-            href={sellerId ? `/sellers/${sellerId}` : undefined}
+            sellerName={sellerName}
+            href={shopHref}
             imageUrl={sellerImageUrl}
             rating={sellerStats?.average ?? 0}
             reviewCount={sellerStats?.count ?? 0}
