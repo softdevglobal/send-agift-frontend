@@ -1,7 +1,8 @@
 import {
   Heart,
+  History,
   MapPin,
-  ShoppingBag,
+  PackageSearch,
   User,
   Users,
   type LucideIcon,
@@ -13,6 +14,8 @@ export type AccountNavItem = {
   icon: LucideIcon
   /** Shown in the header dropdown as a one-line hint. */
   hint?: string
+  /** When true, the nav item is only active on that exact path. */
+  end?: boolean
 }
 
 export type AccountNavGroup = {
@@ -25,10 +28,17 @@ export const accountNavGroups: AccountNavGroup[] = [
     label: 'Orders',
     items: [
       {
-        to: '/account/orders',
+        to: '/orders',
         label: 'Track orders',
-        icon: ShoppingBag,
-        hint: 'Delivery status and cancellations',
+        icon: PackageSearch,
+        hint: 'Live delivery progress',
+        end: true,
+      },
+      {
+        to: '/orders/history',
+        label: 'Order history',
+        icon: History,
+        hint: 'Delivered and past gifts',
       },
       {
         to: '/account/saved-gifts',

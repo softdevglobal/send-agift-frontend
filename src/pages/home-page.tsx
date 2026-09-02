@@ -144,7 +144,7 @@ export function HomePage() {
                     size="lg"
                     className="h-11 rounded-full bg-background/80 px-5"
                   >
-                    <Link to="/account/orders">My orders</Link>
+                    <Link to="/orders">My orders</Link>
                   </Button>
                 ) : role ? (
                   <Button

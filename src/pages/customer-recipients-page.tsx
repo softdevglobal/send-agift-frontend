@@ -117,24 +117,90 @@ function toAddressInput(form: AddressFormState): AddressInput {
   }
 }
 
-function preferencesToText(value: unknown): string {
-  if (value == null || value === '') return ''
-  if (typeof value === 'string') return value
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return ''
+const COLOR_CHOICES = [
+  { value: 'red', label: 'Red', swatch: '#c24141' },
+  { value: 'pink', label: 'Pink', swatch: '#db2777' },
+  { value: 'orange', label: 'Orange', swatch: '#ea580c' },
+  { value: 'yellow', label: 'Yellow', swatch: '#ca8a04' },
+  { value: 'green', label: 'Green', swatch: '#16a34a' },
+  { value: 'blue', label: 'Blue', swatch: '#2563eb' },
+  { value: 'purple', label: 'Purple', swatch: '#7c3aed' },
+  { value: 'white', label: 'White', swatch: '#f8fafc' },
+  { value: 'black', label: 'Black', swatch: '#171717' },
+  { value: 'gold', label: 'Gold', swatch: '#d4a017' },
+  { value: 'silver', label: 'Silver', swatch: '#94a3b8' },
+  { value: 'neutral', label: 'Neutral', swatch: '#a8a29e' },
+] as const
+
+type RecipientPreferencesForm = {
+  favoriteColors: string[]
+  noAlcohol: boolean
+  extra: Record<string, unknown>
+}
+
+function emptyPreferences(): RecipientPreferencesForm {
+  return { favoriteColors: [], noAlcohol: false, extra: {} }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function normalizeColor(value: string) {
+  return value.trim().toLowerCase()
+}
+
+function colorLabel(value: string) {
+  const known = COLOR_CHOICES.find((color) => color.value === value)
+  if (known) return known.label
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function parsePreferences(value: unknown): RecipientPreferencesForm {
+  if (value == null || value === '') return emptyPreferences()
+
+  let record: Record<string, unknown> | null = null
+  if (typeof value === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(value)
+      record = isRecord(parsed) ? parsed : null
+    } catch {
+      record = null
+    }
+  } else if (isRecord(value)) {
+    record = value
+  }
+
+  if (!record) return emptyPreferences()
+
+  const colors = Array.isArray(record.favorite_colors)
+    ? [
+        ...new Set(
+          record.favorite_colors.flatMap((item) =>
+            typeof item === 'string' && item.trim() ? [normalizeColor(item)] : [],
+          ),
+        ),
+      ]
+    : []
+
+  const extra = { ...record }
+  delete extra.favorite_colors
+  delete extra.no_alcohol
+
+  return {
+    favoriteColors: colors,
+    noAlcohol: record.no_alcohol === true,
+    extra,
   }
 }
 
-function parsePreferences(raw: string): Record<string, unknown> | undefined {
-  const trimmed = raw.trim()
-  if (!trimmed) return undefined
-  const parsed = JSON.parse(trimmed) as unknown
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new Error('preferences must be valid JSON')
-  }
-  return parsed as Record<string, unknown>
+function preferencesPayload(form: RecipientPreferencesForm): Record<string, unknown> {
+  const body: Record<string, unknown> = { ...form.extra }
+  if (form.favoriteColors.length) body.favorite_colors = form.favoriteColors
+  else delete body.favorite_colors
+  if (form.noAlcohol) body.no_alcohol = true
+  else delete body.no_alcohol
+  return body
 }
 
 function formatAddress(address: RecipientAddress) {
@@ -169,7 +235,8 @@ export function CustomerRecipientsPage() {
   const [phone, setPhone] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [defaultAddressId, setDefaultAddressId] = useState('')
-  const [preferencesText, setPreferencesText] = useState('')
+  const [preferences, setPreferences] = useState<RecipientPreferencesForm>(emptyPreferences)
+  const [customColor, setCustomColor] = useState('')
   const [addressForm, setAddressForm] = useState<AddressFormState>(emptyAddressForm())
 
   const loadList = useCallback(async () => {
@@ -217,7 +284,8 @@ export function CustomerRecipientsPage() {
     setPhone(recipient.phone ?? '')
     setImageUrl(recipient.image_url ?? '')
     setDefaultAddressId(recipient.default_address_id ?? '')
-    setPreferencesText(preferencesToText(recipient.preferences))
+    setPreferences(parsePreferences(recipient.preferences))
+    setCustomColor('')
   }
 
   function resetPersonForm() {
@@ -227,7 +295,8 @@ export function CustomerRecipientsPage() {
     setPhone('')
     setImageUrl('')
     setDefaultAddressId('')
-    setPreferencesText('')
+    setPreferences(emptyPreferences())
+    setCustomColor('')
     setAddressForm(emptyAddressForm(countries[0]?.id ?? ''))
     setEditingId(null)
     setDetails(null)
@@ -295,15 +364,30 @@ export function CustomerRecipientsPage() {
     setPendingImage(null)
   }
 
+  function toggleFavoriteColor(color: string) {
+    const next = normalizeColor(color)
+    if (!next) return
+    setPreferences((current) => ({
+      ...current,
+      favoriteColors: current.favoriteColors.includes(next)
+        ? current.favoriteColors.filter((item) => item !== next)
+        : [...current.favoriteColors, next],
+    }))
+  }
+
+  function addCustomColor() {
+    const next = normalizeColor(customColor)
+    if (!next) return
+    setPreferences((current) =>
+      current.favoriteColors.includes(next)
+        ? current
+        : { ...current, favoriteColors: [...current.favoriteColors, next] },
+    )
+    setCustomColor('')
+  }
+
   function personFields(): Omit<RecipientInput, 'addresses'> | string {
     if (!name.trim()) return 'name is required'
-
-    let preferences: Record<string, unknown> | undefined
-    try {
-      preferences = parsePreferences(preferencesText)
-    } catch {
-      return 'preferences must be valid JSON'
-    }
 
     return {
       name: name.trim(),
@@ -312,7 +396,7 @@ export function CustomerRecipientsPage() {
       phone: optionalString(phone) ?? null,
       image_url: optionalString(imageUrl) ?? null,
       default_address_id: optionalString(defaultAddressId) ?? null,
-      preferences,
+      preferences: preferencesPayload(preferences),
     }
   }
 
@@ -696,18 +780,108 @@ export function CustomerRecipientsPage() {
                   </div>
                 ) : null}
 
-                <div className="space-y-2">
-                  <Label htmlFor="recipient-preferences">
-                    Preferences <span className="text-muted-foreground">(JSON, optional)</span>
-                  </Label>
-                  <textarea
-                    id="recipient-preferences"
-                    value={preferencesText}
-                    onChange={(event) => setPreferencesText(event.target.value)}
-                    className="min-h-24 w-full min-w-0 rounded-lg border border-input bg-surface px-3 py-2 font-mono text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                    placeholder='{"favorite_colors":["red"],"no_alcohol":true}'
-                  />
-                </div>
+                <fieldset className="space-y-4 rounded-xl border border-border/50 p-4">
+                  <legend className="px-1 text-sm font-medium">
+                    Gift preferences{' '}
+                    <span className="font-normal text-muted-foreground">(optional)</span>
+                  </legend>
+                  <p className="text-sm text-muted-foreground">
+                    We’ll use this when suggesting gifts. You can skip it.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label>Favorite colors</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_CHOICES.map((color) => {
+                        const selected = preferences.favoriteColors.includes(color.value)
+                        return (
+                          <button
+                            key={color.value}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => toggleFavoriteColor(color.value)}
+                            className={cn(
+                              'inline-flex h-9 items-center gap-2 rounded-full border px-3 text-sm transition-colors',
+                              selected
+                                ? 'border-primary bg-accent text-accent-foreground'
+                                : 'border-border bg-surface text-foreground hover:bg-muted',
+                            )}
+                          >
+                            <span
+                              className="size-3.5 rounded-full ring-1 ring-black/10"
+                              style={{ backgroundColor: color.swatch }}
+                              aria-hidden
+                            />
+                            {color.label}
+                          </button>
+                        )
+                      })}
+                      {preferences.favoriteColors
+                        .filter(
+                          (color) =>
+                            !COLOR_CHOICES.some((choice) => choice.value === color),
+                        )
+                        .map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            aria-pressed
+                            onClick={() => toggleFavoriteColor(color)}
+                            className="inline-flex h-9 items-center gap-2 rounded-full border border-primary bg-accent px-3 text-sm text-accent-foreground"
+                          >
+                            {colorLabel(color)}
+                            <X className="size-3.5" />
+                          </button>
+                        ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        id="recipient-custom-color"
+                        value={customColor}
+                        onChange={(event) => setCustomColor(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault()
+                            addCustomColor()
+                          }
+                        }}
+                        className="h-11 max-w-56 bg-surface px-3"
+                        placeholder="Add another color"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 rounded-full px-4"
+                        disabled={!customColor.trim()}
+                        onClick={addCustomColor}
+                      >
+                        Add color
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="recipient-no-alcohol"
+                      checked={preferences.noAlcohol}
+                      onCheckedChange={(value) =>
+                        setPreferences((current) => ({
+                          ...current,
+                          noAlcohol: value === true,
+                        }))
+                      }
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <Label htmlFor="recipient-no-alcohol" className="font-normal">
+                        Don’t include alcohol
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Skip wine, spirits, and other alcoholic gifts.
+                      </p>
+                    </div>
+                  </div>
+                </fieldset>
 
                 {!editingId ? (
                   <fieldset className="space-y-4 rounded-xl border border-border/50 p-4">

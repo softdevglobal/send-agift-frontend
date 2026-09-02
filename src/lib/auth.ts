@@ -20,6 +20,7 @@ const ROLE_AREAS: Record<string, UserRole[]> = {
   '/seller': ['seller'],
   '/account': ['customer'],
   '/checkout': ['customer'],
+  '/orders': ['customer'],
 }
 
 const AUTH_PAGES = [
