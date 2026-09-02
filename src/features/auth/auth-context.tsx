@@ -12,8 +12,9 @@ import {
   clearSession,
   getRole,
   getToken,
-  homePathForRole,
+  postLoginPath,
   setSession,
+  type AuthLocationState,
   type UserRole,
 } from '@/lib/auth'
 
@@ -31,38 +32,6 @@ type AuthProviderProps = {
   children: ReactNode
 }
 
-/** Areas that belong to a single role — never send another role into them. */
-const ROLE_AREAS: Record<string, UserRole[]> = {
-  '/admin': ['admin', 'superadmin'],
-  '/seller': ['seller'],
-  '/account': ['customer'],
-  '/checkout': ['customer'],
-}
-
-/**
- * Resolve where to land after signing in. Honours the path the user was
- * bounced from, but only when their role is allowed there — customers own the
- * whole storefront, so a simple "starts with home" check is not enough now
- * that their home is '/'.
- */
-function safeRedirect(
-  from: string | undefined,
-  role: UserRole,
-  home: string,
-): string {
-  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) {
-    return home
-  }
-  const path = from.split('?')[0]
-  for (const [area, allowed] of Object.entries(ROLE_AREAS)) {
-    if (path === area || path.startsWith(`${area}/`)) {
-      return allowed.includes(role) ? from : home
-    }
-  }
-  // Public storefront paths are fine for any role, but only customers browse them.
-  return role === 'customer' ? from : home
-}
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -74,9 +43,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(nextToken, nextRole, persist)
       setToken(nextToken)
       setRole(nextRole)
-      const from = (location.state as { from?: string } | null)?.from
-      const home = homePathForRole(nextRole)
-      navigate(safeRedirect(from, nextRole, home), { replace: true })
+      const from = (location.state as AuthLocationState | null)?.from
+      navigate(postLoginPath(from, nextRole), { replace: true })
     },
     [location.state, navigate],
   )

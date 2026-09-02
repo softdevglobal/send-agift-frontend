@@ -26,11 +26,11 @@ import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
-import { subscribePublicSellers } from '@/lib/public-sellers'
 
 const homeFeatures = [
   {
@@ -61,19 +61,36 @@ export function HomePage() {
   const [published, setPublished] = useState<GiftProduct[]>([])
 
   useEffect(() => {
-    function loadCatalog() {
+    let cancelled = false
+    let fromApi = false
+
+    async function loadFromApi() {
+      try {
+        const mapped = await loadMarketplaceIntoCatalog()
+        if (!cancelled && mapped.length) {
+          fromApi = true
+          setPublished(mapped)
+        }
+      } catch {
+        // Public shops endpoint is optional while the backend is down.
+      }
+    }
+
+    function loadLocal() {
+      if (fromApi || cancelled) return
       const products = listPublishedCatalog()
-      const mapped = products.map(catalogProductFromApi)
+      const mapped = products.map((product) => catalogProductFromApi(product))
       registerCatalogProducts(mapped)
       setPublished(mapped)
     }
 
-    loadCatalog()
-    const unsubCatalog = subscribePublishedCatalog(loadCatalog)
-    const unsubSellers = subscribePublicSellers(loadCatalog)
+    void loadFromApi().then(() => {
+      if (!fromApi) loadLocal()
+    })
+    const unsubCatalog = subscribePublishedCatalog(loadLocal)
     return () => {
+      cancelled = true
       unsubCatalog()
-      unsubSellers()
     }
   }, [])
 

@@ -11,7 +11,7 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { AccountMenu } from '@/components/common/account-menu'
 import { BrandLogo } from '@/components/common/brand-logo'
@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input'
 import { accountNavItems } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
+import { returnToState } from '@/lib/auth'
 import { giftCategories } from '@/features/marketing/data'
 
 const utilityLinks = [
@@ -35,6 +36,8 @@ export function SiteHeader() {
   const { isAuthenticated, role, logout } = useAuth()
   const { itemCount } = useCart()
   const navigate = useNavigate()
+  const location = useLocation()
+  const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -74,7 +77,11 @@ export function SiteHeader() {
               </button>
             ) : (
               <>
-                <Link to="/login" className="transition-colors hover:text-primary">
+                <Link
+                  to="/login"
+                  state={loginState}
+                  className="transition-colors hover:text-primary"
+                >
                   Hi! <span className="font-medium text-foreground">Sign in</span>
                 </Link>
                 <span className="text-border">|</span>
@@ -265,7 +272,7 @@ export function SiteHeader() {
             ) : (
               <>
                 <Button asChild className="mt-2">
-                  <Link to="/login" onClick={() => setOpen(false)}>
+                  <Link to="/login" state={loginState} onClick={() => setOpen(false)}>
                     Sign in
                   </Link>
                 </Button>

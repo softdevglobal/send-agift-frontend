@@ -9,7 +9,7 @@ import {
   Plus,
   ShoppingBag,
 } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
@@ -27,16 +27,19 @@ import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import { useAuth } from '@/features/auth/auth-context'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
 import { formatPriceAmount } from '@/lib/money'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import {
   getPublishedCatalogProduct,
   sellerFromCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
 import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
+import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 export function ProductViewPage() {
   const { productId } = useParams()
+  const location = useLocation()
   const { addItem } = useCart()
   const { isAuthenticated, role } = useAuth()
   const [quantity, setQuantity] = useState(1)
@@ -48,24 +51,39 @@ export function ProductViewPage() {
 
   useEffect(() => {
     if (!productId) return
+    let cancelled = false
 
-    function resolve() {
+    function applyLocal() {
       const stored = getPublishedCatalogProduct(productId!)
       if (stored) {
         const mapped = catalogProductFromApi(stored)
         registerCatalogProducts([mapped])
-        setProduct(mapped)
-        setLoading(false)
+        if (!cancelled) {
+          setProduct(mapped)
+          setLoading(false)
+        }
         return
       }
-      setProduct(getCatalogProduct(productId!) ?? null)
-      setLoading(false)
+      const live = getCatalogProduct(productId!)
+      if (!cancelled) {
+        setProduct(live)
+        setLoading(false)
+      }
     }
 
-    resolve()
-    const unsubCatalog = subscribePublishedCatalog(resolve)
-    const unsubSellers = subscribePublicSellers(resolve)
+    applyLocal()
+    void loadMarketplaceIntoCatalog()
+      .then(() => {
+        if (!cancelled) applyLocal()
+      })
+      .catch(() => {
+        if (!cancelled) applyLocal()
+      })
+
+    const unsubCatalog = subscribePublishedCatalog(applyLocal)
+    const unsubSellers = subscribePublicSellers(applyLocal)
     return () => {
+      cancelled = true
       unsubCatalog()
       unsubSellers()
     }
@@ -271,7 +289,7 @@ export function ProductViewPage() {
                   >
                     {added
                       ? 'Added to your cart.'
-                      : 'Saved locally on this device until you check out.'}
+                      : 'Add this gift to your cart to check out.'}
                   </p>
                   {added ? (
                     <Button
@@ -283,6 +301,20 @@ export function ProductViewPage() {
                     </Button>
                   ) : null}
                 </>
+              ) : isAuthenticated && role ? (
+                <div className="rounded-xl bg-muted/50 p-4 ring-1 ring-border/40">
+                  <p className="flex items-center gap-2 text-sm font-medium">
+                    <Clock className="size-4 text-muted-foreground" />
+                    Shopping needs a customer account
+                  </p>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                    You&apos;re signed in as a {role}. Open your portal, or sign
+                    out first if you want to shop with a customer account.
+                  </p>
+                  <Button asChild className="mt-4 h-10 rounded-full px-4">
+                    <Link to={homePathForRole(role)}>Go to {role} portal</Link>
+                  </Button>
+                </div>
               ) : (
                 <div className="rounded-xl bg-muted/50 p-4 ring-1 ring-border/40">
                   <p className="flex items-center gap-2 text-sm font-medium">
@@ -295,7 +327,12 @@ export function ProductViewPage() {
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button asChild className="h-10 rounded-full px-4">
-                      <Link to="/login">Sign in</Link>
+                      <Link
+                        to="/login"
+                        state={returnToState(location.pathname, location.search)}
+                      >
+                        Sign in
+                      </Link>
                     </Button>
                     <Button
                       asChild

@@ -35,6 +35,7 @@ import {
   type PublicShop,
 } from '@/lib/public-sellers'
 import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import {
   getCustomerSellerReview,
   getSellerReviewStats,
@@ -112,15 +113,25 @@ export function CustomerSellerPage() {
   useEffect(() => {
     if (!sellerId) return
     const id = sellerId
+    let cancelled = false
+
     function refresh() {
+      if (cancelled) return
       setSeller(sellerFromCatalog(id))
       setReviews(listSellerReviews(id))
     }
+
     refresh()
+    void loadMarketplaceIntoCatalog()
+      .then(refresh)
+      .catch(() => {
+        refresh()
+      })
     const unsubSellers = subscribePublicSellers(refresh)
     const unsubCatalog = subscribePublishedCatalog(refresh)
     const unsubReviews = subscribeSellerReviews(refresh)
     return () => {
+      cancelled = true
       unsubSellers()
       unsubCatalog()
       unsubReviews()

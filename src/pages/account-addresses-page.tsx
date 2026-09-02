@@ -8,9 +8,9 @@ import {
   getCustomerMe,
   type CustomerDetails,
 } from '@/api/customers'
-import type { PlaceDetails } from '@/api/places'
+import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
-import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -46,21 +46,16 @@ export function AccountAddressesPage() {
     [countries, countryId],
   )
 
-  /** Fills the form from a Google place, including its coordinates. */
+  /** Fills the form from a Google place. Country stays the one selected above. */
   function applyPlace(place: PlaceDetails) {
-    setLine1(place.line1 ?? '')
-    setLine2(place.line2 ?? '')
-    setCity(place.city ?? '')
-    setRegion(place.region ?? '')
-    setPostalCode(place.postal_code ?? '')
-    setLatitude(place.latitude ?? null)
-    setLongitude(place.longitude ?? null)
-
-    // Google may resolve a place in a different country than the one selected.
-    const matched = countries.find(
-      (country) => country.iso_code.toUpperCase() === place.country_code?.toUpperCase(),
-    )
-    if (matched) setCountryId(matched.id)
+    const fields = addressFieldsFromPlace(place)
+    setLine1(fields.line1)
+    setLine2(fields.line2)
+    setCity(fields.city)
+    setRegion(fields.region)
+    setPostalCode(fields.postal_code)
+    setLatitude(fields.latitude)
+    setLongitude(fields.longitude)
   }
 
   const load = useCallback(async () => {
@@ -231,7 +226,7 @@ export function AccountAddressesPage() {
                   />
                 )}
               </div>
-              <PlaceAutocomplete
+              <AddressAutocomplete
                 id="addr-search"
                 className="sm:col-span-2"
                 countryCode={countryCode}

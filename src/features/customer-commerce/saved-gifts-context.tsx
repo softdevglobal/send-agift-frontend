@@ -17,6 +17,7 @@ import {
 } from '@/api/savedGifts'
 import { useAuth } from '@/features/auth/auth-context'
 import { ApiError } from '@/lib/api'
+import { returnToState } from '@/lib/auth'
 import { isUuid } from '@/lib/uuid'
 
 type SavedGiftsContextValue = {
@@ -88,7 +89,7 @@ export function SavedGiftsProvider({ children }: SavedGiftsProviderProps) {
     async (productId: string) => {
       if (!isAuthenticated || role !== 'customer') {
         navigate('/login', {
-          state: { from: `${location.pathname}${location.search}` },
+          state: returnToState(location.pathname, location.search),
         })
         return
       }

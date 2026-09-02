@@ -2,7 +2,6 @@ import { Gift, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import type { Product } from '@/api/types'
 import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,67 +10,84 @@ import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
+import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { giftCategories } from '@/features/marketing/data'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
-import { getPublicSellerByShopId, subscribePublicSellers } from '@/lib/public-sellers'
 
 function matchesFilters(
-  product: Product,
+  product: CatalogProduct,
   { query, category }: { query: string; category: string },
 ) {
   const normalizedQuery = query.trim().toLowerCase()
   const normalizedCategory = category.trim().toLowerCase()
-
-  const tags = (product.occasion_tags ?? []).map((tag) => tag.toLowerCase())
   const matchesCategory =
-    !normalizedCategory || normalizedCategory === 'all' || tags.includes(normalizedCategory)
+    !normalizedCategory ||
+    normalizedCategory === 'all' ||
+    product.categoryId === normalizedCategory
   if (!matchesCategory) return false
   if (!normalizedQuery) return true
 
-  const seller = getPublicSellerByShopId(product.shop_id)
   return [
     product.name,
     product.description ?? '',
-    seller?.name ?? '',
-    seller?.legal_name ?? '',
-    seller?.trading_name ?? '',
-    ...tags,
+    product.sellerName ?? '',
+    product.shopName ?? '',
+    product.categoryId,
   ]
     .join(' ')
     .toLowerCase()
     .includes(normalizedQuery)
 }
 
+function localCatalog(): CatalogProduct[] {
+  const mapped = listPublishedCatalog().map((product) => catalogProductFromApi(product))
+  registerCatalogProducts(mapped)
+  return mapped
+}
+
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
-  const [catalog, setCatalog] = useState<Product[]>([])
+  const [catalog, setCatalog] = useState<CatalogProduct[]>([])
 
   useEffect(() => {
-    function loadCatalog() {
-      const products = listPublishedCatalog()
-      setCatalog(products)
-      registerCatalogProducts(products.map(catalogProductFromApi))
+    let cancelled = false
+    let fromApi = false
+
+    async function loadFromApi() {
+      try {
+        const mapped = await loadMarketplaceIntoCatalog()
+        if (!cancelled && mapped.length) {
+          fromApi = true
+          setCatalog(mapped)
+        }
+      } catch {
+        // Public shops endpoint is optional while the backend is down.
+      }
     }
 
-    loadCatalog()
-    const unsubCatalog = subscribePublishedCatalog(loadCatalog)
-    const unsubSellers = subscribePublicSellers(loadCatalog)
+    function loadLocal() {
+      if (fromApi || cancelled) return
+      setCatalog(localCatalog())
+    }
+
+    void loadFromApi().then(() => {
+      if (!fromApi) loadLocal()
+    })
+    const unsubCatalog = subscribePublishedCatalog(loadLocal)
     return () => {
+      cancelled = true
       unsubCatalog()
-      unsubSellers()
     }
   }, [])
 
   const products = useMemo(
-    () =>
-      catalog
-        .filter((product) => matchesFilters(product, { query, category }))
-        .map(catalogProductFromApi),
+    () => catalog.filter((product) => matchesFilters(product, { query, category })),
     [catalog, category, query],
   )
 

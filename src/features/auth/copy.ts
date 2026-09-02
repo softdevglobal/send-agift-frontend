@@ -6,7 +6,7 @@ export const loginCopy: Record<AuthRole, LoginCopy> = {
     headline: 'Gifts that arrive with intention.',
     supporting:
       'Discover country-ready gifts, track every delivery, and earn points along the way.',
-    submitLabel: 'Sign in to shop',
+    submitLabel: 'Sign in',
     switchPrompt: 'Selling on SendAgift?',
     switchLabel: 'Seller sign in',
     switchTo: '/seller/login',
@@ -21,7 +21,7 @@ export const loginCopy: Record<AuthRole, LoginCopy> = {
     headline: 'Your shop, ready for fulfilment.',
     supporting:
       'Manage inventory, connected payouts, courier labels, and proof of delivery in one place.',
-    submitLabel: 'Sign in to seller portal',
+    submitLabel: 'Sign in',
     switchPrompt: 'Shopping for a gift?',
     switchLabel: 'Customer sign in',
     switchTo: '/login',
@@ -36,7 +36,7 @@ export const loginCopy: Record<AuthRole, LoginCopy> = {
     headline: 'Operate the marketplace.',
     supporting:
       'Sign in to manage countries, review platform settings, and support live markets.',
-    submitLabel: 'Sign in to admin',
+    submitLabel: 'Sign in',
     switchPrompt: 'Shopping for a gift?',
     switchLabel: 'Customer sign in',
     switchTo: '/login',

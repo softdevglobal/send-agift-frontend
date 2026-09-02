@@ -11,12 +11,27 @@ import {
 } from '@/api/places'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-const DEBOUNCE_MS = 250
+const DEBOUNCE_MS = 280
 const MIN_QUERY_LENGTH = 3
+const RATE_LIMIT_MESSAGE = 'Too many requests, please slow down.'
 
-type PlaceAutocompleteProps = {
+function isAbortError(err: unknown): boolean {
+  return (
+    (err instanceof DOMException && err.name === 'AbortError') ||
+    (err instanceof Error && err.name === 'AbortError')
+  )
+}
+
+function placesErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && err.status === 429) return RATE_LIMIT_MESSAGE
+  if (err instanceof ApiError && err.message.trim()) return err.message
+  return fallback
+}
+
+type AddressAutocompleteProps = {
   /** Called with the resolved place once the user picks a suggestion. */
   onSelect?: (place: PlaceDetails) => void
   /**
@@ -47,11 +62,11 @@ type PlaceAutocompleteProps = {
  * key stays server-side. Picking a suggestion hands the caller the address
  * already split into line1 / city / region / postal code / lat-lng.
  */
-export function PlaceAutocomplete({
+export function AddressAutocomplete({
   onSelect,
   onSelectSuggestion,
   resolveDetails = true,
-  types,
+  types = 'address',
   value,
   onQueryChange,
   countryCode,
@@ -61,7 +76,7 @@ export function PlaceAutocomplete({
   disabled = false,
   className,
   id,
-}: PlaceAutocompleteProps) {
+}: AddressAutocompleteProps) {
   const generatedId = useId()
   const inputId = id ?? `place-search-${generatedId}`
   const listboxId = `${inputId}-listbox`
@@ -125,10 +140,9 @@ export function PlaceAutocomplete({
           setError(null)
         })
         .catch((err: unknown) => {
-          if (controller.signal.aborted) return
-          if (err instanceof DOMException && err.name === 'AbortError') return
+          if (controller.signal.aborted || isAbortError(err)) return
           setSuggestions([])
-          setError('Address search is unavailable right now.')
+          setError(placesErrorMessage(err, 'Address search is unavailable right now.'))
         })
         .finally(() => {
           if (!controller.signal.aborted) setSearching(false)
@@ -175,8 +189,8 @@ export function PlaceAutocomplete({
       onSelect?.(details)
       // The session ended with this pick — the next search starts a new one.
       sessionToken.current = newPlacesSessionToken()
-    } catch {
-      setError('Could not load that address. Try another result.')
+    } catch (err: unknown) {
+      setError(placesErrorMessage(err, 'Could not load that address. Try another result.'))
     } finally {
       setResolving(false)
     }
@@ -279,3 +293,5 @@ export function PlaceAutocomplete({
     </div>
   )
 }
+
+export { AddressAutocomplete as PlaceAutocomplete }

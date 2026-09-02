@@ -1,7 +1,8 @@
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/features/auth/auth-context'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
@@ -9,27 +10,50 @@ import {
   formatMoney,
   useCart,
 } from '@/features/customer-commerce'
+import { returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 export function CartPage() {
+  const { isAuthenticated, role } = useAuth()
+  const location = useLocation()
   const { lines, itemCount, subtotal, shipping, total, setQuantity, removeItem } =
     useCart()
+  const isCustomer = isAuthenticated && role === 'customer'
 
   if (!lines.length) {
     return (
       <div>
         <CustomerPageHeader
           title="Cart"
-          description="Gifts you add stay on this device until you place a demo order."
+          description={
+            isCustomer
+              ? 'Gifts you add stay in your cart until you check out.'
+              : 'Sign in with a customer account to add gifts to your cart.'
+          }
         />
         <CustomerEmptyState
           icon={ShoppingBag}
           title="Your cart is empty"
-          description="Browse the catalog and add a gift to get started."
+          description={
+            isCustomer
+              ? 'Browse the catalog and add a gift to get started.'
+              : 'Sign in to add gifts, then check out when you are ready.'
+          }
           action={
-            <Button asChild className="h-10 rounded-full px-4">
-              <Link to="/products">Discover gifts</Link>
-            </Button>
+            isCustomer ? (
+              <Button asChild className="h-10 rounded-full px-4">
+                <Link to="/products">Discover gifts</Link>
+              </Button>
+            ) : (
+              <Button asChild className="h-10 rounded-full px-4">
+                <Link
+                  to="/login"
+                  state={returnToState(location.pathname, location.search)}
+                >
+                  Sign in
+                </Link>
+              </Button>
+            )
           }
         />
       </div>

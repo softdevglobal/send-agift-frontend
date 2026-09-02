@@ -85,6 +85,74 @@ function writeStore(store: Store) {
   window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
+/** In-memory overlay from GET /shops — not persisted, so it never goes stale. */
+let marketplaceOverlay: Store = emptyStore()
+
+function mergeStores(overlay: Store, local: Store): Store {
+  const sellers: Record<string, PublicSeller> = { ...overlay.sellers }
+  for (const [id, localSeller] of Object.entries(local.sellers)) {
+    const fromApi = sellers[id]
+    if (!fromApi) {
+      sellers[id] = localSeller
+      continue
+    }
+    const shopsById = new Map(fromApi.shops.map((shop) => [shop.id, shop]))
+    for (const shop of localSeller.shops) {
+      shopsById.set(shop.id, { ...shopsById.get(shop.id), ...shop })
+    }
+    sellers[id] = {
+      ...fromApi,
+      ...localSeller,
+      shops: [...shopsById.values()],
+    }
+  }
+  return {
+    sellers,
+    shopIndex: { ...overlay.shopIndex, ...local.shopIndex },
+  }
+}
+
+function readMerged(): Store {
+  return mergeStores(marketplaceOverlay, readStore())
+}
+
+function notifyPublicSellers() {
+  window.dispatchEvent(new Event(CHANGE_EVENT))
+}
+
+/** Indexes public shops from the marketplace API so seller/shop pages can resolve them. */
+export function indexMarketplaceShops(shops: Shop[]) {
+  const sellers: Record<string, PublicSeller> = {}
+  const shopIndex: Record<string, string> = {}
+
+  for (const shop of shops) {
+    const sellerId = shop.seller_id
+    if (!sellerId) continue
+    const publicShop = toPublicShop(shop)
+    const existing = sellers[sellerId]
+    if (existing) {
+      sellers[sellerId] = {
+        ...existing,
+        shops: [...existing.shops.filter((item) => item.id !== shop.id), publicShop],
+      }
+    } else {
+      sellers[sellerId] = {
+        id: sellerId,
+        name: shop.name,
+        legal_name: shop.name,
+        email: '',
+        seller_type: '',
+        verification_status: '',
+        shops: [publicShop],
+      }
+    }
+    shopIndex[shop.id] = sellerId
+  }
+
+  marketplaceOverlay = { sellers, shopIndex }
+  notifyPublicSellers()
+}
+
 function toPublicShop(shop: Shop): PublicShop {
   return {
     id: shop.id,
@@ -138,11 +206,11 @@ export function publishPublicSeller(profile: SellerDetails) {
 }
 
 export function getPublicSeller(id: string): PublicSeller | null {
-  return readStore().sellers[id] ?? null
+  return readMerged().sellers[id] ?? null
 }
 
 export function getPublicSellerForShop(shopId: string): PublicSeller | null {
-  const store = readStore()
+  const store = readMerged()
   const indexedId = store.shopIndex[shopId]
   if (indexedId && store.sellers[indexedId]) return store.sellers[indexedId]
 
@@ -168,7 +236,7 @@ export function getPublicShop(
 }
 
 export function listPublicSellers(): PublicSeller[] {
-  return Object.values(readStore().sellers)
+  return Object.values(readMerged().sellers)
 }
 
 export function subscribePublicSellers(onChange: () => void) {

@@ -10,14 +10,10 @@ import {
   customerPanelClass,
   listCatalogProductsForSeller,
 } from '@/features/customer-commerce'
-import { publicSellerInitials } from '@/lib/public-sellers'
+import { publicSellerInitials, subscribePublicSellers, type PublicSeller, type PublicShop } from '@/lib/public-sellers'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
-import {
-  subscribePublicSellers,
-  type PublicSeller,
-  type PublicShop,
-} from '@/lib/public-sellers'
 import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { cn } from '@/lib/utils'
 
 function shopFromCatalog(
@@ -56,13 +52,22 @@ export function CustomerSellerShopPage() {
   useEffect(() => {
     if (!sellerId) return
     const id = sellerId
+    let cancelled = false
+
     function refresh() {
-      setSeller(sellerFromCatalog(id))
+      if (!cancelled) setSeller(sellerFromCatalog(id))
     }
+
     refresh()
+    void loadMarketplaceIntoCatalog()
+      .then(refresh)
+      .catch(() => {
+        refresh()
+      })
     const unsubSellers = subscribePublicSellers(refresh)
     const unsubCatalog = subscribePublishedCatalog(refresh)
     return () => {
+      cancelled = true
       unsubSellers()
       unsubCatalog()
     }

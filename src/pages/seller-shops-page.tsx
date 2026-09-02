@@ -37,7 +37,7 @@ import {
 } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
-import { PlaceAutocomplete } from '@/components/common/place-autocomplete'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
@@ -736,7 +736,7 @@ export function SellerShopsPage() {
                         </p>
                       ) : null}
                     </div>
-                    <PlaceAutocomplete
+                    <AddressAutocomplete
                       id="shop-visible-location"
                       label="Customer-visible location"
                       placeholder="Kandy, Sri Lanka"

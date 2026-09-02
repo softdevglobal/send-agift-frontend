@@ -7,11 +7,36 @@ export const USER_ROLES = [
 
 export type UserRole = (typeof USER_ROLES)[number]
 
+export type AuthLocationState = {
+  from?: string
+}
+
 const TOKEN_KEY = 'sag.token'
 const ROLE_KEY = 'sag.role'
 
-function isUserRole(value: string | null): value is UserRole {
+/** Areas that belong to a single role — never send another role into them. */
+const ROLE_AREAS: Record<string, UserRole[]> = {
+  '/admin': ['admin', 'superadmin'],
+  '/seller': ['seller'],
+  '/account': ['customer'],
+  '/checkout': ['customer'],
+}
+
+const AUTH_PAGES = [
+  '/login',
+  '/register',
+  '/seller/login',
+  '/seller/register',
+  '/admin/login',
+  '/admin/register',
+]
+
+export function isUserRole(value: string | null): value is UserRole {
   return value !== null && (USER_ROLES as readonly string[]).includes(value)
+}
+
+function isAuthPage(path: string): boolean {
+  return AUTH_PAGES.some((page) => path === page)
 }
 
 function read(key: string): string | null {
@@ -50,8 +75,35 @@ export function isAdminRole(role: UserRole | null): boolean {
 }
 
 export function homePathForRole(role: UserRole): string {
-  if (role === 'seller') return '/seller/profile'
+  if (role === 'seller') return '/seller'
   if (isAdminRole(role)) return '/admin'
   // Customers browse the same public storefront as guests — no separate portal.
   return '/'
+}
+
+/**
+ * Resolve where to land after signing in. Honours the path the user was
+ * bounced from, but only when their role is allowed there — customers own the
+ * whole storefront, so a simple "starts with home" check is not enough now
+ * that their home is '/'.
+ */
+export function postLoginPath(from: string | undefined, role: UserRole): string {
+  const home = homePathForRole(role)
+  if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) {
+    return home
+  }
+  const path = from.split('?')[0]
+  if (isAuthPage(path) || path === '/') return home
+  for (const [area, allowed] of Object.entries(ROLE_AREAS)) {
+    if (path === area || path.startsWith(`${area}/`)) {
+      return allowed.includes(role) ? from : home
+    }
+  }
+  // Public storefront paths are fine for any role, but only customers browse them.
+  return role === 'customer' ? from : home
+}
+
+export function returnToState(pathname: string, search = ''): AuthLocationState {
+  if (!pathname || pathname === '/') return {}
+  return { from: `${pathname}${search}` }
 }

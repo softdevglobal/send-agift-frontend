@@ -14,3 +14,4 @@ export {
   adminInitials,
   formatDate,
 } from './admin-utils'
+export { CountryCapabilitiesPanel } from './country-capabilities-panel'

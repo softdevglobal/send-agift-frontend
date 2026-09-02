@@ -1,4 +1,4 @@
-import type { Product } from '@/api/types'
+import type { Product, Shop } from '@/api/types'
 import { giftCategories } from '@/features/marketing/data'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { minorToMajor } from '@/lib/money'
@@ -199,12 +199,17 @@ function shopNameForPublished(product: PublishedProduct) {
   return seller?.shops.find((shop) => shop.id === product.shop_id)?.name
 }
 
-export function catalogProductFromApi(product: Product): CatalogProduct {
+export function catalogProductFromApi(product: Product, shop?: Shop): CatalogProduct {
   const published = product as PublishedProduct
   const legalName = published.seller_legal_name?.trim() || ''
   const tradingName = published.seller_trading_name?.trim() || ''
   const sellerName =
-    tradingName || legalName || published.seller_name?.trim() || published.shop_name?.trim() || ''
+    tradingName ||
+    legalName ||
+    published.seller_name?.trim() ||
+    shop?.name?.trim() ||
+    published.shop_name?.trim() ||
+    ''
   return {
     id: product.id,
     name: product.name,
@@ -214,20 +219,27 @@ export function catalogProductFromApi(product: Product): CatalogProduct {
     sellerName,
     sellerLegalName: legalName || undefined,
     sellerTradingName: tradingName || undefined,
-    sellerId: published.seller_id || product.shop_id,
-    sellerImageUrl: sellerImageForPublished(published),
+    sellerId: shop?.seller_id || published.seller_id || product.shop_id,
+    sellerImageUrl: shop?.image_url || sellerImageForPublished(published),
     sellerEmail: published.seller_email,
     sellerPhone: published.seller_phone,
-    shopId: product.shop_id,
-    shopName: shopNameForPublished(published),
-    shopDescription: published.shop_description,
-    shopLocation: published.shop_location,
+    shopId: product.shop_id || shop?.id,
+    shopName: shop?.name?.trim() || shopNameForPublished(published),
+    shopDescription: shop?.description || published.shop_description,
+    shopLocation: shop?.customer_visible_location || published.shop_location,
     description: product.description ?? '',
     rating: 0,
     reviews: 0,
     currency: product.currency,
     priceAmount: product.price_amount,
   }
+}
+
+function belongsToSeller(product: CatalogProduct, sellerIds: Set<string>, shopIds: Set<string>) {
+  return (
+    (product.sellerId != null && sellerIds.has(product.sellerId)) ||
+    (product.shopId != null && shopIds.has(product.shopId))
+  )
 }
 
 export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[] {
@@ -237,13 +249,15 @@ export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[]
   const shopIds = new Set(seller?.shops.map((shop) => shop.id) ?? [])
   shopIds.add(sellerId)
 
-  return listPublishedCatalog()
-    .filter(
-      (product) =>
-        (product.seller_id != null && sellerIds.has(product.seller_id)) ||
-        shopIds.has(product.shop_id),
-    )
-    .map(catalogProductFromApi)
+  const byId = new Map<string, CatalogProduct>()
+  for (const product of listPublishedCatalog()) {
+    const mapped = catalogProductFromApi(product)
+    if (belongsToSeller(mapped, sellerIds, shopIds)) byId.set(mapped.id, mapped)
+  }
+  for (const product of liveCatalog.values()) {
+    if (belongsToSeller(product, sellerIds, shopIds)) byId.set(product.id, product)
+  }
+  return [...byId.values()]
 }
 
 export function getCatalogSeller(id: string) {
