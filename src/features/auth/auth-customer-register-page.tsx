@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
+import { Button } from '@/components/ui/button'
 import { CustomerRegisterForm } from '@/features/auth/customer-register-form'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 
@@ -24,12 +25,17 @@ export function AuthCustomerRegisterPage() {
             <BrandLogo className="lg:hidden" imgClassName="h-11" />
           </div>
 
-          <Link
-            to="/login"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Customer login
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/login"
+              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Customer login
+            </Link>
+            <Button asChild size="sm" variant="outline" className="h-9 px-3">
+              <Link to="/seller/register">Create seller account</Link>
+            </Button>
+          </div>
         </header>
 
         <div className="flex flex-1 items-start px-6 py-8 sm:items-center sm:px-10">

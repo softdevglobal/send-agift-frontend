@@ -1,14 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import {
   ChevronDown,
+  Gift,
   Heart,
-  HelpCircle,
   Menu,
   Search,
   ShoppingBag,
   Store,
-  Truck,
-  User,
   X,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -22,12 +20,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { returnToState } from '@/lib/auth'
 import { giftCategories } from '@/features/marketing/data'
-
-const utilityLinks = [
-  { to: '/account/orders', label: 'Track order', icon: Truck },
-  { to: '/become-a-seller', label: 'Sell', icon: Store },
-  { to: '/products', label: 'Help & Contact', icon: HelpCircle },
-]
+import { cn } from '@/lib/utils'
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
@@ -39,6 +32,9 @@ export function SiteHeader() {
   const location = useLocation()
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
+  const isGuest = !isAuthenticated
+  const activeCategory = new URLSearchParams(location.search).get('category')
+  const onGifts = location.pathname === '/products'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -50,64 +46,12 @@ export function SiteHeader() {
     setOpen(false)
   }
 
+  function closeMenu() {
+    setOpen(false)
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-md">
-      <div className="hidden border-b border-border/60 bg-muted/50 text-xs text-muted-foreground md:block">
-        <div className="mx-auto flex h-9 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
-            {utilityLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.to}
-                className="inline-flex items-center gap-1.5 transition-colors hover:text-primary"
-              >
-                <link.icon className="size-3.5" />
-                {link.label}
-              </Link>
-            ))}
-          </div>
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <button
-                type="button"
-                onClick={logout}
-                className="transition-colors hover:text-primary"
-              >
-                Sign out
-              </button>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  state={loginState}
-                  className="transition-colors hover:text-primary"
-                >
-                  Hi! <span className="font-medium text-foreground">Sign in</span>
-                </Link>
-                <span className="text-border">|</span>
-                <Link to="/register" className="transition-colors hover:text-primary">
-                  Register
-                </Link>
-              </>
-            )}
-            <Link
-              to={isCustomer ? '/account/saved-gifts' : '/login'}
-              className="inline-flex items-center gap-1 transition-colors hover:text-primary"
-            >
-              <Heart className="size-3.5" />
-              Watchlist
-            </Link>
-            <Link
-              to={isCustomer ? '/account/orders' : '/login'}
-              className="inline-flex items-center gap-1 transition-colors hover:text-primary"
-            >
-              <User className="size-3.5" />
-              My SendAgift
-            </Link>
-          </div>
-        </div>
-      </div>
-
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:gap-5 lg:px-8">
         <BrandLogo imgClassName="h-11 sm:h-12" />
 
@@ -125,7 +69,7 @@ export function SiteHeader() {
               className="h-11 appearance-none rounded-l-lg border border-r-0 border-input bg-muted/40 py-2 pr-8 pl-3 text-sm text-foreground outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
               aria-label="Search category"
             >
-              <option value="all">All categories</option>
+              <option value="all">All gifts</option>
               {giftCategories.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
@@ -152,22 +96,46 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             className="md:hidden"
-            aria-label="Search"
-          >
-            <Search className="size-4.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden sm:inline-flex"
+            aria-label="Search gifts"
             asChild
-            aria-label="Watchlist"
           >
-            <Link to={isCustomer ? '/account/saved-gifts' : '/login'}>
-              <Heart className="size-4.5" />
+            <Link to="/products">
+              <Search className="size-4.5" />
             </Link>
           </Button>
-          <AccountMenu />
+
+          {isGuest ? (
+            <>
+              <Button
+                asChild
+                variant="ghost"
+                className="hidden h-9 px-3 md:inline-flex"
+              >
+                <Link to="/login" state={loginState}>
+                  Sign in
+                </Link>
+              </Button>
+              <Button asChild className="h-9 rounded-full px-3.5 sm:px-4">
+                <Link to="/register">Sign up</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hidden sm:inline-flex"
+                asChild
+                aria-label="Watchlist"
+              >
+                <Link to={isCustomer ? '/account/saved-gifts' : '/login'}>
+                  <Heart className="size-4.5" />
+                </Link>
+              </Button>
+              <AccountMenu />
+            </>
+          )}
+
           <Button
             variant="ghost"
             size="icon"
@@ -184,14 +152,17 @@ export function SiteHeader() {
               ) : null}
             </Link>
           </Button>
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="ml-1 hidden h-9 px-3 md:inline-flex"
-          >
-            <Link to="/become-a-seller">Become a seller</Link>
-          </Button>
+
+          {role !== 'seller' ? (
+            <Button
+              asChild
+              variant="outline"
+              className="ml-1 hidden h-9 px-3 md:inline-flex"
+            >
+              <Link to="/become-a-seller">Become a seller</Link>
+            </Button>
+          ) : null}
+
           <Button
             variant="ghost"
             size="icon"
@@ -204,6 +175,42 @@ export function SiteHeader() {
         </div>
       </div>
 
+      <nav
+        aria-label="Gift categories"
+        className="hidden border-t border-border/50 md:block"
+      >
+        <div className="mx-auto flex h-11 max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8">
+          <Link
+            to="/products"
+            className={cn(
+              'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground',
+              onGifts && !activeCategory
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground',
+            )}
+          >
+            All gifts
+          </Link>
+          {giftCategories.map((item) => {
+            const active = onGifts && activeCategory === item.id
+            return (
+              <Link
+                key={item.id}
+                to={`/products?category=${item.id}`}
+                className={cn(
+                  'shrink-0 rounded-full px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:text-foreground',
+                  active
+                    ? 'bg-muted font-medium text-foreground'
+                    : 'text-muted-foreground',
+                )}
+              >
+                {item.name}
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
       {open ? (
         <div className="border-t border-border bg-background px-4 py-4 md:hidden">
           <form onSubmit={handleSearch} className="mb-4 space-y-2">
@@ -215,30 +222,48 @@ export function SiteHeader() {
             />
             <Button type="submit" className="h-10 w-full">
               <Search className="size-4" />
-              Search
+              Search gifts
             </Button>
           </form>
           <nav className="flex flex-col gap-1">
-            {utilityLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.to}
-                onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
-              >
-                {link.label}
-              </Link>
-            ))}
+            <Link
+              to="/products"
+              onClick={closeMenu}
+              className="flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-accent-foreground"
+            >
+              <Gift className="size-4" />
+              Browse gifts
+            </Link>
+
+            {isGuest ? (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <Button asChild>
+                  <Link to="/login" state={loginState} onClick={closeMenu}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link to="/register" onClick={closeMenu}>
+                    Sign up
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
+
+            <p className="mt-4 px-3 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
+              Shop by occasion
+            </p>
             {giftCategories.map((item) => (
               <Link
                 key={item.id}
                 to={`/products?category=${item.id}`}
-                onClick={() => setOpen(false)}
+                onClick={closeMenu}
                 className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 {item.name}
               </Link>
             ))}
+
             {isCustomer ? (
               <>
                 <p className="mt-3 px-3 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
@@ -248,7 +273,7 @@ export function SiteHeader() {
                   <Link
                     key={item.to}
                     to={item.to}
-                    onClick={() => setOpen(false)}
+                    onClick={closeMenu}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
                   >
                     <item.icon className="size-4 text-muted-foreground" />
@@ -257,37 +282,29 @@ export function SiteHeader() {
                 ))}
               </>
             ) : null}
+
+            {role !== 'seller' ? (
+              <Button asChild variant="outline" className="mt-3">
+                <Link to="/become-a-seller" onClick={closeMenu}>
+                  <Store className="size-4" />
+                  Become a seller
+                </Link>
+              </Button>
+            ) : null}
+
             {isAuthenticated ? (
               <Button
                 type="button"
                 variant="outline"
-                className="mt-2"
+                className="mt-3"
                 onClick={() => {
-                  setOpen(false)
+                  closeMenu()
                   logout()
                 }}
               >
                 Sign out
               </Button>
-            ) : (
-              <>
-                <Button asChild className="mt-2">
-                  <Link to="/login" state={loginState} onClick={() => setOpen(false)}>
-                    Sign in
-                  </Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/register" onClick={() => setOpen(false)}>
-                    Register
-                  </Link>
-                </Button>
-              </>
-            )}
-            <Button asChild variant="outline">
-              <Link to="/become-a-seller" onClick={() => setOpen(false)}>
-                Become a Seller
-              </Link>
-            </Button>
+            ) : null}
           </nav>
         </div>
       ) : null}
