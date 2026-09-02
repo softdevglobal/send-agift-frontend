@@ -50,14 +50,21 @@ export function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
 }
 
 type GuestRouteProps = {
+  /** Only bounce users already signed in as this role so they can switch accounts. */
+  forRole: UserRole
   children: ReactNode
 }
 
-export function GuestRoute({ children }: GuestRouteProps) {
+function alreadyHasGuestRole(role: UserRole, forRole: UserRole): boolean {
+  if (forRole === 'admin') return isAdminRole(role)
+  return role === forRole
+}
+
+export function GuestRoute({ forRole, children }: GuestRouteProps) {
   const { isAuthenticated, role } = useAuth()
   const location = useLocation()
 
-  if (isAuthenticated && role) {
+  if (isAuthenticated && role && alreadyHasGuestRole(role, forRole)) {
     const from = (location.state as AuthLocationState | null)?.from
     return <Navigate to={postLoginPath(from, role)} replace />
   }

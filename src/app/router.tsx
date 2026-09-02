@@ -98,7 +98,7 @@ export function AppRouter() {
       <Route
         path="/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="customer">
             <CustomerLoginPage />
           </GuestRoute>
         }
@@ -106,7 +106,7 @@ export function AppRouter() {
       <Route
         path="/register"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="customer">
             <CustomerRegisterPage />
           </GuestRoute>
         }
@@ -165,7 +165,7 @@ export function AppRouter() {
       <Route
         path="/seller/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="seller">
             <SellerLoginPage />
           </GuestRoute>
         }
@@ -173,7 +173,7 @@ export function AppRouter() {
       <Route
         path="/seller/register"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="seller">
             <SellerRegisterPage />
           </GuestRoute>
         }
@@ -181,7 +181,7 @@ export function AppRouter() {
       <Route
         path="/admin/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="admin">
             <AdminLoginPage />
           </GuestRoute>
         }

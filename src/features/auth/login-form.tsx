@@ -15,7 +15,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
 import { ApiError, getErrorMessage } from '@/lib/api'
-import { isUserRole, type UserRole } from '@/lib/auth'
+import { isAdminRole, isUserRole, type UserRole } from '@/lib/auth'
 
 type LoginFormProps = {
   role: AuthRole
@@ -73,7 +73,7 @@ async function loginWithCredentials(
 
 export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
-  const { login } = useAuth()
+  const { login, isAuthenticated, role: sessionRole } = useAuth()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
@@ -85,6 +85,13 @@ export function LoginForm({ role }: LoginFormProps) {
   const [hint, setHint] = useState<string | null>(null)
 
   const registered = searchParams.get('registered') === '1'
+  const switchingFrom =
+    isAuthenticated &&
+    sessionRole &&
+    sessionRole !== role &&
+    !(role === 'admin' && isAdminRole(sessionRole))
+      ? sessionRole
+      : null
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -218,7 +225,9 @@ export function LoginForm({ role }: LoginFormProps) {
           hint ??
           (registered
             ? 'Account created. Sign in with your new credentials.'
-            : null)
+            : switchingFrom
+              ? `You're signed in as a ${switchingFrom}. Signing in here will switch to your ${copy.roleLabel.toLowerCase()} account.`
+              : null)
         }
       />
 
