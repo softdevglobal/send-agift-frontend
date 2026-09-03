@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, LoaderCircle } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { getRecipient, type RecipientDetails } from '@/api/customers'
 import { cancelOrder, getOrder, type OrderDetails } from '@/api/orders'
@@ -16,19 +16,28 @@ import {
   formatDeliveryDate,
   formatOrderDate,
   fulfilmentStatusLabel,
-  orderStatusLabel,
+  isHistoryOrderStatus,
+  ordersListPath,
 } from '@/features/customer-commerce/order-display'
-import { getErrorMessage } from '@/lib/api'
+import {
+  OrderStatusBadge,
+  OrderTrackingTimeline,
+} from '@/features/customer-commerce/order-tracking'
+import { ApiError, getErrorMessage } from '@/lib/api'
+import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 export function CustomerOrderDetailPage() {
   const { orderId } = useParams()
+  const [searchParams] = useSearchParams()
+  const justPlaced = searchParams.get('placed') === '1'
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [recipient, setRecipient] = useState<RecipientDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [, setCatalogTick] = useState(0)
 
   const load = useCallback(async () => {
     if (!orderId) return
@@ -56,6 +65,18 @@ export function CustomerOrderDetailPage() {
     }
   }, [load])
 
+  useEffect(() => {
+    let cancelled = false
+    void loadMarketplaceIntoCatalog()
+      .then(() => {
+        if (!cancelled) setCatalogTick((tick) => tick + 1)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function handleCancel() {
     if (!orderId) return
     setError(null)
@@ -64,6 +85,9 @@ export function CustomerOrderDetailPage() {
       setOrder(await cancelOrder(orderId))
     } catch (err) {
       setError(getErrorMessage(err, 'Could not cancel this order.'))
+      if (err instanceof ApiError && err.status === 409) {
+        await load().catch(() => undefined)
+      }
     } finally {
       setCancelling(false)
     }
@@ -83,9 +107,9 @@ export function CustomerOrderDetailPage() {
         <CustomerPageHeader title="Order" description="This order could not be loaded." />
         <FormAlert error={error ?? 'Order not found.'} className="mb-5" />
         <Button asChild variant="outline" className="h-10 rounded-full px-4">
-          <Link to="/account/orders">
+          <Link to="/orders">
             <ArrowLeft className="size-4" />
-            All orders
+            Track orders
           </Link>
         </Button>
       </div>
@@ -95,6 +119,14 @@ export function CustomerOrderDetailPage() {
   const recipientAddress = recipient?.addresses?.find((address) => address.is_default) ??
     recipient?.addresses?.[0] ??
     null
+  const listPath = ordersListPath(order.status)
+  const listLabel = isHistoryOrderStatus(order.status) ? 'Order history' : 'Track orders'
+  const placedNotice =
+    justPlaced && order.status === 'pending_payment'
+      ? 'Your gift order is placed. Payment has not been captured yet — track progress below while it awaits payment.'
+      : justPlaced
+        ? 'Your gift order is placed. Track its progress below.'
+        : null
 
   return (
     <div>
@@ -103,15 +135,34 @@ export function CustomerOrderDetailPage() {
         description={`Placed ${formatOrderDate(order.created_at)}`}
         action={
           <Button asChild variant="outline" className="h-10 rounded-full px-4">
-            <Link to="/account/orders">
+            <Link to={listPath}>
               <ArrowLeft className="size-4" />
-              All orders
+              {listLabel}
             </Link>
           </Button>
         }
       />
 
-      <FormAlert error={error} className="mb-5" />
+      <FormAlert error={error} notice={placedNotice} className="mb-5" />
+
+      <section className={cn(customerPanelClass, 'mb-6 p-5 sm:p-6')}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-medium">Track this gift</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Delivery {formatDeliveryDate(order.delivery_date)}
+            </p>
+          </div>
+          <OrderStatusBadge status={order.status} />
+        </div>
+        <div className="mt-5">
+          <OrderTrackingTimeline
+            status={order.status}
+            placedAt={formatOrderDate(order.created_at)}
+            updatedAt={formatOrderDate(order.updated_at)}
+          />
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)]">
         <section className={cn(customerPanelClass, 'p-5 sm:p-6')}>
@@ -161,7 +212,9 @@ export function CustomerOrderDetailPage() {
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Status</dt>
-                <dd>{orderStatusLabel(order.status)}</dd>
+                <dd>
+                  <OrderStatusBadge status={order.status} />
+                </dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Delivery date</dt>
@@ -231,7 +284,7 @@ export function CustomerOrderDetailPage() {
               </>
             ) : (
               <p className="mt-3 text-sm text-muted-foreground">
-                Sent to your own account address.
+                No recipient was attached to this order.
               </p>
             )}
             {order.gift_message ? (

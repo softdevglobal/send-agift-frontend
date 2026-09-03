@@ -440,6 +440,15 @@ export function CustomerRegisterForm() {
           <Separator className="flex-1" />
         </div>
 
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="h-11 w-full text-sm"
+        >
+          <Link to="/seller/register">Create a seller account</Link>
+        </Button>
+
         <p className="text-center text-sm text-muted-foreground">
           Already registered?{' '}
           <Link

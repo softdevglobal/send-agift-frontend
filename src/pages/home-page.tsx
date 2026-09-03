@@ -3,6 +3,7 @@ import {
   Headphones,
   RefreshCcw,
   ShieldCheck,
+  Store,
   Truck,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -11,7 +12,9 @@ import { Link } from 'react-router-dom'
 import { SectionHeading } from '@/components/common/section-heading'
 import { SiteLayout } from '@/components/common/site-layout'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/features/auth/auth-context'
 import { CategoryItem } from '@/features/marketing/category-item'
+import { homePathForRole } from '@/lib/auth'
 import {
   bestSellingGifts,
   customerTestimonials,
@@ -56,6 +59,9 @@ const homeFeatures = [
 ]
 
 export function HomePage() {
+  const { isAuthenticated, role } = useAuth()
+  const isGuest = !isAuthenticated
+  const isCustomer = isAuthenticated && role === 'customer'
   // Real published gifts take over this shelf; the sample set is only a
   // placeholder for a store that has not published anything yet.
   const [published, setPublished] = useState<GiftProduct[]>([])
@@ -111,26 +117,58 @@ export function HomePage() {
                 Discover the best gifts for every moment.
               </h1>
               <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Browse curated gifts, track deliveries, earn promotional points,
-                and join approved skill competitions — all country-ready.
+                Browse gifts right away — no account needed. Sign in when you
+                want to save favorites, checkout, and track deliveries.
               </p>
 
               <div className="flex flex-wrap gap-3">
                 <Button asChild size="lg" className="h-11 gap-2 rounded-full px-6">
                   <Link to="/products">
-                    Shop Now
+                    Browse gifts
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="h-11 rounded-full bg-background/80 px-5"
-                >
-                  <Link to="/become-a-seller">Become a seller</Link>
-                </Button>
+                {isGuest ? (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="h-11 rounded-full bg-background/80 px-5"
+                  >
+                    <Link to="/register">Create account</Link>
+                  </Button>
+                ) : isCustomer ? (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="h-11 rounded-full bg-background/80 px-5"
+                  >
+                    <Link to="/orders">My orders</Link>
+                  </Button>
+                ) : role ? (
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="h-11 rounded-full bg-background/80 px-5"
+                  >
+                    <Link to={homePathForRole(role)}>Go to dashboard</Link>
+                  </Button>
+                ) : null}
               </div>
+
+              {isGuest ? (
+                <p className="text-sm text-muted-foreground">
+                  Already have an account?{' '}
+                  <Link
+                    to="/login"
+                    className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              ) : null}
 
               <div className="flex flex-wrap gap-8 border-t border-border/70 pt-6">
                 <div>
@@ -207,6 +245,47 @@ export function HomePage() {
             </div>
           </div>
         </section>
+
+        {role !== 'seller' ? (
+          <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8 lg:pb-16">
+            <div className="flex flex-col gap-6 overflow-hidden rounded-[1.75rem] bg-primary px-8 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center lg:justify-between lg:px-12">
+              <div className="max-w-xl space-y-3">
+                <p className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.16em] uppercase text-primary-foreground/80">
+                  <Store className="size-3.5" />
+                  For sellers
+                </p>
+                <h2 className="font-display text-3xl tracking-tight sm:text-4xl">
+                  Want to sell gifts on SendAgift?
+                </h2>
+                <p className="text-sm leading-relaxed text-primary-foreground/80 sm:text-base">
+                  Create a seller account to open a shop, list products, and
+                  get paid in your country.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  asChild
+                  size="lg"
+                  variant="secondary"
+                  className="h-11 bg-background px-5 text-foreground hover:bg-background/90"
+                >
+                  <Link to="/seller/register">
+                    Create seller account
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  size="lg"
+                  variant="outline"
+                  className="h-11 border-primary-foreground/30 bg-transparent px-5 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                >
+                  <Link to="/become-a-seller">How selling works</Link>
+                </Button>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section className="bg-background pb-16 lg:pb-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">

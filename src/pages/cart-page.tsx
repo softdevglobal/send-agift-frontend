@@ -163,7 +163,12 @@ export function CartPage() {
             Free shipping on orders of $75 or more.
           </p>
           <Button asChild className="mt-5 h-11 w-full rounded-full">
-            <Link to="/checkout">Continue to checkout</Link>
+            <Link
+              to={isCustomer ? '/checkout' : '/login'}
+              state={isCustomer ? undefined : returnToState('/checkout')}
+            >
+              {isCustomer ? 'Continue to checkout' : 'Sign in to check out'}
+            </Link>
           </Button>
         </aside>
       </div>

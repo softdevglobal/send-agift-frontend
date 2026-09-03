@@ -28,6 +28,8 @@ export {
   formatDeliveryDate,
   formatOrderDate,
   fulfilmentStatusLabel,
+  isActiveOrderStatus,
+  isHistoryOrderStatus,
   orderStatusLabel,
   toDateInputValue,
 } from './order-display'

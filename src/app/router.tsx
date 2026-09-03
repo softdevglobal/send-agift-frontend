@@ -20,6 +20,7 @@ import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
+import { CustomerOrderHistoryPage } from '@/pages/customer-order-history-page'
 import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
@@ -58,7 +59,7 @@ function RedirectSellerShop() {
 
 function RedirectOrder() {
   const { orderId } = useParams()
-  return <Navigate to={`/account/orders/${orderId}`} replace />
+  return <Navigate to={`/orders/${orderId}`} replace />
 }
 
 export function AppRouter() {
@@ -96,9 +97,22 @@ export function AppRouter() {
       </Route>
 
       <Route
+        path="/orders"
+        element={
+          <ProtectedRoute roles={['customer']}>
+            <AccountLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<CustomerOrdersPage />} />
+        <Route path="history" element={<CustomerOrderHistoryPage />} />
+        <Route path=":orderId" element={<CustomerOrderDetailPage />} />
+      </Route>
+
+      <Route
         path="/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="customer">
             <CustomerLoginPage />
           </GuestRoute>
         }
@@ -106,7 +120,7 @@ export function AppRouter() {
       <Route
         path="/register"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="customer">
             <CustomerRegisterPage />
           </GuestRoute>
         }
@@ -121,9 +135,10 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/account/orders" replace />} />
-        <Route path="orders" element={<CustomerOrdersPage />} />
-        <Route path="orders/:orderId" element={<CustomerOrderDetailPage />} />
+        <Route index element={<Navigate to="/orders" replace />} />
+        <Route path="orders" element={<Navigate to="/orders" replace />} />
+        <Route path="orders/history" element={<Navigate to="/orders/history" replace />} />
+        <Route path="orders/:orderId" element={<RedirectOrder />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
@@ -146,7 +161,11 @@ export function AppRouter() {
         path="/customer/checkout/result"
         element={<Navigate to="/checkout/result" replace />}
       />
-      <Route path="/customer/orders" element={<Navigate to="/account/orders" replace />} />
+      <Route path="/customer/orders" element={<Navigate to="/orders" replace />} />
+      <Route
+        path="/customer/orders/history"
+        element={<Navigate to="/orders/history" replace />}
+      />
       <Route path="/customer/orders/:orderId" element={<RedirectOrder />} />
       <Route
         path="/customer/saved-gifts"
@@ -165,7 +184,7 @@ export function AppRouter() {
       <Route
         path="/seller/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="seller">
             <SellerLoginPage />
           </GuestRoute>
         }
@@ -173,7 +192,7 @@ export function AppRouter() {
       <Route
         path="/seller/register"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="seller">
             <SellerRegisterPage />
           </GuestRoute>
         }
@@ -181,7 +200,7 @@ export function AppRouter() {
       <Route
         path="/admin/login"
         element={
-          <GuestRoute>
+          <GuestRoute forRole="admin">
             <AdminLoginPage />
           </GuestRoute>
         }

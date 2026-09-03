@@ -1,5 +1,7 @@
 import type { GiftProduct } from '@/features/marketing/data'
 
+export type CartCustomerType = 'personal' | 'corporate'
+
 export type CatalogProduct = GiftProduct & {
   categoryId: string
   description: string
@@ -16,16 +18,20 @@ export type CatalogProduct = GiftProduct & {
   shopLocation?: string
   currency?: string
   priceAmount?: number
+  /** Catalog query (`personal` | `corporate`) this product was loaded with. */
+  catalogCustomerType?: CartCustomerType
 }
 
 export type CartItem = {
   productId: string
   quantity: number
+  customerType: CartCustomerType
 }
 
 export type CartLine = {
   product: CatalogProduct
   quantity: number
   lineTotal: number
+  customerType: CartCustomerType
 }
 

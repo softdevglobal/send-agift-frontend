@@ -20,6 +20,7 @@ const ROLE_AREAS: Record<string, UserRole[]> = {
   '/seller': ['seller'],
   '/account': ['customer'],
   '/checkout': ['customer'],
+  '/orders': ['customer'],
 }
 
 const AUTH_PAGES = [
@@ -77,16 +78,9 @@ export function isAdminRole(role: UserRole | null): boolean {
 export function homePathForRole(role: UserRole): string {
   if (role === 'seller') return '/seller'
   if (isAdminRole(role)) return '/admin'
-  // Customers browse the same public storefront as guests — no separate portal.
-  return '/'
+  // Customers land in the catalog so they can keep shopping after sign-in.
+  return '/products'
 }
-
-/**
- * Resolve where to land after signing in. Honours the path the user was
- * bounced from, but only when their role is allowed there — customers own the
- * whole storefront, so a simple "starts with home" check is not enough now
- * that their home is '/'.
- */
 export function postLoginPath(from: string | undefined, role: UserRole): string {
   const home = homePathForRole(role)
   if (typeof from !== 'string' || !from.startsWith('/') || from.startsWith('//')) {

@@ -381,19 +381,22 @@ export type OrderItemInput = {
   quantity: number
 }
 
-export type OrderCreateInput = {
-  recipient_id?: string | null
+export type CreateOrderInput = {
+  recipient_id?: string
   country_id: string
   /** 'personal' | 'corporate'. Defaults to 'personal' server-side. */
-  customer_type?: string
+  customer_type?: 'personal' | 'corporate'
   /** YYYY-MM-DD */
   delivery_date: string
-  gift_message?: string | null
-  media_greeting_id?: string | null
+  gift_message?: string
+  media_greeting_id?: string
   /** Minor units. Line prices come from the product, not the client. */
   delivery_amount?: number
   items: OrderItemInput[]
 }
+
+/** @deprecated Use CreateOrderInput */
+export type OrderCreateInput = CreateOrderInput
 
 export type Admin = {
   id: string

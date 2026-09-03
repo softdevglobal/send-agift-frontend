@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CustomerPageHeader, customerPanelClass, useCart } from '@/features/customer-commerce'
 import { toDateInputValue } from '@/features/customer-commerce/order-display'
+import type { CartCustomerType } from '@/features/customer-commerce/types'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
@@ -31,7 +32,7 @@ function recipientLabel(recipient: Recipient) {
 
 export function CheckoutPage() {
   const navigate = useNavigate()
-  const { lines, subtotal, shipping, clearCart } = useCart()
+  const { lines, subtotal, clearCart, mixedCustomerType, cartCustomerType } = useCart()
 
   const [countries, setCountries] = useState<Country[]>([])
   const [recipients, setRecipients] = useState<Recipient[]>([])
@@ -42,9 +43,15 @@ export function CheckoutPage() {
 
   const [recipientId, setRecipientId] = useState('')
   const [countryId, setCountryId] = useState('')
-  const [customerType, setCustomerType] = useState('personal')
+  const [customerType, setCustomerType] = useState<CartCustomerType>(
+    cartCustomerType ?? 'personal',
+  )
   const [deliveryDate, setDeliveryDate] = useState(tomorrow)
   const [giftMessage, setGiftMessage] = useState('')
+
+  useEffect(() => {
+    if (cartCustomerType) setCustomerType(cartCustomerType)
+  }, [cartCustomerType])
 
   useEffect(() => {
     let cancelled = false
@@ -59,9 +66,13 @@ export function CheckoutPage() {
         setRecipients(Array.isArray(recipientList) ? recipientList : [])
         setCountries(Array.isArray(countryList) ? countryList : [])
         setCountryId((current) => current || me.country_id)
-        if (me.customer_type === 'personal' || me.customer_type === 'corporate') {
-          setCustomerType(me.customer_type)
-        }
+        setCustomerType((current) => {
+          if (cartCustomerType) return cartCustomerType
+          if (me.customer_type === 'personal' || me.customer_type === 'corporate') {
+            return me.customer_type
+          }
+          return current
+        })
       })
       .catch((err) => {
         if (!cancelled) setError(getErrorMessage(err, 'Could not load your account details.'))
@@ -72,7 +83,7 @@ export function CheckoutPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [cartCustomerType])
 
   // Only API-backed products can be ordered — demo catalog entries have no server record.
   const unorderable = useMemo(
@@ -86,6 +97,7 @@ export function CheckoutPage() {
   )
   const currency = currencies[0] ?? 'USD'
   const mixedCurrency = currencies.length > 1
+  const typeMismatch = Boolean(cartCustomerType && customerType !== cartCustomerType)
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
@@ -93,7 +105,11 @@ export function CheckoutPage() {
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
     : mixedCurrency
       ? 'All items in one order must share the same currency. Split your cart and order separately.'
-      : null
+      : mixedCustomerType
+        ? 'Your cart mixes personal and corporate catalog items. Remove one type to check out.'
+        : typeMismatch
+          ? 'Order type must match the catalog you used when adding these gifts to your cart.'
+          : null
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -102,12 +118,11 @@ export function CheckoutPage() {
     setSubmitting(true)
     try {
       const order = await createOrder({
-        recipient_id: recipientId || null,
+        ...(recipientId ? { recipient_id: recipientId } : {}),
         country_id: countryId,
         customer_type: customerType,
         delivery_date: deliveryDate,
-        gift_message: giftMessage.trim() || null,
-        delivery_amount: majorToMinor(shipping, currency),
+        ...(giftMessage.trim() ? { gift_message: giftMessage.trim() } : {}),
         items: lines.map((line) => ({
           product_id: line.product.id,
           quantity: line.quantity,
@@ -115,7 +130,7 @@ export function CheckoutPage() {
       })
       setPlaced(true)
       clearCart()
-      navigate(`/checkout/result?orderId=${encodeURIComponent(order.id)}`, {
+      navigate(`/orders/${encodeURIComponent(order.id)}?placed=1`, {
         replace: true,
       })
     } catch (err) {
@@ -140,7 +155,7 @@ export function CheckoutPage() {
     <div>
       <CustomerPageHeader
         title="Checkout"
-        description="Confirm who this gift is for and when it should arrive. The order is created awaiting payment."
+        description="Confirm who this gift is for and when it should arrive. After placing, you can track the gift and find it in your order history."
       />
 
       <FormAlert error={error ?? blocker} className="mb-5" />
@@ -154,7 +169,8 @@ export function CheckoutPage() {
             <div>
               <h2 className="font-medium">Recipient</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Pick someone from your saved recipients, or send the gift to yourself.
+                Optionally pick someone from your saved recipients, or send without a
+                recipient.
               </p>
             </div>
 
@@ -166,7 +182,7 @@ export function CheckoutPage() {
                 onChange={(event) => setRecipientId(event.target.value)}
                 className={selectClassName}
               >
-                <option value="">Myself</option>
+                <option value="">Send without a recipient</option>
                 {recipients.map((recipient) => (
                   <option key={recipient.id} value={recipient.id}>
                     {recipientLabel(recipient)}
@@ -236,14 +252,17 @@ export function CheckoutPage() {
                 <select
                   id="checkout-customer-type"
                   value={customerType}
-                  onChange={(event) => setCustomerType(event.target.value)}
+                  onChange={(event) =>
+                    setCustomerType(event.target.value as CartCustomerType)
+                  }
                   className={selectClassName}
                 >
                   <option value="personal">Personal</option>
                   <option value="corporate">Corporate</option>
                 </select>
                 <p className="text-xs text-muted-foreground">
-                  Some products are only sold to personal or corporate buyers.
+                  Must match the catalog (personal or corporate) used when you added
+                  these gifts to your cart.
                 </p>
               </div>
 
@@ -275,22 +294,15 @@ export function CheckoutPage() {
             ))}
           </ul>
           <dl className="mt-4 space-y-2 border-t border-border/60 pt-4 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Subtotal</dt>
-              <dd>{money(subtotal)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Delivery</dt>
-              <dd>{shipping === 0 ? 'Free' : money(shipping)}</dd>
-            </div>
             <div className="flex justify-between gap-4 font-medium">
-              <dt>Total</dt>
-              <dd>{money(subtotal + shipping)}</dd>
+              <dt>Estimated subtotal</dt>
+              <dd>{money(subtotal)}</dd>
             </div>
           </dl>
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             Line prices are confirmed by the seller when the order is created, so the
-            final total may differ slightly.
+            final total may differ. Delivery is added by the server. Payment is not
+            captured yet — new orders stay awaiting payment.
           </p>
           <Button
             type="submit"

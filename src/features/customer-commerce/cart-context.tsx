@@ -15,9 +15,10 @@ import {
   readCart,
   writeCart,
 } from '@/features/customer-commerce/cart-storage'
-import type { CartItem, CartLine } from '@/features/customer-commerce/types'
+import type { CartCustomerType, CartItem, CartLine } from '@/features/customer-commerce/types'
 import { shippingForSubtotal } from '@/features/customer-commerce/utils'
 import { returnToState } from '@/lib/auth'
+import { getMarketplaceCustomerType } from '@/lib/marketplace'
 
 type CartContextValue = {
   items: CartItem[]
@@ -26,6 +27,9 @@ type CartContextValue = {
   subtotal: number
   shipping: number
   total: number
+  customerTypes: CartCustomerType[]
+  mixedCustomerType: boolean
+  cartCustomerType: CartCustomerType | null
   addItem: (productId: string, quantity?: number) => void
   setQuantity: (productId: string, quantity: number) => void
   removeItem: (productId: string) => void
@@ -33,6 +37,11 @@ type CartContextValue = {
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
+
+function customerTypeForProduct(productId: string): CartCustomerType {
+  const product = getCatalogProduct(productId)
+  return product?.catalogCustomerType ?? getMarketplaceCustomerType()
+}
 
 function toLines(items: CartItem[]): CartLine[] {
   return items.flatMap((item) => {
@@ -43,6 +52,7 @@ function toLines(items: CartItem[]): CartLine[] {
         product,
         quantity: item.quantity,
         lineTotal: product.price * item.quantity,
+        customerType: item.customerType,
       },
     ]
   })
@@ -75,13 +85,14 @@ export function CartProvider({ children }: CartProviderProps) {
         return
       }
       if (!getCatalogProduct(productId) || quantity < 1) return
+      const customerType = customerTypeForProduct(productId)
       persist(
         (() => {
           const existing = items.find((item) => item.productId === productId)
-          if (!existing) return [...items, { productId, quantity }]
+          if (!existing) return [...items, { productId, quantity, customerType }]
           return items.map((item) =>
             item.productId === productId
-              ? { ...item, quantity: item.quantity + quantity }
+              ? { ...item, quantity: item.quantity + quantity, customerType }
               : item,
           )
         })(),
@@ -127,6 +138,12 @@ export function CartProvider({ children }: CartProviderProps) {
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
     [lines],
   )
+  const customerTypes = useMemo(
+    () => [...new Set(lines.map((line) => line.customerType))],
+    [lines],
+  )
+  const mixedCustomerType = customerTypes.length > 1
+  const cartCustomerType = customerTypes.length === 1 ? customerTypes[0] : null
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -136,12 +153,28 @@ export function CartProvider({ children }: CartProviderProps) {
       subtotal,
       shipping,
       total: subtotal + shipping,
+      customerTypes,
+      mixedCustomerType,
+      cartCustomerType,
       addItem,
       setQuantity,
       removeItem,
       clearCart,
     }),
-    [items, lines, itemCount, subtotal, shipping, addItem, setQuantity, removeItem, clearCart],
+    [
+      items,
+      lines,
+      itemCount,
+      subtotal,
+      shipping,
+      customerTypes,
+      mixedCustomerType,
+      cartCustomerType,
+      addItem,
+      setQuantity,
+      removeItem,
+      clearCart,
+    ],
   )
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>

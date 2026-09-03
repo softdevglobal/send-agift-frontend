@@ -23,6 +23,10 @@ let catalogCache: {
   products: CatalogProduct[]
 } | null = null
 
+export function getMarketplaceCustomerType(): MarketplaceCustomerType {
+  return catalogCache?.customerType ?? 'personal'
+}
+
 export async function resolveMarketplaceCustomerType(): Promise<MarketplaceCustomerType> {
   if (getRole() !== 'customer' || !getToken()) return 'personal'
   try {
@@ -66,9 +70,10 @@ export async function loadMarketplaceIntoCatalog(
   const { shops, products } = await fetchMarketplaceCatalog(type)
   indexMarketplaceShops(shops)
   const shopById = new Map(shops.map((shop) => [shop.id, shop]))
-  const mapped = products.map((product) =>
-    catalogProductFromApi(product, shopById.get(product.shop_id)),
-  )
+  const mapped = products.map((product) => ({
+    ...catalogProductFromApi(product, shopById.get(product.shop_id)),
+    catalogCustomerType: type,
+  }))
   registerCatalogProducts(mapped)
   catalogCache = { at: Date.now(), customerType: type, products: mapped }
   return mapped
