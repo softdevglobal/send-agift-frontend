@@ -196,6 +196,28 @@
   }
 }
 
+@layer components {
+  /* Customer storefront column — modest side gutters, wide content. */
+  .storefront-frame {
+    width: 100%;
+    max-width: 90rem;
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .storefront-frame {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .storefront-frame {
+      padding-inline: 2rem;
+    }
+  }
+}
+
 @layer utilities {
   .font-display {
     font-family: var(--font-display);

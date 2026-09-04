@@ -13,6 +13,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { AccountMenu } from '@/components/common/account-menu'
 import { BrandLogo } from '@/components/common/brand-logo'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { accountNavItems } from '@/features/account/account-nav'
@@ -20,6 +21,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { returnToState } from '@/lib/auth'
 import { giftCategories } from '@/features/marketing/data'
+import { cn } from '@/lib/utils'
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
@@ -49,7 +51,12 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:gap-5 lg:px-8">
+      <div
+        className={cn(
+          storefrontFrameClass,
+          'flex items-center gap-3 py-3 lg:gap-5',
+        )}
+      >
         <BrandLogo imgClassName="h-14 sm:h-16" />
 
         <form

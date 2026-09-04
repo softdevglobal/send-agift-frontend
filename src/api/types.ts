@@ -256,6 +256,10 @@ export type RecipientAddress = {
   id: string
   recipient_id: string
   country_id: string
+  /** ISO 2 when the API includes it (e.g. "AU"). */
+  country?: string | null
+  iso_code?: string | null
+  country_code?: string | null
   label?: string | null
   address_type: string
   line1: string
@@ -366,6 +370,121 @@ export type OrderItem = {
   unit_amount: number
   total_amount: number
   fulfilment_status: FulfilmentStatus
+  created_at: string
+  updated_at: string
+}
+
+export type SellerOrderItemSummary = OrderItem & {
+  order_number: string
+  order_status: OrderStatus
+  delivery_date: string
+  product_name: string
+  product_slug: string
+  product_image_url?: string | null
+  recipient_name: string
+}
+
+export type SellerOrderItemDetails = OrderItem & {
+  order: Order
+  product: Product
+  recipient?: Recipient
+  shipping_address?: RecipientAddress
+  shop?: Shop
+}
+
+export const PARCEL_DISTANCE_UNITS = ['cm', 'in'] as const
+export type ParcelDistanceUnit = (typeof PARCEL_DISTANCE_UNITS)[number]
+
+export const PARCEL_MASS_UNITS = ['kg', 'lb'] as const
+export type ParcelMassUnit = (typeof PARCEL_MASS_UNITS)[number]
+
+export type ParcelInput = {
+  length: string
+  width: string
+  height: string
+  distance_unit?: ParcelDistanceUnit
+  weight: string
+  mass_unit?: ParcelMassUnit
+}
+
+export const CUSTOMS_CONTENTS_TYPES = [
+  'MERCHANDISE',
+  'GIFT',
+  'DOCUMENTS',
+  'SAMPLE',
+  'RETURNED_GOODS',
+  'HUMANITARIAN_DONATION',
+  'OTHER',
+] as const
+export type CustomsContentsType = (typeof CUSTOMS_CONTENTS_TYPES)[number]
+
+export const CUSTOMS_NON_DELIVERY_OPTIONS = ['RETURN', 'ABANDON'] as const
+export type CustomsNonDeliveryOption = (typeof CUSTOMS_NON_DELIVERY_OPTIONS)[number]
+
+export type CustomsItemInput = {
+  description: string
+  quantity: number
+  net_weight: string
+  mass_unit: ParcelMassUnit
+  value_amount: string
+  value_currency: string
+  origin_country: string
+  tariff_number?: string
+}
+
+export type CustomsDeclarationInput = {
+  contents_type: CustomsContentsType | string
+  contents_explanation?: string
+  non_delivery_option: CustomsNonDeliveryOption | string
+  certify_signer: string
+  eel_pfc?: string
+  incoterm?: string
+  items: CustomsItemInput[]
+}
+
+export type ShippingShipmentInput = {
+  parcel?: ParcelInput
+  customs_declaration?: CustomsDeclarationInput
+}
+
+/** Shippo rate amounts are major-unit strings in `currency`, not minor units. */
+export type ShippoRate = {
+  object_id: string
+  provider: string
+  amount: string
+  currency: string
+  estimated_days: number
+  duration_terms: string
+  service_name: string
+}
+
+export type ShippingRatesResult = {
+  shipment_object_id: string
+  rates: ShippoRate[]
+}
+
+export type BuyLabelInput = {
+  rate_object_id: string
+  provider: string
+  idempotency_key: string
+}
+
+export type Shipment = {
+  id: string
+  order_id: string
+  order_item_id?: string
+  seller_id: string
+  is_international?: boolean
+  parcel_details?: ParcelInput | Record<string, unknown> | null
+  customs_declaration?: CustomsDeclarationInput | Record<string, unknown> | null
+  courier_provider: string
+  tracking_number: string
+  label_media_id: string
+  delivery_mode: string
+  status: string
+  provider_shipment_id: string
+  provider_customs_declaration_id?: string
+  provider_tracking_url: string
   created_at: string
   updated_at: string
 }

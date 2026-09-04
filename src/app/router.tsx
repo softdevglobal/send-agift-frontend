@@ -36,6 +36,7 @@ import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
+import { SellerOrderItemDetailPage } from '@/pages/seller-order-item-detail-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
@@ -219,6 +220,7 @@ export function AppRouter() {
         <Route path="shops" element={<SellerShopsPage />} />
         <Route path="products" element={<SellerProductsPage />} />
         <Route path="orders" element={<SellerOrdersPage />} />
+        <Route path="order-items/:orderItemId" element={<SellerOrderItemDetailPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
