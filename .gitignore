@@ -52,3 +52,4 @@ Desktop.ini
 *.pem
 .eslintcache
 .oxlintcache
+.tmp-screens/

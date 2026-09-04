@@ -27,7 +27,7 @@ export function getMarketplaceCustomerType(): MarketplaceCustomerType {
   return catalogCache?.customerType ?? 'personal'
 }
 
-export async function resolveMarketplaceCustomerType(): Promise<MarketplaceCustomerType> {
+async function resolveMarketplaceCustomerType(): Promise<MarketplaceCustomerType> {
   if (getRole() !== 'customer' || !getToken()) return 'personal'
   try {
     const me = await getCustomerMe()
@@ -37,7 +37,7 @@ export async function resolveMarketplaceCustomerType(): Promise<MarketplaceCusto
   }
 }
 
-export async function fetchMarketplaceCatalog(
+async function fetchMarketplaceCatalog(
   customerType: MarketplaceCustomerType = 'personal',
 ): Promise<{ shops: Shop[]; products: Product[] }> {
   const shops = await listPublicShops()

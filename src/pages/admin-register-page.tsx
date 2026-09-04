@@ -1,4 +1,4 @@
-import { AuthAdminRegisterPage } from '@/features/auth/auth-admin-register-page'
+import { AuthAdminRegisterPage } from '@/features/auth'
 
 export function AdminRegisterPage() {
   return <AuthAdminRegisterPage />

@@ -22,7 +22,7 @@ export type PublishedProduct = Product & {
   shop_location?: string
 }
 
-export type CatalogSellerMeta = {
+type CatalogSellerMeta = {
   seller: Pick<
     SellerDetails,
     | 'id'
@@ -159,7 +159,7 @@ export function syncShopPublishedProducts(
   writeAll([...published, ...others])
 }
 
-export function stampSellerOntoCatalog(
+function stampSellerOntoCatalog(
   seller: CatalogSellerMeta['seller'],
   shops: NonNullable<CatalogSellerMeta['shop']>[],
 ) {

@@ -1,6 +1,6 @@
 const ZERO_DECIMAL_CURRENCIES = new Set(['JPY'])
 
-export function currencyFractionDigits(currency: string): number {
+function currencyFractionDigits(currency: string): number {
   return ZERO_DECIMAL_CURRENCIES.has(currency.toUpperCase()) ? 0 : 2
 }
 

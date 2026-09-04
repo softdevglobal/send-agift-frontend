@@ -30,17 +30,15 @@ npm run dev
 
 ```text
 src/
+  api/                 # Backend API clients
   app/                 # App shell: providers, router
-  assets/              # Static images and media
   components/
     ui/                # shadcn/ui primitives
     common/            # Shared app components (layout, header, etc.)
+  data/                # Static datasets (e.g. dial codes)
   features/            # Feature modules (domain-specific UI + logic)
-  hooks/               # Shared React hooks
   lib/                 # Shared utilities (cn, helpers)
   pages/               # Route-level page components
-  services/            # API clients and external integrations
-  types/               # Shared TypeScript types
   App.tsx              # Root app component
   main.tsx             # Entry point
   index.css            # Global styles + Tailwind + theme tokens
@@ -52,7 +50,7 @@ src/
 - **Reusable layout pieces** → `components/common`
 - **Domain features** (e.g. gifts, checkout) → `features/<feature-name>`
 - **Routes / screens** → `pages`
-- **API calls** → `services`
+- **API calls** → `api`
 
 ## Add shadcn components
 

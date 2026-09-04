@@ -1,4 +1,4 @@
-export const USER_ROLES = [
+const USER_ROLES = [
   'admin',
   'superadmin',
   'customer',

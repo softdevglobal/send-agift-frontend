@@ -1,5 +1,3 @@
-export { countries as customerCountries } from '@/features/auth/countries'
-
 export const customerTypes = [
   { value: 'individual', label: 'Individual' },
   { value: 'family', label: 'Family / Household' },

@@ -300,10 +300,6 @@ export type PresignUploadResponse = {
   public_url: string
 }
 
-export type SignedMediaUrlResponse = {
-  url: string
-}
-
 export type SavedGift = {
   id: string
   customer_id: string
@@ -411,8 +407,6 @@ export type Admin = {
 }
 
 export type LoginResponse = { token: string; role: string }
-
-export type ErrorBody = { error: string }
 
 export type MessageResponse = { message: string }
 

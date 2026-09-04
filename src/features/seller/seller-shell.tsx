@@ -133,7 +133,7 @@ export function SellerShell() {
 
         <div className="relative mb-7 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">
-            <BrandLogo to="/seller" onDark className="max-w-full" imgClassName="h-9" />
+            <BrandLogo to="/seller" onDark className="max-w-full" imgClassName="h-12" />
             <p className="mt-1.5 text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
               Seller portal
             </p>

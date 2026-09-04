@@ -58,7 +58,7 @@ export function AuthAdminRegisterPage() {
 
   return (
     <main className="flex h-svh overflow-hidden bg-background">
-      <LoginBrandPanel role="admin" />
+      <LoginBrandPanel role="admin" variant="signup" />
 
       <section className="relative flex flex-1 flex-col overflow-y-auto bg-grain bg-cream/60">
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
@@ -70,7 +70,7 @@ export function AuthAdminRegisterPage() {
               <ArrowLeft className="size-4" />
               Back
             </Link>
-            <BrandLogo className="lg:hidden" imgClassName="h-11" />
+            <BrandLogo className="lg:hidden" imgClassName="h-12" />
           </div>
           <Link
             to="/admin/login"

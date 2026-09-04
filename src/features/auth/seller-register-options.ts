@@ -1,5 +1,3 @@
-export { countries as sellerCountries } from '@/features/auth/countries'
-
 export const sellerTypes = [
   { value: 'individual', label: 'Individual / Sole trader' },
   { value: 'company', label: 'Registered company' },

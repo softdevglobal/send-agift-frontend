@@ -30,7 +30,7 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
         )}
       >
         <header className="flex shrink-0 items-center justify-between px-6 py-5 sm:px-10">
-          <BrandLogo className="lg:invisible" imgClassName="h-11" />
+          <BrandLogo className="lg:invisible" imgClassName="h-12" />
 
           <div className="flex items-center gap-4">
             <Link

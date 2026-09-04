@@ -20,7 +20,7 @@ type AutocompleteOptions = {
   signal?: AbortSignal
 }
 
-export type AddressFieldsFromPlace = {
+type AddressFieldsFromPlace = {
   line1: string
   line2: string
   city: string
