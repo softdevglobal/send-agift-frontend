@@ -1,4 +1,4 @@
-export type PixelCrop = { x: number; y: number; width: number; height: number }
+type PixelCrop = { x: number; y: number; width: number; height: number }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {

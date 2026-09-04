@@ -20,7 +20,6 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { returnToState } from '@/lib/auth'
 import { giftCategories } from '@/features/marketing/data'
-import { cn } from '@/lib/utils'
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
@@ -33,8 +32,6 @@ export function SiteHeader() {
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
   const isGuest = !isAuthenticated
-  const activeCategory = new URLSearchParams(location.search).get('category')
-  const onGifts = location.pathname === '/products'
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -53,7 +50,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3 sm:px-6 lg:gap-5 lg:px-8">
-        <BrandLogo imgClassName="h-11 sm:h-12" />
+        <BrandLogo imgClassName="h-14 sm:h-16" />
 
         <form
           onSubmit={handleSearch}
@@ -174,42 +171,6 @@ export function SiteHeader() {
           </Button>
         </div>
       </div>
-
-      <nav
-        aria-label="Gift categories"
-        className="hidden border-t border-border/50 md:block"
-      >
-        <div className="mx-auto flex h-11 max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:px-6 lg:px-8">
-          <Link
-            to="/products"
-            className={cn(
-              'shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground',
-              onGifts && !activeCategory
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground',
-            )}
-          >
-            All gifts
-          </Link>
-          {giftCategories.map((item) => {
-            const active = onGifts && activeCategory === item.id
-            return (
-              <Link
-                key={item.id}
-                to={`/products?category=${item.id}`}
-                className={cn(
-                  'shrink-0 rounded-full px-3 py-1.5 text-sm transition-colors hover:bg-muted hover:text-foreground',
-                  active
-                    ? 'bg-muted font-medium text-foreground'
-                    : 'text-muted-foreground',
-                )}
-              >
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
-      </nav>
 
       {open ? (
         <div className="border-t border-border bg-background px-4 py-4 md:hidden">

@@ -10,12 +10,6 @@ import type {
 } from '@/api/types'
 
 export type { Admin } from '@/api/types'
-export type {
-  CountryCapability,
-  CountryCapabilityEntry,
-  CountryCapabilityFlag,
-  CountryCapabilityInput,
-} from '@/api/types'
 
 export type AdminUpdateRequest = {
   display_name?: string
@@ -62,10 +56,6 @@ export async function deleteCountry(id: string) {
 
 export function listCountryCapabilities() {
   return api<CountryCapabilityEntry[]>('/admin/country-capabilities')
-}
-
-export function getCountryCapabilities(countryId: string) {
-  return api<CountryCapabilityEntry>(`/admin/countries/${countryId}/capabilities`)
 }
 
 export function createCountryCapabilities(countryId: string, body: CountryCapabilityInput) {

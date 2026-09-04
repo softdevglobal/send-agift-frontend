@@ -1,5 +1,4 @@
-const HERO_PHOTO_SRC =
-  '/images/hero/Gemini_Generated_Image_u6ws12u6ws12u6ws.jpg'
+const HERO_PHOTO_SRC = '/images/hero/hero.jpg'
 const CREAM = 'oklch(0.97 0.015 95)'
 
 /** Fills the whole hero, so it must sit inside a relative section before the content. */

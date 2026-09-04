@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 
 import { cn } from '@/lib/utils'
 
-const LOGO_SRC = '/images/logo/send-a-gift.png'
+const LOGO_SRC = '/images/logo/logo.png'
 
 type BrandLogoProps = {
   className?: string
@@ -15,14 +15,14 @@ type BrandLogoProps = {
 
 export function BrandLogo({
   className,
-  imgClassName = 'h-11',
+  imgClassName = 'h-12',
   to = '/',
   onDark = false,
 }: BrandLogoProps) {
   const image = (
     <img
       src={LOGO_SRC}
-      alt="SendAgift"
+      alt="Send A Gift"
       className={cn(
         'w-auto max-w-full object-contain object-left',
         onDark && 'mix-blend-screen',

@@ -25,7 +25,7 @@ const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
 }
 
 /** Orders still moving through fulfilment — shown on Track orders. */
-export const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
+const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'draft',
   'pending_payment',
   'paid',
@@ -35,15 +35,15 @@ export const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
 ])
 
 /** Finished orders — shown on Order history. */
-export const HISTORY_ORDER_STATUSES: ReadonlySet<string> = new Set([
+const HISTORY_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'delivered',
   'cancelled',
   'refunded',
 ])
 
-export type TrackingStepState = 'complete' | 'current' | 'upcoming' | 'cancelled'
+type TrackingStepState = 'complete' | 'current' | 'upcoming' | 'cancelled'
 
-export type TrackingStep = {
+type TrackingStep = {
   key: string
   label: string
   description: string
@@ -51,7 +51,7 @@ export type TrackingStep = {
 }
 
 /** Happy-path steps a customer can follow after placing an order. */
-export const ORDER_TRACKING_STEPS: readonly TrackingStep[] = [
+const ORDER_TRACKING_STEPS: readonly TrackingStep[] = [
   {
     key: 'placed',
     label: 'Order placed',
@@ -132,7 +132,7 @@ export function ordersListPath(status: string): string {
   return isHistoryOrderStatus(status) ? '/orders/history' : '/orders'
 }
 
-export type OrderTrackingProgress = {
+type OrderTrackingProgress = {
   steps: Array<TrackingStep & { state: TrackingStepState }>
   terminal: (TrackingStep & { state: TrackingStepState }) | null
   currentIndex: number

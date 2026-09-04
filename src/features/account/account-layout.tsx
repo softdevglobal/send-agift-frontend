@@ -17,7 +17,7 @@ export function AccountLayout() {
     <SiteLayout>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
         <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-28 lg:self-start">
+          <aside className="lg:sticky lg:top-24 lg:self-start">
             <nav className="flex gap-4 overflow-x-auto pb-2 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-0">
               {accountNavGroups.map((group) => (
                 <div key={group.label} className="shrink-0 lg:shrink">

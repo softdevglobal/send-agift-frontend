@@ -221,10 +221,6 @@ export function getPublicSellerForShop(shopId: string): PublicSeller | null {
   return null
 }
 
-export function getPublicSellerByShopId(shopId: string): PublicSeller | null {
-  return getPublicSellerForShop(shopId)
-}
-
 /** Looks up one shop plus the seller that owns it. */
 export function getPublicShop(
   shopId: string,
@@ -233,10 +229,6 @@ export function getPublicShop(
   if (!seller) return null
   const shop = seller.shops.find((item) => item.id === shopId)
   return shop ? { shop, seller } : null
-}
-
-export function listPublicSellers(): PublicSeller[] {
-  return Object.values(readMerged().sellers)
 }
 
 export function subscribePublicSellers(onChange: () => void) {

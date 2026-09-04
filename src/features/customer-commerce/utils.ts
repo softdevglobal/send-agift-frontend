@@ -1,7 +1,7 @@
 import { giftCategories } from '@/features/marketing/data'
 
-export const SHIPPING_THRESHOLD = 75
-export const SHIPPING_FEE = 6.5
+const SHIPPING_THRESHOLD = 75
+const SHIPPING_FEE = 6.5
 
 export function formatMoney(value: number) {
   return `$${value.toFixed(2)}`

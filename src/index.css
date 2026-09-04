@@ -62,44 +62,44 @@
 }
 
 :root {
-    /* Olive marketplace system aligned to the ShopMate-style reference */
+    /* Brand purple #AB3DF5, with navy and teal from the logo */
     --background: oklch(0.995 0.004 95);
     --foreground: oklch(0.24 0.02 120);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.24 0.02 120);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.24 0.02 120);
-    --primary: oklch(0.42 0.07 125);
-    --primary-foreground: oklch(0.98 0.01 95);
+    --primary: #ab3df5;
+    --primary-foreground: #ffffff;
     --secondary: oklch(0.95 0.02 95);
-    --secondary-foreground: oklch(0.3 0.03 125);
+    --secondary-foreground: oklch(0.26 0.09 262);
     --muted: oklch(0.96 0.015 95);
     --muted-foreground: oklch(0.5 0.02 120);
-    --accent: oklch(0.94 0.03 125);
-    --accent-foreground: oklch(0.32 0.05 125);
+    --accent: oklch(0.95 0.06 307);
+    --accent-foreground: oklch(0.42 0.22 307);
     --destructive: oklch(0.55 0.2 25);
     --border: oklch(0.9 0.015 100);
     --input: oklch(0.9 0.015 100);
-    --ring: oklch(0.5 0.06 125);
-    --brand: oklch(0.42 0.07 125);
-    --brand-foreground: oklch(0.98 0.01 95);
+    --ring: #ab3df5;
+    --brand: #ab3df5;
+    --brand-foreground: #ffffff;
     --surface: oklch(0.99 0.006 95);
     --mist: oklch(0.94 0.02 95);
     --cream: oklch(0.965 0.02 95);
-    --chart-1: oklch(0.48 0.08 125);
-    --chart-2: oklch(0.62 0.05 80);
-    --chart-3: oklch(0.55 0.04 40);
+    --chart-1: #ab3df5;
+    --chart-2: oklch(0.69 0.11 195);
+    --chart-3: oklch(0.26 0.09 262);
     --chart-4: oklch(0.7 0.03 160);
-    --chart-5: oklch(0.35 0.03 120);
+    --chart-5: oklch(0.35 0.03 262);
     --radius: 0.75rem;
     --sidebar: oklch(0.98 0.01 95);
     --sidebar-foreground: oklch(0.24 0.02 120);
-    --sidebar-primary: oklch(0.42 0.07 125);
-    --sidebar-primary-foreground: oklch(0.98 0.01 95);
+    --sidebar-primary: #ab3df5;
+    --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: oklch(0.95 0.02 95);
-    --sidebar-accent-foreground: oklch(0.3 0.03 125);
+    --sidebar-accent-foreground: oklch(0.26 0.09 262);
     --sidebar-border: oklch(0.9 0.015 100);
-    --sidebar-ring: oklch(0.5 0.06 125);
+    --sidebar-ring: #ab3df5;
 }
 
 .dark {
@@ -109,36 +109,36 @@
     --card-foreground: oklch(0.96 0.01 95);
     --popover: oklch(0.22 0.02 120);
     --popover-foreground: oklch(0.96 0.01 95);
-    --primary: oklch(0.72 0.08 125);
-    --primary-foreground: oklch(0.2 0.03 125);
+    --primary: #ab3df5;
+    --primary-foreground: #ffffff;
     --secondary: oklch(0.28 0.02 120);
     --secondary-foreground: oklch(0.96 0.01 95);
     --muted: oklch(0.28 0.02 120);
     --muted-foreground: oklch(0.72 0.02 100);
-    --accent: oklch(0.3 0.03 125);
-    --accent-foreground: oklch(0.92 0.02 125);
+    --accent: oklch(0.32 0.12 307);
+    --accent-foreground: oklch(0.92 0.06 307);
     --destructive: oklch(0.65 0.18 25);
     --border: oklch(1 0 0 / 12%);
     --input: oklch(1 0 0 / 14%);
-    --ring: oklch(0.65 0.06 125);
-    --brand: oklch(0.72 0.08 125);
-    --brand-foreground: oklch(0.2 0.03 125);
+    --ring: #ab3df5;
+    --brand: #ab3df5;
+    --brand-foreground: #ffffff;
     --surface: oklch(0.2 0.02 120);
     --mist: oklch(0.28 0.02 120);
     --cream: oklch(0.26 0.02 120);
-    --chart-1: oklch(0.7 0.07 125);
-    --chart-2: oklch(0.65 0.05 80);
-    --chart-3: oklch(0.6 0.04 40);
+    --chart-1: #ab3df5;
+    --chart-2: oklch(0.69 0.11 195);
+    --chart-3: oklch(0.45 0.09 262);
     --chart-4: oklch(0.55 0.03 160);
     --chart-5: oklch(0.8 0.02 100);
     --sidebar: oklch(0.2 0.02 120);
     --sidebar-foreground: oklch(0.96 0.01 95);
-    --sidebar-primary: oklch(0.72 0.08 125);
-    --sidebar-primary-foreground: oklch(0.2 0.03 125);
+    --sidebar-primary: #ab3df5;
+    --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: oklch(0.28 0.02 120);
     --sidebar-accent-foreground: oklch(0.96 0.01 95);
     --sidebar-border: oklch(1 0 0 / 12%);
-    --sidebar-ring: oklch(0.65 0.06 125);
+    --sidebar-ring: #ab3df5;
 }
 
 @keyframes fade-up {
@@ -203,9 +203,9 @@
 
   .bg-grain {
     background-image:
-      radial-gradient(circle at 18% 18%, oklch(0.93 0.03 125 / 0.4), transparent 42%),
-      radial-gradient(circle at 82% 12%, oklch(0.93 0.03 80 / 0.28), transparent 38%),
-      radial-gradient(circle at 70% 82%, oklch(0.92 0.03 95 / 0.35), transparent 45%),
+      radial-gradient(circle at 18% 18%, oklch(0.93 0.08 307 / 0.38), transparent 42%),
+      radial-gradient(circle at 82% 12%, oklch(0.92 0.06 307 / 0.22), transparent 38%),
+      radial-gradient(circle at 70% 82%, oklch(0.88 0.08 307 / 0.30), transparent 45%),
       url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 

@@ -11,7 +11,7 @@ import {
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
-import { getPublicSellerByShopId } from '@/lib/public-sellers'
+import { getPublicSellerForShop } from '@/lib/public-sellers'
 import { useState } from 'react'
 
 export function CustomerSavedGiftsPage() {
@@ -78,7 +78,7 @@ export function CustomerSavedGiftsPage() {
                                 gift.product.price_amount,
                                 gift.product.currency,
                               ),
-                              getPublicSellerByShopId(gift.product.shop_id)?.name,
+                              getPublicSellerForShop(gift.product.shop_id)?.name,
                             ]
                               .filter(Boolean)
                               .join(' · ')

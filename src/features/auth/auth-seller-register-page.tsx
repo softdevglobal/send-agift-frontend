@@ -8,7 +8,7 @@ import { SellerRegisterForm } from '@/features/auth/seller-register-form'
 export function AuthSellerRegisterPage() {
   return (
     <main className="flex h-svh overflow-hidden bg-background">
-      <LoginBrandPanel role="seller" />
+      <LoginBrandPanel role="seller" variant="signup" />
 
       <section className="relative flex flex-1 flex-col overflow-y-auto bg-grain bg-cream/60">
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
@@ -21,7 +21,7 @@ export function AuthSellerRegisterPage() {
               Back
             </Link>
 
-            <BrandLogo className="lg:hidden" imgClassName="h-11" />
+            <BrandLogo className="lg:hidden" imgClassName="h-12" />
           </div>
 
           <Link

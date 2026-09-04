@@ -293,5 +293,3 @@ export function AddressAutocomplete({
     </div>
   )
 }
-
-export { AddressAutocomplete as PlaceAutocomplete }

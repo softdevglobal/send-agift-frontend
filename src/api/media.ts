@@ -4,7 +4,6 @@ import {
   type MediaFolder,
   type PresignUploadRequest,
   type PresignUploadResponse,
-  type SignedMediaUrlResponse,
 } from '@/api/types'
 
 export type { MediaFolder, PresignUploadRequest, PresignUploadResponse }
@@ -25,10 +24,6 @@ function contentTypeOf(file: File): string {
   if (file.type.trim()) return file.type
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
   return CONTENT_TYPE_BY_EXT[ext] ?? ''
-}
-
-export function getSignedMediaUrl(key: string) {
-  return api<SignedMediaUrlResponse>(`/media/url?key=${encodeURIComponent(key)}`)
 }
 
 /** Uploads a file directly to S3 via a presigned URL and returns its public URL. */
