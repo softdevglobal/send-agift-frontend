@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom'
 
 import { SectionHeading } from '@/components/common/section-heading'
 import { SiteLayout } from '@/components/common/site-layout'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { CategoryItem } from '@/features/marketing/category-item'
@@ -30,6 +31,7 @@ import {
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
+import { cn } from '@/lib/utils'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
@@ -108,7 +110,12 @@ export function HomePage() {
       <main>
         <section className="relative overflow-hidden bg-[oklch(0.97_0.015_95)]">
           <HeroPhotoBackdrop />
-          <div className="relative flex items-center px-6 py-12 sm:px-10 lg:min-h-[36rem] lg:px-30 lg:py-16 xl:px-36">
+          <div
+            className={cn(
+              storefrontFrameClass,
+              'relative flex items-center py-12 lg:min-h-[36rem] lg:py-16',
+            )}
+          >
             <div className="animate-fade-up max-w-xl space-y-6">
               <p className="text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
                 From moments to memories
@@ -186,7 +193,7 @@ export function HomePage() {
 
         <FeatureBar items={homeFeatures} />
 
-        <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <SectionHeading
             title="Shop by Categories"
             actionLabel="View All Categories"
@@ -200,7 +207,7 @@ export function HomePage() {
         </section>
 
         <section className="bg-muted/40">
-          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+          <div className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
             <SectionHeading
               title={hasPublished ? 'Fresh from our sellers' : 'Best Selling Gifts'}
               actionLabel="View All Products"
@@ -214,7 +221,7 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <div className="grid overflow-hidden rounded-[1.75rem] bg-cream lg:grid-cols-2">
             <div className="flex flex-col justify-center gap-5 p-8 sm:p-10 lg:p-12">
               <span className="w-fit rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold tracking-wide text-primary uppercase">
@@ -247,7 +254,7 @@ export function HomePage() {
         </section>
 
         {role !== 'seller' ? (
-          <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6 lg:px-8 lg:pb-16">
+          <section className={cn(storefrontFrameClass, 'pb-14 lg:pb-16')}>
             <div className="flex flex-col gap-6 overflow-hidden rounded-[1.75rem] bg-primary px-8 py-10 text-primary-foreground sm:px-10 lg:flex-row lg:items-center lg:justify-between lg:px-12">
               <div className="max-w-xl space-y-3">
                 <p className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.16em] uppercase text-primary-foreground/80">
@@ -288,7 +295,7 @@ export function HomePage() {
         ) : null}
 
         <section className="bg-background pb-16 lg:pb-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className={storefrontFrameClass}>
             <SectionHeading title="What Our Customers Say" align="center" />
             <div className="grid gap-5 md:grid-cols-3">
               {customerTestimonials.map((testimonial) => (

@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { accountNavGroups } from '@/features/account/account-nav'
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ export function AccountLayout() {
 
   return (
     <SiteLayout>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+      <main className={cn(storefrontFrameClass, 'py-8 lg:py-10')}>
         <div className="grid gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <nav className="flex gap-4 overflow-x-auto pb-2 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-0">

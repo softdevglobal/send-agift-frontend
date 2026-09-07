@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { GiftCard } from '@/features/customer-commerce'
@@ -13,6 +14,7 @@ import {
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { giftCategories } from '@/features/marketing/data'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
+import { cn } from '@/lib/utils'
 import {
   listPublishedCatalog,
   subscribePublishedCatalog,
@@ -100,7 +102,7 @@ export function ProductsPage() {
 
   return (
     <SiteLayout>
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <main className={cn(storefrontFrameClass, 'py-10 lg:py-14')}>
         <div className="mb-8 space-y-3">
           <h1 className="font-display text-3xl tracking-tight sm:text-4xl">All gifts</h1>
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">

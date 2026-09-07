@@ -2,6 +2,8 @@ import { Clock, LifeBuoy, Mail } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
+import { storefrontFrameClass } from '@/components/common/site-styles'
+import { cn } from '@/lib/utils'
 
 const quickLinks = [
   { to: '/', label: 'Home' },
@@ -20,7 +22,12 @@ const serviceLinks = [
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-muted/60">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+      <div
+        className={cn(
+          storefrontFrameClass,
+          'grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4',
+        )}
+      >
         <div className="space-y-4">
           <BrandLogo imgClassName="h-16" />
           <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -102,7 +109,12 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-border/80">
-        <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div
+          className={cn(
+            storefrontFrameClass,
+            'flex flex-col gap-2 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between',
+          )}
+        >
           <p>© {new Date().getFullYear()} SendAgift. All rights reserved.</p>
           <p>Country activation · Payments · Compliance-ready</p>
         </div>

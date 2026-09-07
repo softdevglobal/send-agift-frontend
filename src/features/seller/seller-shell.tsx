@@ -26,6 +26,8 @@ import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { cn } from '@/lib/utils'
 
 function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+  const { pathname } = useLocation()
+
   return (
     <nav className="flex flex-1 flex-col gap-6">
       {sellerNavGroups.map((group) => (
@@ -40,30 +42,40 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 to={item.to}
                 end={item.end}
                 onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
+                className={({ isActive }) => {
+                  const active =
+                    isActive ||
+                    (item.to === '/seller/orders' &&
+                      pathname.startsWith('/seller/order-items'))
+                  return cn(
                     'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
-                    isActive
+                    active
                       ? 'bg-white/10 text-white'
                       : 'text-white/60 hover:bg-white/6 hover:text-white',
                   )
-                }
+                }}
               >
-                {({ isActive }) => (
-                  <>
-                    <span
-                      className={cn(
-                        'flex size-8 items-center justify-center rounded-lg ring-1 transition-colors',
-                        isActive
-                          ? 'bg-white/10 text-white ring-white/15'
-                          : 'bg-white/5 text-current ring-white/10',
-                      )}
-                    >
-                      <item.icon className="size-4" />
-                    </span>
-                    <span className="flex-1 truncate">{item.label}</span>
-                  </>
-                )}
+                {({ isActive }) => {
+                  const active =
+                    isActive ||
+                    (item.to === '/seller/orders' &&
+                      pathname.startsWith('/seller/order-items'))
+                  return (
+                    <>
+                      <span
+                        className={cn(
+                          'flex size-8 items-center justify-center rounded-lg ring-1 transition-colors',
+                          active
+                            ? 'bg-white/10 text-white ring-white/15'
+                            : 'bg-white/5 text-current ring-white/10',
+                        )}
+                      >
+                        <item.icon className="size-4" />
+                      </span>
+                      <span className="flex-1 truncate">{item.label}</span>
+                    </>
+                  )
+                }}
               </NavLink>
             ))}
           </div>

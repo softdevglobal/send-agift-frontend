@@ -12,11 +12,13 @@ import { Link } from 'react-router-dom'
 
 import { SectionHeading } from '@/components/common/section-heading'
 import { SiteLayout } from '@/components/common/site-layout'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { sellerTestimonials } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
+import { cn } from '@/lib/utils'
 
 const sellerFeatures = [
   {
@@ -74,7 +76,12 @@ export function BecomeSellerPage() {
       <main>
         <section className="relative overflow-hidden bg-[oklch(0.97_0.015_95)]">
           <HeroPhotoBackdrop />
-          <div className="relative flex items-center px-6 py-12 sm:px-10 lg:min-h-[36rem] lg:px-24 lg:py-16 xl:px-32">
+          <div
+            className={cn(
+              storefrontFrameClass,
+              'relative flex items-center py-12 lg:min-h-[36rem] lg:py-16',
+            )}
+          >
             <div className="animate-fade-up max-w-xl space-y-6">
               <p className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
                 <Store className="size-3.5 text-primary" />
@@ -110,7 +117,7 @@ export function BecomeSellerPage() {
 
         <FeatureBar items={sellerFeatures} />
 
-        <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <SectionHeading title="How to become a seller" align="center" />
           <div className="grid gap-6 md:grid-cols-3">
             {sellerSteps.map((item) => (
@@ -133,7 +140,12 @@ export function BecomeSellerPage() {
         </section>
 
         <section className="bg-muted/40">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-16">
+          <div
+            className={cn(
+              storefrontFrameClass,
+              'grid items-center gap-10 py-14 lg:grid-cols-2 lg:py-16',
+            )}
+          >
             <div>
               <SectionHeading title="Built for serious sellers" />
               <ul className="space-y-3">
@@ -165,7 +177,7 @@ export function BecomeSellerPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <SectionHeading title="What sellers say" align="center" />
           <div className="grid gap-5 md:grid-cols-3">
             {sellerTestimonials.map((testimonial) => (
@@ -175,7 +187,7 @@ export function BecomeSellerPage() {
         </section>
 
         <section className="pb-16 lg:pb-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className={storefrontFrameClass}>
             <div className="overflow-hidden rounded-[1.75rem] bg-primary px-8 py-12 text-center text-primary-foreground sm:px-12">
               <h2 className="font-display text-3xl tracking-tight sm:text-4xl">
                 Ready to grow your gift shop?

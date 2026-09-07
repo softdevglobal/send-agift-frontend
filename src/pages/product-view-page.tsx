@@ -12,6 +12,7 @@ import {
 import { Link, useLocation, useParams } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
+import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import {
   GiftCard,
@@ -140,7 +141,7 @@ export function ProductViewPage() {
   if (!product) {
     return (
       <SiteLayout>
-        <main className="mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 lg:px-8">
+        <main className={cn(storefrontFrameClass, 'py-20 text-center')}>
           <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-primary">
             <PackageX className="size-5" />
           </div>
@@ -172,7 +173,7 @@ export function ProductViewPage() {
 
   return (
     <SiteLayout>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <main className={cn(storefrontFrameClass, 'py-8 lg:py-12')}>
         <Button asChild variant="ghost" className="mb-6 h-9 rounded-full px-3">
           <Link to="/products">
             <ArrowLeft className="size-4" />
