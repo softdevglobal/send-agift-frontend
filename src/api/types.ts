@@ -288,7 +288,14 @@ export type RecipientInput = {
   addresses?: AddressInput[]
 }
 
-export const MEDIA_FOLDERS = ['seller-profile', 'shop-image', 'product-image'] as const
+export const MEDIA_FOLDERS = [
+  'seller-profile',
+  'shop-image',
+  'product-image',
+  'reel-video',
+  'reel-photo',
+  'reel-thumbnail',
+] as const
 
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number]
 
@@ -567,3 +574,65 @@ export const KNOWN_CURRENCIES = [
 ] as const
 
 export type KnownCurrency = (typeof KNOWN_CURRENCIES)[number]
+
+/** One file on a reel, joined with its media asset. */
+export type ReelMediaItem = {
+  media_asset_id: string
+  position: number
+  asset_type: 'image' | 'video'
+  bucket: string
+  object_path: string
+  /** Only filled for objects under `public/` — a private object has no playable URL. */
+  cdn_url?: string | null
+  mime_type: string
+  size_bytes: number
+  metadata?: Record<string, unknown>
+}
+
+/** The product tagged on a reel, tappable to buy. */
+export type ReelProductSummary = {
+  id: string
+  name: string
+  slug: string
+  price_amount: number
+  currency: string
+  status: string
+  image_url?: string | null
+}
+
+/** The shop a reel was posted by. */
+export type ReelShopSummary = {
+  id: string
+  name: string
+  slug: string
+  image_url?: string | null
+}
+
+/** A reel with its media, plus shop and product context for the feed. */
+export type ReelDetails = {
+  id: string
+  seller_id: string
+  shop_id: string
+  product_id?: string | null
+  thumbnail_media_id?: string | null
+  reel_type: 'video' | 'photo'
+  caption?: string | null
+  hashtags: string[]
+  visibility: 'public' | 'private'
+  status: 'draft' | 'published' | 'archived'
+  duration_ms?: number | null
+  view_count: number
+  published_at?: string | null
+  created_at: string
+  updated_at: string
+  media: ReelMediaItem[]
+  thumbnail?: ReelMediaItem | null
+  shop?: ReelShopSummary | null
+  product?: ReelProductSummary | null
+}
+
+/** A page of public reels, with the cursor for the next one. */
+export type ReelFeed = {
+  items: ReelDetails[]
+  next_cursor?: string | null
+}

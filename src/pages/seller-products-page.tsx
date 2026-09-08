@@ -42,9 +42,6 @@ import {
   PRODUCT_STATUSES,
   PRODUCT_VISIBILITIES,
   type CustomerTypeVisibility,
-  type InventoryInput,
-  type KnownCurrency,
-  type ProductInput,
   type ProductStatus,
 } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
@@ -56,165 +53,21 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SellerEmptyState, SellerPageHeader, sellerPanelClass } from '@/features/seller'
+import { ProductWizard } from '@/features/seller/product-wizard'
+import {
+  emptyForm,
+  parseTags,
+  productToForm,
+  toInventoryInput,
+  toProductInput,
+  type ProductFormState,
+} from '@/features/seller/product-form'
 import { getErrorMessage } from '@/lib/api'
-import { optionalString } from '@/lib/form'
 import { publishSellerToMarketplace, syncShopPublishedProducts } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
-import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
+import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
-type ProductFormState = {
-  name: string
-  slug: string
-  description: string
-  product_type: string
-  price_major: string
-  currency: string
-  status: ProductStatus
-  occasion_tags: string
-  customer_type_visibility: CustomerTypeVisibility
-  points_display_enabled: boolean
-  prep_minutes: string
-  image_url: string
-  available_qty: string
-  reserved_qty: string
-  low_stock_threshold: string
-  unavailable_dates: string
-}
-
-const emptyForm: ProductFormState = {
-  name: '',
-  slug: '',
-  description: '',
-  product_type: 'gift',
-  price_major: '',
-  currency: 'USD',
-  status: 'published',
-  occasion_tags: '',
-  customer_type_visibility: 'both',
-  points_display_enabled: false,
-  prep_minutes: '0',
-  image_url: '',
-  available_qty: '0',
-  reserved_qty: '0',
-  low_stock_threshold: '0',
-  unavailable_dates: '',
-}
-
-function parseNonNegativeInt(value: string, fallback = 0): number {
-  const parsed = Number.parseInt(value, 10)
-  if (!Number.isFinite(parsed) || parsed < 0) return fallback
-  return parsed
-}
-
-function parseTags(value: string): string[] {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function parseDates(value: string): string[] {
-  return value
-    .split(/[\n,]+/)
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-function isKnownCurrency(value: string): value is KnownCurrency {
-  return (KNOWN_CURRENCIES as readonly string[]).includes(value)
-}
-
-function toInventoryInput(form: ProductFormState): InventoryInput {
-  return {
-    available_qty: parseNonNegativeInt(form.available_qty),
-    reserved_qty: parseNonNegativeInt(form.reserved_qty),
-    low_stock_threshold: parseNonNegativeInt(form.low_stock_threshold),
-    unavailable_dates: parseDates(form.unavailable_dates),
-  }
-}
-
-function toProductInput(
-  form: ProductFormState,
-  includeInventory: boolean,
-): ProductInput | string {
-  if (!form.name.trim()) return 'Product name is required.'
-
-  const currency = form.currency.trim().toUpperCase()
-  if (!currency) return 'Currency is required.'
-  if (!isKnownCurrency(currency)) {
-    return 'Currency must be a known ISO currency code.'
-  }
-
-  const dates = parseDates(form.unavailable_dates)
-  if (dates.some((date) => !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
-    return 'Unavailable dates must be YYYY-MM-DD.'
-  }
-
-  const input: ProductInput = {
-    name: form.name.trim(),
-    currency,
-  }
-
-  const slug = optionalString(form.slug)
-  const description = optionalString(form.description)
-  const productType = optionalString(form.product_type)
-  if (slug) input.slug = slug
-  if (description) input.description = description
-  if (productType) input.product_type = productType
-  input.image_url = optionalString(form.image_url) ?? null
-
-  if (form.price_major.trim() !== '') {
-    const major = Number(form.price_major)
-    if (!Number.isFinite(major) || major < 0) {
-      return 'Price must be a number of 0 or more.'
-    }
-    input.price_amount = majorToMinor(major, currency)
-  }
-
-  if (form.status) input.status = form.status
-  input.occasion_tags = parseTags(form.occasion_tags)
-  if (form.customer_type_visibility) {
-    input.customer_type_visibility = form.customer_type_visibility
-  }
-  input.points_display_enabled = form.points_display_enabled
-  if (form.prep_minutes.trim() !== '') {
-    const prep = Number.parseInt(form.prep_minutes, 10)
-    if (!Number.isFinite(prep) || prep < 0) {
-      return 'Prep minutes must be 0 or more.'
-    }
-    input.prep_minutes = prep
-  }
-
-  if (includeInventory) {
-    input.inventory = toInventoryInput(form)
-  }
-
-  return input
-}
-
-function productToForm(product: Product, inventory?: InventoryInput): ProductFormState {
-  return {
-    name: product.name,
-    slug: product.slug ?? '',
-    description: product.description ?? '',
-    product_type: product.product_type,
-    price_major: String(minorToMajor(product.price_amount, product.currency)),
-    currency: product.currency,
-    status: product.status,
-    occasion_tags: (product.occasion_tags ?? []).join(', '),
-    customer_type_visibility: product.customer_type_visibility,
-    points_display_enabled: product.points_display_enabled,
-    prep_minutes: String(product.prep_minutes ?? 0),
-    image_url: product.image_url ?? '',
-    available_qty: String(inventory?.available_qty ?? 0),
-    reserved_qty: String(inventory?.reserved_qty ?? 0),
-    low_stock_threshold: String(inventory?.low_stock_threshold ?? 0),
-    unavailable_dates: (inventory?.unavailable_dates ?? []).join('\n'),
-  }
-}
-
-/** Product images are square, matching the customer gift card. */
 const PRODUCT_ASPECT = 1
 
 const statusMeta: Record<ProductStatus, { label: string; tone: string; hint: string }> = {
@@ -345,6 +198,7 @@ export function SellerProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [inventoryReady, setInventoryReady] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
     null,
@@ -478,15 +332,8 @@ export function SellerProductsPage() {
   }
 
   function startCreate() {
-    setForm(emptyForm)
-    setEditingId(null)
-    setInventoryReady(false)
-    setShowForm(true)
     setError(null)
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      document.getElementById('product-name')?.focus()
-    })
+    setShowWizard(true)
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
@@ -645,6 +492,17 @@ export function SellerProductsPage() {
           )
         }
       />
+      <ProductWizard
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        shopName={selectedShop?.name ?? 'Your shop'}
+        onSubmit={async (body) => {
+          await createShopProduct(selectedShopId, body)
+          await loadProducts(selectedShopId)
+          setToast({ message: 'Product created.', variant: 'success' })
+        }}
+      />
+
       {loading ? (
         <div className="flex justify-center py-24">
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />

@@ -1,0 +1,78 @@
+import { Play } from 'lucide-react'
+import { Link } from 'react-router-dom'
+
+import { SectionHeading } from '@/components/common/section-heading'
+import { useReelFeed } from '@/features/reels/use-reel-feed'
+import type { ReelView } from '@/features/reels/reel-view'
+
+/**
+ * Home-page entry point into the feed: a scrollable row of the newest reels.
+ *
+ * Cards are stills, not autoplaying video — a row of clips competing for
+ * attention on a landing page is noise, and each one costs a stream. Watching
+ * happens on /reels.
+ *
+ * The whole section hides itself when there is nothing to show, so a
+ * marketplace with no reels yet does not get an empty shelf.
+ */
+export function ReelsStrip() {
+  const { reels, loading, error } = useReelFeed({ limit: 12 })
+
+  if (loading || error || reels.length === 0) return null
+
+  return (
+    <section className="mx-auto w-full max-w-[80rem] px-4 py-14 sm:px-6 lg:py-16">
+      <SectionHeading
+        title="Reels from our sellers"
+        actionLabel="Watch all reels"
+        actionTo="/reels"
+      />
+
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2">
+        {reels.map((reel) => (
+          <ReelTile key={reel.id} reel={reel} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ReelTile({ reel }: { reel: ReelView }) {
+  return (
+    <Link
+      to="/reels"
+      className="group relative aspect-[9/16] w-40 shrink-0 snap-start overflow-hidden rounded-xl bg-brand-navy sm:w-44"
+    >
+      {reel.imageUrl ? (
+        <img
+          src={reel.imageUrl}
+          alt={reel.product ? reel.product.name : `Reel by ${reel.shopName}`}
+          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+          loading="lazy"
+        />
+      ) : null}
+
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/90 via-brand-navy/10 to-transparent" />
+
+      <span className="absolute top-2 right-2 grid size-7 place-items-center rounded-full bg-brand-violet/85 text-white">
+        <Play className="size-3.5 fill-current" />
+      </span>
+
+      <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+        <p className="truncate text-[11px] font-medium text-white/80">
+          {reel.shopName}
+        </p>
+        {reel.product ? (
+          <>
+            <p className="mt-0.5 line-clamp-2 text-[13px] font-semibold leading-tight">
+              {reel.product.name}
+            </p>
+            <p className="mt-1 text-xs font-bold text-brand-teal">
+              {reel.product.priceLabel}
+            </p>
+          </>
+        ) : null}
+      </div>
+    </Link>
+  )
+}

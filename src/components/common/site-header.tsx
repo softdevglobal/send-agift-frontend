@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import {
   ChevronDown,
+  Clapperboard,
   Gift,
   Heart,
   Menu,
@@ -108,6 +109,17 @@ export function SiteHeader() {
             </Link>
           </Button>
 
+          <Button
+            asChild
+            variant="ghost"
+            className="hidden h-9 px-3 md:inline-flex"
+          >
+            <Link to="/reels">
+              <Clapperboard className="size-4" />
+              Reels
+            </Link>
+          </Button>
+
           {isGuest ? (
             <>
               <Button
@@ -201,6 +213,15 @@ export function SiteHeader() {
             >
               <Gift className="size-4" />
               Browse gifts
+            </Link>
+
+            <Link
+              to="/reels"
+              onClick={closeMenu}
+              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold"
+            >
+              <Clapperboard className="size-4" />
+              Reels
             </Link>
 
             {isGuest ? (

@@ -30,6 +30,7 @@ import { CustomerSellerPage } from '@/pages/customer-seller-page'
 import { CustomerSellerShopPage } from '@/pages/customer-seller-shop-page'
 import { HomePage } from '@/pages/home-page'
 import { ProductsPage } from '@/pages/products-page'
+import { ReelsPage } from '@/pages/reels-page'
 import { ProductViewPage } from '@/pages/product-view-page'
 import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
@@ -39,6 +40,7 @@ import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrderItemDetailPage } from '@/pages/seller-order-item-detail-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
+import { SellerReelsPage } from '@/pages/seller-reels-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
@@ -70,6 +72,7 @@ export function AppRouter() {
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/products/:productId" element={<ProductViewPage />} />
+      <Route path="/reels" element={<ReelsPage />} />
       <Route path="/become-a-seller" element={<BecomeSellerPage />} />
 
       <Route element={<PageLayout />}>
@@ -219,6 +222,7 @@ export function AppRouter() {
         <Route index element={<SellerDashboardPage />} />
         <Route path="shops" element={<SellerShopsPage />} />
         <Route path="products" element={<SellerProductsPage />} />
+        <Route path="reels" element={<SellerReelsPage />} />
         <Route path="orders" element={<SellerOrdersPage />} />
         <Route path="order-items/:orderItemId" element={<SellerOrderItemDetailPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />

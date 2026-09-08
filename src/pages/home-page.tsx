@@ -23,6 +23,7 @@ import {
   type GiftProduct,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
+import { ReelsStrip } from '@/features/reels/reels-strip'
 import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { GiftCard } from '@/features/customer-commerce'
@@ -220,6 +221,8 @@ export function HomePage() {
             </div>
           </div>
         </section>
+
+        <ReelsStrip />
 
         <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <div className="grid overflow-hidden rounded-[1.75rem] bg-cream lg:grid-cols-2">
