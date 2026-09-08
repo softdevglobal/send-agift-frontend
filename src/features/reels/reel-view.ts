@@ -19,8 +19,13 @@ export type ReelView = {
   hashtags: string[]
   /** First playable video, if the reel has one. */
   videoUrl: string | null
-  /** Poster for a video, or the whole reel for a photo post. */
+  /** Poster for a video, or the first frame of a photo post. */
   imageUrl: string | null
+  /**
+   * Every image on the reel, in the order the seller arranged them. A photo
+   * post can carry up to ten, which the feed shows as a carousel.
+   */
+  photoUrls: string[]
   product: ReelProductView | null
   viewCount: number
 }
@@ -35,16 +40,17 @@ function mediaUrl(item: ReelMediaItem | null | undefined): string | null {
   return typeof url === 'string' && url.trim() ? url.trim() : null
 }
 
-function firstOfType(
+function urlsOfType(
   media: ReelMediaItem[],
   assetType: ReelMediaItem['asset_type'],
-): string | null {
+): string[] {
+  const urls: string[] = []
   for (const item of media) {
     if (item.asset_type !== assetType) continue
     const url = mediaUrl(item)
-    if (url) return url
+    if (url) urls.push(url)
   }
-  return null
+  return urls
 }
 
 function text(value: string | null | undefined): string | null {
@@ -53,8 +59,12 @@ function text(value: string | null | undefined): string | null {
 }
 
 export function toReelView(reel: ReelDetails): ReelView {
-  const media = reel.media ?? []
+  // `position` is the seller's ordering of a carousel. The API already sorts
+  // by it; sorting again costs nothing and keeps the order right if a
+  // response ever arrives out of order.
+  const media = [...(reel.media ?? [])].sort((a, b) => a.position - b.position)
   const product = reel.product ?? null
+  const photos = urlsOfType(media, 'image')
 
   return {
     id: reel.id,
@@ -63,11 +73,9 @@ export function toReelView(reel: ReelDetails): ReelView {
     shopImageUrl: text(reel.shop?.image_url),
     caption: text(reel.caption),
     hashtags: (reel.hashtags ?? []).filter(Boolean),
-    videoUrl: firstOfType(media, 'video'),
-    imageUrl:
-      mediaUrl(reel.thumbnail) ??
-      firstOfType(media, 'image') ??
-      text(product?.image_url),
+    videoUrl: urlsOfType(media, 'video')[0] ?? null,
+    imageUrl: mediaUrl(reel.thumbnail) ?? photos[0] ?? text(product?.image_url),
+    photoUrls: photos,
     product: product
       ? {
           id: product.id,
@@ -78,6 +86,11 @@ export function toReelView(reel: ReelDetails): ReelView {
       : null,
     viewCount: reel.view_count ?? 0,
   }
+}
+
+/** True when this is a photo post with more than one frame to swipe through. */
+export function isCarousel(reel: ReelView): boolean {
+  return !reel.videoUrl && reel.photoUrls.length > 1
 }
 
 /** A reel with nothing playable is dropped rather than shown as a blank card. */

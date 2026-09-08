@@ -1,4 +1,14 @@
-import { Bookmark, Gift, Heart, Play, Store, Volume2, VolumeX } from 'lucide-react'
+import {
+  Bookmark,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Gift,
+  Play,
+  Store,
+  Volume2,
+  VolumeX,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -12,8 +22,6 @@ type ReelCardProps = {
   active: boolean
   muted: boolean
   onToggleMute: () => void
-  liked: boolean
-  onToggleLike: () => void
   saved: boolean
   onToggleSave: () => void
   /** Advances the feed when the clip ends. */
@@ -34,8 +42,6 @@ export function ReelCard({
   active,
   muted,
   onToggleMute,
-  liked,
-  onToggleLike,
   saved,
   onToggleSave,
   onEnded,
@@ -43,6 +49,10 @@ export function ReelCard({
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [photoIndex, setPhotoIndex] = useState(0)
+
+  const photos = reel.photoUrls.length ? reel.photoUrls : reel.imageUrl ? [reel.imageUrl] : []
+  const photo = photos[Math.min(photoIndex, photos.length - 1)] ?? null
 
   const product = reel.product
   const tags = hashtagLine(reel)
@@ -114,15 +124,45 @@ export function ReelCard({
               }}
               onEnded={onEnded}
             />
-          ) : reel.imageUrl ? (
+          ) : photo ? (
             <img
-              src={reel.imageUrl}
+              src={photo}
               alt={product ? product.name : `Reel by ${reel.shopName}`}
               className="size-full object-cover"
               loading="lazy"
             />
           ) : null}
         </button>
+
+        {/* A photo post can carry up to ten frames; they are stepped through
+            rather than played. */}
+        {photos.length > 1 ? (
+          <>
+            <div className="pointer-events-none absolute inset-x-0 top-7 flex justify-center gap-1.5">
+              {photos.map((url, index) => (
+                <span
+                  key={url}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    index === photoIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50',
+                  )}
+                />
+              ))}
+            </div>
+            <PhotoStep
+              side="left"
+              disabled={photoIndex === 0}
+              onClick={() => setPhotoIndex((value) => Math.max(value - 1, 0))}
+            />
+            <PhotoStep
+              side="right"
+              disabled={photoIndex >= photos.length - 1}
+              onClick={() =>
+                setPhotoIndex((value) => Math.min(value + 1, photos.length - 1))
+              }
+            />
+          </>
+        ) : null}
 
         {/* Scrims top and bottom: the clip keeps its colour in the middle, and
             the text on either end stays readable whatever it sits on. */}
@@ -196,12 +236,6 @@ export function ReelCard({
       {/* The rail sits beside the player, Shorts-style, so the clip is never
           covered by controls. */}
       <div className="flex shrink-0 flex-col items-center gap-4 pb-2">
-        <RailButton
-          label={liked ? 'Liked' : 'Like'}
-          onClick={onToggleLike}
-          active={liked}
-          icon={<Heart className={cn('size-5', liked && 'fill-current')} />}
-        />
         {product ? (
           <RailButton
             label={saved ? 'Saved' : 'Save'}
@@ -220,8 +254,9 @@ export function ReelCard({
         ) : null}
         {reel.viewCount > 0 ? (
           <div className="flex flex-col items-center gap-1 text-muted-foreground">
+            <Eye className="size-5" />
             <span className="text-xs font-semibold">{compactCount(reel.viewCount)}</span>
-            <span className="text-[10px]">views</span>
+            <span className="text-[10px] leading-none">views</span>
           </div>
         ) : null}
       </div>
@@ -257,6 +292,37 @@ function RailButton({
         {icon}
       </span>
       <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+    </button>
+  )
+}
+
+/** Steps a photo carousel, sitting over the edge of the frame. */
+function PhotoStep({
+  side,
+  disabled,
+  onClick,
+}: {
+  side: 'left' | 'right'
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={side === 'left' ? 'Previous photo' : 'Next photo'}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        'absolute top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-brand-navy/45 text-white backdrop-blur-sm transition-opacity hover:bg-brand-navy/70',
+        side === 'left' ? 'left-2' : 'right-2',
+        disabled && 'pointer-events-none opacity-0',
+      )}
+    >
+      {side === 'left' ? (
+        <ChevronLeft className="size-5" />
+      ) : (
+        <ChevronRight className="size-5" />
+      )}
     </button>
   )
 }

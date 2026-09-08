@@ -14,7 +14,8 @@ import { useReelFeed } from '@/features/reels/use-reel-feed'
  * send it as a gift, which lands on that product's page.
  */
 export function ReelsPage() {
-  const { reels, loading, error, hasMore, loadMore, retry } = useReelFeed()
+  const { reels, loading, error, hasMore, loadMore, retry, registerView } =
+    useReelFeed()
   const { gifts, toggleSave } = useSavedGifts()
 
   const savedProductIds = useMemo(
@@ -83,6 +84,7 @@ export function ReelsPage() {
               onLoadMore={loadMore}
               savedProductIds={savedProductIds}
               onToggleSave={(productId) => void toggleSave(productId)}
+              onView={(reelId) => void registerView(reelId)}
             />
           )}
         </div>

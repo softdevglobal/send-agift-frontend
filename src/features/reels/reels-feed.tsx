@@ -12,6 +12,8 @@ type ReelsFeedProps = {
   /** Ids of gifts already on the viewer's saved list. */
   savedProductIds: Set<string>
   onToggleSave: (productId: string) => void
+  /** Called when a reel reaches the screen, so the API can count the view. */
+  onView: (reelId: string) => void
 }
 
 /**
@@ -29,11 +31,11 @@ export function ReelsFeed({
   onLoadMore,
   savedProductIds,
   onToggleSave,
+  onView,
 }: ReelsFeedProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [muted, setMuted] = useState(true)
-  const [liked, setLiked] = useState<Set<string>>(new Set())
 
   const scrollTo = useCallback((index: number) => {
     const container = containerRef.current
@@ -55,6 +57,11 @@ export function ReelsFeed({
           const index = Number((entry.target as HTMLElement).dataset.index)
           if (Number.isNaN(index)) continue
           setActiveIndex(index)
+          // The API counts a view when the reel is fetched by id, so that
+          // call is made when a reel actually reaches the screen — not when
+          // the page of results was loaded.
+          const reel = reels[index]
+          if (reel) onView(reel.id)
           // Fetch the next page before the viewer reaches the end, so the
           // feed never stalls mid-scroll.
           if (index >= reels.length - 3 && hasMore) onLoadMore()
@@ -66,7 +73,7 @@ export function ReelsFeed({
     const slides = container.querySelectorAll('[data-reel-slide]')
     slides.forEach((slide) => observer.observe(slide))
     return () => observer.disconnect()
-  }, [reels.length, hasMore, onLoadMore])
+  }, [reels, hasMore, onLoadMore, onView])
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -95,14 +102,6 @@ export function ReelsFeed({
     [reels.length, scrollTo],
   )
 
-  const toggleLike = useCallback((reelId: string) => {
-    setLiked((current) => {
-      const next = new Set(current)
-      if (!next.delete(reelId)) next.add(reelId)
-      return next
-    })
-  }, [])
-
   return (
     <div className="relative h-full">
       <div
@@ -121,8 +120,6 @@ export function ReelsFeed({
               active={index === activeIndex}
               muted={muted}
               onToggleMute={() => setMuted((value) => !value)}
-              liked={liked.has(reel.id)}
-              onToggleLike={() => toggleLike(reel.id)}
               saved={reel.product ? savedProductIds.has(reel.product.id) : false}
               onToggleSave={() => {
                 if (reel.product) onToggleSave(reel.product.id)

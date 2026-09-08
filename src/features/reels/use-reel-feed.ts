@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { listReels, type ReelFeedParams } from '@/api/reels'
+import { getReel, listReels, type ReelFeedParams } from '@/api/reels'
 import { getErrorMessage } from '@/lib/api'
 import { isPlayable, toReelView, type ReelView } from '@/features/reels/reel-view'
+
+/**
+ * Reels already counted, for the life of the page.
+ *
+ * Module scope rather than a ref: React remounts this hook (StrictMode in
+ * development, and any navigation away and back), and a per-instance set
+ * would count the same reel again on every remount — inflating the number
+ * the API stores.
+ */
+const countedReels = new Set<string>()
 
 type ReelFeedState = {
   reels: ReelView[]
@@ -94,5 +104,29 @@ export function useReelFeed(params: ReelFeedParams = {}) {
     void load('first')
   }, [load])
 
-  return { ...state, loadMore, retry }
+  /**
+   * Counts a view for the reel now on screen.
+   *
+   * `GET /reels/{id}` increments `view_count` server-side and returns the
+   * already-incremented reel, so the number shown is the one the database now
+   * holds rather than a guess.
+   */
+  const registerView = useCallback(async (reelId: string) => {
+    if (countedReels.has(reelId)) return
+    countedReels.add(reelId)
+
+    try {
+      const updated = await getReel(reelId)
+      setState((current) => ({
+        ...current,
+        reels: current.reels.map((reel) =>
+          reel.id === reelId ? { ...reel, viewCount: updated.view_count } : reel,
+        ),
+      }))
+    } catch {
+      // A missed view is not worth interrupting playback for.
+    }
+  }, [])
+
+  return { ...state, loadMore, retry, registerView }
 }
