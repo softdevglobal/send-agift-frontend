@@ -11,13 +11,14 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicFile, type UploadedFile } from '@/api/media'
 import type { Product } from '@/api/products'
 import type { ReelInput } from '@/api/reels'
+import type { ReelDetails } from '@/api/types'
 import {
   WizardDialog,
   WizardField,
@@ -38,19 +39,29 @@ type ReelWizardProps = {
   onOpenChange: (open: boolean) => void
   shopName: string
   products: Product[]
-  /** Posts the reel. Throw to keep the wizard open with the error shown. */
+  /**
+   * `edit` prefills the caption, tags, gift and publishing choices and keeps
+   * the existing clip unless a new one is picked; `create` starts blank. Same
+   * dialog either way.
+   */
+  mode?: 'create' | 'edit'
+  /** The reel being edited. Ignored in `create`. */
+  initialReel?: ReelDetails | null
+  /** Posts or updates the reel. Throw to keep the wizard open with the error shown. */
   onSubmit: (body: ReelInput) => Promise<void>
 }
 
 /**
- * Posting a reel, one step at a time: the clip, the words, the gift it sells,
- * how it goes out — and a preview of the finished post before it is published.
+ * Posting or editing a reel, one step at a time: the clip, the words, the gift
+ * it sells, how it goes out — and a preview of the finished post.
  */
 export function ReelWizard({
   open,
   onOpenChange,
   shopName,
   products,
+  mode = 'create',
+  initialReel,
   onSubmit,
 }: ReelWizardProps) {
   const [caption, setCaption] = useState('')
@@ -64,6 +75,33 @@ export function ReelWizard({
   const [uploading, setUploading] = useState<'media' | 'thumbnail' | null>(null)
   const [posting, setPosting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const isEdit = mode === 'edit'
+  const existingPoster =
+    initialReel?.thumbnail?.cdn_url ?? initialReel?.media?.[0]?.cdn_url ?? null
+
+  // Each open re-seeds from the reel being edited (or blank for a new post),
+  // so reopening never shows the previous run's fields.
+  useEffect(() => {
+    if (!open) return
+    setMedia(null)
+    setThumbnail(null)
+    setDurationMs(null)
+    setError(null)
+    if (isEdit && initialReel) {
+      setCaption(initialReel.caption ?? '')
+      setHashtags((initialReel.hashtags ?? []).join(' '))
+      setProductId(initialReel.product?.id ?? '')
+      setStatus(initialReel.status === 'published' ? 'published' : 'draft')
+      setVisibility(initialReel.visibility === 'private' ? 'private' : 'public')
+    } else {
+      setCaption('')
+      setHashtags('')
+      setProductId('')
+      setStatus('published')
+      setVisibility('public')
+    }
+  }, [open, isEdit, initialReel])
 
   const mediaInputRef = useRef<HTMLInputElement | null>(null)
   const thumbnailInputRef = useRef<HTMLInputElement | null>(null)
@@ -125,36 +163,49 @@ export function ReelWizard({
   }
 
   async function complete() {
-    if (!media) return
+    // A new post needs a clip; an edit keeps the existing one unless replaced.
+    if (!media && !isEdit) return
     setPosting(true)
     setError(null)
     try {
-      await onSubmit({
+      const body: ReelInput = {
         product_id: productId || null,
         caption: caption.trim() || null,
         hashtags: tags,
         visibility,
         status,
-        duration_ms: durationMs,
-        thumbnail: thumbnail
-          ? {
-              object_path: thumbnail.objectPath,
-              mime_type: thumbnail.mimeType,
-              size_bytes: thumbnail.sizeBytes,
-            }
-          : null,
-        media: [
+      }
+      if (media) {
+        body.media = [
           {
             object_path: media.objectPath,
             mime_type: media.mimeType,
             size_bytes: media.sizeBytes,
           },
-        ],
-      })
+        ]
+        body.duration_ms = durationMs
+      }
+      if (thumbnail) {
+        body.thumbnail = {
+          object_path: thumbnail.objectPath,
+          mime_type: thumbnail.mimeType,
+          size_bytes: thumbnail.sizeBytes,
+        }
+      } else if (!isEdit) {
+        // On create, an omitted cover is sent as null; on edit, omitting it
+        // keeps whatever cover the reel already has.
+        body.thumbnail = null
+      }
+      await onSubmit(body)
       reset()
       onOpenChange(false)
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not post the reel'))
+      setError(
+        getErrorMessage(
+          err,
+          isEdit ? 'Could not save the reel' : 'Could not post the reel',
+        ),
+      )
     } finally {
       setPosting(false)
     }
@@ -164,17 +215,36 @@ export function ReelWizard({
     {
       id: 'media',
       title: 'The clip',
-      description: 'Upload the video or photo customers will watch.',
+      description: isEdit
+        ? 'The current clip is kept unless you upload a new one.'
+        : 'Upload the video or photo customers will watch.',
       icon: Film,
-      blockedReason: media
-        ? null
-        : uploading === 'media'
-          ? 'Uploading…'
-          : 'Add a video or photo to continue.',
+      blockedReason:
+        media || isEdit
+          ? null
+          : uploading === 'media'
+            ? 'Uploading…'
+            : 'Add a video or photo to continue.',
       content: (
         <WizardFields>
+          {isEdit && existingPoster && !media ? (
+            <div className="sm:col-span-2">
+              <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-surface/60 p-3">
+                <div className="h-16 w-12 shrink-0 overflow-hidden rounded-md bg-brand-navy">
+                  <img
+                    src={existingPoster}
+                    alt=""
+                    className="size-full object-cover"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Current clip. Upload below to replace it, or leave it as is.
+                </p>
+              </div>
+            </div>
+          ) : null}
           <MediaSlot
-            label="Video or photo"
+            label={isEdit ? 'Replace clip' : 'Video or photo'}
             hint="MP4, MOV or WebM for a clip; JPG or PNG for a photo post."
             picked={media}
             uploading={uploading === 'media'}
@@ -340,6 +410,7 @@ export function ReelWizard({
             <ReelPreview
               media={media}
               thumbnail={thumbnail}
+              fallbackPoster={existingPoster}
               shopName={shopName}
               caption={caption}
               tags={tags}
@@ -380,11 +451,17 @@ export function ReelWizard({
         if (!next) reset()
         onOpenChange(next)
       }}
-      title="New reel"
-      description="Post a clip of your gift and connect it to something customers can send."
+      title={isEdit ? 'Edit reel' : 'New reel'}
+      description={
+        isEdit
+          ? 'Update the caption, gift or publishing. Jump to any step from the rail.'
+          : 'Post a clip of your gift and connect it to something customers can send.'
+      }
       steps={steps}
       onComplete={complete}
-      completeLabel={status === 'published' ? 'Publish reel' : 'Save draft'}
+      completeLabel={
+        isEdit ? 'Save changes' : status === 'published' ? 'Publish reel' : 'Save draft'
+      }
       completing={posting}
       error={
         error ? (
@@ -401,6 +478,7 @@ export function ReelWizard({
 function ReelPreview({
   media,
   thumbnail,
+  fallbackPoster,
   shopName,
   caption,
   tags,
@@ -408,12 +486,18 @@ function ReelPreview({
 }: {
   media: PickedMedia | null
   thumbnail: PickedMedia | null
+  /** The reel's current poster, shown in edit mode when no new clip is picked. */
+  fallbackPoster?: string | null
   shopName: string
   caption: string
   tags: string[]
   product: Product | null
 }) {
-  const poster = thumbnail?.publicUrl ?? (media?.kind === 'image' ? media.publicUrl : null)
+  const poster =
+    thumbnail?.publicUrl ??
+    (media?.kind === 'image' ? media.publicUrl : null) ??
+    fallbackPoster ??
+    null
 
   return (
     <div className="relative aspect-[9/16] w-48 shrink-0 overflow-hidden rounded-2xl bg-brand-navy shadow-lg">

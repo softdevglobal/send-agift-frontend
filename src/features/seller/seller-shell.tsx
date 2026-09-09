@@ -26,8 +26,6 @@ import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { cn } from '@/lib/utils'
 
 function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const { pathname } = useLocation()
-
   return (
     <nav className="flex flex-1 flex-col gap-6">
       {sellerNavGroups.map((group) => (
@@ -43,10 +41,7 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 end={item.end}
                 onClick={onNavigate}
                 className={({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (item.to === '/seller/orders' &&
-                      pathname.startsWith('/seller/order-items'))
+                  const active = isActive
                   return cn(
                     'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
                     active
@@ -56,10 +51,7 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 }}
               >
                 {({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (item.to === '/seller/orders' &&
-                      pathname.startsWith('/seller/order-items'))
+                  const active = isActive
                   return (
                     <>
                       <span

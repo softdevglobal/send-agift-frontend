@@ -37,7 +37,6 @@ import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
-import { SellerOrderItemDetailPage } from '@/pages/seller-order-item-detail-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
@@ -58,6 +57,12 @@ function RedirectSeller() {
 function RedirectSellerShop() {
   const { sellerId, shopId } = useParams()
   return <Navigate to={`/sellers/${sellerId}/shops/${shopId}`} replace />
+}
+
+/** `/seller/order-items/:id` was the old detail page; it is a panel now. */
+function RedirectOrderItem() {
+  const { orderItemId } = useParams()
+  return <Navigate to={`/seller/orders/${orderItemId}`} replace />
 }
 
 function RedirectOrder() {
@@ -223,8 +228,14 @@ export function AppRouter() {
         <Route path="shops" element={<SellerShopsPage />} />
         <Route path="products" element={<SellerProductsPage />} />
         <Route path="reels" element={<SellerReelsPage />} />
-        <Route path="orders" element={<SellerOrdersPage />} />
-        <Route path="order-items/:orderItemId" element={<SellerOrderItemDetailPage />} />
+        {/*
+          One route, optional param: `/seller/orders/:orderItemId` opens the
+          detail panel over the list. Two separate routes would remount the
+          page — and refetch the whole list — every time a row is opened.
+        */}
+        <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
+        {/* The detail used to be its own page; keep those links working. */}
+        <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />

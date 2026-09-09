@@ -12,6 +12,9 @@ import { useReelFeed } from '@/features/reels/use-reel-feed'
  * Reels: sellers' clips as a full-screen vertical feed, the same experience
  * the mobile app's centre tab gives. Any reel with a product tagged offers to
  * send it as a gift, which lands on that product's page.
+ *
+ * The footer is dropped and the page title with it — like Shorts, the feed
+ * *is* the page, filling everything under the header edge to edge.
  */
 export function ReelsPage() {
   const { reels, loading, error, hasMore, loadMore, retry, registerView } =
@@ -24,60 +27,57 @@ export function ReelsPage() {
   )
 
   return (
-    <SiteLayout>
-      {/* A fixed-height column so the player fills exactly what is left below
-          the header and title, rather than guessing at an offset and hanging
-          off the bottom of the viewport. */}
-      <div className="mx-auto flex h-[calc(100svh-5.5rem)] w-full max-w-6xl flex-col px-4 py-4 sm:px-6">
-        <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="font-display text-3xl tracking-tight">
-              <span className="bg-gradient-to-r from-brand-navy to-brand-violet bg-clip-text text-transparent">
-                Reels
-              </span>
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Watch what sellers are making, then send it as a gift.
-            </p>
-          </div>
-          <Button asChild variant="outline" className="rounded-full">
-            <Link to="/products">
-              <Gift className="size-4" />
-              Browse all gifts
-            </Link>
-          </Button>
-        </div>
+    <SiteLayout hideFooter>
+      {/*
+        Explicit height, not a flex-fill chain: the feed's slides are all
+        `h-full`, and that only resolves against a definite height. Rooting it
+        at `min-h-svh` left the player collapsed to nothing. Header is ~5.5rem
+        (logo h-16 + py-3 + border); the footer is gone, so this fills the rest.
+      */}
+      <div className="relative mx-auto flex h-[calc(100svh-5.5rem)] w-full max-w-6xl flex-col px-2 py-2 sm:px-4">
+        {/* A quiet way back to the shelves, kept off the player itself. */}
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="absolute top-2 right-3 z-20 hidden rounded-full bg-background/80 backdrop-blur-sm sm:inline-flex"
+        >
+          <Link to="/products">
+            <Gift className="size-4" />
+            Browse gifts
+          </Link>
+        </Button>
 
         <div className="min-h-0 flex-1">
           {loading ? (
-          <FeedMessage
-            icon={<Loader2 className="size-6 animate-spin" />}
-            title="Loading reels"
-            description="Fetching the latest posts from sellers."
-          />
-        ) : error ? (
-          <FeedMessage
-            icon={<WifiOff className="size-6" />}
-            title="Reels are offline"
-            description={error}
-            action={
-              <Button onClick={retry} variant="outline">
-                Try again
-              </Button>
-            }
-          />
-        ) : reels.length === 0 ? (
-          <FeedMessage
-            icon={<PlayCircle className="size-6" />}
-            title="No reels yet"
-            description="Sellers have not posted anything to watch yet. Browse the shelves in the meantime."
-            action={
-              <Button asChild className="rounded-full">
-                <Link to="/products">Browse gifts</Link>
-              </Button>
-            }
-          />
-        ) : (
+            <FeedMessage
+              icon={<Loader2 className="size-6 animate-spin" />}
+              title="Loading reels"
+              description="Fetching the latest posts from sellers."
+            />
+          ) : error ? (
+            <FeedMessage
+              icon={<WifiOff className="size-6" />}
+              title="Reels are offline"
+              description={error}
+              action={
+                <Button onClick={retry} variant="outline">
+                  Try again
+                </Button>
+              }
+            />
+          ) : reels.length === 0 ? (
+            <FeedMessage
+              icon={<PlayCircle className="size-6" />}
+              title="No reels yet"
+              description="Sellers have not posted anything to watch yet. Browse the shelves in the meantime."
+              action={
+                <Button asChild className="rounded-full">
+                  <Link to="/products">Browse gifts</Link>
+                </Button>
+              }
+            />
+          ) : (
             <ReelsFeed
               reels={reels}
               hasMore={hasMore}

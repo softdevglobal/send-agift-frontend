@@ -1,17 +1,32 @@
 import { LoaderCircle, ShoppingBag } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { SellerEmptyState, SellerPageHeader } from '@/features/seller'
-import { SellerOrderItemList, useSellerOrderItems } from '@/features/seller-orders'
+import {
+  SellerOrderItemDetailPanel,
+  SellerOrderItemList,
+  useSellerOrderItems,
+} from '@/features/seller-orders'
 
+/**
+ * The orders list, with the fulfilment detail as a panel over it.
+ *
+ * `/seller/orders/:orderItemId` is this same page with the panel open, so a
+ * deep link still lands on one item while the seller who clicked a row keeps
+ * the list — and their scroll position — behind it.
+ */
 export function SellerOrdersPage() {
-  const { items, loading, error } = useSellerOrderItems()
+  const { orderItemId } = useParams()
+  const navigate = useNavigate()
+  const { items, loading, error, refresh } = useSellerOrderItems()
 
   return (
     <div>
       <SellerPageHeader
+        icon={ShoppingBag}
+        tone="teal"
         title="Orders"
         description="Accept gift items, compare shipping rates, and buy labels for fulfilment."
       />
@@ -23,7 +38,11 @@ export function SellerOrdersPage() {
           <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
         </div>
       ) : items.length ? (
-        <SellerOrderItemList items={items} />
+        <SellerOrderItemList
+          items={items}
+          activeItemId={orderItemId ?? null}
+          onOpen={(id) => navigate(`/seller/orders/${id}`)}
+        />
       ) : (
         <SellerEmptyState
           icon={ShoppingBag}
@@ -36,6 +55,12 @@ export function SellerOrdersPage() {
           }
         />
       )}
+
+      <SellerOrderItemDetailPanel
+        orderItemId={orderItemId ?? null}
+        onClose={() => navigate('/seller/orders')}
+        onChanged={refresh}
+      />
     </div>
   )
 }

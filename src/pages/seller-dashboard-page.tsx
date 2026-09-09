@@ -1,9 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   BadgeCheck,
   Check,
+  Compass,
   LoaderCircle,
+  Package,
   Plus,
   ShoppingBag,
   Store,
@@ -15,50 +17,91 @@ import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
+  sellerAccountNav,
   sellerDisplayName,
   sellerInitials,
   sellerListRowClass,
   sellerPanelClass,
+  sellerPrimaryNav,
   sellerSetupProgress,
   sellerSetupSteps,
+  SellerStat,
   sellerVerificationLabel,
-  sellerVerificationTone,
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-function Metric({
-  icon,
-  label,
-  value,
-  hint,
-  valueClassName,
-}: {
-  icon: ReactNode
-  label: string
-  value: string
-  hint?: string
-  valueClassName?: string
-}) {
+/**
+ * Every seller page as a tile, in one card near the top of the dashboard.
+ *
+ * The sidebar already links these, but the dashboard is the landing page and a
+ * seller lands here to _go somewhere_ — this makes the whole portal reachable
+ * in one glance without hunting the rail.
+ */
+const quickNav = [
+  ...sellerPrimaryNav.filter((item) => item.to !== '/seller'),
+  ...sellerAccountNav,
+]
+
+function QuickNav() {
   return (
-    <div className={cn(sellerPanelClass, 'p-4 sm:p-5')}>
-      <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
-        {icon}
+    <section className={cn(sellerPanelClass, 'p-4 sm:p-5')}>
+      <div className="mb-3 flex items-center gap-2">
+        <Compass className="size-4 text-muted-foreground" />
+        <h2 className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+          Jump to
+        </h2>
       </div>
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p
-        className={cn(
-          'mt-1 truncate text-xl font-medium tracking-tight',
-          valueClassName,
-        )}
-      >
-        {value}
-      </p>
-      {hint ? (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
-      ) : null}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        {quickNav.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-center transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-[0_12px_30px_rgba(40,50,30,0.12)]"
+          >
+            <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <item.icon className="size-4" />
+            </span>
+            <span className="text-xs font-medium">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Circular percentage dial for the setup card — reads at a glance from across the screen. */
+function ProgressRing({ percent }: { percent: number }) {
+  const radius = 26
+  const circumference = 2 * Math.PI * radius
+  const filled = Math.max(0, Math.min(100, percent)) / 100
+
+  return (
+    <div className="relative size-16 shrink-0">
+      <svg viewBox="0 0 64 64" className="size-full -rotate-90">
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          strokeWidth="6"
+          className="stroke-muted"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          strokeWidth="6"
+          strokeLinecap="round"
+          className="stroke-primary transition-[stroke-dashoffset] duration-700 ease-out"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - filled)}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center font-display text-sm font-medium tracking-tight">
+        {percent}%
+      </span>
     </div>
   )
 }
@@ -107,19 +150,19 @@ export function SellerDashboardPage() {
     <div className="space-y-6 sm:space-y-8">
       <FormAlert error={error} />
 
-      <section
-        className={cn(
-          sellerPanelClass,
-          'relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8',
-        )}
-      >
+      {/*
+        The hero carries the brand gradient rather than the plain card wash —
+        it is the one place in the portal that should feel like the storefront
+        the seller is building, not the admin tooling around it.
+      */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy via-brand-violet to-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.92_0.04_125/0.45)]"
+          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[color:var(--brand-teal)]/20 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-20 left-10 size-48 rounded-full bg-[oklch(0.93_0.04_80/0.35)]"
+          className="pointer-events-none absolute -bottom-24 left-4 size-56 rounded-full bg-white/10 blur-2xl"
         />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
@@ -127,103 +170,140 @@ export function SellerDashboardPage() {
               <img
                 src={profile.image_url}
                 alt=""
-                className="size-14 rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background"
+                className="size-16 rounded-full object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20"
               />
             ) : (
-              <div className="flex size-14 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background">
+              <div className="flex size-16 items-center justify-center rounded-full bg-white/15 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20 backdrop-blur-sm">
                 {sellerInitials(profile)}
               </div>
             )}
             <div>
-              <p className="text-sm text-muted-foreground">Welcome back</p>
-              <h1 className="font-display text-3xl tracking-tight">{name}</h1>
-              <span
-                className={cn(
-                  'mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  sellerVerificationTone(profile.verification_status),
-                )}
-              >
+              <p className="text-sm text-white/60">Welcome back</p>
+              <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+                {name}
+              </h1>
+              {/* On the dark hero the status reads by icon + label; the light
+                  tone classes are for the pill on the profile page. */}
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/20 backdrop-blur-sm">
+                <BadgeCheck className="size-3.5" />
                 {sellerVerificationLabel(profile.verification_status)}
               </span>
             </div>
           </div>
-          <Button asChild className="h-11 rounded-full px-5">
-            <Link to="/seller/shops">
-              <Plus className="size-4" />
-              Create a shop
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              className="h-11 rounded-full px-5 text-white hover:bg-white/15 hover:text-white"
+            >
+              <Link to="/seller/products">
+                <Package className="size-4" />
+                Add a gift
+              </Link>
+            </Button>
+            <Button
+              asChild
+              className="h-11 rounded-full bg-white px-5 text-brand-navy hover:bg-white/90"
+            >
+              <Link to="/seller/shops">
+                <Plus className="size-4" />
+                Create a shop
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
+      <QuickNav />
+
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric
-          icon={<BadgeCheck className="size-4.5" />}
+        <SellerStat
+          tone="navy"
+          icon={BadgeCheck}
           label="Verification"
           value={sellerVerificationLabel(profile.verification_status)}
           hint={profile.status}
+          to="/seller/profile"
         />
-        <Metric
-          icon={<Store className="size-4.5" />}
+        <SellerStat
+          tone="violet"
+          icon={Store}
           label="Shops"
           value={String(shops.length)}
           hint={shops.length ? 'Ready to list gifts' : 'None yet'}
+          to="/seller/shops"
         />
-        <Metric
-          icon={<ShoppingBag className="size-4.5" />}
+        <SellerStat
+          tone="teal"
+          icon={ShoppingBag}
           label="Active orders"
           value="0"
           hint="No orders in progress"
+          to="/seller/orders"
         />
-        <Metric
-          icon={<Wallet className="size-4.5" />}
+        <SellerStat
+          tone="amber"
+          icon={Wallet}
           label="Earnings"
           value="$0.00"
           hint="All time"
+          to="/seller/earnings"
         />
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(17rem,1fr)]">
-        <section className={sellerPanelClass}>
+        <section className={cn(sellerPanelClass, 'overflow-hidden')}>
           <div className="flex items-center justify-between gap-3 border-b border-border/50 px-5 py-4">
-            <h2 className="font-medium">Active orders</h2>
+            <h2 className="flex items-center gap-2 font-medium">
+              <span className="flex size-6 items-center justify-center rounded-md bg-accent text-primary">
+                <ShoppingBag className="size-3.5" />
+              </span>
+              Active orders
+            </h2>
             <Link
               to="/seller/orders"
-              className="text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
             >
               View all
+              <ArrowRight className="size-3.5" />
             </Link>
           </div>
-          <div className="flex flex-col items-center px-6 py-14 text-center">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <ShoppingBag className="size-5" />
+          <div className="relative flex flex-col items-center px-6 py-16 text-center">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.5),transparent_70%)]"
+            />
+            <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15 shadow-[0_10px_28px_rgba(40,50,30,0.10)]">
+              <ShoppingBag className="size-6" />
             </div>
-            <p className="text-sm font-medium">No active orders</p>
-            <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              When buyers purchase from your shops, orders will appear here with
-              due dates and status.
+            <p className="relative text-sm font-medium">No active orders yet</p>
+            <p className="relative mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              When buyers purchase from your shops, orders land here with due
+              dates and fulfilment status.
             </p>
+            <Button
+              asChild
+              variant="outline"
+              className="relative mt-5 h-9 rounded-full px-4"
+            >
+              <Link to="/seller/products">
+                <Package className="size-4" />
+                List a gift to sell
+              </Link>
+            </Button>
           </div>
         </section>
 
         <div className="space-y-6">
           <section className={cn(sellerPanelClass, 'p-5')}>
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <ProgressRing percent={progress.percent} />
               <div>
                 <h2 className="font-medium">Setup progress</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {progress.done} of {progress.total} complete
                 </p>
               </div>
-              <p className="font-display text-2xl tracking-tight">
-                {progress.percent}%
-              </p>
-            </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${progress.percent}%` }}
-              />
             </div>
             <ul className="mt-4 space-y-2.5">
               {steps.map((step) => (
