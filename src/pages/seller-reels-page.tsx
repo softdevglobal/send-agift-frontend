@@ -4,6 +4,14 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { listShopProducts, type Product } from '@/api/products'
 import {
@@ -48,6 +56,8 @@ export function SellerReelsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [reelToDelete, setReelToDelete] = useState<ReelDetails | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const selectedShopId = searchParams.get('shop') ?? shops[0]?.id ?? ''
 
@@ -112,16 +122,20 @@ export function SellerReelsPage() {
     if (selectedShopId) void loadProducts(selectedShopId)
   }
 
-  async function handleDelete(reel: ReelDetails) {
-    if (!window.confirm('Delete this reel? Its video and photos are removed too.')) return
-    setBusy(true)
+  async function confirmDelete() {
+    const reel = reelToDelete
+    if (!reel) return
+    setDeleting(true)
+    setError(null)
     try {
       await deleteSellerReel(reel.id)
-      await refresh(selectedShopId)
+      // Drop it from the list right away instead of refetching the whole grid.
+      setReels((prev) => prev.filter((item) => item.id !== reel.id))
+      setReelToDelete(null)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not delete the reel'))
     } finally {
-      setBusy(false)
+      setDeleting(false)
     }
   }
 
@@ -272,13 +286,54 @@ export function SellerReelsPage() {
                 products={products}
                 busy={busy}
                 onToggleStatus={() => void handleToggleStatus(reel)}
-                onDelete={() => void handleDelete(reel)}
+                onDelete={() => setReelToDelete(reel)}
                 onRetag={(next) => void handleRetag(reel, next)}
               />
             ))}
           </ul>
         )}
       </div>
+
+      <Dialog
+        open={reelToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setReelToDelete(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete this reel?</DialogTitle>
+            <DialogDescription>
+              This can’t be undone. The reel’s video and photos are removed too.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 rounded-full px-4"
+              disabled={deleting}
+              onClick={() => setReelToDelete(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              className="h-10 rounded-full px-4"
+              disabled={deleting}
+              onClick={() => void confirmDelete()}
+            >
+              {deleting ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <Trash2 className="size-4" />
+              )}
+              Delete reel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
