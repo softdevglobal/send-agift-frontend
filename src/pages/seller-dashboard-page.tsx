@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   BadgeCheck,
@@ -18,7 +18,6 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
   sellerAccountNav,
-  sellerCardClass,
   sellerDisplayName,
   sellerInitials,
   sellerListRowClass,
@@ -26,74 +25,11 @@ import {
   sellerPrimaryNav,
   sellerSetupProgress,
   sellerSetupSteps,
-  sellerToneClass,
+  SellerStat,
   sellerVerificationLabel,
-  type SellerTone,
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
-
-/**
- * One number from the portal.
- *
- * Each gets its own accent wash — four identical white boxes made the row read
- * as decoration, and a seller scanning the top of the dashboard could not tell
- * the shop count from the balance without reading every label.
- */
-function Metric({
-  icon,
-  label,
-  value,
-  hint,
-  tone,
-  to,
-}: {
-  icon: ReactNode
-  label: string
-  value: string
-  hint?: string
-  tone: SellerTone
-  /** Makes the whole tile a link to the page that number comes from. */
-  to?: string
-}) {
-  const styles = sellerToneClass[tone]
-  const body = (
-    <>
-      <div
-        className={cn(
-          'mb-4 flex size-10 items-center justify-center rounded-xl',
-          styles.icon,
-        )}
-      >
-        {icon}
-      </div>
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
-        {label}
-      </p>
-      <p className="mt-1 truncate font-display text-2xl tracking-tight">{value}</p>
-      {hint ? (
-        <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
-      ) : null}
-      {to ? (
-        <ArrowRight className="absolute top-5 right-5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      ) : null}
-    </>
-  )
-
-  const className = cn(
-    to ? sellerCardClass : sellerPanelClass,
-    styles.tile,
-    'group relative block p-4 sm:p-5',
-  )
-
-  return to ? (
-    <Link to={to} className={className}>
-      {body}
-    </Link>
-  ) : (
-    <div className={className}>{body}</div>
-  )
-}
 
 /**
  * Every seller page as a tile, in one card near the top of the dashboard.
@@ -281,33 +217,33 @@ export function SellerDashboardPage() {
       <QuickNav />
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric
+        <SellerStat
           tone="navy"
-          icon={<BadgeCheck className="size-4.5" />}
+          icon={BadgeCheck}
           label="Verification"
           value={sellerVerificationLabel(profile.verification_status)}
           hint={profile.status}
           to="/seller/profile"
         />
-        <Metric
+        <SellerStat
           tone="violet"
-          icon={<Store className="size-4.5" />}
+          icon={Store}
           label="Shops"
           value={String(shops.length)}
           hint={shops.length ? 'Ready to list gifts' : 'None yet'}
           to="/seller/shops"
         />
-        <Metric
+        <SellerStat
           tone="teal"
-          icon={<ShoppingBag className="size-4.5" />}
+          icon={ShoppingBag}
           label="Active orders"
           value="0"
           hint="No orders in progress"
           to="/seller/orders"
         />
-        <Metric
+        <SellerStat
           tone="amber"
-          icon={<Wallet className="size-4.5" />}
+          icon={Wallet}
           label="Earnings"
           value="$0.00"
           hint="All time"
