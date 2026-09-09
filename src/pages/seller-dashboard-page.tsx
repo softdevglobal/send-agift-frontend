@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  Compass,
   LoaderCircle,
   Package,
   Plus,
@@ -16,11 +17,13 @@ import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
+  sellerAccountNav,
   sellerCardClass,
   sellerDisplayName,
   sellerInitials,
   sellerListRowClass,
   sellerPanelClass,
+  sellerPrimaryNav,
   sellerSetupProgress,
   sellerSetupSteps,
   sellerToneClass,
@@ -89,6 +92,81 @@ function Metric({
     </Link>
   ) : (
     <div className={className}>{body}</div>
+  )
+}
+
+/**
+ * Every seller page as a tile, in one card near the top of the dashboard.
+ *
+ * The sidebar already links these, but the dashboard is the landing page and a
+ * seller lands here to _go somewhere_ — this makes the whole portal reachable
+ * in one glance without hunting the rail.
+ */
+const quickNav = [
+  ...sellerPrimaryNav.filter((item) => item.to !== '/seller'),
+  ...sellerAccountNav,
+]
+
+function QuickNav() {
+  return (
+    <section className={cn(sellerPanelClass, 'p-4 sm:p-5')}>
+      <div className="mb-3 flex items-center gap-2">
+        <Compass className="size-4 text-muted-foreground" />
+        <h2 className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+          Jump to
+        </h2>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+        {quickNav.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-center transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-[0_12px_30px_rgba(40,50,30,0.12)]"
+          >
+            <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+              <item.icon className="size-4" />
+            </span>
+            <span className="text-xs font-medium">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/** Circular percentage dial for the setup card — reads at a glance from across the screen. */
+function ProgressRing({ percent }: { percent: number }) {
+  const radius = 26
+  const circumference = 2 * Math.PI * radius
+  const filled = Math.max(0, Math.min(100, percent)) / 100
+
+  return (
+    <div className="relative size-16 shrink-0">
+      <svg viewBox="0 0 64 64" className="size-full -rotate-90">
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          strokeWidth="6"
+          className="stroke-muted"
+        />
+        <circle
+          cx="32"
+          cy="32"
+          r={radius}
+          fill="none"
+          strokeWidth="6"
+          strokeLinecap="round"
+          className="stroke-primary transition-[stroke-dashoffset] duration-700 ease-out"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - filled)}
+        />
+      </svg>
+      <span className="absolute inset-0 grid place-items-center font-display text-sm font-medium tracking-tight">
+        {percent}%
+      </span>
+    </div>
   )
 }
 
@@ -200,6 +278,8 @@ export function SellerDashboardPage() {
         </div>
       </section>
 
+      <QuickNav />
+
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
           tone="navy"
@@ -236,46 +316,58 @@ export function SellerDashboardPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.55fr)_minmax(17rem,1fr)]">
-        <section className={sellerPanelClass}>
+        <section className={cn(sellerPanelClass, 'overflow-hidden')}>
           <div className="flex items-center justify-between gap-3 border-b border-border/50 px-5 py-4">
-            <h2 className="font-medium">Active orders</h2>
+            <h2 className="flex items-center gap-2 font-medium">
+              <span className="flex size-6 items-center justify-center rounded-md bg-accent text-primary">
+                <ShoppingBag className="size-3.5" />
+              </span>
+              Active orders
+            </h2>
             <Link
               to="/seller/orders"
-              className="text-sm font-medium text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
             >
               View all
+              <ArrowRight className="size-3.5" />
             </Link>
           </div>
-          <div className="flex flex-col items-center px-6 py-14 text-center">
-            <div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-              <ShoppingBag className="size-5" />
+          <div className="relative flex flex-col items-center px-6 py-16 text-center">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.5),transparent_70%)]"
+            />
+            <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15 shadow-[0_10px_28px_rgba(40,50,30,0.10)]">
+              <ShoppingBag className="size-6" />
             </div>
-            <p className="text-sm font-medium">No active orders</p>
-            <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              When buyers purchase from your shops, orders will appear here with
-              due dates and status.
+            <p className="relative text-sm font-medium">No active orders yet</p>
+            <p className="relative mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
+              When buyers purchase from your shops, orders land here with due
+              dates and fulfilment status.
             </p>
+            <Button
+              asChild
+              variant="outline"
+              className="relative mt-5 h-9 rounded-full px-4"
+            >
+              <Link to="/seller/products">
+                <Package className="size-4" />
+                List a gift to sell
+              </Link>
+            </Button>
           </div>
         </section>
 
         <div className="space-y-6">
           <section className={cn(sellerPanelClass, 'p-5')}>
-            <div className="flex items-end justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <ProgressRing percent={progress.percent} />
               <div>
                 <h2 className="font-medium">Setup progress</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {progress.done} of {progress.total} complete
                 </p>
               </div>
-              <p className="font-display text-2xl tracking-tight">
-                {progress.percent}%
-              </p>
-            </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${progress.percent}%` }}
-              />
             </div>
             <ul className="mt-4 space-y-2.5">
               {steps.map((step) => (

@@ -9,7 +9,12 @@ export {
   SellerSheetSection,
   type SellerSheetSize,
 } from './seller-sheet'
-export { sellerNavGroups } from './seller-nav'
+export {
+  sellerNavGroups,
+  sellerPrimaryNav,
+  sellerAccountNav,
+  type SellerNavItem,
+} from './seller-nav'
 export {
   sellerCardClass,
   sellerListRowClass,
