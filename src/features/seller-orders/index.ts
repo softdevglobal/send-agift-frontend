@@ -1,4 +1,5 @@
 export { FulfilmentStatusBadge } from './fulfilment-status-badge'
+export { SellerOrderItemDetailPanel } from './order-item-detail-panel'
 export { SellerOrderItemList } from './order-item-list'
 export { ShippingRatesForm } from './shipping-rates-form'
 export { useSellerOrderItems } from './use-seller-order-items'

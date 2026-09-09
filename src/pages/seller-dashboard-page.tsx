@@ -4,6 +4,7 @@ import {
   BadgeCheck,
   Check,
   LoaderCircle,
+  Package,
   Plus,
   ShoppingBag,
   Store,
@@ -15,51 +16,79 @@ import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
+  sellerCardClass,
   sellerDisplayName,
   sellerInitials,
   sellerListRowClass,
   sellerPanelClass,
   sellerSetupProgress,
   sellerSetupSteps,
+  sellerToneClass,
   sellerVerificationLabel,
-  sellerVerificationTone,
+  type SellerTone,
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+/**
+ * One number from the portal.
+ *
+ * Each gets its own accent wash — four identical white boxes made the row read
+ * as decoration, and a seller scanning the top of the dashboard could not tell
+ * the shop count from the balance without reading every label.
+ */
 function Metric({
   icon,
   label,
   value,
   hint,
-  valueClassName,
+  tone,
+  to,
 }: {
   icon: ReactNode
   label: string
   value: string
   hint?: string
-  valueClassName?: string
+  tone: SellerTone
+  /** Makes the whole tile a link to the page that number comes from. */
+  to?: string
 }) {
-  return (
-    <div className={cn(sellerPanelClass, 'p-4 sm:p-5')}>
-      <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-accent text-primary">
+  const styles = sellerToneClass[tone]
+  const body = (
+    <>
+      <div
+        className={cn(
+          'mb-4 flex size-10 items-center justify-center rounded-xl',
+          styles.icon,
+        )}
+      >
         {icon}
       </div>
       <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
         {label}
       </p>
-      <p
-        className={cn(
-          'mt-1 truncate text-xl font-medium tracking-tight',
-          valueClassName,
-        )}
-      >
-        {value}
-      </p>
+      <p className="mt-1 truncate font-display text-2xl tracking-tight">{value}</p>
       {hint ? (
         <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
       ) : null}
-    </div>
+      {to ? (
+        <ArrowRight className="absolute top-5 right-5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+      ) : null}
+    </>
+  )
+
+  const className = cn(
+    to ? sellerCardClass : sellerPanelClass,
+    styles.tile,
+    'group relative block p-4 sm:p-5',
+  )
+
+  return to ? (
+    <Link to={to} className={className}>
+      {body}
+    </Link>
+  ) : (
+    <div className={className}>{body}</div>
   )
 }
 
@@ -107,19 +136,19 @@ export function SellerDashboardPage() {
     <div className="space-y-6 sm:space-y-8">
       <FormAlert error={error} />
 
-      <section
-        className={cn(
-          sellerPanelClass,
-          'relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8',
-        )}
-      >
+      {/*
+        The hero carries the brand gradient rather than the plain card wash —
+        it is the one place in the portal that should feel like the storefront
+        the seller is building, not the admin tooling around it.
+      */}
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy via-brand-violet to-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.92_0.04_125/0.45)]"
+          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[color:var(--brand-teal)]/20 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-20 left-10 size-48 rounded-full bg-[oklch(0.93_0.04_80/0.35)]"
+          className="pointer-events-none absolute -bottom-24 left-4 size-56 rounded-full bg-white/10 blur-2xl"
         />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
@@ -127,59 +156,82 @@ export function SellerDashboardPage() {
               <img
                 src={profile.image_url}
                 alt=""
-                className="size-14 rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background"
+                className="size-16 rounded-full object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20"
               />
             ) : (
-              <div className="flex size-14 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background">
+              <div className="flex size-16 items-center justify-center rounded-full bg-white/15 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20 backdrop-blur-sm">
                 {sellerInitials(profile)}
               </div>
             )}
             <div>
-              <p className="text-sm text-muted-foreground">Welcome back</p>
-              <h1 className="font-display text-3xl tracking-tight">{name}</h1>
-              <span
-                className={cn(
-                  'mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  sellerVerificationTone(profile.verification_status),
-                )}
-              >
+              <p className="text-sm text-white/60">Welcome back</p>
+              <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+                {name}
+              </h1>
+              {/* On the dark hero the status reads by icon + label; the light
+                  tone classes are for the pill on the profile page. */}
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/20 backdrop-blur-sm">
+                <BadgeCheck className="size-3.5" />
                 {sellerVerificationLabel(profile.verification_status)}
               </span>
             </div>
           </div>
-          <Button asChild className="h-11 rounded-full px-5">
-            <Link to="/seller/shops">
-              <Plus className="size-4" />
-              Create a shop
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              asChild
+              variant="ghost"
+              className="h-11 rounded-full px-5 text-white hover:bg-white/15 hover:text-white"
+            >
+              <Link to="/seller/products">
+                <Package className="size-4" />
+                Add a gift
+              </Link>
+            </Button>
+            <Button
+              asChild
+              className="h-11 rounded-full bg-white px-5 text-brand-navy hover:bg-white/90"
+            >
+              <Link to="/seller/shops">
+                <Plus className="size-4" />
+                Create a shop
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
+          tone="navy"
           icon={<BadgeCheck className="size-4.5" />}
           label="Verification"
           value={sellerVerificationLabel(profile.verification_status)}
           hint={profile.status}
+          to="/seller/profile"
         />
         <Metric
+          tone="violet"
           icon={<Store className="size-4.5" />}
           label="Shops"
           value={String(shops.length)}
           hint={shops.length ? 'Ready to list gifts' : 'None yet'}
+          to="/seller/shops"
         />
         <Metric
+          tone="teal"
           icon={<ShoppingBag className="size-4.5" />}
           label="Active orders"
           value="0"
           hint="No orders in progress"
+          to="/seller/orders"
         />
         <Metric
+          tone="amber"
           icon={<Wallet className="size-4.5" />}
           label="Earnings"
           value="$0.00"
           hint="All time"
+          to="/seller/earnings"
         />
       </section>
 

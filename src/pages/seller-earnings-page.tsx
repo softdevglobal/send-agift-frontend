@@ -14,6 +14,8 @@ export function SellerEarningsPage() {
   return (
     <div className="space-y-6">
       <SellerPageHeader
+        icon={Wallet}
+        tone="amber"
         title="Earnings"
         description="Balance, pending clearance, and payout history for completed orders."
       />

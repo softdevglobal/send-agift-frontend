@@ -1,31 +1,16 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Boxes,
-  Camera,
-  Eye,
-  ImagePlus,
   LoaderCircle,
   Package,
   Pencil,
   Plus,
-  Store,
   Tag,
   Trash2,
   TriangleAlert,
-  X,
-  type LucideIcon,
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import { uploadPublicImage } from '@/api/media'
 import {
   createShopProduct,
   deleteSellerProduct,
@@ -37,26 +22,23 @@ import {
   type Product,
 } from '@/api/products'
 import { getSellerMe, type SellerDetails, type Shop } from '@/api/sellers'
-import {
-  KNOWN_CURRENCIES,
-  PRODUCT_STATUSES,
-  PRODUCT_VISIBILITIES,
-  type CustomerTypeVisibility,
-  type ProductStatus,
-} from '@/api/types'
+import { type ProductStatus } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
-import { ImageCropDialog } from '@/components/common/image-crop-dialog'
-import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { SellerEmptyState, SellerPageHeader, sellerPanelClass } from '@/features/seller'
+import {
+  ConfirmDialog,
+  SellerEmptyState,
+  SellerPageHeader,
+  SellerSheet,
+  SellerSheetFacts,
+  SellerSheetRow,
+  SellerSheetSection,
+  sellerCardClass,
+} from '@/features/seller'
 import { ProductWizard } from '@/features/seller/product-wizard'
 import {
-  emptyForm,
-  parseTags,
   productToForm,
   toInventoryInput,
   toProductInput,
@@ -64,122 +46,38 @@ import {
 } from '@/features/seller/product-form'
 import { getErrorMessage } from '@/lib/api'
 import { publishSellerToMarketplace, syncShopPublishedProducts } from '@/lib/published-catalog'
-import { selectClassName, textareaClassName } from '@/lib/form-styles'
-import { formatPriceAmount, majorToMinor } from '@/lib/money'
+import { selectClassName } from '@/lib/form-styles'
+import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
-const PRODUCT_ASPECT = 1
-
-const statusMeta: Record<ProductStatus, { label: string; tone: string; hint: string }> = {
+const statusMeta: Record<
+  ProductStatus,
+  { label: string; tone: string; dot: string; hint: string }
+> = {
   draft: {
     label: 'Draft',
     tone: 'bg-muted text-muted-foreground',
+    dot: 'bg-muted-foreground/40',
     hint: 'Hidden from customers',
   },
   published: {
     label: 'Published',
     tone: 'bg-primary/90 text-primary-foreground',
+    dot: 'bg-primary',
     hint: 'Visible in the customer catalog',
   },
   paused: {
     label: 'Paused',
     tone: 'bg-[oklch(0.96_0.04_85)] text-[oklch(0.48_0.1_80)]',
+    dot: 'bg-[oklch(0.72_0.16_75)]',
     hint: 'Temporarily hidden from customers',
   },
   rejected: {
     label: 'Rejected',
     tone: 'bg-destructive/10 text-destructive',
+    dot: 'bg-destructive',
     hint: 'Not shown to customers',
   },
-}
-
-function FormSectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: LucideIcon
-  title: string
-  description?: string
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary ring-1 ring-primary/10">
-        <Icon className="size-4" />
-      </span>
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        {description ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
-/** Mirrors the customer gift card, so sellers see the listing as they build it. */
-function ProductPreviewCard({
-  form,
-  shopName,
-}: {
-  form: ProductFormState
-  shopName?: string
-}) {
-  const meta = statusMeta[form.status] ?? statusMeta.draft
-  const priceMajor = Number(form.price_major)
-  const tags = parseTags(form.occasion_tags)
-  return (
-    <div className={cn(sellerPanelClass, 'flex flex-col overflow-hidden')}>
-      <div className="relative aspect-square overflow-hidden bg-muted">
-        {form.image_url ? (
-          <img src={form.image_url} alt="" className="size-full object-cover" />
-        ) : (
-          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
-            <Package className="size-8" />
-          </div>
-        )}
-        <span
-          className={cn(
-            'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
-            meta.tone,
-          )}
-        >
-          {meta.label}
-        </span>
-      </div>
-      <div className="flex flex-1 flex-col p-4">
-        {shopName ? (
-          <p className="truncate text-xs text-muted-foreground">{shopName}</p>
-        ) : null}
-        <h3 className="mt-0.5 font-medium">{form.name.trim() || 'Your gift name'}</h3>
-        <p className="mt-1 font-display text-lg tracking-tight">
-          {form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
-            ? formatPriceAmount(
-                majorToMinor(priceMajor, form.currency),
-                form.currency,
-              )
-            : '—'}
-        </p>
-        {form.description.trim() ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
-            {form.description}
-          </p>
-        ) : null}
-        {tags.length ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
 }
 
 export function SellerProductsPage() {
@@ -188,24 +86,25 @@ export function SellerProductsPage() {
   const [shops, setShops] = useState<Shop[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SaveStatus>('idle')
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{
     message: string
     variant: 'success' | 'error'
   } | null>(null)
-  const [form, setForm] = useState<ProductFormState>(emptyForm)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [inventoryReady, setInventoryReady] = useState(false)
-  const [showForm, setShowForm] = useState(false)
-  const [showWizard, setShowWizard] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
-    null,
-  )
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  const formRef = useRef<HTMLDivElement>(null)
-  const savedTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+  /**
+   * The wizard is the only editor. `create` opens it blank; `handleEdit` sets
+   * `editing` to a gift's id + prefilled form and opens the same dialog. There
+   * is no separate inline edit form.
+   */
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [editing, setEditing] = useState<{
+    id: string
+    form: ProductFormState
+    hasInventory: boolean
+  } | null>(null)
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const selectedShopId = searchParams.get('shop') ?? shops[0]?.id ?? ''
 
@@ -299,112 +198,23 @@ export function SellerProductsPage() {
     }
   }, [loadProducts, selectedShopId])
 
-  useEffect(() => {
-    const timers = savedTimers
-    return () => {
-      timers.current.forEach(clearTimeout)
-    }
-  }, [])
-
-  /** Holds the tick on screen briefly, then runs any follow-up (e.g. closing the form). */
-  function flashSaved(onDone?: () => void) {
-    setStatus('saved')
-    const timer = setTimeout(() => {
-      savedTimers.current = savedTimers.current.filter((t) => t !== timer)
-      setStatus('idle')
-      onDone?.()
-    }, 1100)
-    savedTimers.current.push(timer)
-  }
-
-  function updateField<K extends keyof ProductFormState>(
-    key: K,
-    value: ProductFormState[K],
-  ) {
-    setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  function resetForm() {
-    setForm(emptyForm)
-    setEditingId(null)
-    setInventoryReady(false)
-    setShowForm(false)
-  }
-
   function startCreate() {
     setError(null)
-    setShowWizard(true)
-  }
-
-  function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    event.target.value = ''
-    if (!file) return
-    setPendingImage({ src: URL.createObjectURL(file), name: file.name })
-  }
-
-  function handleCropCancel() {
-    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
-    setPendingImage(null)
-  }
-
-  async function handleCropConfirm(croppedFile: File) {
-    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
-    setPendingImage(null)
-    setError(null)
-    setUploadingImage(true)
-    try {
-      const url = await uploadPublicImage(croppedFile, 'product-image')
-      updateField('image_url', url)
-      setToast({ message: 'Image uploaded.', variant: 'success' })
-    } catch (err) {
-      const message = getErrorMessage(err, 'Could not upload image.')
-      setError(message)
-      setToast({ message, variant: 'error' })
-    } finally {
-      setUploadingImage(false)
-    }
+    setEditing(null)
+    setWizardOpen(true)
   }
 
   function handleSelectShop(shopId: string) {
     setError(null)
-    resetForm()
+    setEditing(null)
+    setWizardOpen(false)
     setSearchParams(shopId ? { shop: shopId } : {})
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    if (!selectedShopId) {
-      setError('Create a shop before adding products.')
-      return
-    }
-    const body = toProductInput(form, !editingId)
-    if (typeof body === 'string') {
-      setError(body)
-      return
-    }
-    setStatus('saving')
-    try {
-      if (editingId) {
-        await updateSellerProduct(editingId, body)
-        if (inventoryReady) {
-          await updateProductInventory(editingId, toInventoryInput(form))
-        }
-      } else {
-        await createShopProduct(selectedShopId, body)
-      }
-      const saved = editingId ? 'Product updated.' : 'Product created.'
-      await loadProducts(selectedShopId)
-      // Let the tick finish before the form collapses, so the confirmation is seen.
-      flashSaved(resetForm)
-      setToast({ message: saved, variant: 'success' })
-    } catch (err) {
-      setStatus('idle')
-      setError(getErrorMessage(err, 'Could not save product.'))
-    }
-  }
-
+  /**
+   * Loads a gift (and its inventory) into the wizard and opens it. Same dialog
+   * as "Add product" — the seller lands on step one with every field filled.
+   */
   async function handleEdit(id: string) {
     setError(null)
     try {
@@ -417,31 +227,60 @@ export function SellerProductsPage() {
           inventory = undefined
         }
       }
-      setEditingId(id)
-      setInventoryReady(Boolean(inventory))
-      setForm(productToForm(details, inventory))
-      setShowForm(true)
-      requestAnimationFrame(() => {
-        formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setEditing({
+        id,
+        form: productToForm(details, inventory),
+        hasInventory: Boolean(inventory),
       })
+      setWizardOpen(true)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load product.'))
     }
   }
 
-  async function handleDelete(product: Product) {
-    const confirmed = window.confirm(
-      `Delete "${product.name}"? This cannot be undone.`,
-    )
-    if (!confirmed) return
+  /** Runs the wizard's completed form through create or update. */
+  async function handleWizardSubmit(form: ProductFormState) {
+    if (editing) {
+      const body = toProductInput(form, false)
+      if (typeof body === 'string') throw new Error(body)
+      await updateSellerProduct(editing.id, body)
+      if (editing.hasInventory) {
+        await updateProductInventory(editing.id, toInventoryInput(form))
+      }
+      await loadProducts(selectedShopId)
+      setToast({ message: 'Product updated.', variant: 'success' })
+      return
+    }
+
+    if (!selectedShopId) throw new Error('Create a shop before adding products.')
+    const body = toProductInput(form, true)
+    if (typeof body === 'string') throw new Error(body)
+    await createShopProduct(selectedShopId, body)
+    await loadProducts(selectedShopId)
+    setToast({ message: 'Product created.', variant: 'success' })
+  }
+
+  async function confirmDelete() {
+    const product = productToDelete
+    if (!product) return
     setError(null)
+    setDeleting(true)
     try {
       await deleteSellerProduct(product.id)
-      if (editingId === product.id) resetForm()
+      if (editing?.id === product.id) {
+        setEditing(null)
+        setWizardOpen(false)
+      }
+      // Drop it from the grid right away, then reconcile with the server.
+      setProducts((prev) => prev.filter((item) => item.id !== product.id))
+      setProductToDelete(null)
+      setPreviewProduct((current) => (current?.id === product.id ? null : current))
       await loadProducts(selectedShopId)
       setToast({ message: 'Product deleted.', variant: 'success' })
     } catch (err) {
       setError(getErrorMessage(err, 'Could not delete product.'))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -451,6 +290,8 @@ export function SellerProductsPage() {
     return (
       <div>
         <SellerPageHeader
+          icon={Package}
+          tone="teal"
           title="Products"
           description="Create a shop first, then add gifts and inventory for that shop."
         />
@@ -471,36 +312,27 @@ export function SellerProductsPage() {
   return (
     <div>
       <SellerPageHeader
+        icon={Package}
+        tone="teal"
         title="Products"
         description="Create gifts per shop. Set status to published so they appear in the customer catalog."
         action={
-          showForm ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 rounded-full px-4"
-              onClick={resetForm}
-            >
-              <X className="size-4" />
-              Cancel
-            </Button>
-          ) : (
-            <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
-              <Plus className="size-4" />
-              Add product
-            </Button>
-          )
+          <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
+            <Plus className="size-4" />
+            Add product
+          </Button>
         }
       />
       <ProductWizard
-        open={showWizard}
-        onOpenChange={setShowWizard}
-        shopName={selectedShop?.name ?? 'Your shop'}
-        onSubmit={async (body) => {
-          await createShopProduct(selectedShopId, body)
-          await loadProducts(selectedShopId)
-          setToast({ message: 'Product created.', variant: 'success' })
+        open={wizardOpen}
+        onOpenChange={(next) => {
+          setWizardOpen(next)
+          if (!next) setEditing(null)
         }}
+        shopName={selectedShop?.name ?? 'Your shop'}
+        mode={editing ? 'edit' : 'create'}
+        initialForm={editing?.form ?? null}
+        onSubmit={handleWizardSubmit}
       />
 
       {loading ? (
@@ -547,85 +379,85 @@ export function SellerProductsPage() {
           ) : null}
 
           {products.length ? (
-            <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {products.map((product) => {
                 const meta = statusMeta[product.status] ?? statusMeta.draft
                 return (
                   <li
                     key={product.id}
                     className={cn(
-                      sellerPanelClass,
-                      'group flex flex-col overflow-hidden transition-shadow hover:shadow-[0_14px_40px_rgba(40,50,30,0.10)]',
-                      editingId === product.id && 'ring-2 ring-primary/30',
+                      sellerCardClass,
+                      'group relative flex flex-col overflow-hidden rounded-xl',
+                      editing?.id === product.id && 'ring-2 ring-primary/40',
                     )}
                   >
-                    <div className="relative aspect-square overflow-hidden bg-muted">
-                      {product.image_url ? (
-                        <img
-                          src={product.image_url}
-                          alt=""
-                          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                        />
-                      ) : (
-                        <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
-                          <Package className="size-8" />
-                        </div>
-                      )}
-                      <span
-                        className={cn(
-                          'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
-                          meta.tone,
+                    {/*
+                      The card face opens the preview panel; Edit and Delete
+                      float over the image on hover so they don't cost a row.
+                    */}
+                    <button
+                      type="button"
+                      className="flex flex-col text-left focus-visible:outline-none"
+                      onClick={() => setPreviewProduct(product)}
+                      aria-label={`Preview ${product.name}`}
+                    >
+                      <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                        {product.image_url ? (
+                          <img
+                            src={product.image_url}
+                            alt=""
+                            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                          />
+                        ) : (
+                          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                            <Package className="size-7" />
+                          </div>
                         )}
-                      >
-                        {meta.label}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-1 flex-col p-4">
-                      <h3 className="truncate font-medium">{product.name}</h3>
-                      <p className="mt-1 font-display text-lg tracking-tight">
-                        {formatPriceAmount(product.price_amount, product.currency)}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">{meta.hint}</p>
-                      {product.occasion_tags?.length ? (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                          {product.occasion_tags.slice(0, 3).map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-
-                      <div className="mt-4 flex items-center gap-1 border-t border-border/50 pt-3">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-9 flex-1 rounded-full"
-                          onClick={() => handleEdit(product.id)}
-                        >
-                          <Pencil className="size-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label={`Delete ${product.name}`}
-                          onClick={() => handleDelete(product)}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        <span
+                          className={cn(
+                            'absolute top-2 left-2 size-2.5 rounded-full ring-2 ring-background',
+                            meta.dot,
+                          )}
+                          title={meta.label}
+                        />
+                        <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold tracking-tight shadow-sm backdrop-blur-sm">
+                          {formatPriceAmount(product.price_amount, product.currency)}
+                        </span>
                       </div>
+
+                      <div className="w-full p-2.5">
+                        <h3 className="truncate text-sm leading-tight font-medium">
+                          {product.name}
+                        </h3>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          {meta.hint}
+                        </p>
+                      </div>
+                    </button>
+
+                    <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                      <button
+                        type="button"
+                        className="flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                        aria-label={`Edit ${product.name}`}
+                        onClick={() => handleEdit(product.id)}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        className="flex size-7 items-center justify-center rounded-full bg-background/90 text-destructive shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                        aria-label={`Delete ${product.name}`}
+                        onClick={() => setProductToDelete(product)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
                     </div>
                   </li>
                 )
               })}
             </ul>
-          ) : showForm ? null : (
+          ) : (
             <SellerEmptyState
               icon={Package}
               title="No gifts in this shop yet"
@@ -642,380 +474,6 @@ export function SellerProductsPage() {
               }
             />
           )}
-          {showForm ? (
-            <div
-              ref={formRef}
-              className="animate-in fade-in slide-in-from-top-2 grid gap-6 duration-300 lg:grid-cols-[minmax(0,1.7fr)_minmax(15rem,1fr)] lg:items-start"
-            >
-              <form
-                onSubmit={handleSubmit}
-                className={cn(sellerPanelClass, 'space-y-7 p-6')}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
-                    <Package className="size-4" />
-                  </span>
-                  <div>
-                    <h2 className="font-display text-xl tracking-tight">
-                      {editingId ? 'Edit gift' : 'New gift'}
-                    </h2>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      Listing in{' '}
-                      <span className="font-medium text-foreground">
-                        {selectedShop?.name ?? 'this shop'}
-                      </span>
-                      .
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <FormSectionHeader
-                    icon={ImagePlus}
-                    title="Photo"
-                    description="A square image shown on the gift card in the customer catalog."
-                  />
-                  <button
-                    type="button"
-                    disabled={uploadingImage}
-                    onClick={() => imageInputRef.current?.click()}
-                    className="group/cover relative block aspect-square w-40 overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                  >
-                    {form.image_url ? (
-                      <img
-                        src={form.image_url}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                        <ImagePlus className="size-6" />
-                        <span className="text-xs font-medium">Upload photo</span>
-                      </span>
-                    )}
-                    <span
-                      className={cn(
-                        'absolute inset-0 flex items-center justify-center gap-1.5 bg-foreground/55 text-xs font-medium text-background transition-opacity',
-                        uploadingImage
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
-                      )}
-                    >
-                      {uploadingImage ? (
-                        <LoaderCircle className="size-5 animate-spin" />
-                      ) : (
-                        <>
-                          <Camera className="size-4" />
-                          {form.image_url ? 'Change' : 'Upload'}
-                        </>
-                      )}
-                    </span>
-                  </button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                  {form.image_url ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-8 px-2 text-xs text-muted-foreground"
-                      onClick={() => updateField('image_url', '')}
-                    >
-                      <Trash2 className="size-3.5" />
-                      Remove photo
-                    </Button>
-                  ) : null}
-                </div>
-
-                <div className="space-y-5">
-                  <FormSectionHeader
-                    icon={Store}
-                    title="Gift details"
-                    description="What customers read before buying."
-                  />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-name">Name</Label>
-                    <Input
-                      id="product-name"
-                      value={form.name}
-                      onChange={(event) => updateField('name', event.target.value)}
-                      className="h-11 bg-surface px-3"
-                      placeholder="Handmade chocolate box"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-description">Description</Label>
-                    <textarea
-                      id="product-description"
-                      value={form.description}
-                      onChange={(event) => updateField('description', event.target.value)}
-                      className={textareaClassName}
-                      placeholder="What's included, and who is it for?"
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="product-slug">Slug</Label>
-                      <Input
-                        id="product-slug"
-                        value={form.slug}
-                        onChange={(event) => updateField('slug', event.target.value)}
-                        className="h-11 bg-surface px-3 font-mono text-sm"
-                        placeholder="auto-generated-from-name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="product-type">Product type</Label>
-                      <Input
-                        id="product-type"
-                        value={form.product_type}
-                        onChange={(event) => updateField('product_type', event.target.value)}
-                        className="h-11 bg-surface px-3"
-                        placeholder="gift"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <FormSectionHeader
-                    icon={Tag}
-                    title="Pricing & visibility"
-                    description="Only published gifts appear in the customer catalog."
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="product-price">Price</Label>
-                      <Input
-                        id="product-price"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={form.price_major}
-                        onChange={(event) => updateField('price_major', event.target.value)}
-                        className="h-11 bg-surface px-3"
-                        placeholder="25.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="product-currency">Currency</Label>
-                      <select
-                        id="product-currency"
-                        value={form.currency}
-                        onChange={(event) => updateField('currency', event.target.value)}
-                        className={selectClassName}
-                        required
-                      >
-                        {KNOWN_CURRENCIES.map((code) => (
-                          <option key={code} value={code}>
-                            {code}
-                          </option>
-                        ))}
-                        {form.currency &&
-                        !KNOWN_CURRENCIES.includes(
-                          form.currency as (typeof KNOWN_CURRENCIES)[number],
-                        ) ? (
-                          <option value={form.currency}>{form.currency}</option>
-                        ) : null}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <div
-                      role="radiogroup"
-                      aria-label="Status"
-                      className="grid gap-2 sm:grid-cols-2"
-                    >
-                      {PRODUCT_STATUSES.map((item) => {
-                        const meta = statusMeta[item]
-                        const active = form.status === item
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            role="radio"
-                            aria-checked={active}
-                            onClick={() => updateField('status', item)}
-                            className={cn(
-                              'flex flex-col items-start gap-0.5 rounded-xl border p-3 text-left transition-all active:scale-[0.98]',
-                              active
-                                ? 'border-primary/40 bg-accent/60 ring-1 ring-primary/20'
-                                : 'border-border/40 bg-card hover:border-border hover:bg-muted/40',
-                            )}
-                          >
-                            <span className="text-sm font-medium">{meta.label}</span>
-                            <span className="text-xs leading-snug text-muted-foreground">
-                              {meta.hint}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="product-visibility">Customer visibility</Label>
-                      <select
-                        id="product-visibility"
-                        value={form.customer_type_visibility}
-                        onChange={(event) =>
-                          updateField(
-                            'customer_type_visibility',
-                            event.target.value as CustomerTypeVisibility,
-                          )
-                        }
-                        className={selectClassName}
-                        required
-                      >
-                        {PRODUCT_VISIBILITIES.map((item) => (
-                          <option key={item} value={item}>
-                            {item}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="product-prep">Prep minutes</Label>
-                      <Input
-                        id="product-prep"
-                        type="number"
-                        min="0"
-                        value={form.prep_minutes}
-                        onChange={(event) => updateField('prep_minutes', event.target.value)}
-                        className="h-11 bg-surface px-3"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="product-tags">Occasion tags</Label>
-                    <Input
-                      id="product-tags"
-                      value={form.occasion_tags}
-                      onChange={(event) => updateField('occasion_tags', event.target.value)}
-                      className="h-11 bg-surface px-3"
-                      placeholder="birthday, thank-you"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Comma separated. Customers filter the catalog by these.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="product-points"
-                      checked={form.points_display_enabled}
-                      onCheckedChange={(value) =>
-                        updateField('points_display_enabled', value === true)
-                      }
-                    />
-                    <Label htmlFor="product-points" className="font-normal">
-                      Show promotional points
-                    </Label>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <FormSectionHeader
-                    icon={Boxes}
-                    title="Inventory"
-                    description="How many you can fulfil, and when you can't."
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="inv-available">Available qty</Label>
-                      <Input
-                        id="inv-available"
-                        type="number"
-                        min="0"
-                        value={form.available_qty}
-                        onChange={(event) => updateField('available_qty', event.target.value)}
-                        className="h-11 bg-surface px-3"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="inv-reserved">Reserved qty</Label>
-                      <Input
-                        id="inv-reserved"
-                        type="number"
-                        min="0"
-                        value={form.reserved_qty}
-                        onChange={(event) => updateField('reserved_qty', event.target.value)}
-                        className="h-11 bg-surface px-3"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="inv-low">Low stock at</Label>
-                      <Input
-                        id="inv-low"
-                        type="number"
-                        min="0"
-                        value={form.low_stock_threshold}
-                        onChange={(event) =>
-                          updateField('low_stock_threshold', event.target.value)
-                        }
-                        className="h-11 bg-surface px-3"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="inv-dates">Unavailable dates</Label>
-                    <textarea
-                      id="inv-dates"
-                      value={form.unavailable_dates}
-                      onChange={(event) =>
-                        updateField('unavailable_dates', event.target.value)
-                      }
-                      className={textareaClassName}
-                      placeholder="YYYY-MM-DD, one per line"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <SaveButton status={status}>
-                    {editingId ? 'Update gift' : 'Create gift'}
-                  </SaveButton>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10"
-                    disabled={status !== 'idle'}
-                    onClick={resetForm}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-
-              <div className="space-y-3 lg:sticky lg:top-6">
-                <div className="flex items-center gap-2 px-1 text-sm font-medium text-muted-foreground">
-                  <Eye className="size-4" />
-                  Live preview
-                </div>
-                <ProductPreviewCard form={form} shopName={selectedShop?.name} />
-                <p className="px-1 text-xs text-muted-foreground">
-                  {form.status === 'published'
-                    ? 'This is how the gift appears to customers.'
-                    : `Set status to Published to list this in the customer catalog.`}
-                </p>
-              </div>
-            </div>
-          ) : null}
         </div>
       )}
 
@@ -1026,18 +484,163 @@ export function SellerProductsPage() {
           onClose={() => setToast(null)}
         />
       ) : null}
-      {pendingImage ? (
-        <ImageCropDialog
-          open
-          imageSrc={pendingImage.src}
-          fileName={pendingImage.name}
-          aspect={PRODUCT_ASPECT}
-          cropShape="rect"
-          title="Adjust photo"
-          onCancel={handleCropCancel}
-          onConfirm={handleCropConfirm}
-        />
-      ) : null}
+
+      <ProductPreviewPanel
+        product={previewProduct}
+        shopName={selectedShop?.name}
+        onClose={() => setPreviewProduct(null)}
+        onEdit={(product) => {
+          setPreviewProduct(null)
+          void handleEdit(product.id)
+        }}
+        onDelete={(product) => {
+          setPreviewProduct(null)
+          setProductToDelete(product)
+        }}
+      />
+
+      <ConfirmDialog
+        open={productToDelete !== null}
+        onOpenChange={(open) => !open && setProductToDelete(null)}
+        title="Delete this gift?"
+        description={
+          <>
+            <span className="font-medium text-foreground">
+              {productToDelete?.name}
+            </span>{' '}
+            will be removed from your shop and from the customer catalog. This can’t
+            be undone.
+          </>
+        }
+        confirmLabel="Delete gift"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
+  )
+}
+
+/** The gift as customers see it, plus the details that only the seller needs. */
+function ProductPreviewPanel({
+  product,
+  shopName,
+  onClose,
+  onEdit,
+  onDelete,
+}: {
+  product: Product | null
+  shopName?: string
+  onClose: () => void
+  onEdit: (product: Product) => void
+  onDelete: (product: Product) => void
+}) {
+  const meta = product
+    ? (statusMeta[product.status] ?? statusMeta.draft)
+    : statusMeta.draft
+
+  return (
+    <SellerSheet
+      open={product !== null}
+      onOpenChange={(open) => !open && onClose()}
+      eyebrow="Gift"
+      title={product?.name ?? ''}
+      description={shopName}
+      media={
+        product ? (
+          <div className="relative aspect-square w-full overflow-hidden bg-muted">
+            {product.image_url ? (
+              <img src={product.image_url} alt="" className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                <Package className="size-10" />
+              </div>
+            )}
+            <span
+              className={cn(
+                'absolute top-4 left-4 rounded-full px-3 py-1 text-xs font-medium backdrop-blur-sm',
+                meta.tone,
+              )}
+            >
+              {meta.label}
+            </span>
+          </div>
+        ) : null
+      }
+      footer={
+        product ? (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              className="h-10 flex-1 rounded-full"
+              onClick={() => onEdit(product)}
+            >
+              <Pencil className="size-4" />
+              Edit gift
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-10 text-destructive"
+              aria-label={`Delete ${product.name}`}
+              onClick={() => onDelete(product)}
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </div>
+        ) : null
+      }
+    >
+      {product ? (
+        <>
+          <div>
+            <p className="font-display text-3xl tracking-tight">
+              {formatPriceAmount(product.price_amount, product.currency)}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{meta.hint}</p>
+          </div>
+
+          {product.description ? (
+            <SellerSheetSection title="Description">
+              <p className="text-sm leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
+            </SellerSheetSection>
+          ) : null}
+
+          <SellerSheetSection icon={Boxes} title="Listing">
+            <SellerSheetFacts>
+              <SellerSheetRow label="Status">{meta.label}</SellerSheetRow>
+              <SellerSheetRow label="Currency">{product.currency}</SellerSheetRow>
+              <SellerSheetRow label="Visible to">
+                {product.customer_type_visibility === 'both'
+                  ? 'All customers'
+                  : product.customer_type_visibility === 'corporate'
+                    ? 'Corporate buyers'
+                    : 'Personal buyers'}
+              </SellerSheetRow>
+              <SellerSheetRow label="Price" emphasis>
+                {formatPriceAmount(product.price_amount, product.currency)}
+              </SellerSheetRow>
+            </SellerSheetFacts>
+          </SellerSheetSection>
+
+          {product.occasion_tags?.length ? (
+            <SellerSheetSection icon={Tag} title="Occasions">
+              <div className="flex flex-wrap gap-1.5">
+                {product.occasion_tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full bg-accent px-2.5 py-1 text-xs text-accent-foreground"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </SellerSheetSection>
+          ) : null}
+        </>
+      ) : null}
+    </SellerSheet>
   )
 }

@@ -93,14 +93,20 @@ export function WizardDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-h-[92svh] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden p-0 sm:max-w-4xl"
+        /*
+         * Fixed height, not `max-h`: the dialog is the same size on every step.
+         * A short step (just a dropdown) and a tall one (the photo upload, the
+         * preview) used to make the popup jump between sizes as you clicked
+         * Next — now only the body below scrolls.
+         */
+        className="h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden p-0 sm:max-w-4xl"
         onInteractOutside={(event) => {
           // Half-filled steps are easy to lose by a stray click; closing is
           // deliberate here (the X, Cancel, or Escape).
           event.preventDefault()
         }}
       >
-        <div className="grid md:grid-cols-[15rem_1fr]">
+        <div className="grid h-full min-h-0 md:grid-cols-[15rem_1fr]">
           <StepRail
             title={title}
             description={description}
@@ -110,7 +116,7 @@ export function WizardDialog({
             onJump={setIndex}
           />
 
-          <div className="flex min-h-[28rem] flex-col">
+          <div className="flex h-full min-h-0 flex-col">
             <header className="border-b border-border/60 px-5 py-4 sm:px-7">
               <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                 Step {safeIndex + 1} of {steps.length}

@@ -6,6 +6,8 @@ export function SellerInboxPage() {
   return (
     <div>
       <SellerPageHeader
+        icon={MessageSquare}
+        tone="navy"
         title="Inbox"
         description="Buyer messages, order questions, and support threads in one place."
       />

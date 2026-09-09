@@ -6,6 +6,8 @@ export function SellerAnalyticsPage() {
   return (
     <div>
       <SellerPageHeader
+        icon={BarChart3}
+        tone="navy"
         title="Analytics"
         description="Impressions, shop visits, and conversion once your gifts start selling."
       />

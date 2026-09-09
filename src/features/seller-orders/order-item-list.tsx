@@ -1,5 +1,4 @@
 import { ChevronRight, Package } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 
 import type { SellerOrderItemSummary } from '@/api/seller-orders'
 import { formatDeliveryDate } from '@/features/customer-commerce/order-display'
@@ -10,15 +9,22 @@ import { cn } from '@/lib/utils'
 
 import { FulfilmentStatusBadge } from './fulfilment-status-badge'
 
-export function SellerOrderItemList({ items }: { items: SellerOrderItemSummary[] }) {
-  const navigate = useNavigate()
-
+export function SellerOrderItemList({
+  items,
+  activeItemId = null,
+  onOpen,
+}: {
+  items: SellerOrderItemSummary[]
+  /** The row whose detail panel is open, kept marked behind the panel. */
+  activeItemId?: string | null
+  onOpen: (itemId: string) => void
+}) {
   return (
     <section className={cn(sellerPanelClass, 'overflow-hidden')}>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[52rem] text-left text-sm">
           <thead>
-            <tr className="border-b border-border/50 text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
+            <tr className="border-b border-border/50 bg-surface/50 text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
               <th className="px-4 py-3 font-medium">Order</th>
               <th className="px-4 py-3 font-medium">Product</th>
               <th className="px-4 py-3 font-medium">Recipient</th>
@@ -33,59 +39,73 @@ export function SellerOrderItemList({ items }: { items: SellerOrderItemSummary[]
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                tabIndex={0}
-                className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
-                onClick={() => navigate(`/seller/order-items/${item.id}`)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    navigate(`/seller/order-items/${item.id}`)
-                  }
-                }}
-              >
-                <td className="px-4 py-3 align-middle font-medium">{item.order_number}</td>
-                <td className="px-4 py-3 align-middle">
-                  <div className="flex items-center gap-3">
-                    <span className="size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      {item.product_image_url ? (
-                        <img
-                          src={item.product_image_url}
-                          alt=""
-                          className="size-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex size-full items-center justify-center text-muted-foreground">
-                          <Package className="size-4" />
-                        </span>
+            {items.map((item) => {
+              const active = item.id === activeItemId
+              return (
+                <tr
+                  key={item.id}
+                  tabIndex={0}
+                  aria-current={active ? 'true' : undefined}
+                  className={cn(
+                    'cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none',
+                    active && 'bg-accent/60 hover:bg-accent/60',
+                  )}
+                  onClick={() => onOpen(item.id)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault()
+                      onOpen(item.id)
+                    }
+                  }}
+                >
+                  <td className="px-4 py-3 align-middle font-medium">
+                    {item.order_number}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex items-center gap-3">
+                      <span className="size-11 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {item.product_image_url ? (
+                          <img
+                            src={item.product_image_url}
+                            alt=""
+                            className="size-full object-cover"
+                          />
+                        ) : (
+                          <span className="flex size-full items-center justify-center text-muted-foreground">
+                            <Package className="size-4" />
+                          </span>
+                        )}
+                      </span>
+                      <span className="truncate font-medium">{item.product_name}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-middle text-muted-foreground">
+                    {item.recipient_name || '—'}
+                  </td>
+                  <td className="px-4 py-3 align-middle">{item.quantity}</td>
+                  <td className="px-4 py-3 align-middle font-medium">
+                    {formatPriceAmount(item.total_amount, 'USD')}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <FulfilmentStatusBadge status={item.fulfilment_status} />
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <OrderStatusBadge status={item.order_status} />
+                  </td>
+                  <td className="px-4 py-3 align-middle text-muted-foreground">
+                    {formatDeliveryDate(item.delivery_date)}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <ChevronRight
+                      className={cn(
+                        'ml-auto size-4 transition-transform',
+                        active ? 'text-primary' : 'text-muted-foreground',
                       )}
-                    </span>
-                    <span className="truncate font-medium">{item.product_name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 align-middle text-muted-foreground">
-                  {item.recipient_name || '—'}
-                </td>
-                <td className="px-4 py-3 align-middle">{item.quantity}</td>
-                <td className="px-4 py-3 align-middle font-medium">
-                  {formatPriceAmount(item.total_amount, 'USD')}
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <FulfilmentStatusBadge status={item.fulfilment_status} />
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <OrderStatusBadge status={item.order_status} />
-                </td>
-                <td className="px-4 py-3 align-middle text-muted-foreground">
-                  {formatDeliveryDate(item.delivery_date)}
-                </td>
-                <td className="px-4 py-3 align-middle">
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
-                </td>
-              </tr>
-            ))}
+                    />
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
