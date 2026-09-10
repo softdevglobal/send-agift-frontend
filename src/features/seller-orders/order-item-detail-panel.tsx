@@ -4,11 +4,13 @@ import {
   Gift,
   LoaderCircle,
   MapPin,
+  MessageSquare,
   Package,
   Truck,
   TriangleAlert,
   User,
 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import {
@@ -461,6 +463,12 @@ export function SellerOrderItemDetailPanel({
                   “{item.order.gift_message}”
                 </p>
               ) : null}
+              <Button asChild variant="outline" className="h-10 w-full rounded-full">
+                <Link to={`/seller/inbox?orderItem=${item.id}`}>
+                  <MessageSquare className="size-4" />
+                  Message the customer
+                </Link>
+              </Button>
             </SellerSheetSection>
 
             <SellerSheetSection icon={User} title="Recipient">

@@ -12,6 +12,7 @@ import {
 } from '@/features/customer-commerce'
 import { publicSellerInitials, subscribePublicSellers, type PublicSeller, type PublicShop } from '@/lib/public-sellers'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
+import { MessageShopButton } from '@/features/messaging'
 import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { cn } from '@/lib/utils'
@@ -191,22 +192,25 @@ export function CustomerSellerShopPage() {
         </div>
 
         {/* Padded past the avatar so the name never sits under it. */}
-        <div className="px-5 pt-12 pb-5 sm:px-7 sm:pt-14">
-          <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Sold by <span className="font-medium text-foreground">{sellerName}</span>
-          </p>
-          {shop.customer_visible_location ? (
-            <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MapPin className="size-3.5 shrink-0" />
-              <span className="truncate">{shop.customer_visible_location}</span>
+        <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-12 pb-5 sm:px-7 sm:pt-14">
+          <div className="min-w-0">
+            <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Sold by <span className="font-medium text-foreground">{sellerName}</span>
             </p>
-          ) : null}
-          {shop.description ? (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              {shop.description}
-            </p>
-          ) : null}
+            {shop.customer_visible_location ? (
+              <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="size-3.5 shrink-0" />
+                <span className="truncate">{shop.customer_visible_location}</span>
+              </p>
+            ) : null}
+            {shop.description ? (
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {shop.description}
+              </p>
+            ) : null}
+          </div>
+          <MessageShopButton products={shopProducts} shopName={shop.name} />
         </div>
       </section>
 

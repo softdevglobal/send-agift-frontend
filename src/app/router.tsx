@@ -11,6 +11,7 @@ import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
+import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
 import { AdminRegisterPage } from '@/pages/admin-register-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
@@ -250,6 +251,7 @@ export function AppRouter() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
+        <Route path="inbox" element={<AdminInboxPage />} />
         <Route path="sellers" element={<AdminSellersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />

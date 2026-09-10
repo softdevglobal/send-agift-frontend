@@ -48,6 +48,23 @@ export function getToken(): string | null {
   return read(TOKEN_KEY)
 }
 
+/**
+ * The `sub` claim of the stored JWT — the signed-in customer, seller, or admin
+ * id. Chat compares it against `sender_user_id` to tell your messages apart.
+ */
+export function getTokenSubject(): string | null {
+  const payload = getToken()?.split('.')[1]
+  if (!payload) return null
+  try {
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+    const claims = JSON.parse(atob(padded)) as { sub?: unknown }
+    return typeof claims.sub === 'string' ? claims.sub : null
+  } catch {
+    return null
+  }
+}
+
 export function getRole(): UserRole | null {
   const role = read(ROLE_KEY)
   return isUserRole(role) ? role : null

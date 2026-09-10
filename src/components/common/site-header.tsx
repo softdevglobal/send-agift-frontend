@@ -5,6 +5,7 @@ import {
   Gift,
   Heart,
   Menu,
+  MessageSquare,
   Search,
   ShoppingBag,
   Store,
@@ -20,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import { accountNavItems } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
+import { useCustomerMessages } from '@/features/messaging'
 import { returnToState } from '@/lib/auth'
 import { giftCategories } from '@/features/marketing/data'
 import { cn } from '@/lib/utils'
@@ -30,6 +32,7 @@ export function SiteHeader() {
   const [category, setCategory] = useState('all')
   const { isAuthenticated, role, logout } = useAuth()
   const { itemCount } = useCart()
+  const { unreadCount, openMessages } = useCustomerMessages()
   const navigate = useNavigate()
   const location = useLocation()
   const loginState = returnToState(location.pathname, location.search)
@@ -137,6 +140,24 @@ export function SiteHeader() {
             </>
           ) : (
             <>
+              {isCustomer ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="relative"
+                  aria-label={unreadCount > 0 ? `Messages, ${unreadCount} unread` : 'Messages'}
+                  title="Messages"
+                  onClick={() => openMessages()}
+                >
+                  <MessageSquare className="size-4.5" />
+                  {unreadCount > 0 ? (
+                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-teal px-1 text-[10px] font-semibold text-white ring-2 ring-background motion-safe:animate-in motion-safe:zoom-in-50">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Button>
+              ) : null}
               <Button
                 variant="ghost"
                 size="icon"
@@ -258,6 +279,22 @@ export function SiteHeader() {
                 <p className="mt-3 px-3 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
                   My account
                 </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu()
+                    openMessages()
+                  }}
+                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted"
+                >
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <span className="flex-1">Messages</span>
+                  {unreadCount > 0 ? (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-teal px-1.5 text-[10px] font-semibold text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </button>
                 {accountNavItems.map((item) => (
                   <Link
                     key={item.to}

@@ -18,9 +18,16 @@ import { Input } from '@/components/ui/input'
 import { adminNavGroups } from '@/features/admin/admin-nav'
 import { adminInitials, adminRoleLabel } from '@/features/admin/admin-utils'
 import { useAuth } from '@/features/auth/auth-context'
+import { InboxProvider, useSharedInbox } from '@/features/messaging'
 import { cn } from '@/lib/utils'
 
-function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function AdminNavLinks({
+  onNavigate,
+  unreadMessages,
+}: {
+  onNavigate?: () => void
+  unreadMessages: number
+}) {
   return (
     <nav className="flex flex-1 flex-col gap-6">
       {adminNavGroups.map((group) => (
@@ -57,6 +64,12 @@ function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                       <item.icon className="size-4" />
                     </span>
                     <span className="flex-1 truncate">{item.label}</span>
+                    {item.showsUnread && unreadMessages > 0 ? (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-semibold text-[oklch(0.24_0.02_120)]">
+                        <span className="sr-only">Unread messages: </span>
+                        {unreadMessages > 99 ? '99+' : unreadMessages}
+                      </span>
+                    ) : null}
                     {item.soon ? (
                       <span className="size-1.5 rounded-full bg-white/25" />
                     ) : null}
@@ -71,8 +84,18 @@ function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/** The inbox is shared so the sidebar badge and the Inbox page poll once, together. */
 export function AdminShell() {
+  return (
+    <InboxProvider>
+      <AdminShellLayout />
+    </InboxProvider>
+  )
+}
+
+function AdminShellLayout() {
   const { role, logout } = useAuth()
+  const { unreadTotal } = useSharedInbox()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -145,7 +168,10 @@ export function AdminShell() {
         </div>
 
         <div className="relative flex-1 overflow-y-auto">
-          <AdminNavLinks onNavigate={() => setMenuOpen(false)} />
+          <AdminNavLinks
+            onNavigate={() => setMenuOpen(false)}
+            unreadMessages={unreadTotal}
+          />
         </div>
 
         <div className="relative mt-6 border-t border-white/10 pt-4">

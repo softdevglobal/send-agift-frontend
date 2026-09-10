@@ -16,6 +16,8 @@ export type SellerNavItem = {
   label: string
   icon: LucideIcon
   end?: boolean
+  /** Shows the unread-messages count beside the label. */
+  showsUnread?: boolean
 }
 
 export type SellerNavGroup = {
@@ -31,7 +33,7 @@ export const sellerPrimaryNav: SellerNavItem[] = [
   { to: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { to: '/seller/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/seller/inbox', label: 'Inbox', icon: MessageSquare },
+  { to: '/seller/inbox', label: 'Inbox', icon: MessageSquare, showsUnread: true },
 ]
 
 export const sellerAccountNav: SellerNavItem[] = [

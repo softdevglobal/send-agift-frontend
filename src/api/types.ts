@@ -295,6 +295,8 @@ export const MEDIA_FOLDERS = [
   'reel-video',
   'reel-photo',
   'reel-thumbnail',
+  'chat-image',
+  'chat-document',
 ] as const
 
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number]
@@ -635,4 +637,111 @@ export type ReelDetails = {
 export type ReelFeed = {
   items: ReelDetails[]
   next_cursor?: string | null
+}
+
+export type ConversationType = 'product_inquiry' | 'order' | 'support'
+export type ConversationStatus = 'open' | 'closed'
+export type ParticipantRole = 'customer' | 'seller' | 'admin'
+export type SupportCaseStatus = 'open' | 'in_progress' | 'closed'
+export type SupportPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+/** One person in a thread. `user_id` is a customer, seller, or admin id depending on `role`. */
+export type ConversationParticipant = {
+  id: string
+  conversation_id: string
+  user_id: string
+  role: ParticipantRole
+  /** Absent until that participant first reads the thread. */
+  last_read_at?: string | null
+  joined_at: string
+  display_name?: string | null
+  image_url?: string | null
+}
+
+export type SupportCase = {
+  id: string
+  conversation_id: string
+  opened_by_user_id: string
+  opened_by_role: 'admin' | 'customer' | 'seller'
+  counterpart_user_id: string
+  counterpart_role: 'customer' | 'seller'
+  subject?: string | null
+  status: SupportCaseStatus
+  priority: SupportPriority
+  created_at: string
+  updated_at: string
+}
+
+export type Conversation = {
+  id: string
+  type: ConversationType
+  status: ConversationStatus
+  product_id?: string | null
+  shop_id?: string | null
+  order_id?: string | null
+  order_item_id?: string | null
+  created_by_user_id: string
+  last_message_at?: string | null
+  created_at: string
+  updated_at: string
+  /** What the thread is about — empty for support threads. */
+  product_name?: string | null
+  product_image_url?: string | null
+  shop_name?: string | null
+  shop_image_url?: string | null
+  order_number?: string | null
+}
+
+export type ConversationDetails = Conversation & {
+  participants: ConversationParticipant[]
+  support_case?: SupportCase | null
+}
+
+export type ConversationSummary = ConversationDetails & { unread_count: number }
+
+export type MessageAttachment = {
+  id: string
+  message_id: string
+  media_id: string
+  asset_type: 'image' | 'document' | string
+  object_path: string
+  cdn_url?: string | null
+  mime_type: string
+  size_bytes: number
+  created_at: string
+}
+
+/** One chat bubble. The API omits `attachments` when a message has none. */
+export type ChatMessage = {
+  id: string
+  conversation_id: string
+  sender_user_id: string
+  body: string
+  type: 'text' | string
+  created_at: string
+  attachments?: MessageAttachment[]
+}
+
+/** A file already uploaded via presign (folder chat-image | chat-document). */
+export type ChatAttachmentInput = {
+  object_path: string
+  mime_type: string
+  size_bytes: number
+}
+
+export type StartConversationInput = {
+  type: ConversationType
+  product_id?: string
+  order_item_id?: string
+  counterpart_role?: 'customer' | 'seller'
+  counterpart_user_id?: string
+  subject?: string
+  priority?: SupportPriority
+  body?: string
+  attachments?: ChatAttachmentInput[]
+}
+
+export type SendMessageInput = {
+  body: string
+  attachments?: ChatAttachmentInput[]
 }

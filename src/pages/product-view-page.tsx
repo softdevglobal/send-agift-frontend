@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Clock,
   LoaderCircle,
+  MessageSquare,
   Minus,
   PackageX,
   Plus,
@@ -26,6 +27,7 @@ import {
 } from '@/features/customer-commerce'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import { useAuth } from '@/features/auth/auth-context'
+import { MessageShopButton, useCustomerMessages } from '@/features/messaging'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
 import { formatPriceAmount } from '@/lib/money'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
@@ -43,6 +45,7 @@ export function ProductViewPage() {
   const location = useLocation()
   const { addItem } = useCart()
   const { isAuthenticated, role } = useAuth()
+  const { askAboutProduct } = useCustomerMessages()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
   const [product, setProduct] = useState(() =>
@@ -225,14 +228,22 @@ export function ProductViewPage() {
                 size="md"
                 className="min-w-0 flex-1"
               />
-              {shopHref ? (
-                <Button asChild variant="outline" className="h-9 shrink-0 rounded-full px-3">
-                  <Link to={shopHref}>
-                    View shop
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </Button>
-              ) : null}
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
+                <MessageShopButton
+                  products={[gift]}
+                  shopName={shopName}
+                  label="Message"
+                  className="h-9 px-3"
+                />
+                {shopHref ? (
+                  <Button asChild variant="outline" className="h-9 rounded-full px-3">
+                    <Link to={shopHref}>
+                      View shop
+                      <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
             </div>
 
             {description ? (
@@ -292,15 +303,22 @@ export function ProductViewPage() {
                       ? 'Added to your cart.'
                       : 'Add this gift to your cart to check out.'}
                   </p>
-                  {added ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {added ? (
+                      <Button asChild variant="outline" className="h-10 rounded-full px-4">
+                        <Link to="/cart">View cart</Link>
+                      </Button>
+                    ) : null}
                     <Button
-                      asChild
-                      variant="outline"
-                      className="mt-4 h-10 rounded-full px-4"
+                      type="button"
+                      variant="ghost"
+                      className="h-10 rounded-full px-4"
+                      onClick={() => askAboutProduct(gift.id)}
                     >
-                      <Link to="/cart">View cart</Link>
+                      <MessageSquare className="size-4" />
+                      Ask the shop a question
                     </Button>
-                  ) : null}
+                  </div>
                 </>
               ) : isAuthenticated && role ? (
                 <div className="rounded-xl bg-muted/50 p-4 ring-1 ring-border/40">
