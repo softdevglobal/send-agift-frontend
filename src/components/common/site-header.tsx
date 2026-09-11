@@ -15,6 +15,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { AccountMenu } from '@/components/common/account-menu'
 import { BrandLogo } from '@/components/common/brand-logo'
+import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +29,7 @@ import { cn } from '@/lib/utils'
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('all')
   const { isAuthenticated, role, logout } = useAuth()
@@ -325,7 +327,7 @@ export function SiteHeader() {
                 className="mt-3"
                 onClick={() => {
                   closeMenu()
-                  logout()
+                  setSignOutOpen(true)
                 }}
               >
                 Sign out
@@ -334,6 +336,15 @@ export function SiteHeader() {
           </nav>
         </div>
       ) : null}
+
+      <SignOutDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        onConfirm={() => {
+          setSignOutOpen(false)
+          logout()
+        }}
+      />
     </header>
   )
 }

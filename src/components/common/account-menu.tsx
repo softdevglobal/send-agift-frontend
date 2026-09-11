@@ -3,6 +3,7 @@ import { ChevronDown, LogOut, MessageSquare, Store, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { getCustomerMe, type CustomerDetails } from '@/api/customers'
+import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { Button } from '@/components/ui/button'
 import { accountNavGroups } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
@@ -22,6 +23,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
   const { unreadCount, openMessages } = useCustomerMessages()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [profile, setProfile] = useState<CustomerDetails | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -200,7 +202,10 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={logout}
+                  onClick={() => {
+                    setOpen(false)
+                    setSignOutOpen(true)
+                  }}
                   className="flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted"
                 >
                   <LogOut className="size-4 shrink-0 text-muted-foreground" />
@@ -221,7 +226,10 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
               <button
                 type="button"
                 role="menuitem"
-                onClick={logout}
+                onClick={() => {
+                  setOpen(false)
+                  setSignOutOpen(true)
+                }}
                 className="flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted"
               >
                 <LogOut className="size-4 shrink-0 text-muted-foreground" />
@@ -249,6 +257,20 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
           )}
         </div>
       ) : null}
+
+      <SignOutDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        onConfirm={() => {
+          setSignOutOpen(false)
+          logout()
+        }}
+        description={
+          isCustomer
+            ? undefined
+            : "You'll need to sign in again to access your portal."
+        }
+      />
     </div>
   )
 }
