@@ -131,12 +131,101 @@ export function ReelCard({
     }
   }
 
+  const railItems = (overlay: boolean) => (
+    <>
+      {/* A viewer who cannot like gets a note beside the heart, as on
+          YouTube — the feed stays where it is. On the mobile overlay the
+          rail sits in the corner, so the note opens toward the middle of
+          the screen instead of off the edge. */}
+      <Popover.Root open={likeHintOpen} onOpenChange={setLikeHintOpen}>
+        <Popover.Anchor asChild>
+          <div>
+            <RailButton
+              label={reel.likeCount > 0 ? compactCount(reel.likeCount) : 'Like'}
+              ariaLabel={`${reel.likedByMe ? 'Unlike' : 'Like'} reel, ${reel.likeCount} ${reel.likeCount === 1 ? 'like' : 'likes'}`}
+              onClick={() => (likeGate ? setLikeHintOpen(true) : onToggleLike())}
+              active={reel.likedByMe}
+              overlay={overlay}
+              activeClassName="bg-rose-500 text-white"
+              icon={<Heart className={cn('size-5', reel.likedByMe && 'fill-current')} />}
+            />
+          </div>
+        </Popover.Anchor>
+        <Popover.Portal>
+          <Popover.Content
+            side={overlay ? 'top' : 'right'}
+            align={overlay ? 'end' : 'center'}
+            sideOffset={10}
+            collisionPadding={12}
+            className="z-50 w-64 rounded-2xl border border-border bg-card p-4 text-sm text-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+          >
+            {likeGate === 'customer-only' ? (
+              <p className="text-muted-foreground">Likes are for customer accounts.</p>
+            ) : (
+              <>
+                <p className="font-semibold">Like this reel?</p>
+                <p className="mt-1 text-muted-foreground">Sign in to like it.</p>
+                <Button asChild size="sm" className="mt-3 h-8 rounded-full px-4">
+                  <Link to="/login" state={returnToState(location.pathname, location.search)}>
+                    Sign in
+                  </Link>
+                </Button>
+              </>
+            )}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
+      <RailButton
+        label={reel.commentCount > 0 ? compactCount(reel.commentCount) : 'Comment'}
+        ariaLabel={`Comments, ${reel.commentCount} ${reel.commentCount === 1 ? 'comment' : 'comments'}`}
+        onClick={onOpenComments}
+        overlay={overlay}
+        icon={<MessageCircle className="size-5" />}
+      />
+      {product ? (
+        <RailButton
+          label={saved ? 'Saved' : 'Save'}
+          onClick={onToggleSave}
+          active={saved}
+          overlay={overlay}
+          activeClassName="bg-brand-teal text-white"
+          icon={<Bookmark className={cn('size-5', saved && 'fill-current')} />}
+        />
+      ) : null}
+      {reel.videoUrl ? (
+        <RailButton
+          label={muted ? 'Unmute' : 'Sound'}
+          onClick={onToggleMute}
+          overlay={overlay}
+          icon={muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
+        />
+      ) : null}
+      {reel.viewCount > 0 ? (
+        <div
+          className={cn(
+            'flex flex-col items-center gap-1',
+            overlay ? 'text-white' : 'text-muted-foreground',
+          )}
+        >
+          <Eye className="size-5" />
+          <span className="text-xs font-semibold">{compactCount(reel.viewCount)}</span>
+          <span className="text-[10px] leading-none">views</span>
+        </div>
+      ) : null}
+    </>
+  )
+
   return (
-    <div className="flex h-full items-center justify-center gap-3 sm:gap-4">
+    <div className="flex h-full w-full items-center justify-center sm:w-auto sm:gap-4">
       <article
-        // Height-driven with a 9:16 ratio: the player fills the viewport
-        // vertically and takes only the width a vertical clip needs.
-        className="relative aspect-[9/16] h-full max-w-full shrink overflow-hidden rounded-2xl bg-brand-navy shadow-[0_24px_70px_-20px_rgba(15,27,69,0.55)]"
+        /*
+         * Mobile: fills the phone, both axes definite — no `aspect-ratio`, so
+         * there is nothing for the browser to widen the box to; the video
+         * `object-cover`s the frame. Desktop: `aspect-[9/16]` + `w-auto`
+         * derives the width from the height, so the player takes only the
+         * width a vertical clip needs.
+         */
+        className="relative h-full w-full max-w-full overflow-hidden bg-brand-navy shadow-[0_24px_70px_-20px_rgba(15,27,69,0.55)] sm:aspect-[9/16] sm:w-auto sm:rounded-2xl"
         aria-label={product ? `Reel: ${product.name}` : `Reel by ${reel.shopName}`}
       >
         <button
@@ -220,7 +309,14 @@ export function ReelCard({
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 text-white sm:p-5">
+        {/* On a phone the rail overlays the clip bottom-right, TikTok-style —
+            there is no room for a column beside it. The caption gets right
+            padding so its text and button stop before the rail. */}
+        <div className="pointer-events-auto absolute right-2 bottom-4 z-20 flex flex-col items-center gap-4 sm:hidden">
+          {railItems(true)}
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 pr-[4.5rem] text-white sm:p-5 sm:pr-5">
           <div className="pointer-events-auto flex items-center gap-2.5">
             <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-brand-navy to-brand-violet ring-2 ring-white/25">
               {reel.shopImageUrl ? (
@@ -289,82 +385,10 @@ export function ReelCard({
         </div>
       </article>
 
-      {/* The rail sits beside the player, Shorts-style, so the clip is never
+      {/* On desktop the rail sits beside the player, so the clip is never
           covered by controls. */}
-      <div className="flex shrink-0 flex-col items-center gap-4 pb-2">
-        {/* A viewer who cannot like gets a note beside the heart, as on
-            YouTube — the feed stays where it is. */}
-        <Popover.Root open={likeHintOpen} onOpenChange={setLikeHintOpen}>
-          <Popover.Anchor asChild>
-            <div>
-              <RailButton
-                label={reel.likeCount > 0 ? compactCount(reel.likeCount) : 'Like'}
-                ariaLabel={`${reel.likedByMe ? 'Unlike' : 'Like'} reel, ${reel.likeCount} ${reel.likeCount === 1 ? 'like' : 'likes'}`}
-                onClick={() => (likeGate ? setLikeHintOpen(true) : onToggleLike())}
-                active={reel.likedByMe}
-                activeClassName="bg-rose-500 text-white"
-                icon={<Heart className={cn('size-5', reel.likedByMe && 'fill-current')} />}
-              />
-            </div>
-          </Popover.Anchor>
-          <Popover.Portal>
-            <Popover.Content
-              side="right"
-              align="center"
-              sideOffset={10}
-              collisionPadding={12}
-              className="z-50 w-64 rounded-2xl border border-border bg-card p-4 text-sm text-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-            >
-              {likeGate === 'customer-only' ? (
-                <p className="text-muted-foreground">
-                  Likes are for customer accounts.
-                </p>
-              ) : (
-                <>
-                  <p className="font-semibold">Like this reel?</p>
-                  <p className="mt-1 text-muted-foreground">Sign in to like it.</p>
-                  <Button asChild size="sm" className="mt-3 h-8 rounded-full px-4">
-                    <Link
-                      to="/login"
-                      state={returnToState(location.pathname, location.search)}
-                    >
-                      Sign in
-                    </Link>
-                  </Button>
-                </>
-              )}
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-        <RailButton
-          label={reel.commentCount > 0 ? compactCount(reel.commentCount) : 'Comment'}
-          ariaLabel={`Comments, ${reel.commentCount} ${reel.commentCount === 1 ? 'comment' : 'comments'}`}
-          onClick={onOpenComments}
-          icon={<MessageCircle className="size-5" />}
-        />
-        {product ? (
-          <RailButton
-            label={saved ? 'Saved' : 'Save'}
-            onClick={onToggleSave}
-            active={saved}
-            activeClassName="bg-brand-teal text-white"
-            icon={<Bookmark className={cn('size-5', saved && 'fill-current')} />}
-          />
-        ) : null}
-        {reel.videoUrl ? (
-          <RailButton
-            label={muted ? 'Unmute' : 'Sound'}
-            onClick={onToggleMute}
-            icon={muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
-          />
-        ) : null}
-        {reel.viewCount > 0 ? (
-          <div className="flex flex-col items-center gap-1 text-muted-foreground">
-            <Eye className="size-5" />
-            <span className="text-xs font-semibold">{compactCount(reel.viewCount)}</span>
-            <span className="text-[10px] leading-none">views</span>
-          </div>
-        ) : null}
+      <div className="hidden shrink-0 flex-col items-center gap-4 pb-2 sm:flex">
+        {railItems(false)}
       </div>
     </div>
   )
@@ -376,6 +400,7 @@ function RailButton({
   ariaLabel,
   onClick,
   active = false,
+  overlay = false,
   activeClassName = 'bg-brand-violet text-white',
 }: {
   icon: React.ReactNode
@@ -384,6 +409,8 @@ function RailButton({
   ariaLabel?: string
   onClick: () => void
   active?: boolean
+  /** True when the rail floats over the video (mobile) rather than beside it. */
+  overlay?: boolean
   activeClassName?: string
 }) {
   return (
@@ -396,13 +423,23 @@ function RailButton({
     >
       <span
         className={cn(
-          'grid size-11 place-items-center rounded-full bg-muted text-foreground transition-all hover:scale-105 active:scale-95',
+          'grid size-11 place-items-center rounded-full transition-all hover:scale-105 active:scale-95',
+          overlay
+            ? 'bg-black/45 text-white backdrop-blur-sm'
+            : 'bg-muted text-foreground',
           active && activeClassName,
         )}
       >
         {icon}
       </span>
-      <span className="text-[11px] font-medium text-muted-foreground">{label}</span>
+      <span
+        className={cn(
+          'text-[11px] font-medium',
+          overlay ? 'text-white/90 drop-shadow' : 'text-muted-foreground',
+        )}
+      >
+        {label}
+      </span>
     </button>
   )
 }
