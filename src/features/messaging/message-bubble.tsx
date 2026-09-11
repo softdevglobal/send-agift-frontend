@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Check, CheckCheck, FileText, ImageOff } from 'lucide-react'
 
 import type { ChatMessage, MessageAttachment } from '@/api/messaging'
 import { cn } from '@/lib/utils'
 
+import { ImageLightbox } from './image-lightbox'
 import {
   attachmentFileName,
   attachmentsOf,
@@ -126,6 +127,8 @@ function ImageAttachment({
   attachment: MessageAttachment
   single: boolean
 }) {
+  const [open, setOpen] = useState(false)
+
   if (!attachment.cdn_url) {
     return (
       <div className="flex aspect-square items-center justify-center rounded-2xl bg-muted text-muted-foreground">
@@ -135,23 +138,29 @@ function ImageAttachment({
     )
   }
 
+  const alt = attachmentFileName(attachment)
+
   return (
-    <a
-      href={attachment.cdn_url}
-      target="_blank"
-      rel="noreferrer"
-      className="group block overflow-hidden rounded-2xl bg-muted shadow-[0_6px_18px_rgba(20,20,55,0.10)] ring-1 ring-border/60"
-    >
-      <img
-        src={attachment.cdn_url}
-        alt={attachmentFileName(attachment)}
-        loading="lazy"
-        className={cn(
-          'w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]',
-          single ? 'max-h-72' : 'aspect-square',
-        )}
-      />
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group block w-full overflow-hidden rounded-2xl bg-muted shadow-[0_6px_18px_rgba(20,20,55,0.10)] ring-1 ring-border/60"
+      >
+        <img
+          src={attachment.cdn_url}
+          alt={alt}
+          loading="lazy"
+          className={cn(
+            'w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]',
+            single ? 'max-h-72' : 'aspect-square',
+          )}
+        />
+      </button>
+      {open ? (
+        <ImageLightbox src={attachment.cdn_url} alt={alt} onClose={() => setOpen(false)} />
+      ) : null}
+    </>
   )
 }
 
