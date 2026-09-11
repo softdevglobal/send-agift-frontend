@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, LoaderCircle } from 'lucide-react'
+import { ArrowLeft, LoaderCircle, MessageSquare } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { getRecipient, type RecipientDetails } from '@/api/customers'
@@ -23,6 +23,7 @@ import {
   OrderStatusBadge,
   OrderTrackingTimeline,
 } from '@/features/customer-commerce/order-tracking'
+import { useCustomerMessages } from '@/features/messaging'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { formatPriceAmount } from '@/lib/money'
@@ -32,6 +33,7 @@ export function CustomerOrderDetailPage() {
   const { orderId } = useParams()
   const [searchParams] = useSearchParams()
   const justPlaced = searchParams.get('placed') === '1'
+  const { messageAboutOrderItem } = useCustomerMessages()
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [recipient, setRecipient] = useState<RecipientDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -196,6 +198,14 @@ export function CustomerOrderDetailPage() {
                       {formatPriceAmount(item.unit_amount, order.currency)} ·{' '}
                       {fulfilmentStatusLabel(item.fulfilment_status)}
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => messageAboutOrderItem(item.id, item.product_id)}
+                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                    >
+                      <MessageSquare className="size-3.5" />
+                      Message the shop
+                    </button>
                   </div>
                   <p className="text-sm font-medium">
                     {formatPriceAmount(item.total_amount, order.currency)}

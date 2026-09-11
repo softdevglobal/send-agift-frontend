@@ -18,6 +18,7 @@ const CONTENT_TYPE_BY_EXT: Record<string, string> = {
   mov: 'video/quicktime',
   webm: 'video/webm',
   m4v: 'video/x-m4v',
+  pdf: 'application/pdf',
 }
 
 function isMediaFolder(value: string): value is MediaFolder {

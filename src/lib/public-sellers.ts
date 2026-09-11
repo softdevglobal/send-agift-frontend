@@ -209,6 +209,13 @@ export function getPublicSeller(id: string): PublicSeller | null {
   return readMerged().sellers[id] ?? null
 }
 
+/** Every seller with a public shop, by name — for pickers like admin → seller messaging. */
+export function listPublicSellers(): PublicSeller[] {
+  return Object.values(readMerged().sellers).sort((a, b) =>
+    publicSellerName(a).localeCompare(publicSellerName(b)),
+  )
+}
+
 export function getPublicSellerForShop(shopId: string): PublicSeller | null {
   const store = readMerged()
   const indexedId = store.shopIndex[shopId]

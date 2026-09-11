@@ -25,6 +25,7 @@ import {
 import { StarRating, StarRatingInput } from '@/features/customer-commerce/star-rating'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { sellerTypes } from '@/features/auth/seller-register-options'
+import { MessageShopButton } from '@/features/messaging'
 import { sellerVerificationLabel } from '@/features/seller/seller-utils'
 import { getErrorMessage } from '@/lib/api'
 import { textareaClassName } from '@/lib/form-styles'
@@ -305,6 +306,12 @@ export function CustomerSellerPage() {
               <p className="mt-3 text-sm text-muted-foreground">No reviews yet.</p>
             )}
           </div>
+          <MessageShopButton
+            products={products}
+            shopName={seller.trading_name?.trim() || seller.name}
+            label="Message seller"
+            className="self-start"
+          />
         </div>
 
         {about ? (

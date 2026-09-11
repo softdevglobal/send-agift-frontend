@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { ChevronDown, LogOut, Store, User } from 'lucide-react'
+import { ChevronDown, LogOut, MessageSquare, Store, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { getCustomerMe, type CustomerDetails } from '@/api/customers'
+import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { Button } from '@/components/ui/button'
 import { accountNavGroups } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { customerDisplayName, customerInitials } from '@/features/customer-commerce'
+import { useCustomerMessages } from '@/features/messaging'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
@@ -18,8 +20,10 @@ type AccountMenuProps = {
 
 export function AccountMenu({ compact = false, className }: AccountMenuProps) {
   const { isAuthenticated, role, logout } = useAuth()
+  const { unreadCount, openMessages } = useCustomerMessages()
   const location = useLocation()
   const [open, setOpen] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [profile, setProfile] = useState<CustomerDetails | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -79,8 +83,14 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className={compact ? undefined : 'h-9 gap-1.5 rounded-full px-2.5'}
+        className={cn('relative', compact ? undefined : 'h-9 gap-1.5 rounded-full px-2.5')}
       >
+        {isCustomer && unreadCount > 0 ? (
+          <span
+            aria-label={`${unreadCount} unread messages`}
+            className="absolute top-1 left-5 size-2 rounded-full bg-[var(--brand-teal)] ring-2 ring-background"
+          />
+        ) : null}
         {isCustomer && profile?.image_url ? (
           <img src={profile.image_url} alt="" className="size-5 rounded-full object-cover" />
         ) : (
@@ -127,6 +137,31 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 </div>
               </div>
 
+              <div className="border-b border-border/60 py-1.5">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setOpen(false)
+                    openMessages()
+                  }}
+                  className="flex w-full items-start gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-muted"
+                >
+                  <MessageSquare className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-medium">Messages</span>
+                    <span className="block text-xs text-muted-foreground">
+                      Chat with shops about gifts and orders
+                    </span>
+                  </span>
+                  {unreadCount > 0 ? (
+                    <span className="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              </div>
+
               <div className="py-1.5">
                 {accountNavGroups.map((group) => (
                   <div key={group.label} className="py-0.5">
@@ -167,7 +202,10 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={logout}
+                  onClick={() => {
+                    setOpen(false)
+                    setSignOutOpen(true)
+                  }}
                   className="flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted"
                 >
                   <LogOut className="size-4 shrink-0 text-muted-foreground" />
@@ -188,7 +226,10 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
               <button
                 type="button"
                 role="menuitem"
-                onClick={logout}
+                onClick={() => {
+                  setOpen(false)
+                  setSignOutOpen(true)
+                }}
                 className="flex w-full items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted"
               >
                 <LogOut className="size-4 shrink-0 text-muted-foreground" />
@@ -216,6 +257,20 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
           )}
         </div>
       ) : null}
+
+      <SignOutDialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        onConfirm={() => {
+          setSignOutOpen(false)
+          logout()
+        }}
+        description={
+          isCustomer
+            ? undefined
+            : "You'll need to sign in again to access your portal."
+        }
+      />
     </div>
   )
 }
