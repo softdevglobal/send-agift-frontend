@@ -34,7 +34,7 @@ export function ReelsPage() {
         at `min-h-svh` left the player collapsed to nothing. Header is ~5.5rem
         (logo h-16 + py-3 + border); the footer is gone, so this fills the rest.
       */}
-      <div className="relative mx-auto flex h-[calc(100svh-5.5rem)] w-full max-w-6xl flex-col px-2 py-2 sm:px-4">
+      <div className="relative mx-auto flex h-[calc(100svh-5rem)] w-full max-w-6xl flex-col px-0 py-0 sm:h-[calc(100svh-5.5rem)] sm:px-4 sm:py-2">
         {/* A quiet way back to the shelves, kept off the player itself. */}
         <Button
           asChild
@@ -105,7 +105,7 @@ function FeedMessage({
   action?: React.ReactNode
 }) {
   return (
-    <div className="grid min-h-[60svh] place-items-center rounded-2xl border border-border bg-card px-6 py-16 text-center">
+    <div className="m-3 grid min-h-[60svh] place-items-center rounded-2xl border border-border bg-card px-6 py-16 text-center sm:m-0">
       <div className="flex max-w-sm flex-col items-center gap-3">
         <span className="grid size-14 place-items-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-violet text-white">
           {icon}

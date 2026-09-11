@@ -65,6 +65,10 @@ export function SellerSheet({
       <SheetContent
         className={cn(
           'gap-0 p-0',
+          // On a phone the sheet stops short of the left edge and rounds that
+          // corner, so the dimmed page shows behind it and it reads as a
+          // slide-over, not a new full-screen route. Full width again from sm.
+          'w-[calc(100%-2.75rem)] overflow-hidden rounded-l-2xl sm:w-full sm:rounded-l-none',
           sizeClass[size],
           // The close button floats over the scroll area, so it needs to sit
           // above whatever passes under it — a dark cover photo on open, body
