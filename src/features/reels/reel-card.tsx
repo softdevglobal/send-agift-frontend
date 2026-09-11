@@ -4,17 +4,30 @@ import {
   ChevronRight,
   Eye,
   Gift,
+  Heart,
+  MessageCircle,
   Play,
   Store,
   Volume2,
   VolumeX,
 } from 'lucide-react'
+import { Popover } from 'radix-ui'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { compactCount, hashtagLine, type ReelView } from '@/features/reels/reel-view'
+import {
+  compactCount,
+  hashtagLine,
+  likersLine,
+  type ReelView,
+} from '@/features/reels/reel-view'
+import type { LikeGate } from '@/features/reels/use-reel-likes'
+import { returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+
+/** How long the "sign in to like" note stays up if it is left alone. */
+const LIKE_HINT_MS = 5000
 
 type ReelCardProps = {
   reel: ReelView
@@ -24,6 +37,11 @@ type ReelCardProps = {
   onToggleMute: () => void
   saved: boolean
   onToggleSave: () => void
+  /** Likes or unlikes. Only called when [likeGate] is null. */
+  onToggleLike: () => void
+  /** Set when this viewer cannot like; the heart explains why instead. */
+  likeGate: LikeGate
+  onOpenComments: () => void
   /** Advances the feed when the clip ends. */
   onEnded: () => void
 }
@@ -44,8 +62,26 @@ export function ReelCard({
   onToggleMute,
   saved,
   onToggleSave,
+  onToggleLike,
+  likeGate,
+  onOpenComments,
   onEnded,
 }: ReelCardProps) {
+  const location = useLocation()
+  const [likeHintOpen, setLikeHintOpen] = useState(false)
+
+  // The note belongs to the reel on screen: it goes when the reel scrolls
+  // away, and on its own after a few seconds.
+  useEffect(() => {
+    if (!likeHintOpen) return
+    if (!active) {
+      setLikeHintOpen(false)
+      return
+    }
+    const timer = window.setTimeout(() => setLikeHintOpen(false), LIKE_HINT_MS)
+    return () => window.clearTimeout(timer)
+  }, [active, likeHintOpen])
+
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const [paused, setPaused] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -56,6 +92,7 @@ export function ReelCard({
 
   const product = reel.product
   const tags = hashtagLine(reel)
+  const likers = likersLine(reel)
 
   useEffect(() => {
     const video = videoRef.current
@@ -216,6 +253,25 @@ export function ReelCard({
             </p>
           ) : null}
 
+          {likers ? (
+            <p className="mt-2 flex items-center gap-1.5 truncate text-xs text-white/80">
+              <Heart className="size-3.5 shrink-0 fill-rose-400 text-rose-400" />
+              <span className="truncate">{likers}</span>
+            </p>
+          ) : null}
+
+          {reel.commentCount > 0 ? (
+            <button
+              type="button"
+              onClick={onOpenComments}
+              className="pointer-events-auto mt-1 cursor-pointer text-xs font-medium text-white/70 hover:text-white"
+            >
+              {reel.commentCount === 1
+                ? 'View 1 comment'
+                : `View all ${compactCount(reel.commentCount)} comments`}
+            </button>
+          ) : null}
+
           {product ? (
             <div className="pointer-events-auto mt-4 flex items-center gap-3">
               <span className="text-lg font-bold">{product.priceLabel}</span>
@@ -236,6 +292,56 @@ export function ReelCard({
       {/* The rail sits beside the player, Shorts-style, so the clip is never
           covered by controls. */}
       <div className="flex shrink-0 flex-col items-center gap-4 pb-2">
+        {/* A viewer who cannot like gets a note beside the heart, as on
+            YouTube — the feed stays where it is. */}
+        <Popover.Root open={likeHintOpen} onOpenChange={setLikeHintOpen}>
+          <Popover.Anchor asChild>
+            <div>
+              <RailButton
+                label={reel.likeCount > 0 ? compactCount(reel.likeCount) : 'Like'}
+                ariaLabel={`${reel.likedByMe ? 'Unlike' : 'Like'} reel, ${reel.likeCount} ${reel.likeCount === 1 ? 'like' : 'likes'}`}
+                onClick={() => (likeGate ? setLikeHintOpen(true) : onToggleLike())}
+                active={reel.likedByMe}
+                activeClassName="bg-rose-500 text-white"
+                icon={<Heart className={cn('size-5', reel.likedByMe && 'fill-current')} />}
+              />
+            </div>
+          </Popover.Anchor>
+          <Popover.Portal>
+            <Popover.Content
+              side="right"
+              align="center"
+              sideOffset={10}
+              collisionPadding={12}
+              className="z-50 w-64 rounded-2xl border border-border bg-card p-4 text-sm text-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+            >
+              {likeGate === 'customer-only' ? (
+                <p className="text-muted-foreground">
+                  Likes are for customer accounts.
+                </p>
+              ) : (
+                <>
+                  <p className="font-semibold">Like this reel?</p>
+                  <p className="mt-1 text-muted-foreground">Sign in to like it.</p>
+                  <Button asChild size="sm" className="mt-3 h-8 rounded-full px-4">
+                    <Link
+                      to="/login"
+                      state={returnToState(location.pathname, location.search)}
+                    >
+                      Sign in
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+        <RailButton
+          label={reel.commentCount > 0 ? compactCount(reel.commentCount) : 'Comment'}
+          ariaLabel={`Comments, ${reel.commentCount} ${reel.commentCount === 1 ? 'comment' : 'comments'}`}
+          onClick={onOpenComments}
+          icon={<MessageCircle className="size-5" />}
+        />
         {product ? (
           <RailButton
             label={saved ? 'Saved' : 'Save'}
@@ -267,12 +373,15 @@ export function ReelCard({
 function RailButton({
   icon,
   label,
+  ariaLabel,
   onClick,
   active = false,
   activeClassName = 'bg-brand-violet text-white',
 }: {
   icon: React.ReactNode
   label: string
+  /** When the visible label is only a count, this names what the button does. */
+  ariaLabel?: string
   onClick: () => void
   active?: boolean
   activeClassName?: string
@@ -281,6 +390,8 @@ function RailButton({
     <button
       type="button"
       onClick={onClick}
+      aria-label={ariaLabel}
+      aria-pressed={ariaLabel && active ? true : undefined}
       className="flex cursor-pointer flex-col items-center gap-1.5"
     >
       <span

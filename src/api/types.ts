@@ -624,6 +624,17 @@ export type ReelDetails = {
   status: 'draft' | 'published' | 'archived'
   duration_ms?: number | null
   view_count: number
+  like_count?: number
+  comment_count?: number
+  /**
+   * Never computed on the public feed routes — they read no identity — so it
+   * is always false there. `GET /reels/{id}/likes` answers it per viewer.
+   */
+  liked_by_me?: boolean
+  /** Newest three likers, names only. */
+  recent_likers?: ReelLiker[]
+  /** Every visible comment, newest first. */
+  comments?: ReelComment[]
   published_at?: string | null
   created_at: string
   updated_at: string
@@ -631,6 +642,48 @@ export type ReelDetails = {
   thumbnail?: ReelMediaItem | null
   shop?: ReelShopSummary | null
   product?: ReelProductSummary | null
+}
+
+/** Someone who liked a reel. The API never exposes ids or guest tokens. */
+export type ReelLiker = {
+  type: 'customer' | 'guest'
+  display_name: string
+}
+
+/** Who a comment shows as: a customer's own name, or a chosen nickname. */
+export type ReelCommentAuthor = {
+  type: 'customer' | 'anonymous'
+  display_name: string
+}
+
+/** One visible comment on a reel. Ownership is never part of the payload. */
+export type ReelComment = {
+  id: string
+  reel_id: string
+  body: string
+  is_anonymous: boolean
+  author: ReelCommentAuthor
+  created_at: string
+  updated_at: string
+}
+
+export type ReelCommentList = {
+  items: ReelComment[]
+  next_cursor?: string | null
+}
+
+/** `GET /reels/{id}/likes`. `liked_by_requester` is only true with a customer token. */
+export type ReelLikes = {
+  reel_id: string
+  like_count: number
+  liked_by_requester: boolean
+  recent_likers: ReelLiker[]
+}
+
+/** Returned by like and unlike. */
+export type ReelLikeResult = {
+  liked: boolean
+  like_count: number
 }
 
 /** A page of public reels, with the cursor for the next one. */

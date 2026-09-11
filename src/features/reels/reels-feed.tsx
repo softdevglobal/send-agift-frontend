@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { ReelCard } from '@/features/reels/reel-card'
 import type { ReelView } from '@/features/reels/reel-view'
+import type { LikeGate } from '@/features/reels/use-reel-likes'
 import { cn } from '@/lib/utils'
 
 type ReelsFeedProps = {
@@ -14,6 +15,13 @@ type ReelsFeedProps = {
   onToggleSave: (productId: string) => void
   /** Called when a reel reaches the screen, so the API can count the view. */
   onView: (reelId: string) => void
+  onToggleLike: (reel: ReelView) => void
+  likeGate: LikeGate
+  onOpenComments: (reel: ReelView) => void
+  /** Told which reel fills the viewport, so a docked panel can follow it. */
+  onActiveReelChange?: (reelId: string) => void
+  /** Off while a panel is open over the feed, so arrow keys stay with it. */
+  keyboardEnabled?: boolean
 }
 
 /**
@@ -32,10 +40,20 @@ export function ReelsFeed({
   savedProductIds,
   onToggleSave,
   onView,
+  onToggleLike,
+  likeGate,
+  onOpenComments,
+  onActiveReelChange,
+  keyboardEnabled = true,
 }: ReelsFeedProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [muted, setMuted] = useState(true)
+
+  const activeReelId = reels[activeIndex]?.id
+  useEffect(() => {
+    if (activeReelId) onActiveReelChange?.(activeReelId)
+  }, [activeReelId, onActiveReelChange])
 
   const scrollTo = useCallback((index: number) => {
     const container = containerRef.current
@@ -76,6 +94,8 @@ export function ReelsFeed({
   }, [reels, hasMore, onLoadMore, onView])
 
   useEffect(() => {
+    if (!keyboardEnabled) return
+
     function onKeyDown(event: KeyboardEvent) {
       // Leave typing alone — the header's search box lives on the same page.
       const target = event.target as HTMLElement | null
@@ -92,7 +112,7 @@ export function ReelsFeed({
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [activeIndex, reels.length, scrollTo])
+  }, [activeIndex, keyboardEnabled, reels.length, scrollTo])
 
   const advance = useCallback(
     (index: number) => {
@@ -124,6 +144,9 @@ export function ReelsFeed({
               onToggleSave={() => {
                 if (reel.product) onToggleSave(reel.product.id)
               }}
+              onToggleLike={() => onToggleLike(reel)}
+              likeGate={likeGate}
+              onOpenComments={() => onOpenComments(reel)}
               onEnded={() => advance(index)}
             />
           </div>
