@@ -74,7 +74,7 @@ export function InboxView({
           threadVisible ? 'hidden' : 'flex',
         )}
       >
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-surface">
           {!loaded && !error ? (
             <div className="flex justify-center py-16">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
@@ -96,7 +96,20 @@ export function InboxView({
         </div>
       </aside>
 
-      <div className={cn('min-h-0 lg:block', threadVisible ? 'block' : 'hidden')}>
+      {/*
+        Below `lg` an open thread takes the whole screen — a chat squeezed into
+        this panel's own scroll area, under the portal's header, reads as
+        broken on a phone. `fixed inset-0` lifts it out of that layout
+        entirely; `lg:` reverts it to an ordinary grid cell alongside the list.
+      */}
+      <div
+        className={cn(
+          'min-h-0',
+          threadVisible
+            ? 'fixed inset-0 z-[60] bg-card lg:static lg:inset-auto lg:z-auto lg:block'
+            : 'hidden lg:block',
+        )}
+      >
         {selected ? (
           <ChatThread
             key={selected.id}

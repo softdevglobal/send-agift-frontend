@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { ArrowLeft, LoaderCircle, Lock, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Gift, LoaderCircle, Lock, MessageSquare } from 'lucide-react'
 
 import {
   reopenConversation,
@@ -214,13 +214,25 @@ export function ChatThread({
 
   const messages = thread.messages
 
-  // "Seen" once anyone else's read marker has passed your latest message.
+  // Which side a bubble is on. A customer↔seller thread has exactly one
+  // participant per side, so the sender's role is authoritative there — more
+  // reliable than the local token's subject, which can be a different role
+  // signed into the same browser or simply stale. Support threads can hold two
+  // admins, so there the token subject is the only way to tell them apart.
+  const isOwnSender = (senderId: string): boolean => {
+    if (viewer === 'admin') return Boolean(userId && senderId === userId)
+    const sender = participants.find((participant) => participant.user_id === senderId)
+    if (sender) return sender.role === viewer
+    return Boolean(userId && senderId === userId)
+  }
+
+  // "Seen" once the other side's read marker has passed your latest message.
   const othersReadAt = participants
-    .filter((participant) => participant.user_id !== userId && participant.last_read_at)
+    .filter((participant) => !isOwnSender(participant.user_id) && participant.last_read_at)
     .reduce((latest, participant) => Math.max(latest, Date.parse(participant.last_read_at!)), 0)
   let lastOwnIndex = -1
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index].sender_user_id === userId) {
+    if (isOwnSender(messages[index].sender_user_id)) {
       lastOwnIndex = index
       break
     }
@@ -338,7 +350,9 @@ export function ChatThread({
               onSuggest={(text) => setPrefill({ text, key: Date.now() })}
             />
           ) : (
-            <div className="mt-auto">
+            <>
+              {label.context ? <ThreadContextCard context={label.context} /> : null}
+              <div className="mt-auto">
               {thread.hasOlder ? (
                 <div className="mb-3 flex justify-center">
                   <Button
@@ -353,14 +367,18 @@ export function ChatThread({
                     Load earlier messages
                   </Button>
                 </div>
-              ) : null}
+              ) : (
+                <p className="mb-4 text-center text-[11px] text-muted-foreground">
+                  The start of your conversation
+                </p>
+              )}
               {messages.map((message, index) => {
                 const previous = messages[index - 1]
                 const next = messages[index + 1]
                 const newDay = !previous || dayKey(previous.created_at) !== dayKey(message.created_at)
                 const startsRun = !previous || !sameRun(previous, message)
                 const endsRun = !next || !sameRun(message, next)
-                const own = message.sender_user_id === userId
+                const own = isOwnSender(message.sender_user_id)
                 return (
                   <Fragment key={message.id}>
                     {newDay ? (
@@ -392,7 +410,8 @@ export function ChatThread({
                   </Fragment>
                 )
               })}
-            </div>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -427,6 +446,38 @@ export function ChatThread({
         </div>
       )}
     </section>
+  )
+}
+
+/**
+ * A slim card pinned to the top of a thread once it has messages, so a short
+ * conversation reads as anchored to something rather than floating in an empty
+ * panel. It restates the gift or order the thread is about.
+ */
+function ThreadContextCard({ context }: { context: ConversationContext }) {
+  return (
+    <div className="mb-4 flex items-center gap-3 rounded-2xl bg-card p-2.5 shadow-sm ring-1 ring-border/60">
+      {context.imageUrl ? (
+        <img
+          src={context.imageUrl}
+          alt=""
+          className="size-11 shrink-0 rounded-xl object-cover ring-1 ring-border/60"
+        />
+      ) : (
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+          <Gift className="size-5" />
+        </span>
+      )}
+      <div className="min-w-0">
+        <p className="text-[10px] font-semibold tracking-[0.14em] text-primary uppercase">
+          {context.caption}
+        </p>
+        <p className="truncate text-sm font-semibold">{context.name}</p>
+        {context.meta ? (
+          <p className="truncate text-xs text-muted-foreground">{context.meta}</p>
+        ) : null}
+      </div>
+    </div>
   )
 }
 
