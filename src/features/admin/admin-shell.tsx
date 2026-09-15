@@ -19,18 +19,31 @@ import { adminNavGroups } from '@/features/admin/admin-nav'
 import { adminInitials, adminRoleLabel } from '@/features/admin/admin-utils'
 import { useAuth } from '@/features/auth/auth-context'
 import { InboxProvider, useSharedInbox } from '@/features/messaging'
+import type { UserRole } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 function AdminNavLinks({
   onNavigate,
   unreadMessages,
+  role,
 }: {
   onNavigate?: () => void
   unreadMessages: number
+  role: UserRole | null
 }) {
+  // Some sections (games and competitions) are for superadmins only.
+  const groups = adminNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.roles || (role !== null && item.roles.includes(role)),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
+
   return (
     <nav className="flex flex-1 flex-col gap-6">
-      {adminNavGroups.map((group) => (
+      {groups.map((group) => (
         <div key={group.label}>
           <p className="px-3 pb-2 text-[10px] font-medium tracking-[0.18em] text-white/40 uppercase">
             {group.label}
@@ -171,6 +184,7 @@ function AdminShellLayout() {
           <AdminNavLinks
             onNavigate={() => setMenuOpen(false)}
             unreadMessages={unreadTotal}
+            role={role}
           />
         </div>
 
