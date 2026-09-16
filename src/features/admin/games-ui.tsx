@@ -67,12 +67,8 @@ export function StatusPill({
 export function PlayerCell({ player }: { player: AdminPlayer }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-2">
-        <span className="truncate font-medium">{player.name}</span>
-        <StatusPill tone={player.kind === 'customer' ? 'info' : 'neutral'}>
-          {player.kind === 'customer' ? 'Customer' : 'Guest'}
-        </StatusPill>
-      </div>
+      {/* No account-kind badge: every row here is a signed-in customer. */}
+      <span className="truncate font-medium">{player.name}</span>
       {player.email || player.country_name ? (
         <p className="truncate text-xs text-muted-foreground">
           {[player.email, player.country_name].filter(Boolean).join(' · ')}

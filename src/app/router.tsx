@@ -259,11 +259,11 @@ export function AppRouter() {
         <Route path="sellers" element={<AdminSellersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
-        {/* Games and competitions: superadmin only (full names, prizes, audited actions). */}
+        {/* Games and competitions: any signed-in admin; actions are audited. */}
         <Route
           path="games"
           element={
-            <ProtectedRoute roles={['superadmin']}>
+            <ProtectedRoute roles={['admin', 'superadmin']}>
               <AdminGamesPage />
             </ProtectedRoute>
           }
@@ -271,7 +271,7 @@ export function AppRouter() {
         <Route
           path="games/:slug"
           element={
-            <ProtectedRoute roles={['superadmin']}>
+            <ProtectedRoute roles={['admin', 'superadmin']}>
               <AdminGameDetailPage />
             </ProtectedRoute>
           }
@@ -279,7 +279,7 @@ export function AppRouter() {
         <Route
           path="competitions"
           element={
-            <ProtectedRoute roles={['superadmin']}>
+            <ProtectedRoute roles={['admin', 'superadmin']}>
               <AdminCompetitionsPage />
             </ProtectedRoute>
           }
@@ -287,7 +287,7 @@ export function AppRouter() {
         <Route
           path="competitions/:id"
           element={
-            <ProtectedRoute roles={['superadmin']}>
+            <ProtectedRoute roles={['admin', 'superadmin']}>
               <AdminCompetitionDetailPage />
             </ProtectedRoute>
           }

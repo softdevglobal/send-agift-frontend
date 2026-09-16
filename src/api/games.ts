@@ -1,8 +1,12 @@
 import { api } from '@/lib/api'
 
-/** A player as the superadmin sees them — full name and email, not the public "Sarah M.". */
+/**
+ * A player as an admin sees them — full name and email, not the public
+ * "Sarah M.". Always a signed-in customer: the backend leaves guest plays out
+ * of every admin board, because a prize needs someone we can identify and pay.
+ */
 export type AdminPlayer = {
-  kind: 'customer' | 'guest'
+  kind: 'customer'
   customer_id?: string
   name: string
   email?: string

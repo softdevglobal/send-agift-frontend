@@ -54,8 +54,8 @@ export const adminNavGroups: AdminNavGroup[] = [
   {
     label: 'Games',
     items: [
-      { to: '/admin/games', label: 'Games & scores', icon: Gamepad2, roles: ['superadmin'] },
-      { to: '/admin/competitions', label: 'Competitions', icon: Trophy, roles: ['superadmin'] },
+      { to: '/admin/games', label: 'Games & scores', icon: Gamepad2 },
+      { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
     ],
   },
   {

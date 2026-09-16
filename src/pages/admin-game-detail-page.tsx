@@ -167,7 +167,7 @@ export function AdminGameDetailPage() {
         </>
       ) : (
         <div className={cn(adminPanelClass, 'px-6 py-14 text-center text-sm text-muted-foreground')}>
-          No verified scores yet.
+          No signed-in player has a verified score on this game yet.
         </div>
       )}
 
@@ -205,7 +205,9 @@ export function AdminGameDetailPage() {
           </div>
         ) : scores.length === 0 ? (
           <div className={cn(adminPanelClass, 'px-6 py-10 text-center text-sm text-muted-foreground')}>
-            {filter === 'manual_review' ? 'Nothing waiting for review.' : 'No scores to show.'}
+            {filter === 'manual_review'
+              ? 'Nothing waiting for review.'
+              : 'No scores from signed-in players yet.'}
           </div>
         ) : (
           <div className="space-y-2">
