@@ -55,6 +55,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { PhoneField } from '@/features/auth/phone-field'
 import { sellerTypes } from '@/features/auth/seller-register-options'
 import {
+  ConfirmDialog,
   sellerDisplayName,
   sellerInitials,
   sellerPanelClass,
@@ -139,6 +140,8 @@ function HeroStat({ label, value }: { label: string; value: string }) {
 export function SellerProfilePage() {
   const { logout } = useAuth()
   const [profile, setProfile] = useState<SellerDetails | null>(null)
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
   const [profileStatus, setProfileStatus] = useState<SaveStatus>('idle')
@@ -396,15 +399,15 @@ export function SellerProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    const confirmed = window.confirm(
-      'Delete your seller account? This cannot be undone.',
-    )
-    if (!confirmed) return
+    setDeletingAccount(true)
     try {
       await deleteSellerMe()
       logout()
     } catch (err) {
       setError(getErrorMessage(err, 'Could not delete account.'))
+      setDeleteAccountOpen(false)
+    } finally {
+      setDeletingAccount(false)
     }
   }
 
@@ -1006,7 +1009,7 @@ export function SellerProfilePage() {
                   type="button"
                   variant="destructive"
                   className="mt-4 h-9 w-full"
-                  onClick={handleDeleteAccount}
+                  onClick={() => setDeleteAccountOpen(true)}
                 >
                   Delete seller account
                 </Button>
@@ -1015,6 +1018,15 @@ export function SellerProfilePage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={deleteAccountOpen}
+        onOpenChange={setDeleteAccountOpen}
+        title="Delete your seller account?"
+        description="Your shops, gifts, and reels are removed from the marketplace. This can’t be undone."
+        confirmLabel="Delete account"
+        busy={deletingAccount}
+        onConfirm={() => void handleDeleteAccount()}
+      />
       {toast ? (
         <Toast message={toast.message} variant={toast.variant} onClose={() => setToast(null)} />
       ) : null}

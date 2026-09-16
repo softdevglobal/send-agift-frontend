@@ -128,5 +128,22 @@ export function useReelFeed(params: ReelFeedParams = {}) {
     }
   }, [])
 
-  return { ...state, loadMore, retry, registerView }
+  /**
+   * Merges fresh fields into one reel — a like, a new comment count — without
+   * refetching the page it sits on.
+   */
+  const patchReel = useCallback((reelId: string, patch: ReelPatch) => {
+    setState((current) => ({
+      ...current,
+      reels: current.reels.map((reel) =>
+        reel.id === reelId
+          ? { ...reel, ...(typeof patch === 'function' ? patch(reel) : patch) }
+          : reel,
+      ),
+    }))
+  }, [])
+
+  return { ...state, loadMore, retry, registerView, patchReel }
 }
+
+export type ReelPatch = Partial<ReelView> | ((reel: ReelView) => Partial<ReelView>)

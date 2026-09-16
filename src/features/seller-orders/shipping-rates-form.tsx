@@ -21,6 +21,8 @@ type ShippingRatesFormProps = {
   customs: CustomsFormState
   onParcelChange: (patch: Partial<ParcelFormState>) => void
   onCustomsChange: (patch: Partial<CustomsFormState>) => void
+  /** Drops the card chrome — for use inside a panel that already frames it. */
+  flat?: boolean
 }
 
 export function ShippingRatesForm({
@@ -31,14 +33,17 @@ export function ShippingRatesForm({
   customs,
   onParcelChange,
   onCustomsChange,
+  flat = false,
 }: ShippingRatesFormProps) {
   function ignoreSubmit(event: FormEvent) {
     event.preventDefault()
   }
 
   return (
-    <section className={cn(sellerPanelClass, 'p-5 sm:p-6')}>
-      <h2 className="font-medium">{international ? 'International parcel & customs' : 'Parcel'}</h2>
+    <section className={cn(!flat && sellerPanelClass, !flat && 'p-5 sm:p-6')}>
+      <h2 className={cn(flat ? 'text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase' : 'font-medium')}>
+        {international ? 'International parcel & customs' : 'Parcel'}
+      </h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {international
           ? `Ship-from ${originIso ?? 'shop country'} → ship-to ${destIso ?? 'recipient country'}. Parcel and customs are required for rates.`

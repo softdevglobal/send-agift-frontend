@@ -295,6 +295,10 @@ export const MEDIA_FOLDERS = [
   'reel-video',
   'reel-photo',
   'reel-thumbnail',
+  'chat-image',
+  'chat-document',
+  'review-photo',
+  'review-video',
 ] as const
 
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number]
@@ -367,6 +371,23 @@ export type Order = {
   updated_at: string
 }
 
+/**
+ * What a customer may see of a shipment: who is carrying the parcel and how to
+ * follow it. The label PDF, provider ids, parcel size and customs paperwork
+ * stay with the seller.
+ */
+export type OrderItemTracking = {
+  courier_provider?: string
+  tracking_number?: string
+  /** The carrier's tracking page. Absent for some seller-arranged shipments. */
+  tracking_url?: string
+  status: 'label_created' | 'collected' | 'in_transit' | 'delivered' | 'failed' | 'returned'
+  /** "courier" for a bought carrier label; "seller_managed" when the shop shipped it. */
+  delivery_mode: 'courier' | 'seller_managed' | 'pickup' | string
+  delivered_at?: string
+  shipped_at: string
+}
+
 export type OrderItem = {
   id: string
   order_id: string
@@ -379,6 +400,8 @@ export type OrderItem = {
   fulfilment_status: FulfilmentStatus
   created_at: string
   updated_at: string
+  /** Present once the line has shipped. */
+  tracking?: OrderItemTracking
 }
 
 export type SellerOrderItemSummary = OrderItem & {
@@ -476,19 +499,6 @@ export type BuyLabelInput = {
   idempotency_key: string
 }
 
-/** Shippo (and similar) extras returned with a bought label. */
-export type ShipmentProviderMetadata = {
-  label_url?: string | null
-  tracking_number?: string | null
-  tracking_url_provider?: string | null
-  tracking_status?: string | null
-  commercial_invoice_url?: string | null
-  qr_code_url?: string | null
-  test?: boolean
-  status?: string | null
-  [key: string]: unknown
-}
-
 export type Shipment = {
   id: string
   order_id: string
@@ -505,15 +515,36 @@ export type Shipment = {
   provider_shipment_id: string
   provider_customs_declaration_id?: string
   provider_tracking_url: string
-  provider_metadata?: ShipmentProviderMetadata | null
   created_at: string
   updated_at: string
 }
 
-/** PDF URL from provider metadata when present. */
-export function resolveShipmentLabelUrl(shipment: Shipment): string | null {
-  const url = shipment.provider_metadata?.label_url
-  return typeof url === 'string' && url.trim() ? url.trim() : null
+/**
+ * A short-lived link to a bought label PDF.
+ *
+ * Labels sit in a private bucket because they carry the recipient's full
+ * address, so the API hands back a presigned URL that expires rather than a
+ * permanent one.
+ */
+export type ShippingLabelLink = {
+  url: string
+  mime_type: string
+  expires_in_seconds: number
+  tracking_number?: string
+  provider?: string
+}
+
+/**
+ * Body for recording a shipment the seller arranged themselves, bypassing
+ * Shippo entirely. The fallback for a lane no connected carrier account
+ * quotes — for example none of Shippo's test carriers serve a domestic Sri
+ * Lanka shipment, so GetRates can return zero rates for a perfectly valid
+ * order with nothing wrong to fix.
+ */
+export type ManualShipmentInput = {
+  courier_provider: string
+  tracking_number: string
+  tracking_url?: string
 }
 
 export type OrderDetails = Order & { items: OrderItem[] }
@@ -642,6 +673,17 @@ export type ReelDetails = {
   status: 'draft' | 'published' | 'archived'
   duration_ms?: number | null
   view_count: number
+  like_count?: number
+  comment_count?: number
+  /**
+   * Never computed on the public feed routes — they read no identity — so it
+   * is always false there. `GET /reels/{id}/likes` answers it per viewer.
+   */
+  liked_by_me?: boolean
+  /** Newest three likers, names only. */
+  recent_likers?: ReelLiker[]
+  /** Every visible comment, newest first. */
+  comments?: ReelComment[]
   published_at?: string | null
   created_at: string
   updated_at: string
@@ -651,8 +693,157 @@ export type ReelDetails = {
   product?: ReelProductSummary | null
 }
 
+/** Someone who liked a reel. The API never exposes ids or guest tokens. */
+export type ReelLiker = {
+  type: 'customer' | 'guest'
+  display_name: string
+}
+
+/** Who a comment shows as: a customer's own name, or a chosen nickname. */
+export type ReelCommentAuthor = {
+  type: 'customer' | 'anonymous'
+  display_name: string
+}
+
+/** One visible comment on a reel. Ownership is never part of the payload. */
+export type ReelComment = {
+  id: string
+  reel_id: string
+  body: string
+  is_anonymous: boolean
+  author: ReelCommentAuthor
+  created_at: string
+  updated_at: string
+}
+
+export type ReelCommentList = {
+  items: ReelComment[]
+  next_cursor?: string | null
+}
+
+/** `GET /reels/{id}/likes`. `liked_by_requester` is only true with a customer token. */
+export type ReelLikes = {
+  reel_id: string
+  like_count: number
+  liked_by_requester: boolean
+  recent_likers: ReelLiker[]
+}
+
+/** Returned by like and unlike. */
+export type ReelLikeResult = {
+  liked: boolean
+  like_count: number
+}
+
 /** A page of public reels, with the cursor for the next one. */
 export type ReelFeed = {
   items: ReelDetails[]
   next_cursor?: string | null
+}
+
+export type ConversationType = 'product_inquiry' | 'order' | 'support'
+export type ConversationStatus = 'open' | 'closed'
+export type ParticipantRole = 'customer' | 'seller' | 'admin'
+export type SupportCaseStatus = 'open' | 'in_progress' | 'closed'
+export type SupportPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+/** One person in a thread. `user_id` is a customer, seller, or admin id depending on `role`. */
+export type ConversationParticipant = {
+  id: string
+  conversation_id: string
+  user_id: string
+  role: ParticipantRole
+  /** Absent until that participant first reads the thread. */
+  last_read_at?: string | null
+  joined_at: string
+  display_name?: string | null
+  image_url?: string | null
+}
+
+export type SupportCase = {
+  id: string
+  conversation_id: string
+  opened_by_user_id: string
+  opened_by_role: 'admin' | 'customer' | 'seller'
+  counterpart_user_id: string
+  counterpart_role: 'customer' | 'seller'
+  subject?: string | null
+  status: SupportCaseStatus
+  priority: SupportPriority
+  created_at: string
+  updated_at: string
+}
+
+export type Conversation = {
+  id: string
+  type: ConversationType
+  status: ConversationStatus
+  product_id?: string | null
+  shop_id?: string | null
+  order_id?: string | null
+  order_item_id?: string | null
+  created_by_user_id: string
+  last_message_at?: string | null
+  created_at: string
+  updated_at: string
+  /** What the thread is about — empty for support threads. */
+  product_name?: string | null
+  product_image_url?: string | null
+  shop_name?: string | null
+  shop_image_url?: string | null
+  order_number?: string | null
+}
+
+export type ConversationDetails = Conversation & {
+  participants: ConversationParticipant[]
+  support_case?: SupportCase | null
+}
+
+export type ConversationSummary = ConversationDetails & { unread_count: number }
+
+export type MessageAttachment = {
+  id: string
+  message_id: string
+  media_id: string
+  asset_type: 'image' | 'document' | string
+  object_path: string
+  cdn_url?: string | null
+  mime_type: string
+  size_bytes: number
+  created_at: string
+}
+
+/** One chat bubble. The API omits `attachments` when a message has none. */
+export type ChatMessage = {
+  id: string
+  conversation_id: string
+  sender_user_id: string
+  body: string
+  type: 'text' | string
+  created_at: string
+  attachments?: MessageAttachment[]
+}
+
+/** A file already uploaded via presign (folder chat-image | chat-document). */
+export type ChatAttachmentInput = {
+  object_path: string
+  mime_type: string
+  size_bytes: number
+}
+
+export type StartConversationInput = {
+  type: ConversationType
+  product_id?: string
+  order_item_id?: string
+  counterpart_role?: 'customer' | 'seller'
+  counterpart_user_id?: string
+  subject?: string
+  priority?: SupportPriority
+  body?: string
+  attachments?: ChatAttachmentInput[]
+}
+
+export type SendMessageInput = {
+  body: string
+  attachments?: ChatAttachmentInput[]
 }

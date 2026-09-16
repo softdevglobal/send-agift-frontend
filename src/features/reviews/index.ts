@@ -1,0 +1,5 @@
+export { ProductReviews } from '@/features/reviews/product-reviews'
+export { ReviewCard } from '@/features/reviews/review-card'
+export { ReviewForm } from '@/features/reviews/review-form'
+export { RatingBars, StarMeter, StarPicker } from '@/features/reviews/star-rating'
+export { ratingWord } from '@/features/reviews/rating-words'

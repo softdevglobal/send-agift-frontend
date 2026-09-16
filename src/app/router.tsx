@@ -11,6 +11,7 @@ import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
+import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
 import { AdminRegisterPage } from '@/pages/admin-register-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
@@ -25,6 +26,7 @@ import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
+import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
 import { CustomerSellerShopPage } from '@/pages/customer-seller-shop-page'
@@ -37,10 +39,10 @@ import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
-import { SellerOrderItemDetailPage } from '@/pages/seller-order-item-detail-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
+import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
@@ -58,6 +60,12 @@ function RedirectSeller() {
 function RedirectSellerShop() {
   const { sellerId, shopId } = useParams()
   return <Navigate to={`/sellers/${sellerId}/shops/${shopId}`} replace />
+}
+
+/** `/seller/order-items/:id` was the old detail page; it is a panel now. */
+function RedirectOrderItem() {
+  const { orderItemId } = useParams()
+  return <Navigate to={`/seller/orders/${orderItemId}`} replace />
 }
 
 function RedirectOrder() {
@@ -144,6 +152,7 @@ export function AppRouter() {
         <Route path="orders/history" element={<Navigate to="/orders/history" replace />} />
         <Route path="orders/:orderId" element={<RedirectOrder />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
+        <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -223,8 +232,15 @@ export function AppRouter() {
         <Route path="shops" element={<SellerShopsPage />} />
         <Route path="products" element={<SellerProductsPage />} />
         <Route path="reels" element={<SellerReelsPage />} />
-        <Route path="orders" element={<SellerOrdersPage />} />
-        <Route path="order-items/:orderItemId" element={<SellerOrderItemDetailPage />} />
+        {/*
+          One route, optional param: `/seller/orders/:orderItemId` opens the
+          detail panel over the list. Two separate routes would remount the
+          page — and refetch the whole list — every time a row is opened.
+        */}
+        <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
+        {/* The detail used to be its own page; keep those links working. */}
+        <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
+        <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
@@ -239,6 +255,7 @@ export function AppRouter() {
         }
       >
         <Route index element={<AdminDashboardPage />} />
+        <Route path="inbox" element={<AdminInboxPage />} />
         <Route path="sellers" element={<AdminSellersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />

@@ -1,11 +1,11 @@
 import { Boxes, Eye, ImagePlus, LoaderCircle, Package, Tag, Upload, X } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicImage } from '@/api/media'
-import { KNOWN_CURRENCIES, type ProductInput } from '@/api/types'
+import { KNOWN_CURRENCIES } from '@/api/types'
 import {
   emptyForm,
   parseTags,
@@ -28,13 +28,24 @@ type ProductWizardProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   shopName: string
-  /** Creates the product. Throw to keep the wizard open with the error shown. */
-  onSubmit: (body: ProductInput) => Promise<void>
+  /**
+   * `edit` prefills every step and lets the seller jump straight to Save;
+   * `create` starts blank. It is the same dialog either way — editing a gift
+   * and listing one are the same flow.
+   */
+  mode?: 'create' | 'edit'
+  /** Starting values for `edit`. Ignored in `create`. */
+  initialForm?: ProductFormState | null
+  /**
+   * Receives the finished form once it validates. The caller creates or
+   * updates. Throw to keep the wizard open with the error shown.
+   */
+  onSubmit: (form: ProductFormState) => Promise<void>
 }
 
 /**
- * Listing a gift, one step at a time: what it is, what it costs, how it looks,
- * how many there are — and a preview of the shelf card before it is created.
+ * Listing or editing a gift, one step at a time: what it is, what it costs,
+ * how it looks, how many there are — and a preview of the shelf card.
  *
  * Deliberately the same shell, rhythm and preview step as the reel wizard, so
  * publishing anything in the seller portal feels like one flow.
@@ -43,13 +54,24 @@ export function ProductWizard({
   open,
   onOpenChange,
   shopName,
+  mode = 'create',
+  initialForm,
   onSubmit,
 }: ProductWizardProps) {
-  const [form, setForm] = useState<ProductFormState>(emptyForm)
+  const [form, setForm] = useState<ProductFormState>(initialForm ?? emptyForm)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const imageInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Each open re-seeds the form: an edit gets that gift's values, a create
+  // gets a blank slate. Reopening never shows the previous run's fields.
+  useEffect(() => {
+    if (open) {
+      setForm(initialForm ?? emptyForm)
+      setError(null)
+    }
+  }, [open, initialForm])
 
   function update<K extends keyof ProductFormState>(
     key: K,
@@ -81,22 +103,27 @@ export function ProductWizard({
   }
 
   async function complete() {
-    // The same builder the inline edit form uses, so a gift created here is
-    // validated exactly like one edited later.
-    const body = toProductInput(form, true)
-    if (typeof body === 'string') {
-      setError(body)
+    // Validate with the shared builder so a gift saved here is checked exactly
+    // like one saved anywhere else; the caller rebuilds the payload it needs.
+    const check = toProductInput(form, true)
+    if (typeof check === 'string') {
+      setError(check)
       return
     }
 
     setSaving(true)
     setError(null)
     try {
-      await onSubmit(body)
+      await onSubmit(form)
       setForm(emptyForm)
       onOpenChange(false)
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not create the gift'))
+      setError(
+        getErrorMessage(
+          err,
+          mode === 'edit' ? 'Could not save the gift' : 'Could not create the gift',
+        ),
+      )
     } finally {
       setSaving(false)
     }
@@ -156,6 +183,20 @@ export function ProductWizard({
               value={form.occasion_tags}
               onChange={(event) => update('occasion_tags', event.target.value)}
               placeholder="birthday, thank you"
+            />
+          </WizardField>
+          <WizardField
+            label="Link slug"
+            htmlFor="wizard-slug"
+            full
+            hint="Optional. The gift’s address in the catalog — leave blank to generate it."
+          >
+            <Input
+              id="wizard-slug"
+              value={form.slug}
+              onChange={(event) => update('slug', event.target.value)}
+              placeholder="handbound-memory-journal"
+              className="font-mono text-sm"
             />
           </WizardField>
         </WizardFields>
@@ -317,6 +358,18 @@ export function ProductWizard({
             />
           </WizardField>
           <WizardField
+            label="Reserved quantity"
+            htmlFor="wizard-reserved"
+            hint="Held back from sale — pending orders, samples."
+          >
+            <Input
+              id="wizard-reserved"
+              inputMode="numeric"
+              value={form.reserved_qty}
+              onChange={(event) => update('reserved_qty', event.target.value)}
+            />
+          </WizardField>
+          <WizardField
             label="Low stock threshold"
             htmlFor="wizard-low"
             hint="You are warned when stock drops to this."
@@ -326,6 +379,19 @@ export function ProductWizard({
               inputMode="numeric"
               value={form.low_stock_threshold}
               onChange={(event) => update('low_stock_threshold', event.target.value)}
+            />
+          </WizardField>
+          <WizardField
+            label="Unavailable dates"
+            htmlFor="wizard-dates"
+            hint="YYYY-MM-DD, one per line. The gift can’t be sent for delivery on these days."
+          >
+            <textarea
+              id="wizard-dates"
+              value={form.unavailable_dates}
+              onChange={(event) => update('unavailable_dates', event.target.value)}
+              placeholder="2026-12-25"
+              className={textareaClassName}
             />
           </WizardField>
           <WizardField label="Status" htmlFor="wizard-status" full>
@@ -416,11 +482,21 @@ export function ProductWizard({
         }
         onOpenChange(next)
       }}
-      title="New gift"
-      description="List something customers can send, step by step."
+      title={mode === 'edit' ? 'Edit gift' : 'New gift'}
+      description={
+        mode === 'edit'
+          ? 'Update the listing, step by step. Jump to any step from the rail.'
+          : 'List something customers can send, step by step.'
+      }
       steps={steps}
       onComplete={complete}
-      completeLabel={form.status === 'published' ? 'Publish gift' : 'Save draft'}
+      completeLabel={
+        mode === 'edit'
+          ? 'Save changes'
+          : form.status === 'published'
+            ? 'Publish gift'
+            : 'Save draft'
+      }
       completing={saving}
       error={
         error ? (

@@ -1,4 +1,4 @@
-import type { ReelDetails, ReelMediaItem } from '@/api/types'
+import type { ReelComment, ReelDetails, ReelLiker, ReelMediaItem } from '@/api/types'
 import { formatPriceAmount } from '@/lib/money'
 
 /** What the product tagged on a reel gives the UI. */
@@ -28,6 +28,14 @@ export type ReelView = {
   photoUrls: string[]
   product: ReelProductView | null
   viewCount: number
+  likeCount: number
+  commentCount: number
+  /** Whether the signed-in customer liked it. False until the API says so. */
+  likedByMe: boolean
+  /** Newest likers, names only. */
+  recentLikers: ReelLiker[]
+  /** Visible comments embedded in the feed, newest first. */
+  comments: ReelComment[]
 }
 
 /**
@@ -85,7 +93,25 @@ export function toReelView(reel: ReelDetails): ReelView {
         }
       : null,
     viewCount: reel.view_count ?? 0,
+    likeCount: reel.like_count ?? 0,
+    commentCount: reel.comment_count ?? 0,
+    likedByMe: reel.liked_by_me ?? false,
+    recentLikers: reel.recent_likers ?? [],
+    comments: reel.comments ?? [],
   }
+}
+
+/**
+ * "Liked by Aisha and 12 others". Only names from `recent_likers` are
+ * known; everyone past them is folded into the count.
+ */
+export function likersLine(reel: ReelView): string | null {
+  const names = reel.recentLikers.map((liker) => liker.display_name.trim()).filter(Boolean)
+  if (reel.likeCount <= 0 || names.length === 0) return null
+  const first = names[0]
+  const others = reel.likeCount - 1
+  if (others <= 0) return `Liked by ${first}`
+  return `Liked by ${first} and ${compactCount(others)} ${others === 1 ? 'other' : 'others'}`
 }
 
 /** True when this is a photo post with more than one frame to swipe through. */

@@ -1,31 +1,31 @@
 import { api } from '@/lib/api'
 import type {
   BuyLabelInput,
+  ManualShipmentInput,
   OrderItem,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
+  ShippingLabelLink,
   ShippingRatesResult,
   ShippingShipmentInput,
 } from '@/api/types'
-import { resolveShipmentLabelUrl } from '@/api/types'
 
 export type {
   BuyLabelInput,
   CustomsDeclarationInput,
   CustomsItemInput,
+  ManualShipmentInput,
   OrderItem,
   ParcelInput,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
-  ShipmentProviderMetadata,
+  ShippingLabelLink,
   ShippingRatesResult,
   ShippingShipmentInput,
   ShippoRate,
 } from '@/api/types'
-
-export { resolveShipmentLabelUrl }
 
 export function listSellerOrderItems() {
   return api<SellerOrderItemSummary[]>('/sellers/me/order-items')
@@ -49,6 +49,18 @@ export function getShippingRates(orderItemID: string, body?: ShippingShipmentInp
   )
 }
 
+/**
+ * A fresh download link for the label already bought on this order item.
+ *
+ * Fetched on demand rather than stored with the item: the link expires, so one
+ * held from page load would be dead by the time a seller clicked it.
+ */
+export function getShippingLabelLink(orderItemID: string) {
+  return api<ShippingLabelLink>(
+    `/sellers/me/order-items/${orderItemID}/shipping/label`,
+  )
+}
+
 export function buyShippingLabel(orderItemID: string, body: BuyLabelInput) {
   return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/labels`, {
     method: 'POST',
@@ -56,42 +68,14 @@ export function buyShippingLabel(orderItemID: string, body: BuyLabelInput) {
   })
 }
 
-function isShipment(value: unknown): value is Shipment {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as Shipment).id === 'string' &&
-    typeof (value as Shipment).tracking_number === 'string'
-  )
-}
-
-/** Normalize GET /shipping/labels payloads (object, array, or wrapped). */
-export function normalizeShippingLabelResponse(payload: unknown): Shipment | null {
-  if (isShipment(payload)) return payload
-  if (Array.isArray(payload)) {
-    const first = payload.find(isShipment)
-    return first ?? null
-  }
-  if (typeof payload === 'object' && payload !== null) {
-    const record = payload as Record<string, unknown>
-    if (isShipment(record.shipment)) return record.shipment
-    if (isShipment(record.label)) return record.label
-    if (Array.isArray(record.shipments)) {
-      const first = record.shipments.find(isShipment)
-      return first ?? null
-    }
-    if (Array.isArray(record.labels)) {
-      const first = record.labels.find(isShipment)
-      return first ?? null
-    }
-  }
-  return null
-}
-
-/** Fetch an already-saved shipping label for this order item (call again to re-download). */
-export async function getShippingLabel(orderItemID: string): Promise<Shipment | null> {
-  const payload = await api<unknown>(
-    `/sellers/me/order-items/${orderItemID}/shipping/labels`,
-  )
-  return normalizeShippingLabelResponse(payload)
+/**
+ * Records a seller-arranged shipment and dispatches the item — no Shippo
+ * label, no carrier rate. The fallback for when GetRates has no rates to
+ * offer because no connected carrier serves the lane at all.
+ */
+export function markShippingManual(orderItemID: string, body: ManualShipmentInput) {
+  return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/manual`, {
+    method: 'POST',
+    body,
+  })
 }

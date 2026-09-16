@@ -44,13 +44,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { SellerPageHeader, sellerPanelClass } from '@/features/seller'
+  ConfirmDialog,
+  SellerPageHeader,
+  SellerSheet,
+  SellerSheetFacts,
+  SellerSheetRow,
+  SellerSheetSection,
+  sellerCardClass,
+  sellerPanelClass,
+} from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
 import { publishSellerToMarketplace } from '@/lib/published-catalog'
@@ -201,6 +203,8 @@ export function SellerShopsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [previewShop, setPreviewShop] = useState<Shop | null>(null)
+  const [shopToDelete, setShopToDelete] = useState<Shop | null>(null)
+  const [deleting, setDeleting] = useState(false)
   /** Once the slug is edited by hand (or loaded from an existing shop) it stops tracking the name. */
   const [slugTouched, setSlugTouched] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
@@ -349,17 +353,24 @@ export function SellerShopsPage() {
     }
   }
 
-  async function handleDelete(shop: Shop) {
-    const confirmed = window.confirm(`Delete "${shop.name}"? This cannot be undone.`)
-    if (!confirmed) return
+  async function confirmDelete() {
+    const shop = shopToDelete
+    if (!shop) return
     setError(null)
+    setDeleting(true)
     try {
       await deleteSellerShop(shop.id)
       if (editingId === shop.id) resetForm()
+      // Drop it from the list right away, then reconcile with the server.
+      setShops((prev) => prev.filter((item) => item.id !== shop.id))
+      setShopToDelete(null)
+      setPreviewShop((current) => (current?.id === shop.id ? null : current))
       await load()
       setToast({ message: 'Shop deleted.', variant: 'success' })
     } catch (err) {
       setError(getErrorMessage(err, 'Could not delete shop.'))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -368,6 +379,8 @@ export function SellerShopsPage() {
   return (
     <div>
       <SellerPageHeader
+        icon={Store}
+        tone="violet"
         title="Shops"
         description="Each shop is a storefront customers browse. Give it a cover, a name, and a pickup address."
         action={
@@ -410,12 +423,18 @@ export function SellerShopsPage() {
                   <li
                     key={shop.id}
                     className={cn(
-                      sellerPanelClass,
-                      'group flex flex-col overflow-hidden transition-shadow hover:shadow-[0_14px_40px_rgba(40,50,30,0.10)]',
+                      sellerCardClass,
+                      'group flex flex-col overflow-hidden',
                       editingId === shop.id && 'ring-2 ring-primary/30',
                     )}
                   >
-                    <div className="relative aspect-video overflow-hidden bg-muted">
+                    {/* The cover opens the preview; the buttons below act in place. */}
+                    <button
+                      type="button"
+                      aria-label={`Preview ${shop.name}`}
+                      onClick={() => setPreviewShop(shop)}
+                      className="relative aspect-video w-full overflow-hidden bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
                       {shop.image_url ? (
                         <img
                           src={shop.image_url}
@@ -437,7 +456,11 @@ export function SellerShopsPage() {
                       >
                         {shop.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
-                    </div>
+                      <span className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                        <Eye className="size-3.5" />
+                        Preview
+                      </span>
+                    </button>
 
                     <div className="flex flex-1 flex-col p-5">
                       <h3 className="font-display text-lg tracking-tight">{shop.name}</h3>
@@ -475,15 +498,6 @@ export function SellerShopsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
-                          aria-label={`Preview ${shop.name}`}
-                          onClick={() => setPreviewShop(shop)}
-                        >
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
                           aria-label={`Edit ${shop.name}`}
                           onClick={() => startEdit(shop)}
                         >
@@ -493,8 +507,9 @@ export function SellerShopsPage() {
                           type="button"
                           variant="ghost"
                           size="icon"
+                          className="text-destructive"
                           aria-label={`Delete ${shop.name}`}
-                          onClick={() => handleDelete(shop)}
+                          onClick={() => setShopToDelete(shop)}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -829,117 +844,146 @@ export function SellerShopsPage() {
         />
       ) : null}
 
-      <Sheet
+      <SellerSheet
         open={previewShop !== null}
         onOpenChange={(open) => !open && setPreviewShop(null)}
-      >
-        <SheetContent className="overflow-y-auto p-0">
-          {previewShop ? (
-            <>
-              <div className="relative aspect-video shrink-0 overflow-hidden bg-muted">
-                {previewShop.image_url ? (
-                  <img
-                    src={previewShop.image_url}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
-                    <Store className="size-8" />
-                  </div>
+        eyebrow="Shop"
+        title={previewShop?.name ?? ''}
+        description={previewShop?.description || undefined}
+        media={
+          previewShop ? (
+            <div className="relative aspect-video w-full overflow-hidden bg-muted">
+              {previewShop.image_url ? (
+                <img
+                  src={previewShop.image_url}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                  <Store className="size-8" />
+                </div>
+              )}
+              <span
+                className={cn(
+                  'absolute top-4 left-4 rounded-full px-3 py-1 text-xs font-medium backdrop-blur-sm',
+                  previewShop.status === 'active'
+                    ? 'bg-primary/90 text-primary-foreground'
+                    : 'bg-foreground/70 text-background',
                 )}
-                <span
-                  className={cn(
-                    'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
-                    previewShop.status === 'active'
-                      ? 'bg-primary/90 text-primary-foreground'
-                      : 'bg-foreground/70 text-background',
-                  )}
-                >
+              >
+                {previewShop.status === 'active' ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+          ) : null
+        }
+        footer={
+          previewShop ? (
+            <div className="flex items-center gap-2">
+              <Button asChild className="h-10 flex-1 rounded-full">
+                <Link to={`/seller/products?shop=${previewShop.id}`}>
+                  <Package className="size-4" />
+                  Manage gifts
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-full px-4"
+                onClick={() => {
+                  const shop = previewShop
+                  setPreviewShop(null)
+                  startEdit(shop)
+                }}
+              >
+                <Pencil className="size-4" />
+                Edit
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-10 text-destructive"
+                aria-label={`Delete ${previewShop.name}`}
+                onClick={() => {
+                  const shop = previewShop
+                  setPreviewShop(null)
+                  setShopToDelete(shop)
+                }}
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </div>
+          ) : null
+        }
+      >
+        {previewShop ? (
+          <>
+            <SellerSheetSection icon={Link2} title="Storefront">
+              <SellerSheetFacts>
+                <SellerSheetRow label="Handle">
+                  <span className="font-mono text-xs">/{previewShop.slug || '—'}</span>
+                </SellerSheetRow>
+                <SellerSheetRow label="Status">
                   {previewShop.status === 'active' ? 'Active' : 'Inactive'}
-                </span>
-              </div>
+                </SellerSheetRow>
+                {previewShop.customer_visible_location ? (
+                  <SellerSheetRow label="Location">
+                    {previewShop.customer_visible_location}
+                  </SellerSheetRow>
+                ) : null}
+              </SellerSheetFacts>
+            </SellerSheetSection>
 
-              <div className="space-y-6 p-6">
-                <SheetHeader className="p-0">
-                  <SheetTitle>{previewShop.name}</SheetTitle>
-                  {previewShop.description ? (
-                    <SheetDescription>{previewShop.description}</SheetDescription>
-                  ) : null}
-                </SheetHeader>
-
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-2.5">
-                    <Link2 className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="truncate font-mono text-muted-foreground">
-                      /{previewShop.slug || '—'}
-                    </span>
-                  </div>
-                  {previewShop.customer_visible_location ? (
-                    <div className="flex items-center gap-2.5">
-                      <MapPin className="size-4 shrink-0 text-muted-foreground" />
-                      <span className="text-foreground">
-                        {previewShop.customer_visible_location}
-                      </span>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="space-y-3 rounded-xl border border-border/50 bg-surface/60 p-4">
-                  <div className="flex items-start gap-2.5">
-                    <Truck className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Pickup address
-                      </p>
-                      <p className="mt-0.5 text-sm">
-                        {formatAddress(
-                          addresses.find((a) => a.id === previewShop.address_id),
-                        ) || 'Not set'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2.5 border-t border-border/50 pt-3">
-                    <Undo2 className="size-4 shrink-0 text-muted-foreground" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted-foreground">
-                        Return address
-                      </p>
-                      <p className="mt-0.5 text-sm">
-                        {formatAddress(
-                          addresses.find((a) => a.id === previewShop.return_address_id),
-                        ) || 'Same as pickup address'}
-                      </p>
-                    </div>
+            <SellerSheetSection icon={Truck} title="Addresses">
+              <div className="space-y-3 rounded-xl border border-border/50 bg-surface/60 p-4">
+                <div className="flex items-start gap-2.5">
+                  <Truck className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Pickup address
+                    </p>
+                    <p className="mt-0.5 text-sm">
+                      {formatAddress(
+                        addresses.find((a) => a.id === previewShop.address_id),
+                      ) || 'Not set'}
+                    </p>
                   </div>
                 </div>
-
-                <div className="flex flex-col gap-2">
-                  <Button asChild className="h-10 rounded-full">
-                    <Link to={`/seller/products?shop=${previewShop.id}`}>
-                      <Package className="size-4" />
-                      Manage products
-                    </Link>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 rounded-full"
-                    onClick={() => {
-                      const shop = previewShop
-                      setPreviewShop(null)
-                      startEdit(shop)
-                    }}
-                  >
-                    <Pencil className="size-4" />
-                    Edit shop
-                  </Button>
+                <div className="flex items-start gap-2.5 border-t border-border/50 pt-3">
+                  <Undo2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Return address
+                    </p>
+                    <p className="mt-0.5 text-sm">
+                      {formatAddress(
+                        addresses.find((a) => a.id === previewShop.return_address_id),
+                      ) || 'Same as pickup address'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </>
-          ) : null}
-        </SheetContent>
-      </Sheet>
+            </SellerSheetSection>
+          </>
+        ) : null}
+      </SellerSheet>
+
+      <ConfirmDialog
+        open={shopToDelete !== null}
+        onOpenChange={(open) => !open && setShopToDelete(null)}
+        title="Delete this shop?"
+        description={
+          <>
+            <span className="font-medium text-foreground">{shopToDelete?.name}</span>{' '}
+            and everything listed under it will be removed from the marketplace. This
+            can’t be undone.
+          </>
+        }
+        confirmLabel="Delete shop"
+        busy={deleting}
+        onConfirm={() => void confirmDelete()}
+      />
     </div>
   )
 }

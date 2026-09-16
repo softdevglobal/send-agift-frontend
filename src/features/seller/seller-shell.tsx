@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/auth-context'
+import { InboxProvider, useSharedInbox } from '@/features/messaging'
 import { sellerNavGroups } from '@/features/seller/seller-nav'
 import {
   sellerDisplayName,
@@ -25,9 +26,13 @@ import {
 import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { cn } from '@/lib/utils'
 
-function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const { pathname } = useLocation()
-
+function SellerNavLinks({
+  onNavigate,
+  unreadMessages,
+}: {
+  onNavigate?: () => void
+  unreadMessages: number
+}) {
   return (
     <nav className="flex flex-1 flex-col gap-6">
       {sellerNavGroups.map((group) => (
@@ -43,10 +48,7 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 end={item.end}
                 onClick={onNavigate}
                 className={({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (item.to === '/seller/orders' &&
-                      pathname.startsWith('/seller/order-items'))
+                  const active = isActive
                   return cn(
                     'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
                     active
@@ -56,10 +58,7 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 }}
               >
                 {({ isActive }) => {
-                  const active =
-                    isActive ||
-                    (item.to === '/seller/orders' &&
-                      pathname.startsWith('/seller/order-items'))
+                  const active = isActive
                   return (
                     <>
                       <span
@@ -73,6 +72,12 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
                         <item.icon className="size-4" />
                       </span>
                       <span className="flex-1 truncate">{item.label}</span>
+                      {item.showsUnread && unreadMessages > 0 ? (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-semibold text-[oklch(0.24_0.02_120)]">
+                          <span className="sr-only">Unread messages: </span>
+                          {unreadMessages > 99 ? '99+' : unreadMessages}
+                        </span>
+                      ) : null}
                     </>
                   )
                 }}
@@ -85,8 +90,18 @@ function SellerNavLinks({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/** The inbox is shared so the sidebar badge and the Inbox page poll once, together. */
 export function SellerShell() {
+  return (
+    <InboxProvider>
+      <SellerShellLayout />
+    </InboxProvider>
+  )
+}
+
+function SellerShellLayout() {
   const { logout } = useAuth()
+  const { unreadTotal } = useSharedInbox()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -163,7 +178,10 @@ export function SellerShell() {
         </div>
 
         <div className="relative flex-1 overflow-y-auto">
-          <SellerNavLinks onNavigate={() => setMenuOpen(false)} />
+          <SellerNavLinks
+            onNavigate={() => setMenuOpen(false)}
+            unreadMessages={unreadTotal}
+          />
         </div>
 
         <div className="relative mt-6 border-t border-white/10 pt-4">

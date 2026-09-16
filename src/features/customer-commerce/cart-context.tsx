@@ -16,7 +16,6 @@ import {
   writeCart,
 } from '@/features/customer-commerce/cart-storage'
 import type { CartCustomerType, CartItem, CartLine } from '@/features/customer-commerce/types'
-import { shippingForSubtotal } from '@/features/customer-commerce/utils'
 import { returnToState } from '@/lib/auth'
 import { getMarketplaceCustomerType } from '@/lib/marketplace'
 
@@ -25,7 +24,12 @@ type CartContextValue = {
   lines: CartLine[]
   itemCount: number
   subtotal: number
-  shipping: number
+  /**
+   * What the order will actually cost today. Delivery is not quoted before
+   * checkout — the API has no customer-facing rate endpoint and records
+   * delivery_amount as 0 — so the total is the subtotal rather than the
+   * subtotal plus a made-up fee.
+   */
   total: number
   customerTypes: CartCustomerType[]
   mixedCustomerType: boolean
@@ -133,7 +137,6 @@ export function CartProvider({ children }: CartProviderProps) {
     () => lines.reduce((sum, line) => sum + line.lineTotal, 0),
     [lines],
   )
-  const shipping = shippingForSubtotal(subtotal)
   const itemCount = useMemo(
     () => lines.reduce((sum, line) => sum + line.quantity, 0),
     [lines],
@@ -151,8 +154,7 @@ export function CartProvider({ children }: CartProviderProps) {
       lines,
       itemCount,
       subtotal,
-      shipping,
-      total: subtotal + shipping,
+      total: subtotal,
       customerTypes,
       mixedCustomerType,
       cartCustomerType,
@@ -166,7 +168,6 @@ export function CartProvider({ children }: CartProviderProps) {
       lines,
       itemCount,
       subtotal,
-      shipping,
       customerTypes,
       mixedCustomerType,
       cartCustomerType,
