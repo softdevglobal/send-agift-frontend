@@ -297,6 +297,8 @@ export const MEDIA_FOLDERS = [
   'reel-thumbnail',
   'chat-image',
   'chat-document',
+  'review-photo',
+  'review-video',
 ] as const
 
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number]

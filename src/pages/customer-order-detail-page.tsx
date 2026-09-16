@@ -24,6 +24,8 @@ import {
   OrderTrackingTimeline,
 } from '@/features/customer-commerce/order-tracking'
 import { useCustomerMessages } from '@/features/messaging'
+import { useMyReviews } from '@/features/reviews/my-reviews'
+import { ReviewOrderItemButton } from '@/features/reviews/review-order-item-button'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { formatPriceAmount } from '@/lib/money'
@@ -34,6 +36,8 @@ export function CustomerOrderDetailPage() {
   const [searchParams] = useSearchParams()
   const justPlaced = searchParams.get('placed') === '1'
   const { messageAboutOrderItem } = useCustomerMessages()
+  // One request for the whole page, rather than one per line.
+  const myReviews = useMyReviews()
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [recipient, setRecipient] = useState<RecipientDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -206,6 +210,13 @@ export function CustomerOrderDetailPage() {
                       <MessageSquare className="size-3.5" />
                       Message the shop
                     </button>
+                    <ReviewOrderItemButton
+                      orderItemId={item.id}
+                      delivered={item.fulfilment_status === 'delivered'}
+                      review={myReviews.byOrderItem.get(item.id)}
+                      productName={product?.name}
+                      onSaved={myReviews.apply}
+                    />
                   </div>
                   <p className="text-sm font-medium">
                     {formatPriceAmount(item.total_amount, order.currency)}

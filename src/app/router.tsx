@@ -26,6 +26,7 @@ import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
+import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
 import { CustomerSellerShopPage } from '@/pages/customer-seller-shop-page'
@@ -41,6 +42,7 @@ import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
+import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
@@ -150,6 +152,7 @@ export function AppRouter() {
         <Route path="orders/history" element={<Navigate to="/orders/history" replace />} />
         <Route path="orders/:orderId" element={<RedirectOrder />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
+        <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -237,6 +240,7 @@ export function AppRouter() {
         <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
         {/* The detail used to be its own page; keep those links working. */}
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
+        <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
