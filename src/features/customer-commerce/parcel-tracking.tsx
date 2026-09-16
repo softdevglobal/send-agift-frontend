@@ -3,6 +3,7 @@ import { Check, Copy, ExternalLink, PackageCheck, Truck } from 'lucide-react'
 
 import type { OrderItemTracking } from '@/api/types'
 import { Button } from '@/components/ui/button'
+import { SimulateDeliveryButton } from '@/features/customer-commerce/simulate-delivery-button'
 import { cn } from '@/lib/utils'
 
 /** Plain-English progress, so the customer never reads a raw enum. */
@@ -84,9 +85,12 @@ function CopyNumber({ value }: { value: string }) {
 export function ParcelTracking({
   tracking,
   className,
+  /** DEV: after simulating Shippo DELIVERED, reload the order for reviews. */
+  onSimulatedDelivery,
 }: {
   tracking: OrderItemTracking
   className?: string
+  onSimulatedDelivery?: () => void | Promise<void>
 }) {
   const copy = STATUS_COPY[tracking.status] ?? {
     label: 'Shipped',
@@ -95,6 +99,7 @@ export function ParcelTracking({
   const delivered = tracking.status === 'delivered'
   const shippedAt = formatShippedAt(tracking.shipped_at)
   const sellerManaged = tracking.delivery_mode === 'seller_managed'
+  const trackingNumber = tracking.tracking_number?.trim() ?? ''
 
   return (
     <div
@@ -132,12 +137,12 @@ export function ParcelTracking({
             {copy.hint}
           </p>
 
-          {tracking.tracking_number ? (
+          {trackingNumber ? (
             <div className="mt-2">
               <p className="text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
                 Tracking number
               </p>
-              <CopyNumber value={tracking.tracking_number} />
+              <CopyNumber value={trackingNumber} />
             </div>
           ) : null}
 
@@ -168,6 +173,13 @@ export function ParcelTracking({
               with {tracking.courier_provider || 'their courier'}, or message the
               shop if you need an update.
             </p>
+          ) : null}
+
+          {!delivered && trackingNumber && onSimulatedDelivery ? (
+            <SimulateDeliveryButton
+              trackingNumber={trackingNumber}
+              onSimulated={onSimulatedDelivery}
+            />
           ) : null}
         </div>
       </div>

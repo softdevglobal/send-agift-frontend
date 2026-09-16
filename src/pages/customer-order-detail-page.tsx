@@ -236,7 +236,17 @@ export function CustomerOrderDetailPage() {
                   {/* Full width under the line: an order can span several
                       shops, and each parcel tracks separately. */}
                   {item.tracking ? (
-                    <ParcelTracking tracking={item.tracking} />
+                    <ParcelTracking
+                      tracking={item.tracking}
+                      onSimulatedDelivery={
+                        item.fulfilment_status !== "delivered"
+                          ? async () => {
+                              await load()
+                              await myReviews.reload()
+                            }
+                          : undefined
+                      }
+                    />
                   ) : null}
                 </li>
               );
