@@ -476,6 +476,19 @@ export type BuyLabelInput = {
   idempotency_key: string
 }
 
+/** Shippo (and similar) extras returned with a bought label. */
+export type ShipmentProviderMetadata = {
+  label_url?: string | null
+  tracking_number?: string | null
+  tracking_url_provider?: string | null
+  tracking_status?: string | null
+  commercial_invoice_url?: string | null
+  qr_code_url?: string | null
+  test?: boolean
+  status?: string | null
+  [key: string]: unknown
+}
+
 export type Shipment = {
   id: string
   order_id: string
@@ -492,8 +505,15 @@ export type Shipment = {
   provider_shipment_id: string
   provider_customs_declaration_id?: string
   provider_tracking_url: string
+  provider_metadata?: ShipmentProviderMetadata | null
   created_at: string
   updated_at: string
+}
+
+/** PDF URL from provider metadata when present. */
+export function resolveShipmentLabelUrl(shipment: Shipment): string | null {
+  const url = shipment.provider_metadata?.label_url
+  return typeof url === 'string' && url.trim() ? url.trim() : null
 }
 
 export type OrderDetails = Order & { items: OrderItem[] }

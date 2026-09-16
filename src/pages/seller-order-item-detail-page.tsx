@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, ExternalLink, LoaderCircle, Package, TriangleAlert } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  ExternalLink,
+  LoaderCircle,
+  Package,
+  RefreshCw,
+  TriangleAlert,
+} from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
@@ -7,7 +15,9 @@ import {
   acceptSellerOrderItem,
   buyShippingLabel,
   getSellerOrderItem,
+  getShippingLabel,
   getShippingRates,
+  resolveShipmentLabelUrl,
   type SellerOrderItemDetails,
   type Shipment,
   type ShippingRatesResult,
@@ -69,6 +79,7 @@ export function SellerOrderItemDetailPage() {
   const [accepting, setAccepting] = useState(false)
   const [ratesLoading, setRatesLoading] = useState(false)
   const [buying, setBuying] = useState(false)
+  const [labelLoading, setLabelLoading] = useState(false)
   const [forceInternational, setForceInternational] = useState(false)
 
   const [ratesResult, setRatesResult] = useState<ShippingRatesResult | null>(null)
@@ -131,6 +142,8 @@ export function SellerOrderItemDetailPage() {
     if (itemChanged) {
       setFormItemId(item.id)
       setForceInternational(false)
+      setShipment(null)
+      clearShippingDraft()
       setParcel(detected ? DEFAULT_PARCEL_FORM : EMPTY_PARCEL_FORM)
       setCustoms(
         defaultCustomsForm({
@@ -172,6 +185,48 @@ export function SellerOrderItemDetailPage() {
     setSelectedRate(rate)
     setIdempotencyKey(newLabelIdempotencyKey(item.id))
   }
+
+  const loadSavedLabel = useCallback(
+    async (orderItemId: string, options?: { quiet?: boolean }) => {
+      setLabelLoading(true)
+      if (!options?.quiet) setError(null)
+      try {
+        const saved = await getShippingLabel(orderItemId)
+        if (saved) {
+          setShipment(saved)
+          if (resolveShipmentLabelUrl(saved)) {
+            setNotice(SAMPLE_LABEL_NOTICE)
+          }
+        } else if (!options?.quiet) {
+          setShipment(null)
+        }
+        return saved
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          if (!options?.quiet) setShipment(null)
+          return null
+        }
+        if (!options?.quiet) {
+          setError(getErrorMessage(err, 'Could not load the shipping label.'))
+        }
+        return null
+      } finally {
+        setLabelLoading(false)
+      }
+    },
+    [],
+  )
+
+  useEffect(() => {
+    if (!item || !isDispatchedOrderItem(item.fulfilment_status)) return
+    let cancelled = false
+    void loadSavedLabel(item.id, { quiet: true }).then((saved) => {
+      if (cancelled || saved) return
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [item?.id, item?.fulfilment_status, loadSavedLabel])
 
   async function handleAccept() {
     if (!item || !canAcceptOrderItem(item.fulfilment_status)) return
@@ -249,7 +304,11 @@ export function SellerOrderItemDetailPage() {
       clearShippingDraft()
       await load()
       setNotice(SAMPLE_LABEL_NOTICE)
-      setToast('Shipping label created.')
+      setToast(
+        resolveShipmentLabelUrl(purchased)
+          ? 'Shipping label created. You can download the PDF below.'
+          : 'Shipping label created.',
+      )
     } catch (err) {
       setError(getErrorMessage(err, 'Could not buy a shipping label.'))
       if (err instanceof ApiError && err.status === 503) {
@@ -299,6 +358,7 @@ export function SellerOrderItemDetailPage() {
   const rateable = canGetShippingRates(item.fulfilment_status)
   const dispatched = isDispatchedOrderItem(item.fulfilment_status)
   const cancelled = item.fulfilment_status === 'cancelled'
+  const labelPdfUrl = shipment ? resolveShipmentLabelUrl(shipment) : null
 
   return (
     <div>
@@ -554,36 +614,92 @@ export function SellerOrderItemDetailPage() {
 
           {dispatched ? (
             <section className={cn(sellerPanelClass, 'p-5')}>
-              <h2 className="font-medium">Label created</h2>
-              {shipment ? (
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="font-medium">Label created</h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={labelLoading}
+                  onClick={() => void loadSavedLabel(item.id)}
+                  className="h-8 shrink-0 rounded-full px-2.5"
+                >
+                  {labelLoading ? (
+                    <LoaderCircle className="size-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-3.5" />
+                  )}
+                  Refresh
+                </Button>
+              </div>
+
+              {labelLoading && !shipment ? (
+                <div className="mt-4 flex justify-center py-4">
+                  <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : shipment ? (
                 <>
-                  {shipment.is_international ? (
-                    <p className="mt-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                      International
+                  <dl className="mt-3 space-y-2 text-sm">
+                    {shipment.courier_provider ? (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Courier</dt>
+                        <dd className="font-medium">{shipment.courier_provider}</dd>
+                      </div>
+                    ) : null}
+                    {shipment.status ? (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Label status</dt>
+                        <dd className="font-medium">{shipment.status}</dd>
+                      </div>
+                    ) : null}
+                    {shipment.is_international != null ? (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Shipment</dt>
+                        <dd>{shipment.is_international ? 'International' : 'Domestic'}</dd>
+                      </div>
+                    ) : null}
+                    {shipment.tracking_number ? (
+                      <div className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">Tracking</dt>
+                        <dd className="font-medium">{shipment.tracking_number}</dd>
+                      </div>
+                    ) : null}
+                  </dl>
+
+                  <div className="mt-4 flex flex-col gap-2">
+                    {labelPdfUrl ? (
+                      <Button asChild className="h-10 w-full rounded-full">
+                        <a href={labelPdfUrl} target="_blank" rel="noreferrer">
+                          <Download className="size-4" />
+                          Download label PDF
+                        </a>
+                      </Button>
+                    ) : null}
+                    {shipment.provider_tracking_url ? (
+                      <Button asChild variant="outline" className="h-10 w-full rounded-full">
+                        <a
+                          href={shipment.provider_tracking_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Track shipment
+                          <ExternalLink className="size-3.5" />
+                        </a>
+                      </Button>
+                    ) : null}
+                  </div>
+
+                  {!labelPdfUrl ? (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                      Label is saved. Use Refresh if the PDF link is not ready yet.
                     </p>
-                  ) : null}
-                  {shipment.tracking_number ? (
-                    <p className="mt-3 text-sm">
-                      Tracking{' '}
-                      <span className="font-medium">{shipment.tracking_number}</span>
-                    </p>
-                  ) : null}
-                  {shipment.provider_tracking_url ? (
-                    <a
-                      href={shipment.provider_tracking_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                    >
-                      Track shipment
-                      <ExternalLink className="size-3.5" />
-                    </a>
                   ) : null}
                   <p className="mt-3 text-xs text-muted-foreground">{SAMPLE_LABEL_NOTICE}</p>
                 </>
               ) : (
                 <p className="mt-3 text-sm text-muted-foreground">
-                  A shipping label has already been bought for this item.
+                  A shipping label has already been bought for this item. Use Refresh to load
+                  tracking and the PDF again.
                 </p>
               )}
             </section>
