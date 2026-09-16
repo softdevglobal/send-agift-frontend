@@ -59,6 +59,7 @@ import {
   type ParcelFormState,
 } from '@/features/seller-orders/order-item-display'
 import { FulfilmentStatusBadge } from '@/features/seller-orders/fulfilment-status-badge'
+import { LabelDownloadButton } from '@/features/seller-orders/label-download-button'
 import { ShippingRatesForm } from '@/features/seller-orders/shipping-rates-form'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
@@ -589,14 +590,24 @@ export function SellerOrderItemDetailPanel({
                           <ExternalLink className="size-3.5" />
                         </a>
                       ) : null}
+                      <LabelDownloadButton
+                        orderItemID={item.id}
+                        className="mt-3"
+                      />
                       <p className="mt-3 text-xs text-muted-foreground">
                         {SAMPLE_LABEL_NOTICE}
                       </p>
                     </>
                   ) : (
-                    <p className="text-sm text-muted-foreground">
-                      A shipping label has already been bought for this item.
-                    </p>
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        A shipping label has already been bought for this item.
+                      </p>
+                      <LabelDownloadButton
+                        orderItemID={item.id}
+                        className="mt-3"
+                      />
+                    </>
                   )}
                 </div>
               </SellerSheetSection>

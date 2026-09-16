@@ -5,6 +5,7 @@ import type {
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
+  ShippingLabelLink,
   ShippingRatesResult,
   ShippingShipmentInput,
 } from '@/api/types'
@@ -18,6 +19,7 @@ export type {
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
+  ShippingLabelLink,
   ShippingRatesResult,
   ShippingShipmentInput,
   ShippoRate,
@@ -42,6 +44,18 @@ export function getShippingRates(orderItemID: string, body?: ShippingShipmentInp
   return api<ShippingRatesResult>(
     `/sellers/me/order-items/${orderItemID}/shipping/rates`,
     hasPayload ? { method: 'POST', body } : { method: 'POST' },
+  )
+}
+
+/**
+ * A fresh download link for the label already bought on this order item.
+ *
+ * Fetched on demand rather than stored with the item: the link expires, so one
+ * held from page load would be dead by the time a seller clicked it.
+ */
+export function getShippingLabelLink(orderItemID: string) {
+  return api<ShippingLabelLink>(
+    `/sellers/me/order-items/${orderItemID}/shipping/label`,
   )
 }
 

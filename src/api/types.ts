@@ -500,6 +500,21 @@ export type Shipment = {
   updated_at: string
 }
 
+/**
+ * A short-lived link to a bought label PDF.
+ *
+ * Labels sit in a private bucket because they carry the recipient's full
+ * address, so the API hands back a presigned URL that expires rather than a
+ * permanent one.
+ */
+export type ShippingLabelLink = {
+  url: string
+  mime_type: string
+  expires_in_seconds: number
+  tracking_number?: string
+  provider?: string
+}
+
 export type OrderDetails = Order & { items: OrderItem[] }
 
 export type OrderItemInput = {
