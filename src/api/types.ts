@@ -297,6 +297,8 @@ export const MEDIA_FOLDERS = [
   'reel-thumbnail',
   'chat-image',
   'chat-document',
+  'review-photo',
+  'review-video',
 ] as const
 
 export type MediaFolder = (typeof MEDIA_FOLDERS)[number]
@@ -369,6 +371,23 @@ export type Order = {
   updated_at: string
 }
 
+/**
+ * What a customer may see of a shipment: who is carrying the parcel and how to
+ * follow it. The label PDF, provider ids, parcel size and customs paperwork
+ * stay with the seller.
+ */
+export type OrderItemTracking = {
+  courier_provider?: string
+  tracking_number?: string
+  /** The carrier's tracking page. Absent for some seller-arranged shipments. */
+  tracking_url?: string
+  status: 'label_created' | 'collected' | 'in_transit' | 'delivered' | 'failed' | 'returned'
+  /** "courier" for a bought carrier label; "seller_managed" when the shop shipped it. */
+  delivery_mode: 'courier' | 'seller_managed' | 'pickup' | string
+  delivered_at?: string
+  shipped_at: string
+}
+
 export type OrderItem = {
   id: string
   order_id: string
@@ -381,6 +400,8 @@ export type OrderItem = {
   fulfilment_status: FulfilmentStatus
   created_at: string
   updated_at: string
+  /** Present once the line has shipped. */
+  tracking?: OrderItemTracking
 }
 
 export type SellerOrderItemSummary = OrderItem & {
@@ -496,6 +517,34 @@ export type Shipment = {
   provider_tracking_url: string
   created_at: string
   updated_at: string
+}
+
+/**
+ * A short-lived link to a bought label PDF.
+ *
+ * Labels sit in a private bucket because they carry the recipient's full
+ * address, so the API hands back a presigned URL that expires rather than a
+ * permanent one.
+ */
+export type ShippingLabelLink = {
+  url: string
+  mime_type: string
+  expires_in_seconds: number
+  tracking_number?: string
+  provider?: string
+}
+
+/**
+ * Body for recording a shipment the seller arranged themselves, bypassing
+ * Shippo entirely. The fallback for a lane no connected carrier account
+ * quotes — for example none of Shippo's test carriers serve a domestic Sri
+ * Lanka shipment, so GetRates can return zero rates for a perfectly valid
+ * order with nothing wrong to fix.
+ */
+export type ManualShipmentInput = {
+  courier_provider: string
+  tracking_number: string
+  tracking_url?: string
 }
 
 export type OrderDetails = Order & { items: OrderItem[] }

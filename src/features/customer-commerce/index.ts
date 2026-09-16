@@ -22,7 +22,7 @@ export {
   registerCatalogProducts,
 } from './catalog'
 export { StarRating, StarRatingInput } from './star-rating'
-export { formatMoney, shippingForSubtotal, categoryName } from './utils'
+export { formatMoney, categoryName } from './utils'
 export {
   canCancelOrder,
   formatDeliveryDate,

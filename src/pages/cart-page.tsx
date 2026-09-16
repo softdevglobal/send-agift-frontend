@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 export function CartPage() {
   const { isAuthenticated, role } = useAuth()
   const location = useLocation()
-  const { lines, itemCount, subtotal, shipping, total, setQuantity, removeItem } =
+  const { lines, itemCount, subtotal, total, setQuantity, removeItem } =
     useCart()
   const isCustomer = isAuthenticated && role === 'customer'
 
@@ -151,8 +151,8 @@ export function CartPage() {
               <dd>{formatMoney(subtotal)}</dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Shipping</dt>
-              <dd>{shipping === 0 ? 'Free' : formatMoney(shipping)}</dd>
+              <dt className="text-muted-foreground">Delivery</dt>
+              <dd className="text-muted-foreground">Calculated at dispatch</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 font-medium">
               <dt>Total</dt>
@@ -160,7 +160,8 @@ export function CartPage() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            Free shipping on orders of $75 or more.
+            Delivery is arranged by each shop once your gift is packed, so it is
+            not part of this total.
           </p>
           <Button asChild className="mt-5 h-11 w-full rounded-full">
             <Link

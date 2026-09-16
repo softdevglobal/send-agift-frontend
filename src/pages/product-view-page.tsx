@@ -28,6 +28,8 @@ import {
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import { useAuth } from '@/features/auth/auth-context'
 import { MessageShopButton, useCustomerMessages } from '@/features/messaging'
+import { ProductReviews } from '@/features/reviews'
+import { ProductRatingBadge } from '@/features/reviews/product-rating-badge'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
 import { formatPriceAmount } from '@/lib/money'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
@@ -207,6 +209,8 @@ export function ProductViewPage() {
               {product.name}
             </h1>
 
+            <ProductRatingBadge productId={product.id} className="mt-3" />
+
             <div className="mt-4 flex items-baseline gap-3">
               <p className="font-display text-3xl tracking-tight">{price}</p>
               {product.compareAt ? (
@@ -366,6 +370,8 @@ export function ProductViewPage() {
             </div>
           </div>
         </div>
+
+        <ProductReviews productId={product.id} className="mt-14" />
 
         {moreFromShop.length > 0 ? (
           <section className="mt-14">
