@@ -60,6 +60,7 @@ import {
 } from '@/features/seller-orders/order-item-display'
 import { FulfilmentStatusBadge } from '@/features/seller-orders/fulfilment-status-badge'
 import { LabelDownloadButton } from '@/features/seller-orders/label-download-button'
+import { ManualShipmentDialog } from '@/features/seller-orders/manual-shipment-dialog'
 import { ShippingRatesForm } from '@/features/seller-orders/shipping-rates-form'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
@@ -112,6 +113,11 @@ export function SellerOrderItemDetailPanel({
   const [selectedRate, setSelectedRate] = useState<ShippoRate | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null)
   const [shipment, setShipment] = useState<Shipment | null>(null)
+  const [manualShipOpen, setManualShipOpen] = useState(false)
+  // Set when Shippo answered but no carrier account covers this route, which
+  // no retry can change — the seller's only way forward is shipping it
+  // themselves, so the offer to do that belongs next to the error.
+  const [laneUnservable, setLaneUnservable] = useState(false)
 
   const [parcel, setParcel] = useState<ParcelFormState>(EMPTY_PARCEL_FORM)
   const [customs, setCustoms] = useState<CustomsFormState>(EMPTY_CUSTOMS_FORM)
@@ -139,6 +145,7 @@ export function SellerOrderItemDetailPanel({
       setSelectedRate(null)
       setIdempotencyKey(null)
       setShipment(null)
+      setLaneUnservable(false)
       return
     }
     let cancelled = false
@@ -252,6 +259,7 @@ export function SellerOrderItemDetailPanel({
       return
     }
     setRatesLoading(true)
+    setLaneUnservable(false)
     try {
       const result = await getShippingRates(item.id, built.body)
       setRatesResult(result)
@@ -266,6 +274,12 @@ export function SellerOrderItemDetailPanel({
       setIdempotencyKey(null)
       const message = getErrorMessage(err, 'Could not load shipping rates.')
       setError(message)
+      // 502 carries Shippo's own explanation; "no rates returned" means every
+      // carrier account declined the lane rather than anything being wrong
+      // with this order.
+      if (err instanceof ApiError && message.toLowerCase().includes('no rates returned')) {
+        setLaneUnservable(true)
+      }
       if (err instanceof ApiError && err.status === 503) {
         setNotice(SHIPPING_NOT_CONFIGURED_HINT)
       } else if (err instanceof ApiError && err.status === 400) {
@@ -393,6 +407,16 @@ export function SellerOrderItemDetailPanel({
                   </Button>
                 </div>
               ) : null}
+
+              {rateable ? (
+                <button
+                  type="button"
+                  onClick={() => setManualShipOpen(true)}
+                  className="self-start text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  No carrier covers this route? Ship it yourself
+                </button>
+              ) : null}
             </div>
           ) : null
         }
@@ -406,6 +430,26 @@ export function SellerOrderItemDetailPanel({
         ) : (
           <>
             <FormAlert error={error} notice={notice} />
+
+            {laneUnservable && rateable ? (
+              <div className="rounded-xl border border-border/60 bg-surface/60 p-4">
+                <p className="text-sm font-medium">No carrier covers this route</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Every carrier on the account declined this origin and
+                  destination, so there is no rate to buy a label from. Retrying
+                  will return the same answer. Ship it with your own courier
+                  instead and record the tracking number here.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => setManualShipOpen(true)}
+                  className="mt-3 rounded-full"
+                >
+                  <Truck className="size-4" />
+                  Ship it yourself
+                </Button>
+              </div>
+            ) : null}
 
             {missingAddress && rateable ? (
               <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-surface/60 p-4">
@@ -564,13 +608,22 @@ export function SellerOrderItemDetailPanel({
             ) : null}
 
             {dispatched ? (
-              <SellerSheetSection icon={Truck} title="Label created">
+              <SellerSheetSection
+                icon={Truck}
+                title={shipment?.delivery_mode === 'seller_managed' ? 'Shipped' : 'Label created'}
+              >
                 <div className="rounded-xl border border-border/50 bg-surface/60 p-4">
                   {shipment ? (
                     <>
                       {shipment.is_international ? (
                         <p className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
                           International
+                        </p>
+                      ) : null}
+                      {shipment.delivery_mode === 'seller_managed' && shipment.courier_provider ? (
+                        <p className="text-sm">
+                          Courier{' '}
+                          <span className="font-medium">{shipment.courier_provider}</span>
                         </p>
                       ) : null}
                       {shipment.tracking_number ? (
@@ -590,18 +643,30 @@ export function SellerOrderItemDetailPanel({
                           <ExternalLink className="size-3.5" />
                         </a>
                       ) : null}
-                      <LabelDownloadButton
-                        orderItemID={item.id}
-                        className="mt-3"
-                      />
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        {SAMPLE_LABEL_NOTICE}
-                      </p>
+                      {shipment.delivery_mode === 'seller_managed' ? (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Shipped directly by the seller — no Shippo label for this item.
+                        </p>
+                      ) : (
+                        <>
+                          <LabelDownloadButton
+                            orderItemID={item.id}
+                            className="mt-3"
+                          />
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            {SAMPLE_LABEL_NOTICE}
+                          </p>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
+                      {/* Reopened after a reload: this session never saw how the
+                          item was dispatched, so a label may or may not exist.
+                          The button's own 404 handling covers the "shipped
+                          manually" case without a wrong claim here. */}
                       <p className="text-sm text-muted-foreground">
-                        A shipping label has already been bought for this item.
+                        This item has been dispatched.
                       </p>
                       <LabelDownloadButton
                         orderItemID={item.id}
@@ -621,6 +686,21 @@ export function SellerOrderItemDetailPanel({
           </>
         )}
       </SellerSheet>
+
+      {item ? (
+        <ManualShipmentDialog
+          orderItemID={item.id}
+          open={manualShipOpen}
+          onOpenChange={setManualShipOpen}
+          onShipped={(shipped) => {
+            setShipment(shipped)
+            clearShippingDraft()
+            void load()
+            onChanged?.()
+            setToast('Marked as shipped.')
+          }}
+        />
+      ) : null}
 
       {toast ? <Toast message={toast} onClose={() => setToast(null)} /> : null}
     </>

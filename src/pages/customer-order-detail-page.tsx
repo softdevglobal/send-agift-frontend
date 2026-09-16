@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, LoaderCircle, MessageSquare } from 'lucide-react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from "react";
+import { ArrowLeft, LoaderCircle, MessageSquare } from "lucide-react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
-import { getRecipient, type RecipientDetails } from '@/api/customers'
-import { cancelOrder, getOrder, type OrderDetails } from '@/api/orders'
-import { FormAlert } from '@/components/common/form-alert'
-import { Button } from '@/components/ui/button'
+import { getRecipient, type RecipientDetails } from "@/api/customers";
+import { cancelOrder, getOrder, type OrderDetails } from "@/api/orders";
+import { FormAlert } from "@/components/common/form-alert";
+import { Button } from "@/components/ui/button";
 import {
   CustomerPageHeader,
   customerPanelClass,
   getCatalogProduct,
-} from '@/features/customer-commerce'
+} from "@/features/customer-commerce";
 import {
   canCancelOrder,
   formatDeliveryDate,
@@ -18,84 +18,86 @@ import {
   fulfilmentStatusLabel,
   isHistoryOrderStatus,
   ordersListPath,
-} from '@/features/customer-commerce/order-display'
+} from "@/features/customer-commerce/order-display";
 import {
   OrderStatusBadge,
   OrderTrackingTimeline,
-} from '@/features/customer-commerce/order-tracking'
-import { useCustomerMessages } from '@/features/messaging'
-import { useMyReviews } from '@/features/reviews/my-reviews'
-import { ReviewOrderItemButton } from '@/features/reviews/review-order-item-button'
-import { ApiError, getErrorMessage } from '@/lib/api'
-import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
-import { formatPriceAmount } from '@/lib/money'
-import { cn } from '@/lib/utils'
+} from "@/features/customer-commerce/order-tracking";
+import { ParcelTracking } from "@/features/customer-commerce/parcel-tracking";
+import { useCustomerMessages } from "@/features/messaging";
+import { useMyReviews } from "@/features/reviews/my-reviews";
+import { ReviewOrderItemButton } from "@/features/reviews/review-order-item-button";
+import { ApiError, getErrorMessage } from "@/lib/api";
+import { loadMarketplaceIntoCatalog } from "@/lib/marketplace";
+import { formatPriceAmount } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 export function CustomerOrderDetailPage() {
-  const { orderId } = useParams()
-  const [searchParams] = useSearchParams()
-  const justPlaced = searchParams.get('placed') === '1'
-  const { messageAboutOrderItem } = useCustomerMessages()
+  const { orderId } = useParams();
+  const [searchParams] = useSearchParams();
+  const justPlaced = searchParams.get("placed") === "1";
+  const { messageAboutOrderItem } = useCustomerMessages();
   // One request for the whole page, rather than one per line.
-  const myReviews = useMyReviews()
-  const [order, setOrder] = useState<OrderDetails | null>(null)
-  const [recipient, setRecipient] = useState<RecipientDetails | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [cancelling, setCancelling] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [, setCatalogTick] = useState(0)
+  const myReviews = useMyReviews();
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [recipient, setRecipient] = useState<RecipientDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [, setCatalogTick] = useState(0);
 
   const load = useCallback(async () => {
-    if (!orderId) return
-    const details = await getOrder(orderId)
-    setOrder(details)
+    if (!orderId) return;
+    const details = await getOrder(orderId);
+    setOrder(details);
     if (details.recipient_id) {
-      setRecipient(await getRecipient(details.recipient_id).catch(() => null))
+      setRecipient(await getRecipient(details.recipient_id).catch(() => null));
     } else {
-      setRecipient(null)
+      setRecipient(null);
     }
-  }, [orderId])
+  }, [orderId]);
 
   useEffect(() => {
-    let cancelled = false
-    setLoading(true)
+    let cancelled = false;
+    setLoading(true);
     load()
       .catch((err) => {
-        if (!cancelled) setError(getErrorMessage(err, 'Could not load this order.'))
+        if (!cancelled)
+          setError(getErrorMessage(err, "Could not load this order."));
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
+        if (!cancelled) setLoading(false);
+      });
     return () => {
-      cancelled = true
-    }
-  }, [load])
+      cancelled = true;
+    };
+  }, [load]);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
     void loadMarketplaceIntoCatalog()
       .then(() => {
-        if (!cancelled) setCatalogTick((tick) => tick + 1)
+        if (!cancelled) setCatalogTick((tick) => tick + 1);
       })
-      .catch(() => undefined)
+      .catch(() => undefined);
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   async function handleCancel() {
-    if (!orderId) return
-    setError(null)
-    setCancelling(true)
+    if (!orderId) return;
+    setError(null);
+    setCancelling(true);
     try {
-      setOrder(await cancelOrder(orderId))
+      setOrder(await cancelOrder(orderId));
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not cancel this order.'))
+      setError(getErrorMessage(err, "Could not cancel this order."));
       if (err instanceof ApiError && err.status === 409) {
-        await load().catch(() => undefined)
+        await load().catch(() => undefined);
       }
     } finally {
-      setCancelling(false)
+      setCancelling(false);
     }
   }
 
@@ -104,14 +106,17 @@ export function CustomerOrderDetailPage() {
       <div className="flex justify-center py-24">
         <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   if (!order) {
     return (
       <div>
-        <CustomerPageHeader title="Order" description="This order could not be loaded." />
-        <FormAlert error={error ?? 'Order not found.'} className="mb-5" />
+        <CustomerPageHeader
+          title="Order"
+          description="This order could not be loaded."
+        />
+        <FormAlert error={error ?? "Order not found."} className="mb-5" />
         <Button asChild variant="outline" className="h-10 rounded-full px-4">
           <Link to="/orders">
             <ArrowLeft className="size-4" />
@@ -119,20 +124,23 @@ export function CustomerOrderDetailPage() {
           </Link>
         </Button>
       </div>
-    )
+    );
   }
 
-  const recipientAddress = recipient?.addresses?.find((address) => address.is_default) ??
+  const recipientAddress =
+    recipient?.addresses?.find((address) => address.is_default) ??
     recipient?.addresses?.[0] ??
-    null
-  const listPath = ordersListPath(order.status)
-  const listLabel = isHistoryOrderStatus(order.status) ? 'Order history' : 'Track orders'
+    null;
+  const listPath = ordersListPath(order.status);
+  const listLabel = isHistoryOrderStatus(order.status)
+    ? "Order history"
+    : "Track orders";
   const placedNotice =
-    justPlaced && order.status === 'pending_payment'
-      ? 'Your gift order is placed. Payment has not been captured yet — track progress below while it awaits payment.'
+    justPlaced && order.status === "pending_payment"
+      ? "Your gift order is placed. Payment has not been captured yet — track progress below while it awaits payment."
       : justPlaced
-        ? 'Your gift order is placed. Track its progress below.'
-        : null
+        ? "Your gift order is placed. Track its progress below."
+        : null;
 
   return (
     <div>
@@ -151,7 +159,7 @@ export function CustomerOrderDetailPage() {
 
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
 
-      <section className={cn(customerPanelClass, 'mb-6 p-5 sm:p-6')}>
+      <section className={cn(customerPanelClass, "mb-6 p-5 sm:p-6")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-medium">Track this gift</h2>
@@ -171,64 +179,73 @@ export function CustomerOrderDetailPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)]">
-        <section className={cn(customerPanelClass, 'p-5 sm:p-6')}>
+        <section className={cn(customerPanelClass, "p-5 sm:p-6")}>
           <h2 className="font-medium">Items</h2>
           <ul className="mt-4 space-y-4">
             {order.items.map((item) => {
-              const product = getCatalogProduct(item.product_id)
+              const product = getCatalogProduct(item.product_id);
               return (
-                <li key={item.id} className="flex gap-3">
-                  <Link
-                    to={`/products/${item.product_id}`}
-                    className="size-16 shrink-0 overflow-hidden rounded-xl bg-muted"
-                  >
-                    {product?.image ? (
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="size-full object-cover"
-                      />
-                    ) : null}
-                  </Link>
-                  <div className="min-w-0 flex-1">
+                <li key={item.id} className="space-y-3">
+                  <div className="flex gap-3">
                     <Link
                       to={`/products/${item.product_id}`}
-                      className="font-medium hover:text-primary"
+                      className="size-16 shrink-0 overflow-hidden rounded-xl bg-muted"
                     >
-                      {product?.name ?? 'Product'}
+                      {product?.image ? (
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="size-full object-cover"
+                        />
+                      ) : null}
                     </Link>
-                    <p className="text-sm text-muted-foreground">
-                      Qty {item.quantity} ·{' '}
-                      {formatPriceAmount(item.unit_amount, order.currency)} ·{' '}
-                      {fulfilmentStatusLabel(item.fulfilment_status)}
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        to={`/products/${item.product_id}`}
+                        className="font-medium hover:text-primary"
+                      >
+                        {product?.name ?? "Product"}
+                      </Link>
+                      <p className="text-sm text-muted-foreground">
+                        Qty {item.quantity} ·{" "}
+                        {formatPriceAmount(item.unit_amount, order.currency)} ·{" "}
+                        {fulfilmentStatusLabel(item.fulfilment_status)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          messageAboutOrderItem(item.id, item.product_id)
+                        }
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      >
+                        <MessageSquare className="size-3.5" />
+                        Message the shop
+                      </button>
+                      <ReviewOrderItemButton
+                        orderItemId={item.id}
+                        delivered={item.fulfilment_status === "delivered"}
+                        review={myReviews.byOrderItem.get(item.id)}
+                        productName={product?.name}
+                        onSaved={myReviews.apply}
+                      />
+                    </div>
+                    <p className="text-sm font-medium">
+                      {formatPriceAmount(item.total_amount, order.currency)}
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => messageAboutOrderItem(item.id, item.product_id)}
-                      className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                    >
-                      <MessageSquare className="size-3.5" />
-                      Message the shop
-                    </button>
-                    <ReviewOrderItemButton
-                      orderItemId={item.id}
-                      delivered={item.fulfilment_status === 'delivered'}
-                      review={myReviews.byOrderItem.get(item.id)}
-                      productName={product?.name}
-                      onSaved={myReviews.apply}
-                    />
                   </div>
-                  <p className="text-sm font-medium">
-                    {formatPriceAmount(item.total_amount, order.currency)}
-                  </p>
+                  {/* Full width under the line: an order can span several
+                      shops, and each parcel tracks separately. */}
+                  {item.tracking ? (
+                    <ParcelTracking tracking={item.tracking} />
+                  ) : null}
                 </li>
-              )
+              );
             })}
           </ul>
         </section>
 
         <div className="space-y-6">
-          <section className={cn(customerPanelClass, 'p-5')}>
+          <section className={cn(customerPanelClass, "p-5")}>
             <h2 className="font-medium">Summary</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
@@ -243,13 +260,15 @@ export function CustomerOrderDetailPage() {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Subtotal</dt>
-                <dd>{formatPriceAmount(order.subtotal_amount, order.currency)}</dd>
+                <dd>
+                  {formatPriceAmount(order.subtotal_amount, order.currency)}
+                </dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Delivery</dt>
                 <dd>
                   {order.delivery_amount === 0
-                    ? 'Free'
+                    ? "Free"
                     : formatPriceAmount(order.delivery_amount, order.currency)}
                 </dd>
               </div>
@@ -273,13 +292,13 @@ export function CustomerOrderDetailPage() {
                     Cancelling…
                   </>
                 ) : (
-                  'Cancel order'
+                  "Cancel order"
                 )}
               </Button>
             ) : null}
           </section>
 
-          <section className={cn(customerPanelClass, 'p-5')}>
+          <section className={cn(customerPanelClass, "p-5")}>
             <h2 className="font-medium">Deliver to</h2>
             {recipient ? (
               <>
@@ -294,12 +313,14 @@ export function CustomerOrderDetailPage() {
                       recipientAddress.postal_code,
                     ]
                       .filter(Boolean)
-                      .join(', ')}
+                      .join(", ")}
                   </p>
                 ) : null}
                 {recipient.email || recipient.phone ? (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {[recipient.email, recipient.phone].filter(Boolean).join(' · ')}
+                    {[recipient.email, recipient.phone]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 ) : null}
               </>
@@ -317,5 +338,5 @@ export function CustomerOrderDetailPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

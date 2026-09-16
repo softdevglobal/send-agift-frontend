@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import type {
   BuyLabelInput,
+  ManualShipmentInput,
   OrderItem,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
@@ -14,6 +15,7 @@ export type {
   BuyLabelInput,
   CustomsDeclarationInput,
   CustomsItemInput,
+  ManualShipmentInput,
   OrderItem,
   ParcelInput,
   SellerOrderItemDetails,
@@ -61,6 +63,18 @@ export function getShippingLabelLink(orderItemID: string) {
 
 export function buyShippingLabel(orderItemID: string, body: BuyLabelInput) {
   return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/labels`, {
+    method: 'POST',
+    body,
+  })
+}
+
+/**
+ * Records a seller-arranged shipment and dispatches the item — no Shippo
+ * label, no carrier rate. The fallback for when GetRates has no rates to
+ * offer because no connected carrier serves the lane at all.
+ */
+export function markShippingManual(orderItemID: string, body: ManualShipmentInput) {
+  return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/manual`, {
     method: 'POST',
     body,
   })
