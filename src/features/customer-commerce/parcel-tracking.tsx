@@ -169,9 +169,9 @@ export function ParcelTracking({
 
           {sellerManaged && !tracking.tracking_url ? (
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              The shop is delivering this one themselves. Use the number above
-              with {tracking.courier_provider || 'their courier'}, or message the
-              shop if you need an update.
+              {tracking.tracking_number
+                ? `The shop is delivering this one themselves. Use the number above with ${tracking.courier_provider || 'their courier'}, or message the shop if you need an update.`
+                : 'The shop is delivering this one in person, so there is no courier to track. Message them if you need an update.'}
             </p>
           ) : null}
 

@@ -1,8 +1,18 @@
 import { api } from '@/lib/api'
-import type { CreateOrderInput, Order, OrderDetails } from '@/api/types'
+import type {
+  CreateOrderInput,
+  DeliveryQuote,
+  DeliveryQuoteInput,
+  Order,
+  OrderDetails,
+} from '@/api/types'
 
 export type {
   CreateOrderInput,
+  DeliveryQuote,
+  DeliveryQuoteInput,
+  DeliveryQuoteLine,
+  QuotedShipment,
   Order,
   OrderCreateInput,
   OrderDetails,
@@ -34,6 +44,18 @@ function compactCreateOrder(input: CreateOrderInput): CreateOrderInput {
   }
 
   return body
+}
+
+/**
+ * Prices delivery for the cart before the order exists, so checkout can show a
+ * real total. The server picks the cheapest service that still arrives by the
+ * requested date.
+ */
+export function quoteDelivery(body: DeliveryQuoteInput) {
+  return api<DeliveryQuote>('/customers/me/shipping/quote', {
+    method: 'POST',
+    body,
+  })
 }
 
 export function listOrders() {

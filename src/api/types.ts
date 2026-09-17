@@ -547,6 +547,50 @@ export type ManualShipmentInput = {
   tracking_url?: string
 }
 
+/** One cart line to price delivery for. */
+export type DeliveryQuoteLine = {
+  product_id: string
+  quantity: number
+}
+
+export type DeliveryQuoteInput = {
+  recipient_id: string
+  /** The date it should arrive — picks the cheapest service that makes it. */
+  delivery_date?: string
+  items: DeliveryQuoteLine[]
+}
+
+/** The service chosen for one shop's parcel. */
+export type QuotedShipment = {
+  shop_id: string
+  shop_name: string
+  provider: string
+  service_name: string
+  /** Minor units, in `currency`. */
+  amount: number
+  currency: string
+  estimated_days: number
+  /** Nothing quoted could make the date; the fastest was chosen instead. */
+  misses_delivery_date: boolean
+}
+
+export type DeliveryQuote = {
+  shipments: QuotedShipment[]
+  amount: number
+  currency: string
+  /** False when at least one shop could not be priced — see `unquoted`. */
+  complete: boolean
+  unquoted?: string[]
+}
+
+/**
+ * Body for a seller delivering an item personally — no courier, no tracking.
+ * The note is optional and only for the seller's own record.
+ */
+export type LocalDeliveryInput = {
+  note?: string
+}
+
 export type OrderDetails = Order & { items: OrderItem[] }
 
 export type OrderItemInput = {

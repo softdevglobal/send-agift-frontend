@@ -1,6 +1,7 @@
 import { api } from '@/lib/api'
 import type {
   BuyLabelInput,
+  LocalDeliveryInput,
   ManualShipmentInput,
   OrderItem,
   SellerOrderItemDetails,
@@ -15,6 +16,7 @@ export type {
   BuyLabelInput,
   CustomsDeclarationInput,
   CustomsItemInput,
+  LocalDeliveryInput,
   ManualShipmentInput,
   OrderItem,
   ParcelInput,
@@ -66,6 +68,28 @@ export function buyShippingLabel(orderItemID: string, body: BuyLabelInput) {
     method: 'POST',
     body,
   })
+}
+
+/**
+ * Starts a delivery the seller is making personally: no courier, no tracking
+ * number. Dispatches the item straight away.
+ */
+export function startLocalDelivery(orderItemID: string, body: LocalDeliveryInput = {}) {
+  return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/local`, {
+    method: 'POST',
+    body,
+  })
+}
+
+/**
+ * Confirms the seller handed the gift over. Marks the shipment and the item
+ * delivered, and the whole order too once nothing on it is still open.
+ */
+export function completeLocalDelivery(orderItemID: string) {
+  return api<Shipment>(
+    `/sellers/me/order-items/${orderItemID}/shipping/local/delivered`,
+    { method: 'POST' },
+  )
 }
 
 /**

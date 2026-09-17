@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  Bike,
   ExternalLink,
   Gift,
   LoaderCircle,
   MapPin,
   MessageSquare,
   Package,
+  PackageCheck,
   Truck,
   TriangleAlert,
   User,
@@ -16,6 +18,7 @@ import { listCountries, type Country } from '@/api/countries'
 import {
   acceptSellerOrderItem,
   buyShippingLabel,
+  completeLocalDelivery,
   getSellerOrderItem,
   getShippingRates,
   type SellerOrderItemDetails,
@@ -60,6 +63,7 @@ import {
 } from '@/features/seller-orders/order-item-display'
 import { FulfilmentStatusBadge } from '@/features/seller-orders/fulfilment-status-badge'
 import { LabelDownloadButton } from '@/features/seller-orders/label-download-button'
+import { LocalDeliveryDialog } from '@/features/seller-orders/local-delivery-dialog'
 import { ManualShipmentDialog } from '@/features/seller-orders/manual-shipment-dialog'
 import { ShippingRatesForm } from '@/features/seller-orders/shipping-rates-form'
 import { ApiError, getErrorMessage } from '@/lib/api'
@@ -114,6 +118,8 @@ export function SellerOrderItemDetailPanel({
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null)
   const [shipment, setShipment] = useState<Shipment | null>(null)
   const [manualShipOpen, setManualShipOpen] = useState(false)
+  const [localDeliveryOpen, setLocalDeliveryOpen] = useState(false)
+  const [completingLocal, setCompletingLocal] = useState(false)
   // Set when Shippo answered but no carrier account covers this route, which
   // no retry can change — the seller's only way forward is shipping it
   // themselves, so the offer to do that belongs next to the error.
@@ -146,6 +152,7 @@ export function SellerOrderItemDetailPanel({
       setIdempotencyKey(null)
       setShipment(null)
       setLaneUnservable(false)
+      setLocalDeliveryOpen(false)
       return
     }
     let cancelled = false
@@ -297,6 +304,24 @@ export function SellerOrderItemDetailPanel({
     }
   }
 
+  /** Confirms a personal delivery was handed over: item and order go delivered. */
+  async function handleCompleteLocal() {
+    if (!item) return
+    setCompletingLocal(true)
+    setError(null)
+    try {
+      const delivered = await completeLocalDelivery(item.id)
+      setShipment(delivered)
+      await load()
+      onChanged?.()
+      setToast('Marked as delivered.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not mark this as delivered.'))
+    } finally {
+      setCompletingLocal(false)
+    }
+  }
+
   async function handleBuyLabel() {
     if (!item || !selectedRate || !idempotencyKey) return
     if (!canGetShippingRates(item.fulfilment_status)) return
@@ -409,13 +434,26 @@ export function SellerOrderItemDetailPanel({
               ) : null}
 
               {rateable ? (
-                <button
-                  type="button"
-                  onClick={() => setManualShipOpen(true)}
-                  className="self-start text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  No carrier covers this route? Ship it yourself
-                </button>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                  {/* Two ways past the carrier: hand it over yourself, or use
+                      your own courier. Both skip Shippo entirely. */}
+                  <button
+                    type="button"
+                    onClick={() => setLocalDeliveryOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    <Bike className="size-3.5" />
+                    Deliver it yourself
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setManualShipOpen(true)}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    <Truck className="size-3.5" />
+                    Use your own courier
+                  </button>
+                </div>
               ) : null}
             </div>
           ) : null
@@ -440,14 +478,25 @@ export function SellerOrderItemDetailPanel({
                   will return the same answer. Ship it with your own courier
                   instead and record the tracking number here.
                 </p>
-                <Button
-                  type="button"
-                  onClick={() => setManualShipOpen(true)}
-                  className="mt-3 rounded-full"
-                >
-                  <Truck className="size-4" />
-                  Ship it yourself
-                </Button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => setLocalDeliveryOpen(true)}
+                    className="rounded-full"
+                  >
+                    <Bike className="size-4" />
+                    Deliver it yourself
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setManualShipOpen(true)}
+                    className="rounded-full"
+                  >
+                    <Truck className="size-4" />
+                    Use your own courier
+                  </Button>
+                </div>
               </div>
             ) : null}
 
@@ -610,7 +659,13 @@ export function SellerOrderItemDetailPanel({
             {dispatched ? (
               <SellerSheetSection
                 icon={Truck}
-                title={shipment?.delivery_mode === 'seller_managed' ? 'Shipped' : 'Label created'}
+                title={
+                  shipment?.status === 'delivered'
+                    ? 'Delivered'
+                    : shipment?.delivery_mode === 'seller_managed'
+                      ? 'Out for delivery'
+                      : 'Label created'
+                }
               >
                 <div className="rounded-xl border border-border/50 bg-surface/60 p-4">
                   {shipment ? (
@@ -644,9 +699,33 @@ export function SellerOrderItemDetailPanel({
                         </a>
                       ) : null}
                       {shipment.delivery_mode === 'seller_managed' ? (
-                        <p className="mt-3 text-xs text-muted-foreground">
-                          Shipped directly by the seller — no Shippo label for this item.
-                        </p>
+                        <>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            Delivered by you — no carrier label for this item.
+                          </p>
+                          {/* A personal delivery has no courier to report back,
+                              so the hand-over is confirmed here by hand. */}
+                          {shipment.status !== 'delivered' ? (
+                            <Button
+                              type="button"
+                              onClick={() => void handleCompleteLocal()}
+                              disabled={completingLocal}
+                              className="mt-3 rounded-full"
+                            >
+                              {completingLocal ? (
+                                <LoaderCircle className="size-4 animate-spin" />
+                              ) : (
+                                <PackageCheck className="size-4" />
+                              )}
+                              Mark as delivered
+                            </Button>
+                          ) : (
+                            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+                              <PackageCheck className="size-4" />
+                              Handed over to the recipient
+                            </p>
+                          )}
+                        </>
                       ) : (
                         <>
                           <LabelDownloadButton
@@ -686,6 +765,21 @@ export function SellerOrderItemDetailPanel({
           </>
         )}
       </SellerSheet>
+
+      {item ? (
+        <LocalDeliveryDialog
+          orderItemID={item.id}
+          open={localDeliveryOpen}
+          onOpenChange={setLocalDeliveryOpen}
+          onStarted={(started) => {
+            setShipment(started)
+            clearShippingDraft()
+            void load()
+            onChanged?.()
+            setToast('Delivery started. Confirm it once handed over.')
+          }}
+        />
+      ) : null}
 
       {item ? (
         <ManualShipmentDialog
