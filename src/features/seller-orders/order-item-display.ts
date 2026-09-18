@@ -11,7 +11,7 @@ import type {
   ShippingShipmentInput,
   ShippoRate,
 } from '@/api/types'
-import { minorToMajor } from '@/lib/money'
+import { formatPriceAmount, minorToMajor } from '@/lib/money'
 
 const RATEABLE_STATUSES: ReadonlySet<FulfilmentStatus> = new Set([
   'accepted',
@@ -124,6 +124,37 @@ export function formatShippoRateAmount(rate: Pick<ShippoRate, 'amount' | 'curren
     }).format(parsed)
   } catch {
     return `${rate.amount} ${code}`
+  }
+}
+
+/** Prefer `amount_major` (e.g. "45.65") over cents for checkout_selected display. */
+export function formatCheckoutSelectedAmount(selected: {
+  amount: number
+  amount_major?: string
+  currency: string
+}): string {
+  const code = (selected.currency || 'USD').toUpperCase()
+  const major = selected.amount_major?.trim()
+  if (major) return `${major} ${code}`
+  return formatPriceAmount(selected.amount, selected.currency || 'USD')
+}
+
+export function parcelFormFromProduct(
+  parcel?: ParcelInput | null,
+): ParcelFormState | null {
+  if (!parcel) return null
+  const length = String(parcel.length ?? '').trim()
+  const width = String(parcel.width ?? '').trim()
+  const height = String(parcel.height ?? '').trim()
+  const weight = String(parcel.weight ?? '').trim()
+  if (!length && !width && !height && !weight) return null
+  return {
+    length,
+    width,
+    height,
+    distance_unit: parcel.distance_unit || 'cm',
+    weight,
+    mass_unit: parcel.mass_unit || 'kg',
   }
 }
 

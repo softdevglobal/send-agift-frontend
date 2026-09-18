@@ -168,5 +168,5 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
     unavailable_dates: (inventory?.unavailable_dates ?? []).join('\n'),
   }
 }
-
 /** Product images are square, matching the customer gift card. */
+

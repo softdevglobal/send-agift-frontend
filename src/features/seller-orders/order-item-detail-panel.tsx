@@ -51,11 +51,13 @@ import {
   EMPTY_CUSTOMS_FORM,
   EMPTY_PARCEL_FORM,
   formatShippoRateAmount,
+  formatCheckoutSelectedAmount,
   formatShippingAddress,
   hasShippingAddress,
   isDispatchedOrderItem,
   isInternationalShipment,
   newLabelIdempotencyKey,
+  parcelFormFromProduct,
   resolveShipFrom,
   resolveShipTo,
   type CustomsFormState,
@@ -196,7 +198,10 @@ export function SellerOrderItemDetailPanel({
     if (itemChanged) {
       setFormItemId(item.id)
       setForceInternational(false)
-      setParcel(detected ? DEFAULT_PARCEL_FORM : EMPTY_PARCEL_FORM)
+      const fromProduct = parcelFormFromProduct(item.product?.parcel)
+      setParcel(
+        fromProduct ?? (detected ? DEFAULT_PARCEL_FORM : EMPTY_PARCEL_FORM),
+      )
       setCustoms(
         defaultCustomsForm({ item, certifySigner: signer, originCountry: origin }),
       )
@@ -229,6 +234,10 @@ export function SellerOrderItemDetailPanel({
 
   function selectRate(rate: ShippoRate) {
     if (!item) return
+    if (ratesResult?.must_buy_customer_courier) {
+      const recommendedId = ratesResult.recommended_rate_object_id?.trim()
+      if (!recommendedId || rate.object_id !== recommendedId) return
+    }
     if (selectedRate?.object_id === rate.object_id) return
     setSelectedRate(rate)
     setIdempotencyKey(newLabelIdempotencyKey(item.id))
@@ -270,8 +279,21 @@ export function SellerOrderItemDetailPanel({
     try {
       const result = await getShippingRates(item.id, built.body)
       setRatesResult(result)
-      setSelectedRate(null)
-      setIdempotencyKey(null)
+      const preferredId = result.recommended_rate_object_id?.trim() || ''
+      const preferred = preferredId
+        ? result.rates?.find((rate) => rate.object_id === preferredId)
+        : undefined
+      if (preferred) {
+        setSelectedRate(preferred)
+        setIdempotencyKey(newLabelIdempotencyKey(item.id))
+      } else if (result.must_buy_customer_courier) {
+        // Option B: server matches the customer courier; no rate pick needed.
+        setSelectedRate(null)
+        setIdempotencyKey(newLabelIdempotencyKey(item.id))
+      } else {
+        setSelectedRate(null)
+        setIdempotencyKey(null)
+      }
       if (!result.rates?.length) {
         setNotice('No shipping rates were returned. Check shop and recipient addresses.')
       }
@@ -323,17 +345,27 @@ export function SellerOrderItemDetailPanel({
   }
 
   async function handleBuyLabel() {
-    if (!item || !selectedRate || !idempotencyKey) return
+    if (!item || !idempotencyKey) return
     if (!canGetShippingRates(item.fulfilment_status)) return
+    const locked = Boolean(ratesResult?.must_buy_customer_courier)
+    if (!locked && !selectedRate) return
     setError(null)
     setNotice(null)
     setBuying(true)
     try {
-      const purchased = await buyShippingLabel(item.id, {
-        rate_object_id: selectedRate.object_id,
-        provider: selectedRate.provider,
-        idempotency_key: idempotencyKey,
-      })
+      const purchased = await buyShippingLabel(
+        item.id,
+        locked
+          ? {
+              use_customer_selected: true,
+              idempotency_key: idempotencyKey,
+            }
+          : {
+              rate_object_id: selectedRate!.object_id,
+              provider: selectedRate!.provider,
+              idempotency_key: idempotencyKey,
+            },
+      )
       setShipment(purchased)
       clearShippingDraft()
       await load()
@@ -341,10 +373,14 @@ export function SellerOrderItemDetailPanel({
       setNotice(SAMPLE_LABEL_NOTICE)
       setToast('Shipping label created.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not buy a shipping label.'))
-      if (err instanceof ApiError && err.status === 503) {
+      const message = getErrorMessage(err, 'Could not buy a shipping label.')
+      setError(message)
+      if (err instanceof ApiError && err.status === 409) {
+        // API already explains the lock; keep a single banner.
+        setNotice(null)
+      } else if (err instanceof ApiError && err.status === 503) {
         setNotice(SHIPPING_NOT_CONFIGURED_HINT)
-      } else if (err instanceof ApiError && (err.status === 409 || err.status === 404)) {
+      } else if (err instanceof ApiError && err.status === 404) {
         await load().catch(() => undefined)
       }
     } finally {
@@ -361,6 +397,10 @@ export function SellerOrderItemDetailPanel({
   const rateable = item ? canGetShippingRates(item.fulfilment_status) : false
   const dispatched = item ? isDispatchedOrderItem(item.fulfilment_status) : false
   const cancelled = item?.fulfilment_status === 'cancelled'
+  const customerCourierLocked = Boolean(ratesResult?.must_buy_customer_courier)
+  const canBuyLabel =
+    Boolean(idempotencyKey) &&
+    (customerCourierLocked || Boolean(selectedRate))
 
   return (
     <>
@@ -417,7 +457,7 @@ export function SellerOrderItemDetailPanel({
                   </Button>
                   <Button
                     type="button"
-                    disabled={!selectedRate || !idempotencyKey || buying}
+                    disabled={!canBuyLabel || buying}
                     onClick={handleBuyLabel}
                     className="h-11 flex-1 rounded-full"
                   >
@@ -551,6 +591,16 @@ export function SellerOrderItemDetailPanel({
                 <SellerSheetRow label="Item total" emphasis>
                   {formatPriceAmount(item.total_amount, currency)}
                 </SellerSheetRow>
+                {typeof item.order?.delivery_amount === 'number' ? (
+                  <SellerSheetRow label="Shipping">
+                    {formatPriceAmount(item.order.delivery_amount, currency)}
+                  </SellerSheetRow>
+                ) : null}
+                {typeof item.order?.total_amount === 'number' ? (
+                  <SellerSheetRow label="Order total" emphasis>
+                    {formatPriceAmount(item.order.total_amount, currency)}
+                  </SellerSheetRow>
+                ) : null}
               </SellerSheetFacts>
               {item.order?.gift_message ? (
                 <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm italic">
@@ -611,28 +661,68 @@ export function SellerOrderItemDetailPanel({
 
             {rateable && ratesResult?.rates?.length ? (
               <SellerSheetSection icon={Truck} title="Shipping rates">
+                {ratesResult.checkout_selected ? (
+                  <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-sm">
+                    <p className="font-medium">Customer selected at checkout</p>
+                    <p className="mt-0.5 text-muted-foreground">
+                      {ratesResult.checkout_selected.provider} ·{' '}
+                      {ratesResult.checkout_selected.service_name} ·{' '}
+                      {formatCheckoutSelectedAmount(ratesResult.checkout_selected)}
+                    </p>
+                    {customerCourierLocked ? (
+                      <p className="mt-2 text-muted-foreground">
+                        Buy label uses this courier. To change it,{' '}
+                        <Link
+                          to={`/seller/inbox?orderItem=${item.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          message the customer
+                        </Link>{' '}
+                        first.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <p className="text-sm text-muted-foreground">
-                  Pick a rate, then buy the label. {SAMPLE_LABEL_NOTICE}
+                  {customerCourierLocked
+                    ? 'Customer courier is locked. Buy label uses their choice.'
+                    : 'Pick a rate, then buy the label.'}{' '}
+                  {SAMPLE_LABEL_NOTICE}
                 </p>
                 <ul className="space-y-2">
                   {ratesResult.rates.map((rate) => {
+                    const recommendedId =
+                      ratesResult.recommended_rate_object_id?.trim() || ''
+                    const isRecommended = Boolean(
+                      recommendedId && rate.object_id === recommendedId,
+                    )
                     const selected = selectedRate?.object_id === rate.object_id
+                    const lockedOut = customerCourierLocked && !isRecommended
                     return (
                       <li key={rate.object_id}>
                         <button
                           type="button"
+                          disabled={lockedOut}
                           onClick={() => selectRate(rate)}
                           className={cn(
                             'w-full rounded-xl border px-4 py-3 text-left transition-colors',
+                            lockedOut && 'cursor-not-allowed opacity-50',
                             selected
                               ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                              : 'border-border/50 hover:border-border hover:bg-muted/40',
+                              : lockedOut
+                                ? 'border-border/40 bg-muted/20'
+                                : 'border-border/50 hover:border-border hover:bg-muted/40',
                           )}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-medium">
                                 {rate.provider} · {rate.service_name}
+                                {isRecommended ? (
+                                  <span className="ml-2 text-xs font-normal text-primary">
+                                    Customer courier
+                                  </span>
+                                ) : null}
                               </p>
                               <p className="mt-0.5 text-sm text-muted-foreground">
                                 {rate.estimated_days != null

@@ -12,11 +12,13 @@ export {
   EMPTY_CUSTOMS_FORM,
   EMPTY_PARCEL_FORM,
   formatShippoRateAmount,
+  formatCheckoutSelectedAmount,
   formatShippingAddress,
   hasShippingAddress,
   isDispatchedOrderItem,
   isInternationalShipment,
   newLabelIdempotencyKey,
+  parcelFormFromProduct,
   resolveShipFrom,
   resolveShipTo,
 } from './order-item-display'

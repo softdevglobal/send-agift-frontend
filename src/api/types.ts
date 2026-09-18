@@ -201,6 +201,8 @@ export type Product = {
   created_at: string
   updated_at: string
   image_url?: string | null
+  /** Optional shipping dimensions used for checkout quotes and seller rates. */
+  parcel?: ParcelInput | null
 }
 
 export type Inventory = {
@@ -236,6 +238,8 @@ export type ProductInput = {
   prep_minutes?: number
   image_url?: string | null
   inventory?: InventoryInput
+  /** Optional parcel for quotes/labels. */
+  parcel?: ParcelInput
 }
 
 export type Recipient = {
@@ -484,19 +488,71 @@ export type ShippoRate = {
   amount: string
   currency: string
   estimated_days: number
-  duration_terms: string
+  duration_terms?: string
   service_name: string
 }
 
 export type ShippingRatesResult = {
   shipment_object_id: string
+  international?: boolean
   rates: ShippoRate[]
+  /** Rate the customer chose at checkout for this line's shop, when still known. */
+  checkout_selected?: CheckoutSelectedRate | null
+  /**
+   * Fresh Shippo rate to buy — always use this for BuyLabel when present.
+   * Never reuse `checkout_selected.rate_object_id` (it expires).
+   */
+  recommended_rate_object_id?: string | null
+  /** What the customer paid / was quoted for delivery (minor units / cents). */
+  customer_delivery_amount?: number
+  currency?: string
+  /** When true, BuyLabel must use the customer courier (or chat to change). */
+  must_buy_customer_courier?: boolean
 }
 
-export type BuyLabelInput = {
-  rate_object_id: string
+/** Snapshot of the courier option the buyer picked at checkout. */
+export type CheckoutSelectedRate = {
   provider: string
+  service_name: string
+  /** Minor units (cents) in `currency`. */
+  amount: number
+  /** Major-unit display string, e.g. "79.51". Prefer this in UI. */
+  amount_major?: string
+  currency: string
+  /**
+   * Checkout-time Shippo rate id when returned — history only; do not BuyLabel with it.
+   * Matching for buy uses provider + service_name → recommended_rate_object_id.
+   */
+  rate_object_id?: string
+}
+
+/**
+ * Buy a label.
+ *
+ * Option A: fresh `rate_object_id` + `provider` + `idempotency_key` from latest rates.
+ * Option B: `use_customer_selected: true` + `idempotency_key` (server matches courier by name).
+ * `idempotency_key` is always required.
+ */
+export type BuyLabelInput = {
   idempotency_key: string
+  /** Fresh id from latest /shipping/rates (`recommended_rate_object_id`). */
+  rate_object_id?: string
+  provider?: string
+  /** When true, API buys the customer-locked courier from the latest rates. */
+  use_customer_selected?: boolean
+}
+
+/** Shippo (and similar) extras returned with a bought label. */
+export type ShipmentProviderMetadata = {
+  label_url?: string | null
+  tracking_number?: string | null
+  tracking_url_provider?: string | null
+  tracking_status?: string | null
+  commercial_invoice_url?: string | null
+  qr_code_url?: string | null
+  test?: boolean
+  status?: string | null
+  [key: string]: unknown
 }
 
 export type Shipment = {
@@ -515,8 +571,15 @@ export type Shipment = {
   provider_shipment_id: string
   provider_customs_declaration_id?: string
   provider_tracking_url: string
+  provider_metadata?: ShipmentProviderMetadata | null
   created_at: string
   updated_at: string
+}
+
+/** PDF URL from provider metadata when present. */
+export function resolveShipmentLabelUrl(shipment: Shipment): string | null {
+  const url = shipment.provider_metadata?.label_url
+  return typeof url === 'string' && url.trim() ? url.trim() : null
 }
 
 /**
@@ -560,6 +623,28 @@ export type DeliveryQuoteInput = {
   items: DeliveryQuoteLine[]
 }
 
+/** One courier option for a shop — AliExpress-style delivery picker. */
+export type DeliveryQuoteOption = {
+  provider: string
+  service_name: string
+  /** Minor units, in `currency`. */
+  amount: number
+  currency: string
+  estimated_days: number
+  /** Calendar days until estimated arrival from today / quote time. */
+  days_available: number
+  recommended?: boolean
+  rate_object_id: string
+  shipment_object_id: string
+}
+
+export type DeliveryQuoteShop = {
+  shop_id: string
+  shop_name: string
+  shipment_object_id?: string
+  options: DeliveryQuoteOption[]
+}
+
 /** The service chosen for one shop's parcel. */
 export type QuotedShipment = {
   shop_id: string
@@ -570,11 +655,19 @@ export type QuotedShipment = {
   amount: number
   currency: string
   estimated_days: number
+  days_available?: number
   /** Nothing quoted could make the date; the fastest was chosen instead. */
   misses_delivery_date: boolean
+  /** Shippo rate id — pass back on create order as `shipping_quotes`. */
+  rate_object_id?: string
+  /** Shippo shipment id — pass back on create order as `shipping_quotes`. */
+  shipment_object_id?: string
 }
 
 export type DeliveryQuote = {
+  /** Per-shop courier menus for the checkout picker. */
+  shops?: DeliveryQuoteShop[]
+  /** Recommended option per shop (same as picking each shop's recommended). */
   shipments: QuotedShipment[]
   amount: number
   currency: string
@@ -598,6 +691,18 @@ export type OrderItemInput = {
   quantity: number
 }
 
+/** One shop's quoted rate locked in when placing the order. */
+export type OrderShippingQuote = {
+  shop_id: string
+  rate_object_id: string
+  shipment_object_id: string
+  provider: string
+  service_name: string
+  /** Minor units. */
+  amount: number
+  currency: string
+}
+
 export type CreateOrderInput = {
   recipient_id?: string
   country_id: string
@@ -609,6 +714,8 @@ export type CreateOrderInput = {
   media_greeting_id?: string
   /** Minor units. Line prices come from the product, not the client. */
   delivery_amount?: number
+  /** Quoted rates from POST /shipping/quote — optional but preferred when present. */
+  shipping_quotes?: OrderShippingQuote[]
   items: OrderItemInput[]
 }
 
