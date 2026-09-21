@@ -1,13 +1,14 @@
-import { Boxes, Eye, ImagePlus, LoaderCircle, Package, Tag, Upload, X } from 'lucide-react'
+import { Boxes, Eye, ImagePlus, LoaderCircle, Package, Ruler, Tag, Upload, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicImage } from '@/api/media'
-import { KNOWN_CURRENCIES } from '@/api/types'
+import { KNOWN_CURRENCIES, PARCEL_DISTANCE_UNITS, PARCEL_MASS_UNITS } from '@/api/types'
 import {
   emptyForm,
+  parcelComplete,
   parseTags,
   toProductInput,
   type ProductFormState,
@@ -45,7 +46,8 @@ type ProductWizardProps = {
 
 /**
  * Listing or editing a gift, one step at a time: what it is, what it costs,
- * how it looks, how many there are — and a preview of the shelf card.
+ * how it looks, how many there are, the parcel size — and a preview of the
+ * shelf card.
  *
  * Deliberately the same shell, rhythm and preview step as the reel wizard, so
  * publishing anything in the seller portal feels like one flow.
@@ -411,6 +413,96 @@ export function ProductWizard({
       ),
     },
     {
+      id: 'parcel',
+      title: 'Parcel',
+      description: 'Box size and weight for shipping quotes and labels.',
+      icon: Ruler,
+      blockedReason: parcelComplete(form)
+        ? null
+        : 'Enter length, width, height, and weight greater than 0.',
+      content: (
+        <WizardFields>
+          <WizardField label="Length" htmlFor="wizard-parcel-length">
+            <Input
+              id="wizard-parcel-length"
+              inputMode="decimal"
+              value={form.parcel_length}
+              onChange={(event) => update('parcel_length', event.target.value)}
+              placeholder="20"
+            />
+          </WizardField>
+          <WizardField label="Width" htmlFor="wizard-parcel-width">
+            <Input
+              id="wizard-parcel-width"
+              inputMode="decimal"
+              value={form.parcel_width}
+              onChange={(event) => update('parcel_width', event.target.value)}
+              placeholder="15"
+            />
+          </WizardField>
+          <WizardField label="Height" htmlFor="wizard-parcel-height">
+            <Input
+              id="wizard-parcel-height"
+              inputMode="decimal"
+              value={form.parcel_height}
+              onChange={(event) => update('parcel_height', event.target.value)}
+              placeholder="10"
+            />
+          </WizardField>
+          <WizardField label="Size unit" htmlFor="wizard-parcel-distance">
+            <select
+              id="wizard-parcel-distance"
+              value={form.parcel_distance_unit}
+              onChange={(event) =>
+                update(
+                  'parcel_distance_unit',
+                  event.target.value as ProductFormState['parcel_distance_unit'],
+                )
+              }
+              className={selectClassName}
+            >
+              {PARCEL_DISTANCE_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </WizardField>
+          <WizardField label="Weight" htmlFor="wizard-parcel-weight">
+            <Input
+              id="wizard-parcel-weight"
+              inputMode="decimal"
+              value={form.parcel_weight}
+              onChange={(event) => update('parcel_weight', event.target.value)}
+              placeholder="1.200"
+            />
+          </WizardField>
+          <WizardField label="Weight unit" htmlFor="wizard-parcel-mass">
+            <select
+              id="wizard-parcel-mass"
+              value={form.parcel_mass_unit}
+              onChange={(event) =>
+                update(
+                  'parcel_mass_unit',
+                  event.target.value as ProductFormState['parcel_mass_unit'],
+                )
+              }
+              className={selectClassName}
+            >
+              {PARCEL_MASS_UNITS.map((unit) => (
+                <option key={unit} value={unit}>
+                  {unit}
+                </option>
+              ))}
+            </select>
+          </WizardField>
+          <p className="text-xs text-muted-foreground sm:col-span-2">
+            Used when customers get delivery quotes and when you buy a shipping label.
+          </p>
+        </WizardFields>
+      ),
+    },
+    {
       id: 'preview',
       title: 'Preview',
       description: 'This is the card customers will see.',
@@ -461,6 +553,10 @@ export function ProductWizard({
                 }
               />
               <SummaryRow label="In stock" value={form.available_qty || '0'} />
+              <SummaryRow
+                label="Parcel"
+                value={`${form.parcel_length}×${form.parcel_width}×${form.parcel_height} ${form.parcel_distance_unit} · ${form.parcel_weight} ${form.parcel_mass_unit}`}
+              />
               <SummaryRow
                 label="Status"
                 value={form.status === 'published' ? 'Published' : 'Draft'}

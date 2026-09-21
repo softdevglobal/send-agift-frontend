@@ -1,8 +1,13 @@
 import {
   KNOWN_CURRENCIES,
+  PARCEL_DISTANCE_UNITS,
+  PARCEL_MASS_UNITS,
   type CustomerTypeVisibility,
   type InventoryInput,
   type KnownCurrency,
+  type ParcelDistanceUnit,
+  type ParcelInput,
+  type ParcelMassUnit,
   type Product,
   type ProductInput,
   type ProductStatus,
@@ -35,6 +40,13 @@ export type ProductFormState = {
   reserved_qty: string
   low_stock_threshold: string
   unavailable_dates: string
+  /** Shipping parcel — required for quotes and labels. */
+  parcel_length: string
+  parcel_width: string
+  parcel_height: string
+  parcel_distance_unit: ParcelDistanceUnit
+  parcel_weight: string
+  parcel_mass_unit: ParcelMassUnit
 }
 
 export const emptyForm: ProductFormState = {
@@ -54,6 +66,12 @@ export const emptyForm: ProductFormState = {
   reserved_qty: '0',
   low_stock_threshold: '0',
   unavailable_dates: '',
+  parcel_length: '20',
+  parcel_width: '15',
+  parcel_height: '10',
+  parcel_distance_unit: 'cm',
+  parcel_weight: '1.200',
+  parcel_mass_unit: 'kg',
 }
 
 export function parseNonNegativeInt(value: string, fallback = 0): number {
@@ -78,6 +96,46 @@ function parseDates(value: string): string[] {
 
 function isKnownCurrency(value: string): value is KnownCurrency {
   return (KNOWN_CURRENCIES as readonly string[]).includes(value)
+}
+
+function isPositiveDecimal(value: string): boolean {
+  const parsed = Number(value)
+  return value.trim() !== '' && Number.isFinite(parsed) && parsed > 0
+}
+
+/** Builds the API `parcel` object, or an error string if incomplete. */
+export function toParcelInput(form: ProductFormState): ParcelInput | string {
+  if (
+    !isPositiveDecimal(form.parcel_length) ||
+    !isPositiveDecimal(form.parcel_width) ||
+    !isPositiveDecimal(form.parcel_height)
+  ) {
+    return 'Parcel length, width, and height must be numbers greater than 0.'
+  }
+  if (!isPositiveDecimal(form.parcel_weight)) {
+    return 'Parcel weight must be a number greater than 0.'
+  }
+  if (
+    !(PARCEL_DISTANCE_UNITS as readonly string[]).includes(form.parcel_distance_unit)
+  ) {
+    return 'Parcel distance unit must be cm or in.'
+  }
+  if (!(PARCEL_MASS_UNITS as readonly string[]).includes(form.parcel_mass_unit)) {
+    return 'Parcel mass unit must be kg or lb.'
+  }
+
+  return {
+    length: form.parcel_length.trim(),
+    width: form.parcel_width.trim(),
+    height: form.parcel_height.trim(),
+    distance_unit: form.parcel_distance_unit,
+    weight: form.parcel_weight.trim(),
+    mass_unit: form.parcel_mass_unit,
+  }
+}
+
+export function parcelComplete(form: ProductFormState): boolean {
+  return typeof toParcelInput(form) !== 'string'
 }
 
 export function toInventoryInput(form: ProductFormState): InventoryInput {
@@ -106,9 +164,13 @@ export function toProductInput(
     return 'Unavailable dates must be YYYY-MM-DD.'
   }
 
+  const parcel = toParcelInput(form)
+  if (typeof parcel === 'string') return parcel
+
   const input: ProductInput = {
     name: form.name.trim(),
     currency,
+    parcel,
   }
 
   const slug = optionalString(form.slug)
@@ -149,6 +211,7 @@ export function toProductInput(
 }
 
 export function productToForm(product: Product, inventory?: InventoryInput): ProductFormState {
+  const parcel = product.parcel
   return {
     name: product.name,
     slug: product.slug ?? '',
@@ -166,7 +229,12 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
     reserved_qty: String(inventory?.reserved_qty ?? 0),
     low_stock_threshold: String(inventory?.low_stock_threshold ?? 0),
     unavailable_dates: (inventory?.unavailable_dates ?? []).join('\n'),
+    parcel_length: parcel?.length?.trim() || emptyForm.parcel_length,
+    parcel_width: parcel?.width?.trim() || emptyForm.parcel_width,
+    parcel_height: parcel?.height?.trim() || emptyForm.parcel_height,
+    parcel_distance_unit: parcel?.distance_unit || emptyForm.parcel_distance_unit,
+    parcel_weight: parcel?.weight?.trim() || emptyForm.parcel_weight,
+    parcel_mass_unit: parcel?.mass_unit || emptyForm.parcel_mass_unit,
   }
 }
 /** Product images are square, matching the customer gift card. */
-

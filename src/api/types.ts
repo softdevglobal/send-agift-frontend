@@ -238,8 +238,8 @@ export type ProductInput = {
   prep_minutes?: number
   image_url?: string | null
   inventory?: InventoryInput
-  /** Optional parcel for quotes/labels. */
-  parcel?: ParcelInput
+  /** Shipping parcel for checkout quotes and seller labels. */
+  parcel: ParcelInput
 }
 
 export type Recipient = {
