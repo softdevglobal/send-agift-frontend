@@ -1,11 +1,16 @@
 import {
+  Brain,
   Car,
   CircleDot,
+  Circle,
+  Footprints,
   Gamepad2,
   Grid3x3,
+  Hammer,
   Layers,
   Puzzle,
   Rocket,
+  Slice,
   Spline,
   Target,
   Trophy,
@@ -28,6 +33,12 @@ const LOOKS: Record<string, GameLook> = {
   'block-blast': { icon: Grid3x3, from: '#4338CA', to: '#22D3EE' },
   'sling-shot': { icon: Rocket, from: '#D76D77', to: '#FFAF7B' },
   'hill-rider': { icon: Car, from: '#3282B8', to: '#F9D56E' },
+  'memory-match': { icon: Brain, from: '#7C3AED', to: '#F0ABFC' },
+  'whack-a-mole': { icon: Hammer, from: '#B45309', to: '#FCD34D' },
+  'bubble-shooter': { icon: Circle, from: '#0891B2', to: '#67E8F9' },
+  'tower-blocks': { icon: Layers, from: '#1D4ED8', to: '#93C5FD' },
+  'fruit-slice': { icon: Slice, from: '#BE123C', to: '#FDA4AF' },
+  'doodle-jump': { icon: Footprints, from: '#047857', to: '#6EE7B7' },
 }
 
 export function gameLook(slug: string): GameLook {
