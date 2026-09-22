@@ -19,7 +19,15 @@ import {
   type RecipientAddress,
   type RecipientDetails,
 } from '@/api/customers'
-import { createOrder, quoteDelivery, type DeliveryQuote } from '@/api/orders'
+import {
+  createOrder,
+  defaultQuoteSelections,
+  quoteDelivery,
+  selectionsDeliveryAmount,
+  selectionsToShippingQuotes,
+  type DeliveryQuote,
+  type DeliveryQuoteOption,
+} from '@/api/orders'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,7 +99,16 @@ function sameCurrency(a: string | undefined, b: string): boolean {
   return Boolean(a) && a!.toUpperCase() === b.toUpperCase()
 }
 
-function formatRecipientAddress(address: RecipientAddress, countryName?: string) {
+function formatStreetAddress(
+  address: {
+    line1: string
+    line2?: string | null
+    city: string
+    region?: string | null
+    postal_code?: string | null
+  },
+  countryName?: string,
+) {
   return [address.line1, address.line2, address.city, address.region, address.postal_code, countryName]
     .filter(Boolean)
     .join(', ')
@@ -113,6 +130,9 @@ export function CheckoutPage() {
   const [recipientLoading, setRecipientLoading] = useState(false)
   const [countryId, setCountryId] = useState('')
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
+  const [quoteSelections, setQuoteSelections] = useState<
+    Record<string, DeliveryQuoteOption>
+  >({})
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [customerType, setCustomerType] = useState<CartCustomerType>(
     cartCustomerType ?? 'personal',
@@ -199,6 +219,7 @@ export function CheckoutPage() {
 
     if (!recipientId || !deliveryDate || items.length === 0) {
       setQuote(null)
+      setQuoteSelections({})
       return
     }
     let cancelled = false
@@ -209,12 +230,17 @@ export function CheckoutPage() {
       items,
     })
       .then((result) => {
-        if (!cancelled) setQuote(result)
+        if (cancelled) return
+        setQuote(result)
+        setQuoteSelections(defaultQuoteSelections(result))
       })
       .catch(() => {
         // A failed quote must not block checkout — delivery is then arranged
         // after the order, exactly as it was before this existed.
-        if (!cancelled) setQuote(null)
+        if (!cancelled) {
+          setQuote(null)
+          setQuoteSelections({})
+        }
       })
       .finally(() => {
         if (!cancelled) setQuoteLoading(false)
@@ -241,6 +267,12 @@ export function CheckoutPage() {
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
+  const selectedDeliveryAmount = selectionsDeliveryAmount(quoteSelections)
+  const deliveryCurrency =
+    Object.values(quoteSelections)[0]?.currency || quote?.currency || currency
+  const hasQuoteSelections = Object.keys(quoteSelections).length > 0
+  const quoteComplete = Boolean(quote?.complete && hasQuoteSelections)
+
   const blocker = unorderable.length
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
     : mixedCurrency
@@ -257,18 +289,22 @@ export function CheckoutPage() {
     setError(null)
     setSubmitting(true)
     try {
+      const shippingQuotes = quoteComplete
+        ? selectionsToShippingQuotes(quoteSelections)
+        : []
+      const deliveryAmount =
+        quoteComplete && sameCurrency(deliveryCurrency, currency)
+          ? selectedDeliveryAmount
+          : undefined
+
       const order = await createOrder({
         ...(recipientId ? { recipient_id: recipientId } : {}),
         country_id: countryId,
         customer_type: customerType,
         delivery_date: deliveryDate,
         ...(giftMessage.trim() ? { gift_message: giftMessage.trim() } : {}),
-        // Only send a delivery amount that was actually quoted, and only when
-        // it is in the order's own currency — the order stores a bare integer,
-        // so a USD quote saved against an AUD order would be silently wrong.
-        ...(quote?.complete && sameCurrency(quote.currency, currency)
-          ? { delivery_amount: quote.amount }
-          : {}),
+        ...(typeof deliveryAmount === 'number' ? { delivery_amount: deliveryAmount } : {}),
+        ...(shippingQuotes.length ? { shipping_quotes: shippingQuotes } : {}),
         items: lines.map((line) => ({
           product_id: line.product.id,
           quantity: line.quantity,
@@ -387,7 +423,7 @@ export function CheckoutPage() {
                           <p className="font-medium">{recipientDetails.name}</p>
                           <p className="mt-0.5 flex items-start gap-1.5 text-muted-foreground">
                             <MapPin className="mt-0.5 size-3.5 shrink-0" />
-                            <span>{formatRecipientAddress(address, countryName)}</span>
+                            <span>{formatStreetAddress(address, countryName)}</span>
                           </p>
                           {recipientDetails.phone ? (
                             <p className="mt-0.5 pl-5 text-muted-foreground">
@@ -511,6 +547,92 @@ export function CheckoutPage() {
               </div>
             </div>
           </section>
+
+          {recipientId ? (
+            <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                  <Truck className="size-4" />
+                </span>
+                <div>
+                  <h2 className="font-medium">Delivery options</h2>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Pick a courier for each shop. Days available and price update the total.
+                  </p>
+                </div>
+              </div>
+
+              {quoteLoading ? (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-3.5 animate-spin" />
+                  Getting courier options…
+                </p>
+              ) : quote?.shops?.length ? (
+                <div className="space-y-5">
+                  {quote.shops.map((shop) => (
+                    <div key={shop.shop_id} className="space-y-2">
+                      <p className="text-sm font-medium">{shop.shop_name}</p>
+                      <ul className="space-y-2">
+                        {shop.options.map((option) => {
+                          const selected =
+                            quoteSelections[shop.shop_id]?.rate_object_id ===
+                            option.rate_object_id
+                          return (
+                            <li key={option.rate_object_id}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setQuoteSelections((current) => ({
+                                    ...current,
+                                    [shop.shop_id]: option,
+                                  }))
+                                }
+                                className={cn(
+                                  'flex w-full items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
+                                  selected
+                                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                    : 'border-border/50 hover:border-border hover:bg-muted/40',
+                                )}
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium">
+                                    {option.provider} · {option.service_name}
+                                    {option.recommended ? (
+                                      <span className="ml-2 text-xs font-normal text-primary">
+                                        Recommended
+                                      </span>
+                                    ) : null}
+                                  </p>
+                                  <p className="mt-0.5 text-sm text-muted-foreground">
+                                    {option.days_available} day
+                                    {option.days_available === 1 ? '' : 's'} available
+                                    {option.estimated_days != null
+                                      ? ` · ~${option.estimated_days} day transit`
+                                      : ''}
+                                  </p>
+                                </div>
+                                <p className="shrink-0 font-medium">
+                                  {formatPriceAmount(option.amount, option.currency)}
+                                </p>
+                              </button>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              ) : quote?.complete ? (
+                <p className="text-sm text-muted-foreground">
+                  Delivery is priced. Courier details will be confirmed with the shop.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Courier options appear once this address can be quoted.
+                </p>
+              )}
+            </section>
+          ) : null}
         </div>
 
         <aside className={cn(customerPanelClass, 'h-fit p-5 lg:sticky lg:top-24')}>
@@ -549,14 +671,14 @@ export function CheckoutPage() {
 
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
-              <dd className={quote?.complete ? undefined : 'text-muted-foreground'}>
+              <dd className={quoteComplete ? undefined : 'text-muted-foreground'}>
                 {quoteLoading ? (
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <LoaderCircle className="size-3 animate-spin" />
                     Pricing…
                   </span>
-                ) : quote?.complete ? (
-                  formatPriceAmount(quote.amount, quote.currency || currency)
+                ) : quoteComplete ? (
+                  formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)
                 ) : !recipientId ? (
                   'Pick a recipient'
                 ) : (
@@ -565,42 +687,47 @@ export function CheckoutPage() {
               </dd>
             </div>
 
-            {/* Which service was picked, and why — one line per shop, because a
-                cart can span shops that each post their own parcel. */}
-            {quote?.shipments.map((shipment) => (
-              <div
-                key={shipment.shop_id}
-                className="flex justify-between gap-4 text-xs text-muted-foreground"
-              >
-                <dt className="flex min-w-0 items-start gap-1.5">
-                  <Truck className="mt-0.5 size-3 shrink-0" />
-                  <span className="min-w-0 truncate">
-                    {shipment.shop_name} · {shipment.provider} {shipment.service_name}
-                    {shipment.estimated_days > 0
-                      ? ` · ${shipment.estimated_days} day${shipment.estimated_days === 1 ? '' : 's'}`
-                      : ''}
-                  </span>
-                </dt>
-                <dd className="shrink-0">
-                  {formatPriceAmount(shipment.amount, shipment.currency)}
-                </dd>
-              </div>
-            ))}
+            {Object.entries(quoteSelections).map(([shopId, option]) => {
+              const shopName =
+                quote?.shops?.find((shop) => shop.shop_id === shopId)?.shop_name ||
+                quote?.shipments.find((shipment) => shipment.shop_id === shopId)
+                  ?.shop_name ||
+                'Shop'
+              return (
+                <div
+                  key={shopId}
+                  className="flex justify-between gap-4 text-xs text-muted-foreground"
+                >
+                  <dt className="flex min-w-0 items-start gap-1.5">
+                    <Truck className="mt-0.5 size-3 shrink-0" />
+                    <span className="min-w-0 truncate">
+                      {shopName} · {option.provider} {option.service_name}
+                      {option.days_available > 0
+                        ? ` · ${option.days_available} day${option.days_available === 1 ? '' : 's'}`
+                        : ''}
+                    </span>
+                  </dt>
+                  <dd className="shrink-0">
+                    {formatPriceAmount(option.amount, option.currency)}
+                  </dd>
+                </div>
+              )
+            })}
 
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 text-base font-medium">
               <dt>Total</dt>
               <dd className="text-right">
-                {quote?.complete && sameCurrency(quote.currency, currency) ? (
+                {quoteComplete && sameCurrency(deliveryCurrency, currency) ? (
                   formatPriceAmount(
-                    majorToMinor(subtotal, currency) + quote.amount,
+                    majorToMinor(subtotal, currency) + selectedDeliveryAmount,
                     currency,
                   )
-                ) : quote?.complete ? (
-                  // Two currencies, no exchange rate to combine them with.
+                ) : quoteComplete ? (
                   <span className="inline-flex flex-col items-end">
                     <span>{money(subtotal)}</span>
                     <span className="text-sm font-normal text-muted-foreground">
-                      + {formatPriceAmount(quote.amount, quote.currency)} delivery
+                      + {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}{' '}
+                      delivery
                     </span>
                   </span>
                 ) : (
@@ -610,9 +737,9 @@ export function CheckoutPage() {
             </div>
           </dl>
 
-          {quote?.complete && !sameCurrency(quote.currency, currency) ? (
+          {quoteComplete && !sameCurrency(deliveryCurrency, currency) ? (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              The carrier quotes delivery in {quote.currency.toUpperCase()} while this
+              The carrier quotes delivery in {deliveryCurrency.toUpperCase()} while this
               cart is priced in {currency.toUpperCase()}, so the two are shown
               separately rather than converted at a rate we cannot verify.
             </p>

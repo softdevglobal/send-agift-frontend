@@ -210,11 +210,23 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     shop?.name?.trim() ||
     published.shop_name?.trim() ||
     ''
+  const media = [...(product.media ?? [])]
+    .sort((a, b) => a.position - b.position)
+    .map((item) => ({
+      id: item.media_asset_id,
+      position: item.position,
+      assetType: item.asset_type,
+      url: item.cdn_url,
+      mimeType: item.mime_type,
+    }))
+  const coverFromMedia = media.find(
+    (item) => item.assetType === 'image' || item.mimeType.startsWith('image/'),
+  )?.url
   return {
     id: product.id,
     name: product.name,
     price: minorToMajor(product.price_amount, product.currency),
-    image: product.image_url || PLACEHOLDER_IMAGE,
+    image: coverFromMedia || product.image_url || PLACEHOLDER_IMAGE,
     categoryId: (product.occasion_tags?.[0] ?? '').toLowerCase(),
     sellerName,
     sellerLegalName: legalName || undefined,
@@ -232,6 +244,7 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     reviews: 0,
     currency: product.currency,
     priceAmount: product.price_amount,
+    media: media.length ? media : undefined,
   }
 }
 

@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock,
+  Film,
   LoaderCircle,
   MessageSquare,
   Minus,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { getPublicProduct } from '@/api/products'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
@@ -25,6 +27,7 @@ import {
   registerCatalogProducts,
   useCart,
 } from '@/features/customer-commerce'
+import type { CatalogProductMedia } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import { useAuth } from '@/features/auth/auth-context'
 import { MessageShopButton, useCustomerMessages } from '@/features/messaging'
@@ -50,10 +53,15 @@ export function ProductViewPage() {
   const { askAboutProduct } = useCustomerMessages()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  const [activeMedia, setActiveMedia] = useState(0)
   const [product, setProduct] = useState(() =>
     productId ? getCatalogProduct(productId) : null,
   )
   const [loading, setLoading] = useState(!product)
+
+  useEffect(() => {
+    setActiveMedia(0)
+  }, [productId])
 
   useEffect(() => {
     if (!productId) return
@@ -78,13 +86,29 @@ export function ProductViewPage() {
     }
 
     applyLocal()
-    void loadMarketplaceIntoCatalog()
-      .then(() => {
-        if (!cancelled) applyLocal()
-      })
-      .catch(() => {
-        if (!cancelled) applyLocal()
-      })
+    void Promise.all([
+      loadMarketplaceIntoCatalog().catch(() => undefined),
+      getPublicProduct(productId, 'personal')
+        .then((details) => {
+          const mapped = catalogProductFromApi(details)
+          if (details.shop) {
+            mapped.shopId = details.shop.id || mapped.shopId
+            mapped.shopName = details.shop.name?.trim() || mapped.shopName
+            mapped.shopLocation =
+              details.shop.customer_visible_location?.trim() || mapped.shopLocation
+            mapped.shopDescription =
+              details.shop.description || mapped.shopDescription
+          }
+          registerCatalogProducts([mapped])
+          if (!cancelled) {
+            setProduct(mapped)
+            setLoading(false)
+          }
+        })
+        .catch(() => undefined),
+    ]).then(() => {
+      if (!cancelled) applyLocal()
+    })
 
     const unsubCatalog = subscribePublishedCatalog(applyLocal)
     const unsubSellers = subscribePublicSellers(applyLocal)
@@ -170,6 +194,21 @@ export function ProductViewPage() {
   const description = product.description.trim()
   const category = categoryName(product.categoryId)
   const isCustomer = isAuthenticated && role === 'customer'
+  const gallery: CatalogProductMedia[] =
+    product.media && product.media.length > 0
+      ? product.media
+      : [
+          {
+            id: 'cover',
+            position: 0,
+            assetType: 'image',
+            url: product.image,
+            mimeType: 'image/jpeg',
+          },
+        ]
+  const current = gallery[Math.min(activeMedia, gallery.length - 1)] ?? gallery[0]
+  const currentIsVideo =
+    current?.assetType === 'video' || current?.mimeType.startsWith('video/')
 
   function handleAdd() {
     addItem(gift.id, quantity)
@@ -187,16 +226,66 @@ export function ProductViewPage() {
         </Button>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="relative overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="aspect-square w-full object-cover"
-            />
-            <SaveGiftButton
-              productId={product.id}
-              className="absolute top-3 right-3 z-10"
-            />
+          <div className="space-y-3">
+            <div className="relative overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
+              {currentIsVideo ? (
+                <video
+                  key={current.url}
+                  src={current.url}
+                  controls
+                  playsInline
+                  className="aspect-square w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={current?.url || product.image}
+                  alt={product.name}
+                  className="aspect-square w-full object-cover"
+                />
+              )}
+              <SaveGiftButton
+                productId={product.id}
+                className="absolute top-3 right-3 z-10"
+              />
+            </div>
+            {gallery.length > 1 ? (
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {gallery.map((item, index) => {
+                  const video =
+                    item.assetType === 'video' || item.mimeType.startsWith('video/')
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setActiveMedia(index)}
+                      className={cn(
+                        'relative size-16 shrink-0 overflow-hidden rounded-xl ring-1 transition-shadow',
+                        index === activeMedia
+                          ? 'ring-2 ring-primary'
+                          : 'ring-border/50 hover:ring-border',
+                      )}
+                    >
+                      {video ? (
+                        <>
+                          <video
+                            src={item.url}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="size-full object-cover"
+                          />
+                          <span className="absolute inset-0 grid place-items-center bg-black/25">
+                            <Film className="size-4 text-white" />
+                          </span>
+                        </>
+                      ) : (
+                        <img src={item.url} alt="" className="size-full object-cover" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            ) : null}
           </div>
 
           <div>
