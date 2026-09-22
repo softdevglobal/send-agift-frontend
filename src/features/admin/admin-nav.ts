@@ -1,15 +1,21 @@
 import {
+  Gamepad2,
   Globe2,
   LayoutDashboard,
   MessageSquare,
   ShieldCheck,
   Store,
+  Trophy,
   UserCircle,
   Users,
   type LucideIcon,
 } from 'lucide-react'
 
+import type { UserRole } from '@/lib/auth'
+
 export type AdminNavItem = {
+  /** Only these roles see the item; everyone in the console when unset. */
+  roles?: UserRole[]
   to: string
   label: string
   icon: LucideIcon
@@ -43,6 +49,13 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/sellers', label: 'Sellers', icon: Store, soon: true },
       { to: '/admin/customers', label: 'Customers', icon: Users, soon: true },
+    ],
+  },
+  {
+    label: 'Games',
+    items: [
+      { to: '/admin/games', label: 'Games & scores', icon: Gamepad2 },
+      { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
     ],
   },
   {

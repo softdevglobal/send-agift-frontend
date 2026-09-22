@@ -8,6 +8,10 @@ import { SellerShell } from '@/features/seller'
 import { AccountAddressesPage } from '@/pages/account-addresses-page'
 import { AdminAccountPage } from '@/pages/admin-account-page'
 import { AdminAdminsPage } from '@/pages/admin-admins-page'
+import { AdminCompetitionDetailPage } from '@/pages/admin-competition-detail-page'
+import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
+import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
+import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
@@ -259,6 +263,39 @@ export function AppRouter() {
         <Route path="sellers" element={<AdminSellersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
+        {/* Games and competitions: any signed-in admin; actions are audited. */}
+        <Route
+          path="games"
+          element={
+            <ProtectedRoute roles={['admin', 'superadmin']}>
+              <AdminGamesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="games/:slug"
+          element={
+            <ProtectedRoute roles={['admin', 'superadmin']}>
+              <AdminGameDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="competitions"
+          element={
+            <ProtectedRoute roles={['admin', 'superadmin']}>
+              <AdminCompetitionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="competitions/:id"
+          element={
+            <ProtectedRoute roles={['admin', 'superadmin']}>
+              <AdminCompetitionDetailPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="admins" element={<AdminAdminsPage />} />
         <Route path="account" element={<AdminAccountPage />} />
       </Route>
