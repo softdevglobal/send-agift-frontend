@@ -94,6 +94,38 @@ export function isDispatchedOrderItem(status: string): boolean {
   return status === 'dispatched'
 }
 
+/** True when this item is (or was) a personal / local delivery by the seller. */
+export function isLocalDeliveryTracking(
+  tracking?: {
+    delivery_mode?: string
+    courier_provider?: string
+    tracking_number?: string
+  } | null,
+  shipment?: {
+    delivery_mode?: string
+    courier_provider?: string
+    tracking_number?: string
+  } | null,
+): boolean {
+  const mode = shipment?.delivery_mode || tracking?.delivery_mode || ''
+  if (mode !== 'seller_managed') return false
+
+  const provider = (
+    shipment?.courier_provider ||
+    tracking?.courier_provider ||
+    ''
+  ).trim()
+  if (provider.toLowerCase() === 'local delivery') return true
+
+  const trackingNumber = (
+    shipment?.tracking_number ||
+    tracking?.tracking_number ||
+    ''
+  ).trim()
+  // Local delivery has no carrier tracking; manual courier always records one.
+  return !trackingNumber
+}
+
 export function hasShippingAddress(
   address?: RecipientAddress | null,
 ): address is RecipientAddress {

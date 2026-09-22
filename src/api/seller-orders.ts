@@ -74,16 +74,18 @@ export function buyShippingLabel(orderItemID: string, body: BuyLabelInput) {
  * Starts a delivery the seller is making personally: no courier, no tracking
  * number. Dispatches the item straight away.
  */
-export function startLocalDelivery(orderItemID: string, body: LocalDeliveryInput = {}) {
+export function startLocalDelivery(orderItemID: string, body?: LocalDeliveryInput) {
   return api<Shipment>(`/sellers/me/order-items/${orderItemID}/shipping/local`, {
     method: 'POST',
-    body,
+    ...(body && Object.keys(body).length > 0 ? { body } : {}),
   })
 }
 
 /**
  * Confirms the seller handed the gift over. Marks the shipment and the item
  * delivered, and the whole order too once nothing on it is still open.
+ *
+ * No request body — call only after POST .../shipping/local.
  */
 export function completeLocalDelivery(orderItemID: string) {
   return api<Shipment>(
