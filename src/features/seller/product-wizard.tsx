@@ -1,13 +1,28 @@
-import { Boxes, Eye, ImagePlus, LoaderCircle, Package, Ruler, Tag, Upload, X } from 'lucide-react'
+import {
+  Boxes,
+  Eye,
+  Film,
+  ImagePlus,
+  LoaderCircle,
+  Package,
+  Ruler,
+  Tag,
+  Upload,
+  X,
+} from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { uploadPublicImage } from '@/api/media'
+import { uploadPublicFile } from '@/api/media'
 import { KNOWN_CURRENCIES, PARCEL_DISTANCE_UNITS, PARCEL_MASS_UNITS } from '@/api/types'
 import {
+  coverImageUrl,
   emptyForm,
+  isProductImageMedia,
+  isProductVideoMime,
+  MAX_PRODUCT_MEDIA,
   parcelComplete,
   parseTags,
   toProductInput,
@@ -23,7 +38,6 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
-import { cn } from '@/lib/utils'
 
 type ProductWizardProps = {
   open: boolean
@@ -64,7 +78,7 @@ export function ProductWizard({
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const imageInputRef = useRef<HTMLInputElement | null>(null)
+  const mediaInputRef = useRef<HTMLInputElement | null>(null)
 
   // Each open re-seeds the form: an edit gets that gift's values, a create
   // gets a blank slate. Reopening never shows the previous run's fields.
@@ -86,22 +100,63 @@ export function ProductWizard({
   const priceValid =
     form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
   const tags = useMemo(() => parseTags(form.occasion_tags), [form.occasion_tags])
+  const coverUrl = coverImageUrl(form)
 
   const priceLabel = priceValid
     ? formatPriceAmount(majorToMinor(priceMajor, form.currency), form.currency)
     : '—'
 
-  async function handleImage(file: File | undefined) {
-    if (!file) return
+  async function handleMediaFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const room = MAX_PRODUCT_MEDIA - form.media.length
+    if (room <= 0) {
+      setError(`You can add up to ${MAX_PRODUCT_MEDIA} photos or videos.`)
+      return
+    }
     setUploading(true)
     setError(null)
     try {
-      update('image_url', await uploadPublicImage(file, 'product-image'))
+      const picked = Array.from(files).slice(0, room)
+      const uploaded = await Promise.all(
+        picked.map(async (file) => {
+          const isVideo = file.type.startsWith('video/')
+          const folder = isVideo ? 'product-video' : 'product-image'
+          const result = await uploadPublicFile(file, folder)
+          return {
+            object_path: result.objectPath,
+            mime_type: result.mimeType,
+            size_bytes: result.sizeBytes,
+            preview_url: result.publicUrl || URL.createObjectURL(file),
+          }
+        }),
+      )
+      setForm((current) => ({
+        ...current,
+        media: [...current.media, ...uploaded],
+        image_url:
+          current.image_url ||
+          uploaded.find((item) => item.mime_type.startsWith('image/'))?.preview_url ||
+          current.image_url,
+      }))
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not upload the image'))
+      setError(getErrorMessage(err, 'Could not upload media'))
     } finally {
       setUploading(false)
+      if (mediaInputRef.current) mediaInputRef.current.value = ''
     }
+  }
+
+  function removeMedia(index: number) {
+    setForm((current) => {
+      const media = current.media.filter((_, i) => i !== index)
+      const nextCover =
+        media.find((item) => item.mime_type.startsWith('image/'))?.preview_url || ''
+      return {
+        ...current,
+        media,
+        image_url: nextCover || current.image_url,
+      }
+    })
   }
 
   async function complete() {
@@ -283,62 +338,108 @@ export function ProductWizard({
     },
     {
       id: 'photo',
-      title: 'Photo',
-      description: 'The picture customers browse with.',
+      title: 'Media',
+      description: 'Photos and an optional video for the gift gallery.',
       icon: ImagePlus,
       content: (
         <div className="space-y-3">
-          <div
-            className={cn(
-              'relative flex aspect-square max-w-xs items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-surface',
-              form.image_url && 'border-solid border-brand-teal/50',
-            )}
-          >
-            {form.image_url ? (
-              <>
-                <img src={form.image_url} alt="" className="size-full object-cover" />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="absolute top-2 right-2 size-8"
-                  onClick={() => update('image_url', '')}
-                  aria-label="Remove photo"
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {form.media.length === 0 && form.image_url ? (
+              <div className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted">
+                <img
+                  src={form.image_url}
+                  alt=""
+                  className="size-full object-cover"
+                />
+                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                  Cover
+                </span>
+              </div>
+            ) : null}
+            {form.media.map((item, index) => {
+              const video = isProductVideoMime(item.mime_type)
+              const coverIndex = form.media.findIndex((entry) =>
+                isProductImageMedia(entry),
+              )
+              return (
+                <div
+                  key={`${item.object_path}-${index}`}
+                  className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted"
                 >
-                  <X className="size-4" />
-                </Button>
-              </>
-            ) : (
+                  {video ? (
+                    <video
+                      src={item.preview_url}
+                      className="size-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : item.preview_url ? (
+                    <img
+                      src={item.preview_url}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    <div className="grid size-full place-items-center text-muted-foreground">
+                      <ImagePlus className="size-5" />
+                    </div>
+                  )}
+                  {video ? (
+                    <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                      <Film className="size-2.5" />
+                      Video
+                    </span>
+                  ) : coverIndex === index ? (
+                    <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                      Cover
+                    </span>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-1.5 right-1.5 size-7"
+                    onClick={() => removeMedia(index)}
+                    aria-label="Remove media"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              )
+            })}
+            {form.media.length < MAX_PRODUCT_MEDIA ? (
               <button
                 type="button"
-                onClick={() => imageInputRef.current?.click()}
-                className="flex size-full cursor-pointer flex-col items-center justify-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+                onClick={() => mediaInputRef.current?.click()}
+                disabled={uploading}
+                className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
               >
                 {uploading ? (
-                  <LoaderCircle className="size-6 animate-spin" />
+                  <LoaderCircle className="size-5 animate-spin" />
                 ) : (
                   <>
-                    <ImagePlus className="size-6" />
-                    <span className="text-xs font-medium">
-                      <Upload className="mr-1 inline size-3" />
-                      Choose image
+                    <Upload className="size-5" />
+                    <span className="px-2 text-center text-[11px] font-medium leading-tight">
+                      Add photo or video
                     </span>
                   </>
                 )}
               </button>
-            )}
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">
-            Optional, but a gift without a photo rarely sells. Square images look best.
+            Up to {MAX_PRODUCT_MEDIA} files. First image becomes the cover. Videos use the
+            product-video folder.
           </p>
           <input
-            ref={imageInputRef}
+            ref={mediaInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
+            multiple
             className="hidden"
             onChange={(event) => {
-              void handleImage(event.target.files?.[0])
-              event.target.value = ''
+              void handleMediaFiles(event.target.files)
             }}
           />
         </div>
@@ -512,8 +613,8 @@ export function ProductWizard({
           <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start">
             <div className="w-48 shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card">
               <div className="aspect-square bg-muted">
-                {form.image_url ? (
-                  <img src={form.image_url} alt="" className="size-full object-cover" />
+                {coverUrl ? (
+                  <img src={coverUrl} alt="" className="size-full object-cover" />
                 ) : (
                   <div className="grid size-full place-items-center text-muted-foreground">
                     <Package className="size-7" />

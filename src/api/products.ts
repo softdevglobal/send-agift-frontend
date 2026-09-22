@@ -33,6 +33,17 @@ export function getSellerProduct(id: string) {
   return api<ProductDetails>(`/sellers/me/products/${id}`)
 }
 
+/** Public product detail — includes `media[]` and nested `shop`. */
+export function getPublicProduct(
+  productId: string,
+  customerType: 'personal' | 'corporate' = 'personal',
+) {
+  const query = new URLSearchParams({ customer_type: customerType })
+  return api<ProductDetails>(`/products/${productId}?${query.toString()}`, {
+    auth: false,
+  })
+}
+
 export function updateSellerProduct(id: string, body: Omit<ProductInput, 'inventory'>) {
   return api<Product>(`/sellers/me/products/${id}`, {
     method: 'PUT',

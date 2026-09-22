@@ -200,9 +200,32 @@ export type Product = {
   prep_minutes: number
   created_at: string
   updated_at: string
+  /** Cover image — usually the first gallery image's CDN URL. */
   image_url?: string | null
   /** Optional shipping dimensions used for checkout quotes and seller rates. */
   parcel?: ParcelInput | null
+  /** Gallery images and videos (ordered by position). */
+  media?: ProductMedia[]
+}
+
+/** One gallery file on a product response. */
+export type ProductMedia = {
+  media_asset_id: string
+  position: number
+  asset_type: 'image' | 'video' | string
+  bucket?: string
+  object_path: string
+  cdn_url: string
+  mime_type: string
+  size_bytes: number
+  metadata?: Record<string, unknown>
+}
+
+/** One gallery file posted on create/update (after presign + PUT). */
+export type ProductMediaInput = {
+  object_path: string
+  mime_type: string
+  size_bytes: number
 }
 
 export type Inventory = {
@@ -215,7 +238,14 @@ export type Inventory = {
   updated_at: string
 }
 
-export type ProductDetails = Product & { inventory?: Inventory }
+export type ProductDetails = Product & {
+  inventory?: Inventory
+  /** Nested shop on public product GET. */
+  shop?: Pick<
+    Shop,
+    'id' | 'name' | 'slug' | 'image_url' | 'customer_visible_location' | 'description'
+  >
+}
 
 export type InventoryInput = {
   available_qty: number
@@ -236,10 +266,18 @@ export type ProductInput = {
   customer_type_visibility?: CustomerTypeVisibility
   points_display_enabled?: boolean
   prep_minutes?: number
+  /** Optional — API sets this from the first image in `media` when omitted. */
   image_url?: string | null
   inventory?: InventoryInput
   /** Shipping parcel for checkout quotes and seller labels. */
   parcel: ParcelInput
+  /**
+   * Gallery replace:
+   * - omit on update → keep existing gallery
+   * - `[]` → clear gallery
+   * - `[...]` → replace gallery
+   */
+  media?: ProductMediaInput[]
 }
 
 export type Recipient = {
@@ -296,6 +334,7 @@ export const MEDIA_FOLDERS = [
   'seller-profile',
   'shop-image',
   'product-image',
+  'product-video',
   'reel-video',
   'reel-photo',
   'reel-thumbnail',

@@ -20,6 +20,16 @@ export type CatalogProduct = GiftProduct & {
   priceAmount?: number
   /** Catalog query (`personal` | `corporate`) this product was loaded with. */
   catalogCustomerType?: CartCustomerType
+  /** Gallery from API `media[]` (images + videos). */
+  media?: CatalogProductMedia[]
+}
+
+export type CatalogProductMedia = {
+  id: string
+  position: number
+  assetType: 'image' | 'video' | string
+  url: string
+  mimeType: string
 }
 
 export type CartItem = {

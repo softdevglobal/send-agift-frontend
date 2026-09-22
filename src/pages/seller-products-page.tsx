@@ -42,6 +42,7 @@ import {
   productToForm,
   toInventoryInput,
   toProductInput,
+  productCoverUrl,
   type ProductFormState,
 } from '@/features/seller/product-form'
 import { getErrorMessage } from '@/lib/api'
@@ -382,6 +383,7 @@ export function SellerProductsPage() {
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
               {products.map((product) => {
                 const meta = statusMeta[product.status] ?? statusMeta.draft
+                const cover = productCoverUrl(product)
                 return (
                   <li
                     key={product.id}
@@ -402,9 +404,9 @@ export function SellerProductsPage() {
                       aria-label={`Preview ${product.name}`}
                     >
                       <div className="relative aspect-square w-full overflow-hidden bg-muted">
-                        {product.image_url ? (
+                        {cover ? (
                           <img
-                            src={product.image_url}
+                            src={cover}
                             alt=""
                             className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                           />
@@ -537,6 +539,7 @@ function ProductPreviewPanel({
   const meta = product
     ? (statusMeta[product.status] ?? statusMeta.draft)
     : statusMeta.draft
+  const coverUrl = product ? productCoverUrl(product) : null
 
   return (
     <SellerSheet
@@ -548,8 +551,8 @@ function ProductPreviewPanel({
       media={
         product ? (
           <div className="relative aspect-square w-full overflow-hidden bg-muted">
-            {product.image_url ? (
-              <img src={product.image_url} alt="" className="size-full object-cover" />
+            {coverUrl ? (
+              <img src={coverUrl} alt="" className="size-full object-cover" />
             ) : (
               <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
                 <Package className="size-10" />
