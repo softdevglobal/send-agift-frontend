@@ -2,11 +2,14 @@ import { api } from '@/lib/api'
 
 /**
  * A player as an admin sees them — full name and email, not the public
- * "Sarah M.". Always a signed-in customer: the backend leaves guest plays out
- * of every admin board, because a prize needs someone we can identify and pay.
+ * "Sarah M.".
+ *
+ * Guests appear too, tagged by device rather than named. `kind` is what keeps
+ * the distinction usable: only a customer can be contacted, age-verified or
+ * paid a prize, so the console labels who is who rather than hiding the rest.
  */
 export type AdminPlayer = {
-  kind: 'customer'
+  kind: 'customer' | 'guest'
   customer_id?: string
   name: string
   email?: string

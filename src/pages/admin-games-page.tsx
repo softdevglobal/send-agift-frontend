@@ -68,12 +68,14 @@ function GameCard({ game }: { game: AdminGameSummary }) {
               <p className="mt-1 font-display text-3xl tracking-tight">{formatScore(game.top_score)}</p>
               <p className="mt-1 truncate text-sm font-medium">{top.name}</p>
               <p className="truncate text-xs text-muted-foreground">
-                {[top.email, top.country_name].filter(Boolean).join(' · ')}
+                {top.kind === 'guest'
+                  ? 'Playing as a guest'
+                  : [top.email, top.country_name].filter(Boolean).join(' · ')}
               </p>
             </>
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              No signed-in player has scored yet
+              No verified score yet
             </p>
           )}
         </div>
@@ -151,7 +153,7 @@ export function AdminGamesPage() {
       <AdminPageHeader
         eyebrow="Games"
         title="Games & leaderboards"
-        description="Every skill game, who is playing and who holds the best verified score. Signed-in players only — guest plays never reach these boards. Scores count once the server has replayed them."
+        description="Every skill game, who is playing and who holds the best verified score. Guests are shown too, tagged by device. Scores count once the server has replayed them."
         action={
           <Button asChild variant="outline" className="h-10">
             <Link to="/admin/competitions">
