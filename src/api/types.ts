@@ -226,6 +226,11 @@ export type ProductMediaInput = {
   object_path: string
   mime_type: string
   size_bytes: number
+  metadata?: {
+    width?: number
+    height?: number
+    [key: string]: unknown
+  }
 }
 
 export type Inventory = {

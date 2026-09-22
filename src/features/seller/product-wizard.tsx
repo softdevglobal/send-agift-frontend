@@ -2,6 +2,7 @@ import {
   Boxes,
   Eye,
   Film,
+  GripVertical,
   ImagePlus,
   LoaderCircle,
   Package,
@@ -26,6 +27,7 @@ import {
   parcelComplete,
   parseTags,
   toProductInput,
+  type ProductFormMedia,
   type ProductFormState,
 } from '@/features/seller/product-form'
 import {
@@ -38,6 +40,7 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
+import { cn } from '@/lib/utils'
 
 type ProductWizardProps = {
   open: boolean
@@ -75,10 +78,14 @@ export function ProductWizard({
   onSubmit,
 }: ProductWizardProps) {
   const [form, setForm] = useState<ProductFormState>(initialForm ?? emptyForm)
-  const [uploading, setUploading] = useState(false)
+  const [uploadingKind, setUploadingKind] = useState<'photo' | 'video' | null>(null)
+  const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const mediaInputRef = useRef<HTMLInputElement | null>(null)
+  const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null)
+  const [dropPhotoIndex, setDropPhotoIndex] = useState<number | null>(null)
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
+  const videoInputRef = useRef<HTMLInputElement | null>(null)
 
   // Each open re-seeds the form: an edit gets that gift's values, a create
   // gets a blank slate. Reopening never shows the previous run's fields.
@@ -86,6 +93,10 @@ export function ProductWizard({
     if (open) {
       setForm(initialForm ?? emptyForm)
       setError(null)
+      setUploadingKind(null)
+      setUploadProgress({ completed: 0, total: 0 })
+      setDraggingPhotoIndex(null)
+      setDropPhotoIndex(null)
     }
   }, [open, initialForm])
 
@@ -101,48 +112,129 @@ export function ProductWizard({
     form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
   const tags = useMemo(() => parseTags(form.occasion_tags), [form.occasion_tags])
   const coverUrl = coverImageUrl(form)
+  const photoEntries = useMemo(
+    () =>
+      form.media
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => isProductImageMedia(item)),
+    [form.media],
+  )
+  const videoEntries = useMemo(
+    () =>
+      form.media
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => isProductVideoMime(item.mime_type)),
+    [form.media],
+  )
+  const galleryRoom = MAX_PRODUCT_MEDIA - form.media.length
+  const uploading = uploadingKind !== null
 
   const priceLabel = priceValid
     ? formatPriceAmount(majorToMinor(priceMajor, form.currency), form.currency)
     : '—'
 
-  async function handleMediaFiles(files: FileList | null) {
+  async function handleMediaFiles(
+    files: FileList | null,
+    kind: 'photo' | 'video',
+  ) {
     if (!files || files.length === 0) return
     const room = MAX_PRODUCT_MEDIA - form.media.length
     if (room <= 0) {
       setError(`You can add up to ${MAX_PRODUCT_MEDIA} photos or videos.`)
       return
     }
-    setUploading(true)
+
+    const selected = Array.from(files)
+    const matching = selected.filter((file) =>
+      kind === 'photo'
+        ? file.type.startsWith('image/')
+        : file.type.startsWith('video/'),
+    )
+    const rejected = selected.length - matching.length
+    const picked = matching.slice(0, room)
+
+    if (picked.length === 0) {
+      setError(
+        kind === 'photo'
+          ? 'Choose image files only for the photos section.'
+          : 'Choose video files only for the videos section.',
+      )
+      if (kind === 'photo' && photoInputRef.current) photoInputRef.current.value = ''
+      if (kind === 'video' && videoInputRef.current) videoInputRef.current.value = ''
+      return
+    }
+
+    setUploadingKind(kind)
     setError(null)
+    setUploadProgress({ completed: 0, total: picked.length })
     try {
-      const picked = Array.from(files).slice(0, room)
-      const uploaded = await Promise.all(
+      const results = await Promise.all(
         picked.map(async (file) => {
-          const isVideo = file.type.startsWith('video/')
-          const folder = isVideo ? 'product-video' : 'product-image'
-          const result = await uploadPublicFile(file, folder)
-          return {
-            object_path: result.objectPath,
-            mime_type: result.mimeType,
-            size_bytes: result.sizeBytes,
-            preview_url: result.publicUrl || URL.createObjectURL(file),
+          try {
+            const folder = kind === 'video' ? 'product-video' : 'product-image'
+            const result = await uploadPublicFile(file, folder)
+            const item: ProductFormMedia = {
+              object_path: result.objectPath,
+              mime_type: result.mimeType,
+              size_bytes: result.sizeBytes,
+              metadata: result.metadata,
+              preview_url: result.publicUrl || URL.createObjectURL(file),
+            }
+            return { ok: true as const, item }
+          } catch (uploadError) {
+            return {
+              ok: false as const,
+              filename: file.name,
+              message: getErrorMessage(uploadError, 'Upload failed'),
+            }
+          } finally {
+            setUploadProgress((current) => ({
+              ...current,
+              completed: current.completed + 1,
+            }))
           }
         }),
       )
-      setForm((current) => ({
-        ...current,
-        media: [...current.media, ...uploaded],
-        image_url:
-          current.image_url ||
-          uploaded.find((item) => item.mime_type.startsWith('image/'))?.preview_url ||
-          current.image_url,
-      }))
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not upload media'))
+      const uploaded = results.flatMap((result) => (result.ok ? [result.item] : []))
+      const failed = results.filter((result) => !result.ok)
+
+      if (uploaded.length) {
+        setForm((current) => ({
+          ...current,
+          media: [...current.media, ...uploaded],
+          image_url:
+            current.image_url ||
+            uploaded.find((item) => item.mime_type.startsWith('image/'))?.preview_url ||
+            current.image_url,
+        }))
+      }
+
+      const messages: string[] = []
+      if (rejected > 0) {
+        messages.push(
+          kind === 'photo'
+            ? `${rejected} non-image file(s) were skipped.`
+            : `${rejected} non-video file(s) were skipped.`,
+        )
+      }
+      if (matching.length > picked.length) {
+        messages.push(
+          `${matching.length - picked.length} file(s) skipped because the gallery limit is ${MAX_PRODUCT_MEDIA}.`,
+        )
+      }
+      if (failed.length) {
+        messages.push(
+          `Upload failed: ${failed
+            .map((result) => `${result.filename} (${result.message})`)
+            .join(', ')}.`,
+        )
+      }
+      setError(messages.length ? messages.join(' ') : null)
     } finally {
-      setUploading(false)
-      if (mediaInputRef.current) mediaInputRef.current.value = ''
+      setUploadingKind(null)
+      setUploadProgress({ completed: 0, total: 0 })
+      if (kind === 'photo' && photoInputRef.current) photoInputRef.current.value = ''
+      if (kind === 'video' && videoInputRef.current) videoInputRef.current.value = ''
     }
   }
 
@@ -150,13 +242,50 @@ export function ProductWizard({
     setForm((current) => {
       const media = current.media.filter((_, i) => i !== index)
       const nextCover =
-        media.find((item) => item.mime_type.startsWith('image/'))?.preview_url || ''
+        media.find((item) => isProductImageMedia(item))?.preview_url || ''
       return {
         ...current,
         media,
         image_url: nextCover || current.image_url,
       }
     })
+  }
+
+  /** Reorders photos in place so the first photo becomes the product cover. */
+  function reorderPhotos(fromMediaIndex: number, toMediaIndex: number) {
+    if (fromMediaIndex === toMediaIndex) return
+    setForm((current) => {
+      const photoIndexes = current.media
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => isProductImageMedia(item))
+        .map(({ index }) => index)
+      const fromPos = photoIndexes.indexOf(fromMediaIndex)
+      const toPos = photoIndexes.indexOf(toMediaIndex)
+      if (fromPos < 0 || toPos < 0) return current
+
+      const photos = photoIndexes.map((index) => current.media[index])
+      const [moved] = photos.splice(fromPos, 1)
+      if (!moved) return current
+      photos.splice(toPos, 0, moved)
+
+      let photoCursor = 0
+      const media = current.media.map((item) => {
+        if (!isProductImageMedia(item)) return item
+        return photos[photoCursor++] ?? item
+      })
+      const cover = media.find((item) => isProductImageMedia(item))
+
+      return {
+        ...current,
+        media,
+        image_url: cover?.preview_url.trim() || current.image_url,
+      }
+    })
+  }
+
+  function clearPhotoDrag() {
+    setDraggingPhotoIndex(null)
+    setDropPhotoIndex(null)
   }
 
   async function complete() {
@@ -339,34 +468,178 @@ export function ProductWizard({
     {
       id: 'photo',
       title: 'Media',
-      description: 'Photos and an optional video for the gift gallery.',
+      description: 'Upload photos and videos in separate sections for the gift gallery.',
       icon: ImagePlus,
       content: (
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {form.media.length === 0 && form.image_url ? (
-              <div className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted">
-                <img
-                  src={form.image_url}
-                  alt=""
-                  className="size-full object-cover"
-                />
-                <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
-                  Cover
-                </span>
+        <div className="space-y-5">
+          <section className="space-y-3">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">Photos</h3>
+                <p className="text-xs text-muted-foreground">
+                  Drag a photo to the front to set the cover. Uses the product-image
+                  folder.
+                </p>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {photoEntries.length} photo{photoEntries.length === 1 ? '' : 's'} ·{' '}
+                {form.media.length}/{MAX_PRODUCT_MEDIA} total
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {photoEntries.length === 0 && form.image_url ? (
+                <div className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted">
+                  <img
+                    src={form.image_url}
+                    alt=""
+                    className="size-full object-cover"
+                    draggable={false}
+                  />
+                  <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                    Cover
+                  </span>
+                </div>
+              ) : null}
+              {photoEntries.map(({ item, index }, photoIndex) => (
+                <div
+                  key={`${item.object_path}-${index}`}
+                  draggable={photoEntries.length > 1 && !uploading}
+                  onDragStart={(event) => {
+                    if (photoEntries.length <= 1 || uploading) {
+                      event.preventDefault()
+                      return
+                    }
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('text/plain', String(index))
+                    setDraggingPhotoIndex(index)
+                  }}
+                  onDragOver={(event) => {
+                    if (draggingPhotoIndex === null || draggingPhotoIndex === index) return
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = 'move'
+                    if (dropPhotoIndex !== index) setDropPhotoIndex(index)
+                  }}
+                  onDragLeave={() => {
+                    if (dropPhotoIndex === index) setDropPhotoIndex(null)
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault()
+                    const fromIndex = Number(
+                      event.dataTransfer.getData('text/plain') || draggingPhotoIndex,
+                    )
+                    if (Number.isFinite(fromIndex)) {
+                      reorderPhotos(fromIndex, index)
+                    }
+                    clearPhotoDrag()
+                  }}
+                  onDragEnd={clearPhotoDrag}
+                  className={cn(
+                    'relative aspect-square overflow-hidden rounded-xl border bg-muted transition-[box-shadow,opacity]',
+                    photoEntries.length > 1 && !uploading
+                      ? 'cursor-grab active:cursor-grabbing'
+                      : null,
+                    draggingPhotoIndex === index
+                      ? 'border-primary/50 opacity-50'
+                      : dropPhotoIndex === index
+                        ? 'border-primary ring-2 ring-primary/30'
+                        : 'border-border/60',
+                  )}
+                >
+                  {item.preview_url ? (
+                    <img
+                      src={item.preview_url}
+                      alt=""
+                      className="pointer-events-none size-full object-cover"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="grid size-full place-items-center text-muted-foreground">
+                      <ImagePlus className="size-5" />
+                    </div>
+                  )}
+                  {photoIndex === 0 ? (
+                    <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                      Cover
+                    </span>
+                  ) : null}
+                  {photoEntries.length > 1 ? (
+                    <span className="absolute bottom-1.5 right-1.5 rounded-full bg-black/50 p-1 text-white">
+                      <GripVertical className="size-3" />
+                    </span>
+                  ) : null}
+                  <span className="absolute top-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                    {index + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="absolute top-1.5 right-1.5 size-7"
+                    onClick={() => removeMedia(index)}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    aria-label="Remove photo"
+                  >
+                    <X className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+              {galleryRoom > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => photoInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {uploadingKind === 'photo' ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Upload className="size-5" />
+                      <span className="px-2 text-center text-[11px] font-medium leading-tight">
+                        Add photos
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </div>
+            {uploadingKind === 'photo' ? (
+              <p className="text-xs font-medium text-foreground">
+                Uploading photos {uploadProgress.completed}/{uploadProgress.total}
+              </p>
             ) : null}
-            {form.media.map((item, index) => {
-              const video = isProductVideoMime(item.mime_type)
-              const coverIndex = form.media.findIndex((entry) =>
-                isProductImageMedia(entry),
-              )
-              return (
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                void handleMediaFiles(event.target.files, 'photo')
+              }}
+            />
+          </section>
+
+          <section className="space-y-3 border-t border-border/60 pt-4">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">Videos</h3>
+                <p className="text-xs text-muted-foreground">
+                  Optional gallery clips. Uses the product-video folder.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {videoEntries.length} video{videoEntries.length === 1 ? '' : 's'} ·{' '}
+                {form.media.length}/{MAX_PRODUCT_MEDIA} total
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+              {videoEntries.map(({ item, index }) => (
                 <div
                   key={`${item.object_path}-${index}`}
                   className="relative aspect-square overflow-hidden rounded-xl border border-border/60 bg-muted"
                 >
-                  {video ? (
+                  {item.preview_url ? (
                     <video
                       src={item.preview_url}
                       className="size-full object-cover"
@@ -374,74 +647,71 @@ export function ProductWizard({
                       playsInline
                       preload="metadata"
                     />
-                  ) : item.preview_url ? (
-                    <img
-                      src={item.preview_url}
-                      alt=""
-                      className="size-full object-cover"
-                    />
                   ) : (
                     <div className="grid size-full place-items-center text-muted-foreground">
-                      <ImagePlus className="size-5" />
+                      <Film className="size-5" />
                     </div>
                   )}
-                  {video ? (
-                    <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
-                      <Film className="size-2.5" />
-                      Video
-                    </span>
-                  ) : coverIndex === index ? (
-                    <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
-                      Cover
-                    </span>
-                  ) : null}
+                  <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                    <Film className="size-2.5" />
+                    Video
+                  </span>
+                  <span className="absolute top-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[10px] text-white">
+                    {index + 1}
+                  </span>
                   <Button
                     type="button"
                     variant="secondary"
                     size="icon"
                     className="absolute top-1.5 right-1.5 size-7"
                     onClick={() => removeMedia(index)}
-                    aria-label="Remove media"
+                    aria-label="Remove video"
                   >
                     <X className="size-3.5" />
                   </Button>
                 </div>
-              )
-            })}
-            {form.media.length < MAX_PRODUCT_MEDIA ? (
-              <button
-                type="button"
-                onClick={() => mediaInputRef.current?.click()}
-                disabled={uploading}
-                className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {uploading ? (
-                  <LoaderCircle className="size-5 animate-spin" />
-                ) : (
-                  <>
-                    <Upload className="size-5" />
-                    <span className="px-2 text-center text-[11px] font-medium leading-tight">
-                      Add photo or video
-                    </span>
-                  </>
-                )}
-              </button>
+              ))}
+              {galleryRoom > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border bg-surface text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {uploadingKind === 'video' ? (
+                    <LoaderCircle className="size-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Film className="size-5" />
+                      <span className="px-2 text-center text-[11px] font-medium leading-tight">
+                        Add videos
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </div>
+            {uploadingKind === 'video' ? (
+              <p className="text-xs font-medium text-foreground">
+                Uploading videos {uploadProgress.completed}/{uploadProgress.total}
+              </p>
             ) : null}
-          </div>
+            <input
+              ref={videoInputRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              multiple
+              className="hidden"
+              onChange={(event) => {
+                void handleMediaFiles(event.target.files, 'video')
+              }}
+            />
+          </section>
+
           <p className="text-xs text-muted-foreground">
-            Up to {MAX_PRODUCT_MEDIA} files. First image becomes the cover. Videos use the
-            product-video folder.
+            Combined limit {MAX_PRODUCT_MEDIA} files. Drag photos to reorder — the first
+            photo is the cover.
           </p>
-          <input
-            ref={mediaInputRef}
-            type="file"
-            accept="image/*,video/mp4,video/webm,video/quicktime"
-            multiple
-            className="hidden"
-            onChange={(event) => {
-              void handleMediaFiles(event.target.files)
-            }}
-          />
         </div>
       ),
     },

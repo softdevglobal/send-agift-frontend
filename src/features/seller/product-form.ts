@@ -29,6 +29,11 @@ export type ProductFormMedia = {
   object_path: string
   mime_type: string
   size_bytes: number
+  metadata?: {
+    width?: number
+    height?: number
+    [key: string]: unknown
+  }
   /** Local or CDN URL for the wizard preview. */
   preview_url: string
 }
@@ -90,7 +95,7 @@ export const emptyForm: ProductFormState = {
   parcel_mass_unit: 'kg',
 }
 
-export const MAX_PRODUCT_MEDIA = 8
+export const MAX_PRODUCT_MEDIA = 12
 
 export function parseNonNegativeInt(value: string, fallback = 0): number {
   const parsed = Number.parseInt(value, 10)
@@ -170,6 +175,7 @@ export function toMediaInputs(media: ProductFormMedia[]): ProductMediaInput[] {
     object_path: item.object_path,
     mime_type: item.mime_type,
     size_bytes: item.size_bytes,
+    ...(item.metadata ? { metadata: item.metadata } : {}),
   }))
 }
 
@@ -189,6 +195,7 @@ export function mediaFromProduct(media?: ProductMedia[] | null): ProductFormMedi
         object_path: item.object_path,
         mime_type: mime,
         size_bytes: item.size_bytes,
+        metadata: item.metadata,
         preview_url: item.cdn_url?.trim() || '',
       }
     })

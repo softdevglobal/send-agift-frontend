@@ -76,6 +76,27 @@ export type UploadedFile = {
   publicUrl: string
   mimeType: string
   sizeBytes: number
+  metadata?: {
+    width: number
+    height: number
+  }
+}
+
+async function imageMetadata(
+  file: File,
+  contentType: string,
+): Promise<UploadedFile['metadata']> {
+  if (!contentType.startsWith('image/')) return undefined
+
+  try {
+    const bitmap = await createImageBitmap(file)
+    const metadata = { width: bitmap.width, height: bitmap.height }
+    bitmap.close()
+    return metadata
+  } catch {
+    // Dimensions improve the gallery payload but should never block an upload.
+    return undefined
+  }
 }
 
 /**
@@ -98,6 +119,7 @@ export async function uploadPublicFile(
     throw new Error('filename and content_type are required')
   }
 
+  const metadataPromise = imageMetadata(file, contentType)
   const body: PresignUploadRequest = { filename, content_type: contentType, folder }
   const presign = await api<PresignUploadResponse>('/media/presign-upload', {
     method: 'POST',
@@ -116,10 +138,12 @@ export async function uploadPublicFile(
     throw new Error('Upload succeeded but no storage key was returned.')
   }
 
+  const metadata = await metadataPromise
   return {
     objectPath: presign.key,
     publicUrl: presign.public_url ?? '',
     mimeType: contentType,
     sizeBytes: file.size,
+    metadata,
   }
 }
