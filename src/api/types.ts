@@ -616,6 +616,7 @@ export type Shipment = {
   provider_customs_declaration_id?: string
   provider_tracking_url: string
   provider_metadata?: ShipmentProviderMetadata | null
+  delivered_at?: string
   created_at: string
   updated_at: string
 }

@@ -24,14 +24,10 @@ export type ManualShipmentDialogProps = {
 }
 
 /**
- * The fallback for a lane Shippo cannot quote at all — none of its connected
- * carrier accounts serve every country (Shippo's test carriers, for example,
- * are entirely US/Canada/Europe), so "no rates returned" can mean a perfectly
- * valid order with nothing left to fix on our side.
+ * Seller’s own courier with tracking — not personal hand-delivery.
  *
- * This records what the seller arranged themselves — a courier name and their
- * own tracking number — and dispatches the item directly. No label, no rate,
- * no Shippo involvement past this point.
+ * POST .../shipping/manual — courier_provider + tracking_number (+ optional
+ * tracking_url). Does not accept a note. Use when Shippo has no rates.
  */
 export function ManualShipmentDialog({
   orderItemID,
@@ -63,10 +59,11 @@ export function ManualShipmentDialog({
     setSaving(true)
     setError(null)
     try {
+      const trackingLink = trackingUrl.trim()
       const shipment = await markShippingManual(orderItemID, {
         courier_provider: courierProvider,
         tracking_number: trackingNumber,
-        tracking_url: trackingUrl.trim() || undefined,
+        ...(trackingLink ? { tracking_url: trackingLink } : {}),
       })
       onShipped(shipment)
       onOpenChange(false)
@@ -91,11 +88,10 @@ export function ManualShipmentDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Ship it yourself</DialogTitle>
+            <DialogTitle>Use your own courier</DialogTitle>
             <DialogDescription>
-              No Shippo label for this order. Record the courier and tracking
-              number you arranged directly — the order moves to dispatched
-              straight away.
+              Record a courier you arranged yourself, with tracking. No Shippo
+              label and no delivery note — only courier name and tracking.
             </DialogDescription>
           </DialogHeader>
 
@@ -106,7 +102,7 @@ export function ManualShipmentDialog({
                 id="manual-courier"
                 value={courier}
                 onChange={(event) => setCourier(event.target.value)}
-                placeholder="Kandy Express Couriers"
+                placeholder="Kandy Express"
                 disabled={saving}
                 autoFocus
               />
@@ -117,7 +113,7 @@ export function ManualShipmentDialog({
                 id="manual-tracking"
                 value={tracking}
                 onChange={(event) => setTracking(event.target.value)}
-                placeholder="KEC-00123"
+                placeholder="KE123"
                 disabled={saving}
               />
             </div>
@@ -130,7 +126,7 @@ export function ManualShipmentDialog({
                 type="url"
                 value={trackingUrl}
                 onChange={(event) => setTrackingUrl(event.target.value)}
-                placeholder="https://courier.example/track/KEC-00123"
+                placeholder="https://..."
                 disabled={saving}
               />
             </div>

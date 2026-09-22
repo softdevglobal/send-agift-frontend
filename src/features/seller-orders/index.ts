@@ -16,6 +16,7 @@ export {
   formatShippingAddress,
   hasShippingAddress,
   isDispatchedOrderItem,
+  isLocalDeliveryTracking,
   isInternationalShipment,
   newLabelIdempotencyKey,
   parcelFormFromProduct,
