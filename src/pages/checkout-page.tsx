@@ -149,6 +149,7 @@ export function CheckoutPage() {
     Record<string, CheckoutDeliveryChoice>
   >({})
   const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteSettled, setQuoteSettled] = useState(false)
   const [customerType, setCustomerType] = useState<CartCustomerType>(
     cartCustomerType ?? 'personal',
   )
@@ -241,10 +242,13 @@ export function CheckoutPage() {
     if (!recipientId || !deliveryDate || items.length === 0) {
       setQuote(null)
       setQuoteSelections({})
+      setQuoteLoading(false)
+      setQuoteSettled(false)
       return
     }
     let cancelled = false
     setQuoteLoading(true)
+    setQuoteSettled(false)
     quoteDelivery({
       recipient_id: recipientId,
       delivery_date: deliveryDate,
@@ -256,15 +260,16 @@ export function CheckoutPage() {
         setQuoteSelections(defaultQuoteSelections(result))
       })
       .catch(() => {
-        // A failed quote must not block checkout — delivery is then arranged
-        // after the order, exactly as it was before this existed.
         if (!cancelled) {
           setQuote(null)
           setQuoteSelections({})
         }
       })
       .finally(() => {
-        if (!cancelled) setQuoteLoading(false)
+        if (!cancelled) {
+          setQuoteLoading(false)
+          setQuoteSettled(true)
+        }
       })
     return () => {
       cancelled = true
@@ -288,20 +293,34 @@ export function CheckoutPage() {
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
-  // Each shop is its own parcel. Only shops quoted in the cart currency can be
-  // added to the order; the rest are arranged by the shop after ordering.
+  // Each shop is its own parcel. A selection only counts when it is quoted in
+  // the cart currency — otherwise the order cannot be placed.
   const chargeableSelections = Object.fromEntries(
     Object.entries(quoteSelections).filter(([, choice]) => sameCurrency(choice.currency, currency)),
   )
   const selectedDeliveryAmount = selectionsDeliveryAmount(chargeableSelections)
   const deliveryCurrency = currency
   const pricedShopCount = Object.keys(chargeableSelections).length
-  const shopCount = quote?.shops?.length ?? pricedShopCount
-  const unpricedShopCount = Math.max(0, shopCount - pricedShopCount)
   const hasPricedDelivery = pricedShopCount > 0
   const otherCurrencySelections = Object.keys(quoteSelections).length - pricedShopCount
 
   const mixedShops = cartShops(lines).length > 1
+
+  const quotedShops = quote?.shops ?? []
+  const hasChargeableDelivery =
+    quotedShops.length > 0 &&
+    quotedShops.every(
+      (shop) =>
+        (Boolean(shop.seller_delivery?.available) || shop.options.length > 0) &&
+        Boolean(chargeableSelections[shop.shop_id]),
+    )
+  const awaitingDeliveryQuote = Boolean(recipientId) && !quoteSettled
+  const noDeliveryOptions = Boolean(recipientId) && quoteSettled && !hasChargeableDelivery
+  const shopsLackOptions =
+    quotedShops.length === 0 ||
+    quotedShops.some(
+      (shop) => !shop.seller_delivery?.available && shop.options.length === 0,
+    )
 
   const blocker = unorderable.length
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
@@ -313,7 +332,11 @@ export function CheckoutPage() {
         ? 'Your cart mixes personal and corporate catalog items. Remove one type to check out.'
         : typeMismatch
           ? 'Order type must match the catalog you used when adding these gifts to your cart.'
-          : null
+          : noDeliveryOptions
+            ? shopsLackOptions
+              ? 'No courier or shop delivery is available for this address, so this order cannot be placed.'
+              : 'Delivery for this order is not priced in the cart currency, so it cannot be placed.'
+            : null
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -817,7 +840,7 @@ export function CheckoutPage() {
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
               <dd className={hasPricedDelivery ? 'text-right' : 'text-muted-foreground'}>
-                {quoteLoading ? (
+                {quoteLoading || awaitingDeliveryQuote ? (
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <LoaderCircle className="size-3 animate-spin" />
                     Pricing…
@@ -825,17 +848,11 @@ export function CheckoutPage() {
                 ) : hasPricedDelivery ? (
                   <>
                     {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}
-                    {unpricedShopCount > 0 ? (
-                      <span className="block text-xs text-muted-foreground">
-                        + {unpricedShopCount} shop{unpricedShopCount === 1 ? '' : 's'} arranged
-                        after ordering
-                      </span>
-                    ) : null}
                   </>
                 ) : !recipientId ? (
                   'Pick a recipient'
                 ) : (
-                  'Arranged after ordering'
+                  'Not available'
                 )}
               </dd>
             </div>
@@ -890,9 +907,8 @@ export function CheckoutPage() {
 
           {otherCurrencySelections > 0 ? (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Delivery for {otherCurrencySelections === 1 ? 'one shop is' : 'some shops are'}{' '}
-              quoted in a different currency from this {currency.toUpperCase()} cart. It is
-              not added to the total; the shop arranges that delivery after you order.
+              Delivery is quoted in a different currency from this {currency.toUpperCase()}{' '}
+              cart, so it cannot be added and this order cannot be placed.
             </p>
           ) : null}
 
@@ -907,14 +923,6 @@ export function CheckoutPage() {
             </p>
           ) : null}
 
-          {quote && !quote.complete && quote.unquoted?.length ? (
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Delivery for {quote.unquoted.length === 1 ? 'one shop' : 'some shops'} could
-              not be priced ({quote.unquoted.join('; ')}), so the shop will arrange it
-              after you order.
-            </p>
-          ) : null}
-
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             Line prices are confirmed by the seller when the order is created, so the
             final total may differ. Payment is not captured yet — new orders stay
@@ -922,7 +930,7 @@ export function CheckoutPage() {
           </p>
           <Button
             type="submit"
-            disabled={submitting || Boolean(blocker)}
+            disabled={submitting || Boolean(blocker) || awaitingDeliveryQuote}
             className="mt-5 h-11 w-full rounded-full"
           >
             {submitting ? (

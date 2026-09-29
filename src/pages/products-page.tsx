@@ -113,11 +113,7 @@ export function ProductsPage() {
 
         {/* The same bar as the home page, so where and when can be changed
             without going back for them. */}
-        <GiftSearchBar
-          className="mb-6"
-          initialQuery={query}
-          onSearch={(next) => updateParam('q', next)}
-        />
+        <GiftSearchBar className="mb-6" navigateOnSubmit={false} />
 
         {/* What was asked for, still in hand. */}
         <DeliveryIntentBar className="mb-6" />

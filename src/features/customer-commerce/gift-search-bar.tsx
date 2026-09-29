@@ -1,4 +1,4 @@
-import { CalendarDays, Gift, MapPin, Search } from 'lucide-react'
+import { CalendarDays, MapPin, Search } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,7 +6,6 @@ import type { PlaceDetails } from '@/api/places'
 import { DatePicker } from '@/components/common/date-picker'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   useDeliveryIntent,
   type DeliveryIntent,
@@ -60,7 +59,7 @@ function Field({
 }
 
 /**
- * What you are looking for, where it is going, and when it has to be there.
+ * Where the gift is going, and when it has to be there.
  *
  * Where and when are remembered rather than used to filter the shelves — they
  * are carried through browsing and fill in checkout, so a shopper is not asked
@@ -68,22 +67,15 @@ function Field({
  */
 export function GiftSearchBar({
   className,
-  initialQuery = '',
-  onSearch,
+  navigateOnSubmit = true,
 }: {
   className?: string
-  /** Seeds the text field, e.g. from the URL on the products page. */
-  initialQuery?: string
-  /**
-   * Handles the search in place. Without it the bar navigates to the
-   * products page, which is what the home page wants.
-   */
-  onSearch?: (query: string) => void
+  /** Home sends the shopper to the catalog. The products page stays put. */
+  navigateOnSubmit?: boolean
 }) {
   const navigate = useNavigate()
   const { intent, setIntent } = useDeliveryIntent()
 
-  const [query, setQuery] = useState(initialQuery)
   const [address, setAddress] = useState(intent?.address ?? '')
   const [date, setDate] = useState(intent?.date ?? '')
   const [place, setPlace] = useState<Partial<DeliveryIntent>>({
@@ -111,36 +103,15 @@ export function GiftSearchBar({
       setIntent({ ...intent, date })
     }
 
-    const trimmedQuery = query.trim()
-    if (onSearch) {
-      onSearch(trimmedQuery)
-      return
-    }
-    const params = new URLSearchParams()
-    if (trimmedQuery) params.set('q', trimmedQuery)
-    navigate(params.size ? `/products?${params.toString()}` : '/products')
+    if (navigateOnSubmit) navigate('/products')
   }
-
-  const fieldClass =
-    'h-9 border-0 bg-transparent p-0 text-base font-medium shadow-none placeholder:font-normal focus-visible:ring-0 focus-visible:ring-offset-0'
 
   return (
     <form onSubmit={handleSubmit} className={cn('relative', className)}>
       {/* A thin brand edge, enough to mark the bar out without it glowing. */}
       <div className="relative rounded-[32px] bg-gradient-to-r from-primary/45 via-fuchsia-400/35 to-amber-300/45 p-[1.5px] shadow-lg shadow-black/5">
         <div className="rounded-[30px] bg-surface/98 backdrop-blur">
-          <div className="grid divide-y divide-border/70 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.85fr)_auto] lg:divide-x lg:divide-y-0">
-            <Field icon={<Gift className="size-5" />} label="Gift">
-              <Input
-                id="gift-search-query"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search gifts"
-                aria-label="Search gifts"
-                className={fieldClass}
-              />
-            </Field>
-
+          <div className="grid divide-y divide-border/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_auto] lg:divide-x lg:divide-y-0">
             <Field icon={<MapPin className="size-5" />} label="Deliver to">
               {/* Its own label and helper are turned off: the segment already
                   says what it is, and the helper text pushed the row out of
