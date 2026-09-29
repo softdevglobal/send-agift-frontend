@@ -8,6 +8,7 @@ import { ShopIdentity } from '@/features/customer-commerce/shop-identity'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
+import { RewardBadge } from '@/features/points/reward-badge'
 import { formatPriceAmount } from '@/lib/money'
 import { getPublicSeller, getPublicSellerForShop } from '@/lib/public-sellers'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
@@ -78,6 +79,9 @@ export function GiftCard({ product, href }: GiftCardProps) {
           </span>
         ) : null}
         <SaveGiftButton productId={product.id} className="absolute top-3 right-3 z-10" />
+        {isCatalogProduct(product) ? (
+          <RewardBadge points={product.rewardPoints} className="absolute top-3 left-3" />
+        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col gap-3 p-4">

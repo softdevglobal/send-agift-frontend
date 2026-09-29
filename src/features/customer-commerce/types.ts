@@ -22,6 +22,8 @@ export type CatalogProduct = GiftProduct & {
   catalogCustomerType?: CartCustomerType
   /** Gallery from API `media[]` (images + videos). */
   media?: CatalogProductMedia[]
+  /** Points earned per unit on delivery; 0 when the seller can't fund a reward. */
+  rewardPoints?: number
 }
 
 export type CatalogProductMedia = {

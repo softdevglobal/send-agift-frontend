@@ -1,4 +1,5 @@
 import {
+  Coins,
   Heart,
   History,
   MapPin,
@@ -52,6 +53,12 @@ export const accountNavGroups: AccountNavGroup[] = [
         label: 'My reviews',
         icon: Star,
         hint: 'Ratings you left on delivered gifts',
+      },
+      {
+        to: '/account/points',
+        label: 'My points',
+        icon: Coins,
+        hint: 'Balance and points history',
       },
     ],
   },

@@ -45,6 +45,7 @@ type FormState = {
   daily_play_limit: string
   min_plays_to_win: string
   win_odds: string
+  prize_points: string
   quiz_questions: QuizQuestion[]
 }
 
@@ -85,6 +86,7 @@ function fromCompetition(c: AdminCompetition): FormState {
     daily_play_limit: c.daily_play_limit ? String(c.daily_play_limit) : '',
     min_plays_to_win: c.min_plays_to_win ? String(c.min_plays_to_win) : '',
     win_odds: c.win_odds ? String(c.win_odds) : '',
+    prize_points: c.prize_points ? String(c.prize_points) : '',
     quiz_questions: c.quiz_questions ?? [],
   }
 }
@@ -113,6 +115,7 @@ const emptyForm: FormState = {
   daily_play_limit: '',
   min_plays_to_win: '',
   win_odds: '',
+  prize_points: '',
   quiz_questions: [],
 }
 
@@ -186,7 +189,14 @@ export function CompetitionForm({
     }
     const increment = amount(form.increment)
     const max = amount(form.max_prize)
-    if (form.prize_growth_enabled) {
+    // A points prize is paid in points, per winner, and never grows.
+    const pointsPrize = form.prize_type === 'points'
+    const prizePoints = Number(form.prize_points)
+    if (pointsPrize && !(Number.isInteger(prizePoints) && prizePoints >= 1)) {
+      setError('Set how many points each winner receives.')
+      return
+    }
+    if (form.prize_growth_enabled && !pointsPrize) {
       if (!currency) {
         setError('A growing prize needs a currency.')
         return
@@ -231,14 +241,16 @@ export function CompetitionForm({
       requires_identity_verification: form.requires_identity_verification,
       number_of_winners: instant ? 1 : Number(form.number_of_winners) || 0,
       prize_description: form.prize_description.trim(),
-      prize_value_amount: cents(value),
-      prize_currency: currency || null,
+      prize_value_amount: pointsPrize ? null : cents(value),
+      prize_currency: pointsPrize ? null : currency || null,
       official_rules: form.official_rules.trim() || null,
       prize_type: form.prize_type,
-      prize_growth_enabled: form.prize_growth_enabled,
-      start_prize_cents: cents(value),
-      increment_per_play_cents: form.prize_growth_enabled ? (cents(increment) ?? 0) : 0,
-      max_prize_cents: form.prize_growth_enabled ? cents(max) : null,
+      prize_growth_enabled: pointsPrize ? false : form.prize_growth_enabled,
+      start_prize_cents: pointsPrize ? 0 : cents(value),
+      increment_per_play_cents:
+        form.prize_growth_enabled && !pointsPrize ? (cents(increment) ?? 0) : 0,
+      max_prize_cents: form.prize_growth_enabled && !pointsPrize ? cents(max) : null,
+      prize_points: pointsPrize ? prizePoints : null,
       continue_at_cap: form.continue_at_cap,
       daily_play_limit: count(form.daily_play_limit),
       min_plays_to_win: count(form.min_plays_to_win),
@@ -507,6 +519,26 @@ export function CompetitionForm({
             </select>
           </div>
         </div>
+        {form.prize_type === 'points' ? (
+          <div className="space-y-2">
+            <Label htmlFor="c-prize-points">Points per winner</Label>
+            <Input
+              id="c-prize-points"
+              type="number"
+              min={1}
+              step={1}
+              value={form.prize_points}
+              onChange={(e) => set('prize_points', e.target.value)}
+              placeholder="500"
+              className="h-11"
+            />
+            <p className="text-xs text-muted-foreground">
+              Credited to each winner’s points balance the moment you validate them — nothing to
+              claim or ship, and no money reserve is needed.
+            </p>
+          </div>
+        ) : (
+        <>
         <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
           <div className="space-y-2">
             <Label htmlFor="c-value">{form.prize_growth_enabled ? 'Starting prize' : 'Prize value'}</Label>
@@ -588,6 +620,8 @@ export function CompetitionForm({
             </p>
           </>
         ) : null}
+        </>
+        )}
       </fieldset>
 
       <div className="space-y-2">

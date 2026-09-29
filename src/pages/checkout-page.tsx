@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   Bike,
   CalendarDays,
+  Coins,
   Gift,
   LoaderCircle,
   MapPin,
@@ -12,6 +13,7 @@ import {
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
+import { getMyPoints } from '@/api/points'
 import {
   getCustomerMe,
   getRecipient,
@@ -52,6 +54,8 @@ import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { isUuid } from '@/lib/uuid'
+import { formatPoints } from '@/features/points/format'
+import { RewardBadge } from '@/features/points/reward-badge'
 import { cn } from '@/lib/utils'
 
 function tomorrow() {
@@ -160,6 +164,22 @@ export function CheckoutPage() {
     return wanted && wanted >= toDateInputValue(new Date()) ? wanted : tomorrow()
   })
   const [giftMessage, setGiftMessage] = useState('')
+  // Points from the customer's own balance, sent with the gift. Null balance
+  // means it could not be read, and the option is simply not offered.
+  const [pointsBalance, setPointsBalance] = useState<number | null>(null)
+  const [giftPoints, setGiftPoints] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    getMyPoints()
+      .then((wallet) => {
+        if (!cancelled) setPointsBalance(wallet.balance)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (cartCustomerType) setCustomerType(cartCustomerType)
@@ -315,9 +335,27 @@ export function CheckoutPage() {
           ? 'Order type must match the catalog you used when adding these gifts to your cart.'
           : null
 
+  const giftPointsValue = Number.parseInt(giftPoints, 10) || 0
+  const recipientHasEmail = Boolean(recipientDetails?.email?.trim())
+  const giftPointsError =
+    giftPointsValue <= 0
+      ? null
+      : !recipientId
+        ? 'Choose a recipient to send points to.'
+        : !recipientHasEmail
+          ? 'Add this recipient’s email address to send them points.'
+          : pointsBalance != null && giftPointsValue > pointsBalance
+            ? `You have ${formatPoints(pointsBalance)} points.`
+            : null
+  // What the lines promise, for the summary. The server decides the rest.
+  const rewardPoints = lines.reduce(
+    (sum, line) => sum + (line.product.rewardPoints ?? 0) * line.quantity,
+    0,
+  )
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (blocker) return
+    if (blocker || giftPointsError) return
     setError(null)
     setSubmitting(true)
     try {
@@ -332,6 +370,7 @@ export function CheckoutPage() {
         delivery_date: deliveryDate,
         ...(giftMessage.trim() ? { gift_message: giftMessage.trim() } : {}),
         ...(shippingQuotes.length ? { shipping_quotes: shippingQuotes } : {}),
+        ...(giftPointsValue > 0 ? { gift_points: giftPointsValue } : {}),
         items: lines.map((line) => ({
           product_id: line.product.id,
           quantity: line.quantity,
@@ -585,6 +624,39 @@ export function CheckoutPage() {
                   placeholder="Happy birthday — thinking of you"
                 />
               </div>
+
+              {pointsBalance != null && pointsBalance > 0 ? (
+                <div className="space-y-2 rounded-xl bg-[linear-gradient(140deg,oklch(0.96_0.05_85)_0%,var(--card)_70%)] p-4 ring-1 ring-border/50 sm:col-span-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label htmlFor="checkout-gift-points" className="flex items-center gap-2">
+                      <Coins className="size-4 text-[oklch(0.6_0.13_75)]" />
+                      Add points to this gift (optional)
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      You have {formatPoints(pointsBalance)} points
+                    </span>
+                  </div>
+                  <Input
+                    id="checkout-gift-points"
+                    inputMode="numeric"
+                    value={giftPoints}
+                    onChange={(event) => setGiftPoints(event.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="0"
+                    disabled={!recipientId}
+                  />
+                  <p
+                    className={cn(
+                      'text-xs leading-relaxed',
+                      giftPointsError ? 'text-destructive' : 'text-muted-foreground',
+                    )}
+                  >
+                    {giftPointsError ??
+                      (recipientId
+                        ? 'They reach the recipient’s SendAGift account (matched by email) when the gift is delivered — or come back to you if they have no account.'
+                        : 'Choose a recipient above to send them points with the gift.')}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -797,6 +869,24 @@ export function CheckoutPage() {
               </li>
             ))}
           </ul>
+          {rewardPoints > 0 || giftPointsValue > 0 ? (
+            <div className="mt-4 space-y-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground ring-1 ring-border/40">
+              {rewardPoints > 0 ? (
+                <p className="flex items-center justify-between gap-2">
+                  <span>You earn with this order</span>
+                  <RewardBadge points={rewardPoints} />
+                </p>
+              ) : null}
+              {giftPointsValue > 0 && !giftPointsError ? (
+                <p className="flex items-center justify-between gap-2">
+                  <span>Points sent with the gift</span>
+                  <span className="font-medium text-foreground">
+                    {formatPoints(giftPointsValue)}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+          ) : null}
           <dl className="mt-4 space-y-2 border-t border-border/60 pt-4 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
@@ -922,7 +1012,7 @@ export function CheckoutPage() {
           </p>
           <Button
             type="submit"
-            disabled={submitting || Boolean(blocker)}
+            disabled={submitting || Boolean(blocker) || Boolean(giftPointsError)}
             className="mt-5 h-11 w-full rounded-full"
           >
             {submitting ? (

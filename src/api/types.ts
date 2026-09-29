@@ -215,6 +215,11 @@ export type Product = {
   occasion_tags: string[]
   customer_type_visibility: CustomerTypeVisibility
   points_display_enabled: boolean
+  /**
+   * Points a customer earns per unit bought, paid from the seller's points on
+   * delivery. On public reads it is 0 when the seller can't currently fund it.
+   */
+  reward_points?: number
   prep_minutes: number
   created_at: string
   updated_at: string
@@ -288,6 +293,8 @@ export type ProductInput = {
   occasion_tags?: string[]
   customer_type_visibility?: CustomerTypeVisibility
   points_display_enabled?: boolean
+  /** Points a customer earns per unit bought (0–1,000,000). */
+  reward_points?: number
   prep_minutes?: number
   /** Optional — API sets this from the first image in `media` when omitted. */
   image_url?: string | null
@@ -433,9 +440,22 @@ export type Order = {
   currency: string
   gift_message?: string | null
   media_greeting_id?: string | null
+  /** Points the sender attached to the gift. */
+  gift_points?: number
+  gift_points_status?: GiftPointsStatus
   created_at: string
   updated_at: string
 }
+
+/**
+ * Where points attached to a gift are: taken from the sender (held), reached
+ * the recipient's account (delivered), came back (returned), or were taken
+ * back after a refund (reversed).
+ */
+export type GiftPointsStatus = 'none' | 'held' | 'delivered' | 'returned' | 'reversed'
+
+/** Where a line's reward points are. */
+export type RewardStatus = 'none' | 'reserved' | 'awarded' | 'released' | 'reversed'
 
 /**
  * What a customer may see of a shipment: who is carrying the parcel and how to
@@ -464,6 +484,10 @@ export type OrderItem = {
   unit_amount: number
   total_amount: number
   fulfilment_status: FulfilmentStatus
+  /** The product's reward as sold: points per unit, the line total, and where they are. */
+  reward_points_per_unit?: number
+  reward_points?: number
+  reward_status?: RewardStatus
   created_at: string
   updated_at: string
   /** Present once the line has shipped. */
@@ -854,6 +878,11 @@ export type CreateOrderInput = {
   /** Quoted rates from POST /shipping/quote — optional but preferred when present. */
   shipping_quotes?: OrderShippingQuote[]
   items: OrderItemInput[]
+  /**
+   * Points from the customer's balance to send with the gift. Needs a
+   * recipient with an email; they reach that person's account on delivery.
+   */
+  gift_points?: number
 }
 
 /** @deprecated Use CreateOrderInput */
