@@ -33,3 +33,12 @@ export {
   orderStatusLabel,
   toDateInputValue,
 } from './order-display'
+
+export { GiftSearchBar } from './gift-search-bar'
+export { DeliveryIntentBar } from './delivery-intent-bar'
+export {
+  DeliveryIntentProvider,
+  describeIntent,
+  useDeliveryIntent,
+  type DeliveryIntent,
+} from './delivery-intent-context'

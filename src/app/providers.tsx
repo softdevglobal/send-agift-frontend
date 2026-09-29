@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom'
 
 import { AuthProvider } from '@/features/auth/auth-context'
 import { CartProvider } from '@/features/customer-commerce'
+import { DeliveryIntentProvider } from '@/features/customer-commerce/delivery-intent-context'
 import { SavedGiftsProvider } from '@/features/customer-commerce/saved-gifts-context'
 import { CustomerMessagesProvider } from '@/features/messaging'
 
@@ -16,7 +17,9 @@ export function AppProviders({ children }: AppProvidersProps) {
       <AuthProvider>
         <CustomerMessagesProvider>
           <SavedGiftsProvider>
-            <CartProvider>{children}</CartProvider>
+            <CartProvider>
+              <DeliveryIntentProvider>{children}</DeliveryIntentProvider>
+            </CartProvider>
           </SavedGiftsProvider>
         </CustomerMessagesProvider>
       </AuthProvider>

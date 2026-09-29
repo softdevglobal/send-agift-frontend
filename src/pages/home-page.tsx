@@ -26,7 +26,7 @@ import { FeatureBar } from '@/features/marketing/feature-bar'
 import { ReelsStrip } from '@/features/reels/reels-strip'
 import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
-import { GiftCard } from '@/features/customer-commerce'
+import { GiftCard, GiftSearchBar } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
@@ -190,6 +190,13 @@ export function HomePage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Before anything else: what you want, where it goes, when it must
+            arrive. Lifted onto the seam of the hero so it is the first thing
+            met rather than something found after scrolling. */}
+        <section className={cn(storefrontFrameClass, 'relative z-10 -mt-8 lg:-mt-10')}>
+          <GiftSearchBar />
         </section>
 
         <FeatureBar items={homeFeatures} />

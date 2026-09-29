@@ -5,8 +5,8 @@ import { useSearchParams } from 'react-router-dom'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { GiftCard } from '@/features/customer-commerce'
+import { DeliveryIntentBar, GiftSearchBar } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
@@ -111,18 +111,18 @@ export function ProductsPage() {
           </p>
         </div>
 
+        {/* The same bar as the home page, so where and when can be changed
+            without going back for them. */}
+        <GiftSearchBar
+          className="mb-6"
+          initialQuery={query}
+          onSearch={(next) => updateParam('q', next)}
+        />
+
+        {/* What was asked for, still in hand. */}
+        <DeliveryIntentBar className="mb-6" />
+
         <div className="mb-6 space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              value={query}
-              onChange={(event) => updateParam('q', event.target.value)}
-              placeholder="Search gifts, sellers, occasions…"
-              className="h-11 rounded-full bg-card pr-4 pl-9"
-              aria-label="Search gifts"
-            />
-          </div>
 
           <div className="flex gap-2 overflow-x-auto pb-1">
             <Button

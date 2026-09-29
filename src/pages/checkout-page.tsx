@@ -38,6 +38,10 @@ import { Label } from '@/components/ui/label'
 import { CustomerPageHeader, customerPanelClass, useCart } from '@/features/customer-commerce'
 import { toDateInputValue } from '@/features/customer-commerce/order-display'
 import type { CartCustomerType } from '@/features/customer-commerce/types'
+import {
+  describeIntent,
+  useDeliveryIntent,
+} from '@/features/customer-commerce/delivery-intent-context'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
@@ -128,6 +132,8 @@ export function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [placed, setPlaced] = useState(false)
 
+  const { intent } = useDeliveryIntent()
+
   const [recipientId, setRecipientId] = useState('')
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null)
   const [recipientLoading, setRecipientLoading] = useState(false)
@@ -140,7 +146,13 @@ export function CheckoutPage() {
   const [customerType, setCustomerType] = useState<CartCustomerType>(
     cartCustomerType ?? 'personal',
   )
-  const [deliveryDate, setDeliveryDate] = useState(tomorrow)
+  // The date asked for on the home page, unless it has since passed. The
+  // address from there is only a hint: where it actually ships is the
+  // recipient's saved address, which is the one that has been verified.
+  const [deliveryDate, setDeliveryDate] = useState(() => {
+    const wanted = intent?.date
+    return wanted && wanted >= toDateInputValue(new Date()) ? wanted : tomorrow()
+  })
   const [giftMessage, setGiftMessage] = useState('')
 
   useEffect(() => {
@@ -484,6 +496,19 @@ export function CheckoutPage() {
                   />
                 )}
               </div>
+
+              {intent ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <p className="rounded-xl border border-border/60 bg-surface px-3 py-2 text-xs text-muted-foreground">
+                    You asked to send this to{' '}
+                    <span className="font-medium text-foreground">
+                      {describeIntent(intent)}
+                    </span>
+                    . Pick the recipient whose address matches — theirs is
+                    where it will actually go.
+                  </p>
+                </div>
+              ) : null}
 
               <div className="space-y-2">
                 <Label htmlFor="checkout-delivery-date">Delivery date</Label>
