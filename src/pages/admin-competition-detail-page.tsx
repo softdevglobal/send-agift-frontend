@@ -76,14 +76,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import {
   competitionStatusLabel,
@@ -882,17 +876,14 @@ export function AdminCompetitionDetailPage() {
         )}
       </div>
 
-      <Sheet open={editing} onOpenChange={setEditing}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>Edit competition</SheetTitle>
-            <SheetDescription>Saving returns it to draft, so every publishing check runs again.</SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-6">
-            <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CompetitionDialog
+        open={editing}
+        onOpenChange={setEditing}
+        title="Edit competition"
+        description="Saving returns it to draft, so every publishing check runs again."
+      >
+        <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
+      </CompetitionDialog>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>

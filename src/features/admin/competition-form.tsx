@@ -138,6 +138,21 @@ function toLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
+/**
+ * Number fields are plain text boxes that only keep what a number can hold:
+ * no browser spinner arrows, and a scroll over the field never changes it.
+ */
+function digitsOnly(raw: string): string {
+  return raw.replace(/[^0-9]/g, '')
+}
+
+/** Digits and one decimal point, for money amounts. */
+function decimalsOnly(raw: string): string {
+  const cleaned = raw.replace(/[^0-9.]/g, '')
+  const dot = cleaned.indexOf('.')
+  return dot === -1 ? cleaned : cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, '')
+}
+
 /** Minutes from now until 9am tomorrow, for the "Tomorrow, 9am" preset. */
 function minutesUntilTomorrow9am(): number {
   const target = new Date()
@@ -384,7 +399,7 @@ export function CompetitionForm({
             <select
               id="c-game"
               required
-              className={cn(selectClassName, 'bg-surface')}
+              className={selectClassName}
               value={form.game_slug}
               onChange={(e) => set('game_slug', e.target.value)}
             >
@@ -401,7 +416,7 @@ export function CompetitionForm({
             <select
               id="c-country"
               required
-              className={cn(selectClassName, 'bg-surface')}
+              className={selectClassName}
               value={form.country_id}
               onChange={(e) => chooseCountry(e.target.value)}
             >
@@ -447,11 +462,9 @@ export function CompetitionForm({
                 </Label>
                 <Input
                   id="c-odds"
-                  type="number"
-                  min={2}
-                  step={1}
+                  inputMode="numeric"
                   value={form.win_odds}
-                  onChange={(e) => set('win_odds', e.target.value)}
+                  onChange={(e) => set('win_odds', digitsOnly(e.target.value))}
                   placeholder="500"
                   className="h-10 w-32 bg-surface"
                 />
@@ -523,10 +536,9 @@ export function CompetitionForm({
             <Label htmlFor="c-points">Points per play</Label>
             <Input
               id="c-points"
-              type="number"
-              min={0}
+              inputMode="numeric"
               value={form.points_per_attempt}
-              onChange={(e) => set('points_per_attempt', e.target.value)}
+              onChange={(e) => set('points_per_attempt', digitsOnly(e.target.value))}
               className="h-11 bg-surface"
             />
           </div>
@@ -534,11 +546,9 @@ export function CompetitionForm({
             <Label htmlFor="c-attempts">Plays each</Label>
             <Input
               id="c-attempts"
-              type="number"
-              min={1}
-              max={10000}
+              inputMode="numeric"
               value={form.max_attempts_per_customer}
-              onChange={(e) => set('max_attempts_per_customer', e.target.value)}
+              onChange={(e) => set('max_attempts_per_customer', digitsOnly(e.target.value))}
               className="h-11 bg-surface"
             />
           </div>
@@ -546,10 +556,9 @@ export function CompetitionForm({
             <Label htmlFor="c-age">Minimum age</Label>
             <Input
               id="c-age"
-              type="number"
-              min={18}
+              inputMode="numeric"
               value={form.min_age}
-              onChange={(e) => set('min_age', e.target.value)}
+              onChange={(e) => set('min_age', digitsOnly(e.target.value))}
               className="h-11 bg-surface"
             />
           </div>
@@ -557,12 +566,10 @@ export function CompetitionForm({
             <Label htmlFor="c-winners">Winners</Label>
             <Input
               id="c-winners"
-              type="number"
-              min={1}
-              max={100}
+              inputMode="numeric"
               disabled={instantWinner}
               value={instantWinner ? '1' : form.number_of_winners}
-              onChange={(e) => set('number_of_winners', e.target.value)}
+              onChange={(e) => set('number_of_winners', digitsOnly(e.target.value))}
               className="h-11 bg-surface"
             />
           </div>
@@ -584,10 +591,9 @@ export function CompetitionForm({
             <Label htmlFor="c-daily">Plays per day (optional)</Label>
             <Input
               id="c-daily"
-              type="number"
-              min={1}
+              inputMode="numeric"
               value={form.daily_play_limit}
-              onChange={(e) => set('daily_play_limit', e.target.value)}
+              onChange={(e) => set('daily_play_limit', digitsOnly(e.target.value))}
               placeholder="No daily limit"
               className="h-11 bg-surface"
             />
@@ -596,10 +602,9 @@ export function CompetitionForm({
             <Label htmlFor="c-minplays">Plays needed to win (optional)</Label>
             <Input
               id="c-minplays"
-              type="number"
-              min={1}
+              inputMode="numeric"
               value={form.min_plays_to_win}
-              onChange={(e) => set('min_plays_to_win', e.target.value)}
+              onChange={(e) => set('min_plays_to_win', digitsOnly(e.target.value))}
               placeholder="Any number"
               className="h-11 bg-surface"
             />
@@ -629,7 +634,7 @@ export function CompetitionForm({
             <Label htmlFor="c-ptype">Type</Label>
             <select
               id="c-ptype"
-              className={cn(selectClassName, 'bg-surface')}
+              className={selectClassName}
               value={form.prize_type}
               onChange={(e) => set('prize_type', e.target.value as PrizeType)}
             >
@@ -646,11 +651,9 @@ export function CompetitionForm({
             <Label htmlFor="c-prize-points">Points per winner</Label>
             <Input
               id="c-prize-points"
-              type="number"
-              min={1}
-              step={1}
+              inputMode="numeric"
               value={form.prize_points}
-              onChange={(e) => set('prize_points', e.target.value)}
+              onChange={(e) => set('prize_points', digitsOnly(e.target.value))}
               placeholder="500"
               className="h-11 bg-surface"
             />
@@ -668,11 +671,9 @@ export function CompetitionForm({
                 </Label>
                 <Input
                   id="c-value"
-                  type="number"
-                  min={0}
-                  step="0.01"
+                  inputMode="decimal"
                   value={form.prize_value}
-                  onChange={(e) => set('prize_value', e.target.value)}
+                  onChange={(e) => set('prize_value', decimalsOnly(e.target.value))}
                   className="h-11 bg-surface"
                 />
               </div>
@@ -703,11 +704,9 @@ export function CompetitionForm({
                     <Label htmlFor="c-inc">Added per play</Label>
                     <Input
                       id="c-inc"
-                      type="number"
-                      min={0}
-                      step="0.01"
+                      inputMode="decimal"
                       value={form.increment}
-                      onChange={(e) => set('increment', e.target.value)}
+                      onChange={(e) => set('increment', decimalsOnly(e.target.value))}
                       placeholder="1.00"
                       className="h-11 bg-surface"
                     />
@@ -716,11 +715,9 @@ export function CompetitionForm({
                     <Label htmlFor="c-max">Maximum prize</Label>
                     <Input
                       id="c-max"
-                      type="number"
-                      min={0}
-                      step="0.01"
+                      inputMode="decimal"
                       value={form.max_prize}
-                      onChange={(e) => set('max_prize', e.target.value)}
+                      onChange={(e) => set('max_prize', decimalsOnly(e.target.value))}
                       placeholder="5000.00"
                       className="h-11 bg-surface"
                     />

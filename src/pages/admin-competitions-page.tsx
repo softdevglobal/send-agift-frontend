@@ -14,14 +14,8 @@ import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import { isSuperAdmin } from '@/lib/auth'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
@@ -182,24 +176,19 @@ export function AdminCompetitionsPage() {
         </div>
       )}
 
-      <Sheet open={creating} onOpenChange={setCreating}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>New competition</SheetTitle>
-            <SheetDescription>
-              It starts as a draft. Publish it once the prize reserve is funded and the rules are written.
-            </SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-6">
-            <CompetitionForm
-              games={games}
-              countries={countries}
-              submitLabel="Create draft"
-              onSubmit={create}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CompetitionDialog
+        open={creating}
+        onOpenChange={setCreating}
+        title="New competition"
+        description="It starts as a draft. Publish it once the prize reserve is funded and the rules are written."
+      >
+        <CompetitionForm
+          games={games}
+          countries={countries}
+          submitLabel="Create draft"
+          onSubmit={create}
+        />
+      </CompetitionDialog>
     </>
   )
 }
