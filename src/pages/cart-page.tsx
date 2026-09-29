@@ -1,13 +1,15 @@
-import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Store, Trash2, TriangleAlert } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import {
+  cartShops,
   CustomerEmptyState,
   CustomerPageHeader,
   customerPanelClass,
   formatMoney,
+  MIXED_SHOPS_MESSAGE,
   useCart,
 } from '@/features/customer-commerce'
 import { returnToState } from '@/lib/auth'
@@ -19,6 +21,8 @@ export function CartPage() {
   const { lines, itemCount, subtotal, total, setQuantity, removeItem } =
     useCart()
   const isCustomer = isAuthenticated && role === 'customer'
+  const shops = cartShops(lines)
+  const mixedShops = shops.length > 1
 
   if (!lines.length) {
     return (
@@ -96,6 +100,12 @@ export function CartPage() {
                     <p className="mt-0.5 text-sm text-muted-foreground">
                       {formatMoney(line.product.price)} each
                     </p>
+                    {line.product.shopName || line.product.sellerName ? (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                        <Store className="size-3" />
+                        {line.product.shopName || line.product.sellerName}
+                      </p>
+                    ) : null}
                   </div>
                   <p className="text-sm font-medium">{formatMoney(line.lineTotal)}</p>
                 </div>
@@ -160,17 +170,36 @@ export function CartPage() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            Delivery is arranged by each shop once your gift is packed, so it is
-            not part of this total.
+            Delivery is priced at checkout for the shop these gifts ship from.
           </p>
-          <Button asChild className="mt-5 h-11 w-full rounded-full">
-            <Link
-              to={isCustomer ? '/checkout' : '/login'}
-              state={isCustomer ? undefined : returnToState('/checkout')}
+          {mixedShops ? (
+            <div
+              role="alert"
+              className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm"
             >
-              {isCustomer ? 'Continue to checkout' : 'Sign in to check out'}
-            </Link>
-          </Button>
+              <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" />
+              <div>
+                <p>{MIXED_SHOPS_MESSAGE}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Shops in your cart: {shops.map((shop) => shop.name).join(', ')}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {mixedShops ? (
+            <Button type="button" disabled className="mt-5 h-11 w-full rounded-full">
+              Continue to checkout
+            </Button>
+          ) : (
+            <Button asChild className="mt-5 h-11 w-full rounded-full">
+              <Link
+                to={isCustomer ? '/checkout' : '/login'}
+                state={isCustomer ? undefined : returnToState('/checkout')}
+              >
+                {isCustomer ? 'Continue to checkout' : 'Sign in to check out'}
+              </Link>
+            </Button>
+          )}
         </aside>
       </div>
     </div>

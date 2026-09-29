@@ -470,10 +470,29 @@ export type OrderItem = {
   tracking?: OrderItemTracking
 }
 
+/**
+ * The delivery the customer chose and paid for one shop's parcel at checkout.
+ * An order has one per priced shop; a shop without one is arranged later.
+ */
+export type OrderShopDelivery = {
+  shop_id: string
+  shop_name?: string
+  seller_id: string
+  mode: 'courier' | 'seller_delivery'
+  provider: string
+  service_name: string
+  /** Minor units of `currency`. */
+  amount: number
+  currency: string
+  estimated_days?: number
+  distance_km?: number
+}
+
 export type SellerOrderItemSummary = OrderItem & {
   order_number: string
   order_status: OrderStatus
   delivery_date: string
+  shop_name: string
   product_name: string
   product_slug: string
   product_image_url?: string | null
@@ -481,6 +500,9 @@ export type SellerOrderItemSummary = OrderItem & {
 }
 
 export type SellerOrderItemDetails = OrderItem & {
+  shop_name: string
+  /** What the customer paid to deliver this shop's parcel; null when not priced at checkout. */
+  shop_delivery: OrderShopDelivery | null
   order: Order
   product: Product
   recipient?: Recipient
@@ -565,8 +587,10 @@ export type ShippingRatesResult = {
    * Never reuse `checkout_selected.rate_object_id` (it expires).
    */
   recommended_rate_object_id?: string | null
-  /** What the customer paid / was quoted for delivery (minor units / cents). */
+  /** What the customer paid to deliver this shop's parcel (minor units). 0 when not priced. */
   customer_delivery_amount?: number
+  /** Checkout delivery for this shop, or null when the shop was not priced at checkout. */
+  shop_delivery?: OrderShopDelivery | null
   currency?: string
   /** When true, BuyLabel must use the customer courier (or chat to change). */
   must_buy_customer_courier?: boolean
@@ -576,6 +600,8 @@ export type ShippingRatesResult = {
   customer_selected_mode?: 'courier' | 'seller_delivery' | ''
   /** Set when Shippo returned no rates but shop delivery is still available. */
   carrier_rates_error?: string
+  /** Products from this shop on the order that share this one parcel. */
+  combined_item_count?: number
 }
 
 /** Snapshot of the courier option the buyer picked at checkout. */
@@ -789,7 +815,11 @@ export type LocalDeliveryInput = {
   note?: string
 }
 
-export type OrderDetails = Order & { items: OrderItem[] }
+export type OrderDetails = Order & {
+  items: OrderItem[]
+  /** Delivery per priced shop; `delivery_amount` is their sum. */
+  shop_deliveries?: OrderShopDelivery[]
+}
 
 export type OrderItemInput = {
   product_id: string

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Bike, LoaderCircle } from 'lucide-react'
 
-import { startLocalDelivery, type Shipment } from '@/api/seller-orders'
+import { startLocalDelivery, type Shipment, type ShopParcel } from '@/api/seller-orders'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +15,7 @@ import {
 import { getErrorMessage } from '@/lib/api'
 
 export type LocalDeliveryDialogProps = {
-  orderItemID: string
+  parcel: ShopParcel
   open: boolean
   onOpenChange: (open: boolean) => void
   onStarted: (shipment: Shipment) => void
@@ -28,7 +28,7 @@ export type LocalDeliveryDialogProps = {
  * Provider becomes "Local delivery". Complete later with .../local/delivered.
  */
 export function LocalDeliveryDialog({
-  orderItemID,
+  parcel,
   open,
   onOpenChange,
   onStarted,
@@ -40,7 +40,7 @@ export function LocalDeliveryDialog({
     setSaving(true)
     setError(null)
     try {
-      const shipment = await startLocalDelivery(orderItemID)
+      const shipment = await startLocalDelivery(parcel)
       onStarted(shipment)
       onOpenChange(false)
     } catch (submitError) {
