@@ -178,13 +178,19 @@ export function DatePicker({
       setOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      // Stopped on `window`'s capture phase — strictly before `document`'s,
+      // regardless of add order — or a Sheet/Dialog this opens inside
+      // closes itself too: Radix's own Escape handling listens there.
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
     };
   }, [open]);
 
@@ -230,7 +236,7 @@ export function DatePicker({
                 <div
                   aria-hidden
                   onClick={() => setOpen(false)}
-                  className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
+                  className="pointer-events-auto fixed inset-0 z-[90] bg-black/40 backdrop-blur-[2px]"
                 />
               ) : null}
               <div
@@ -244,7 +250,10 @@ export function DatePicker({
                     : { top: place.top, left: place.left }
                 }
                 className={cn(
-                  "fixed z-[100] w-[19rem] max-w-[calc(100vw-2rem)]",
+                  // Radix's modal Dialog/Sheet sets pointer-events: none on
+                  // <body> while open and only re-enables its own content, so
+                  // a portal rendered as a body sibling needs it back.
+                  "pointer-events-auto fixed z-[100] w-[19rem] max-w-[calc(100vw-2rem)]",
                   "rounded-2xl border border-border bg-surface p-3 shadow-2xl",
                   // Centred by the layout itself on a phone, so there is no
                   // arithmetic to get wrong.

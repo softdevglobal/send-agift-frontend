@@ -30,6 +30,10 @@ export type AdminGameSummary = {
   under_review: number
   rejected: number
   competitions: number
+  /** Customers can play it on its own; only these plays are charged. */
+  practice: boolean
+  /** Points one practice play costs, set by a platform admin. 0 is free. */
+  play_cost_points: number
   top_score?: number
   top_player?: AdminPlayer
   last_played_at?: string
@@ -88,6 +92,17 @@ export async function listAdminGameScores(slug: string, status?: ScoreStatus) {
     `/admin/games/${encodeURIComponent(slug)}/scores${query}`,
   )
   return res.items ?? []
+}
+
+/**
+ * Sets what one practice play of a game costs. Any platform admin; asks for
+ * a fresh password confirmation, like every other points change.
+ */
+export function setGamePlayCost(slug: string, playCostPoints: number) {
+  return api<AdminGameSummary>(`/admin/games/${encodeURIComponent(slug)}/play-cost`, {
+    method: 'PUT',
+    body: { play_cost_points: playCostPoints },
+  })
 }
 
 export function reviewGameScore(sessionId: string, body: ReviewInput) {

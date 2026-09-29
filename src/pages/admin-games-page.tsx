@@ -13,9 +13,11 @@ import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { GamePricesPanel, PriceTag } from '@/features/admin/game-prices-panel'
 import { formatScore, gameGradient } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
+import { getRole, isAdminRole } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 function Metric({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone?: 'warn' }) {
@@ -55,7 +57,11 @@ function GameCard({ game }: { game: AdminGameSummary }) {
               {game.game_type} · v{game.version || '—'}
             </p>
           </div>
-          {!game.playable ? <StatusPill tone="neutral">No engine</StatusPill> : null}
+          {!game.playable ? (
+            <StatusPill tone="neutral">No engine</StatusPill>
+          ) : game.practice ? (
+            <PriceTag points={game.play_cost_points} />
+          ) : null}
         </div>
 
         <div className="mt-5 flex-1 rounded-xl bg-muted/40 p-4">
@@ -153,7 +159,7 @@ export function AdminGamesPage() {
       <AdminPageHeader
         eyebrow="Games"
         title="Games & leaderboards"
-        description="Every skill game, who is playing and who holds the best verified score. Guests are shown too, tagged by device. Scores count once the server has replayed them."
+        description="Every skill game, what it costs to play, who is playing and who holds the best verified score. Guests are shown too, tagged by device. Scores count once the server has replayed them."
         action={
           <Button asChild variant="outline" className="h-10">
             <Link to="/admin/competitions">
@@ -181,6 +187,14 @@ export function AdminGamesPage() {
               tone={totals.review > 0 ? 'warn' : undefined}
             />
           </div>
+
+          <GamePricesPanel
+            games={games}
+            editable={isAdminRole(getRole())}
+            onSaved={(updated) =>
+              setGames((prev) => prev.map((g) => (g.slug === updated.slug ? { ...g, ...updated } : g)))
+            }
+          />
 
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
             <h2 className="font-display text-xl tracking-tight">Best scorers</h2>

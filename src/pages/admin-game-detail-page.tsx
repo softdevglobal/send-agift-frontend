@@ -27,6 +27,7 @@ import {
   ReasonDialog,
   StatusPill,
 } from '@/features/admin/games-ui'
+import { PriceTag } from '@/features/admin/game-prices-panel'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -113,7 +114,14 @@ export function AdminGameDetailPage() {
             ? `${game.plays.toLocaleString()} plays by ${game.players.toLocaleString()} players. Ranked by best verified score; ties go to the faster time.`
             : undefined
         }
-        action={game ? <GameBadge slug={game.slug} className="size-14" /> : null}
+        action={
+          game ? (
+            <div className="flex items-center gap-3">
+              {game.practice ? <PriceTag points={game.play_cost_points} /> : null}
+              <GameBadge slug={game.slug} className="size-14" />
+            </div>
+          ) : null
+        }
       />
 
       <FormAlert error={error} notice={notice} className="mb-6" />
