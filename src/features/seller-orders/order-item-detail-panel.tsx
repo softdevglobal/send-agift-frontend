@@ -22,7 +22,9 @@ import {
   getSellerOrderItem,
   getShippingRates,
   type SellerOrderItemDetails,
+  type SellerOrderItemSummary,
   type Shipment,
+  type ShopParcel,
   type ShippingRatesResult,
   type ShippoRate,
 } from '@/api/seller-orders'
@@ -84,6 +86,8 @@ const SAMPLE_LABEL_NOTICE = 'Test labels are watermarked SAMPLE — do not mail.
 type OrderItemDetailPanelProps = {
   /** The item to show. `null` closes the panel. */
   orderItemId: string | null
+  /** Every line on the seller list, so this order's products can be shown together. */
+  orderItems?: SellerOrderItemSummary[]
   onClose: () => void
   /** Called after accept/label-buy so the list behind the panel restates itself. */
   onChanged?: () => void
@@ -100,6 +104,7 @@ type OrderItemDetailPanelProps = {
  */
 export function SellerOrderItemDetailPanel({
   orderItemId,
+  orderItems = [],
   onClose,
   onChanged,
 }: OrderItemDetailPanelProps) {
@@ -182,6 +187,9 @@ export function SellerOrderItemDetailPanel({
   }, [item, seller, countries])
 
   const international = forceInternational || detectedInternational
+  const parcelTarget: ShopParcel | null = item
+    ? { orderId: item.order_id, shopId: item.shop_id }
+    : null
   const shipFrom = item ? resolveShipFrom({ item, seller, countries }) : null
   const shipTo = item ? resolveShipTo({ item, countries }) : null
 
@@ -245,17 +253,36 @@ export function SellerOrderItemDetailPanel({
   }
 
   async function handleAccept() {
-    if (!item || !canAcceptOrderItem(item.fulfilment_status)) return
+    if (!item) return
+    const targets = orderItems
+      .filter(
+        (line) =>
+          line.order_id === item.order_id &&
+          line.shop_id === item.shop_id &&
+          canAcceptOrderItem(line.fulfilment_status),
+      )
+      .map((line) => line.id)
+    const ids = targets.length
+      ? targets
+      : canAcceptOrderItem(item.fulfilment_status)
+        ? [item.id]
+        : []
+    if (!ids.length) return
     setError(null)
     setNotice(null)
     setAccepting(true)
     try {
-      const accepted = await acceptSellerOrderItem(item.id)
-      setItem((current) => (current ? { ...current, ...accepted } : current))
+      for (const id of ids) {
+        await acceptSellerOrderItem(id)
+      }
       clearShippingDraft()
       await load()
       onChanged?.()
-      setToast('Order item accepted. You can get shipping rates now.')
+      setToast(
+        ids.length > 1
+          ? 'All products accepted. Shipping rates cover them as one parcel.'
+          : 'Order item accepted. You can get shipping rates now.',
+      )
     } catch (err) {
       setError(getErrorMessage(err, 'Could not accept this order item.'))
       if (err instanceof ApiError && (err.status === 409 || err.status === 404)) {
@@ -278,7 +305,10 @@ export function SellerOrderItemDetailPanel({
     setRatesLoading(true)
     setLaneUnservable(false)
     try {
-      const result = await getShippingRates(item.id, built.body)
+      const result = await getShippingRates(
+        { orderId: item.order_id, shopId: item.shop_id },
+        built.body,
+      )
       setRatesResult(result)
       const preferredId = result.recommended_rate_object_id?.trim() || ''
       const preferred = preferredId
@@ -333,7 +363,10 @@ export function SellerOrderItemDetailPanel({
     setCompletingLocal(true)
     setError(null)
     try {
-      const delivered = await completeLocalDelivery(item.id)
+      const delivered = await completeLocalDelivery({
+        orderId: item.order_id,
+        shopId: item.shop_id,
+      })
       setShipment(delivered)
       await load()
       onChanged?.()
@@ -355,7 +388,7 @@ export function SellerOrderItemDetailPanel({
     setBuying(true)
     try {
       const purchased = await buyShippingLabel(
-        item.id,
+        { orderId: item.order_id, shopId: item.shop_id },
         locked
           ? {
               use_customer_selected: true,
@@ -391,6 +424,23 @@ export function SellerOrderItemDetailPanel({
 
   const currency = item?.order?.currency || 'USD'
   const product = item?.product
+  const shopItems = item
+    ? orderItems.filter(
+        (line) => line.order_id === item.order_id && line.shop_id === item.shop_id,
+      )
+    : []
+  const productsInShipment = shopItems.length > 1 ? shopItems : []
+  const shopPendingCount = shopItems.filter((line) =>
+    canAcceptOrderItem(line.fulfilment_status),
+  ).length
+  const parcelItemsTotal = shopItems.length
+    ? shopItems.reduce((sum, line) => sum + line.total_amount, 0)
+    : (item?.total_amount ?? 0)
+  const shopDelivery = item?.shop_delivery ?? null
+  // The order also holds products from other shops (this seller's or others').
+  const orderHasOtherShops = Boolean(
+    item?.order && item.order.subtotal_amount > parcelItemsTotal,
+  )
   const recipient = item?.recipient
   const shippingAddress = item?.shipping_address
   const missingAddress = !hasShippingAddress(shippingAddress)
@@ -418,8 +468,8 @@ export function SellerOrderItemDetailPanel({
         open={orderItemId !== null}
         onOpenChange={(open) => !open && onClose()}
         size="lg"
-        eyebrow="Order item"
-        title={item?.order?.order_number ?? (loading ? 'Loading…' : 'Order item')}
+        eyebrow="Order"
+        title={item?.order?.order_number ?? (loading ? 'Loading…' : 'Order')}
         description={
           item ? `Placed ${formatOrderDate(item.created_at)}` : undefined
         }
@@ -427,9 +477,9 @@ export function SellerOrderItemDetailPanel({
           item ? <FulfilmentStatusBadge status={item.fulfilment_status} /> : null
         }
         footer={
-          item && (pending || rateable || (dispatched && localDelivery && !localDeliveryComplete)) ? (
+          item && (pending || shopPendingCount > 0 || rateable || (dispatched && localDelivery && !localDeliveryComplete)) ? (
             <div className="space-y-3">
-              {pending ? (
+              {pending || shopPendingCount > 0 ? (
                 <Button
                   type="button"
                   disabled={accepting}
@@ -441,6 +491,8 @@ export function SellerOrderItemDetailPanel({
                       <LoaderCircle className="animate-spin" />
                       Accepting…
                     </>
+                  ) : shopPendingCount > 1 ? (
+                    'Accept all products'
                   ) : (
                     'Accept this item'
                   )}
@@ -585,31 +637,58 @@ export function SellerOrderItemDetailPanel({
               </div>
             ) : null}
 
-            <SellerSheetSection icon={Gift} title="Gift">
-              <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-surface/60 p-3">
-                <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  {product?.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt=""
-                      className="size-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex size-full items-center justify-center text-muted-foreground">
-                      <Package className="size-5" />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{product?.name ?? 'Product'}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Qty {item.quantity} · {formatPriceAmount(item.unit_amount, currency)}
-                  </p>
-                </div>
-                <p className="shrink-0 text-sm font-medium">
-                  {formatPriceAmount(item.total_amount, currency)}
+            <SellerSheetSection icon={Gift} title={productsInShipment.length > 1 ? 'Products' : 'Gift'}>
+              <ul className="space-y-2">
+                {(productsInShipment.length > 1 ? productsInShipment : [null]).map((line) => {
+                  const name = line?.product_name ?? product?.name ?? 'Product'
+                  const image = line?.product_image_url ?? product?.image_url
+                  const quantity = line?.quantity ?? item.quantity
+                  const unit = line?.unit_amount ?? item.unit_amount
+                  const total = line?.total_amount ?? item.total_amount
+                  return (
+                    <li
+                      key={line?.id ?? item.id}
+                      className="flex items-center gap-3 rounded-xl border border-border/50 bg-surface/60 p-3"
+                    >
+                      <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {image ? (
+                          <img src={image} alt="" className="size-full object-cover" />
+                        ) : (
+                          <div className="flex size-full items-center justify-center text-muted-foreground">
+                            <Package className="size-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Qty {quantity} · {formatPriceAmount(unit, currency)}
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-medium">
+                          {formatPriceAmount(total, currency)}
+                        </p>
+                        {line && productsInShipment.length > 1 ? (
+                          <FulfilmentStatusBadge status={line.fulfilment_status} />
+                        ) : null}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+              {productsInShipment.length > 1 ? (
+                <p className="text-sm text-muted-foreground">
+                  These products ship as one parcel from {item.shop_name || 'this shop'}.
+                  Shipping rates are for this parcel only.
                 </p>
-              </div>
+              ) : null}
+              {orderHasOtherShops ? (
+                <p className="text-sm text-muted-foreground">
+                  This order also has products from other shops. Each shop ships
+                  its own parcel.
+                </p>
+              ) : null}
             </SellerSheetSection>
 
             <SellerSheetSection
@@ -624,19 +703,36 @@ export function SellerOrderItemDetailPanel({
                 <SellerSheetRow label="Shipment">
                   {international ? 'International' : 'Domestic'}
                 </SellerSheetRow>
-                <SellerSheetRow label="Item total" emphasis>
-                  {formatPriceAmount(item.total_amount, currency)}
+                {item.shop_name ? (
+                  <SellerSheetRow label="Shop">{item.shop_name}</SellerSheetRow>
+                ) : null}
+                <SellerSheetRow label="Products" emphasis>
+                  {formatPriceAmount(parcelItemsTotal, currency)}
+                </SellerSheetRow>
+                <SellerSheetRow label="Shipping paid">
+                  {shopDelivery ? (
+                    <span className="text-right">
+                      {shopDelivery.amount === 0
+                        ? 'Free'
+                        : formatPriceAmount(shopDelivery.amount, shopDelivery.currency || currency)}
+                      <span className="block text-xs text-muted-foreground">
+                        {shopDelivery.mode === 'seller_delivery'
+                          ? 'Shop delivery'
+                          : `${shopDelivery.provider} · ${shopDelivery.service_name}`}
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Not priced at checkout</span>
+                  )}
                 </SellerSheetRow>
                 {typeof item.order?.delivery_amount === 'number' ? (
-                  <SellerSheetRow label="Shipping">
+                  <SellerSheetRow label="Total delivery" emphasis>
                     {formatPriceAmount(item.order.delivery_amount, currency)}
                   </SellerSheetRow>
                 ) : null}
-                {typeof item.order?.total_amount === 'number' ? (
-                  <SellerSheetRow label="Order total" emphasis>
-                    {formatPriceAmount(item.order.total_amount, currency)}
-                  </SellerSheetRow>
-                ) : null}
+                <SellerSheetRow label="Parcel total" emphasis>
+                  {formatPriceAmount(parcelItemsTotal + (shopDelivery?.amount ?? 0), currency)}
+                </SellerSheetRow>
               </SellerSheetFacts>
               {item.order?.gift_message ? (
                 <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm italic">
@@ -720,6 +816,9 @@ export function SellerOrderItemDetailPanel({
                   </div>
                 ) : null}
                 <p className="text-sm text-muted-foreground">
+                  {(ratesResult.combined_item_count ?? 0) > 1
+                    ? `One rate for all ${ratesResult.combined_item_count} products in this order. `
+                    : null}
                   {ratesResult.seller_delivery?.available
                     ? 'The recipient is inside a shop delivery range. Deliver it yourself, or pick a courier.'
                     : customerCourierLocked
@@ -921,7 +1020,7 @@ export function SellerOrderItemDetailPanel({
                       ) : (
                         <>
                           <LabelDownloadButton
-                            orderItemID={item.id}
+                            parcel={parcelTarget!}
                             className="mt-3"
                           />
                           <p className="mt-3 text-xs text-muted-foreground">
@@ -965,7 +1064,7 @@ export function SellerOrderItemDetailPanel({
                       ) : null}
                       {item.tracking?.delivery_mode !== 'seller_managed' ? (
                         <LabelDownloadButton
-                          orderItemID={item.id}
+                          parcel={parcelTarget!}
                           className="mt-3"
                         />
                       ) : null}
@@ -986,7 +1085,7 @@ export function SellerOrderItemDetailPanel({
 
       {item ? (
         <LocalDeliveryDialog
-          orderItemID={item.id}
+          parcel={{ orderId: item.order_id, shopId: item.shop_id }}
           open={localDeliveryOpen}
           onOpenChange={setLocalDeliveryOpen}
           onStarted={(started) => {
@@ -1001,7 +1100,7 @@ export function SellerOrderItemDetailPanel({
 
       {item ? (
         <ManualShipmentDialog
-          orderItemID={item.id}
+          parcel={{ orderId: item.order_id, shopId: item.shop_id }}
           open={manualShipOpen}
           onOpenChange={setManualShipOpen}
           onShipped={(shipped) => {

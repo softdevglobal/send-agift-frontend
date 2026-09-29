@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { LoaderCircle, Send } from 'lucide-react'
 
-import { markShippingManual, type Shipment } from '@/api/seller-orders'
+import { markShippingManual, type Shipment, type ShopParcel } from '@/api/seller-orders'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/api'
 
 export type ManualShipmentDialogProps = {
-  orderItemID: string
+  parcel: ShopParcel
   open: boolean
   onOpenChange: (open: boolean) => void
   onShipped: (shipment: Shipment) => void
@@ -30,7 +30,7 @@ export type ManualShipmentDialogProps = {
  * tracking_url). Does not accept a note. Use when Shippo has no rates.
  */
 export function ManualShipmentDialog({
-  orderItemID,
+  parcel,
   open,
   onOpenChange,
   onShipped,
@@ -60,7 +60,7 @@ export function ManualShipmentDialog({
     setError(null)
     try {
       const trackingLink = trackingUrl.trim()
-      const shipment = await markShippingManual(orderItemID, {
+      const shipment = await markShippingManual(parcel, {
         courier_provider: courierProvider,
         tracking_number: trackingNumber,
         ...(trackingLink ? { tracking_url: trackingLink } : {}),

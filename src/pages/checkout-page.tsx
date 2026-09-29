@@ -35,7 +35,13 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CustomerPageHeader, customerPanelClass, useCart } from '@/features/customer-commerce'
+import {
+  cartShops,
+  CustomerPageHeader,
+  customerPanelClass,
+  MIXED_SHOPS_MESSAGE,
+  useCart,
+} from '@/features/customer-commerce'
 import { toDateInputValue } from '@/features/customer-commerce/order-display'
 import type { CartCustomerType } from '@/features/customer-commerce/types'
 import {
@@ -282,15 +288,26 @@ export function CheckoutPage() {
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
-  const selectedDeliveryAmount = selectionsDeliveryAmount(quoteSelections)
-  const deliveryCurrency =
-    Object.values(quoteSelections)[0]?.currency || quote?.currency || currency
-  const hasQuoteSelections = Object.keys(quoteSelections).length > 0
-  const quoteComplete = Boolean(quote?.complete && hasQuoteSelections)
+  // Each shop is its own parcel. Only shops quoted in the cart currency can be
+  // added to the order; the rest are arranged by the shop after ordering.
+  const chargeableSelections = Object.fromEntries(
+    Object.entries(quoteSelections).filter(([, choice]) => sameCurrency(choice.currency, currency)),
+  )
+  const selectedDeliveryAmount = selectionsDeliveryAmount(chargeableSelections)
+  const deliveryCurrency = currency
+  const pricedShopCount = Object.keys(chargeableSelections).length
+  const shopCount = quote?.shops?.length ?? pricedShopCount
+  const unpricedShopCount = Math.max(0, shopCount - pricedShopCount)
+  const hasPricedDelivery = pricedShopCount > 0
+  const otherCurrencySelections = Object.keys(quoteSelections).length - pricedShopCount
+
+  const mixedShops = cartShops(lines).length > 1
 
   const blocker = unorderable.length
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
-    : mixedCurrency
+    : mixedShops
+      ? MIXED_SHOPS_MESSAGE
+      : mixedCurrency
       ? 'All items in one order must share the same currency. Split your cart and order separately.'
       : mixedCustomerType
         ? 'Your cart mixes personal and corporate catalog items. Remove one type to check out.'
@@ -304,13 +321,9 @@ export function CheckoutPage() {
     setError(null)
     setSubmitting(true)
     try {
-      const shippingQuotes = quoteComplete
-        ? selectionsToShippingQuotes(quoteSelections)
-        : []
-      const deliveryAmount =
-        quoteComplete && sameCurrency(deliveryCurrency, currency)
-          ? selectedDeliveryAmount
-          : undefined
+      // The server adds up delivery from these per-shop quotes; the client
+      // never sends its own delivery total.
+      const shippingQuotes = selectionsToShippingQuotes(chargeableSelections)
 
       const order = await createOrder({
         ...(recipientId ? { recipient_id: recipientId } : {}),
@@ -318,7 +331,6 @@ export function CheckoutPage() {
         customer_type: customerType,
         delivery_date: deliveryDate,
         ...(giftMessage.trim() ? { gift_message: giftMessage.trim() } : {}),
-        ...(typeof deliveryAmount === 'number' ? { delivery_amount: deliveryAmount } : {}),
         ...(shippingQuotes.length ? { shipping_quotes: shippingQuotes } : {}),
         items: lines.map((line) => ({
           product_id: line.product.id,
@@ -804,14 +816,22 @@ export function CheckoutPage() {
 
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
-              <dd className={quoteComplete ? undefined : 'text-muted-foreground'}>
+              <dd className={hasPricedDelivery ? 'text-right' : 'text-muted-foreground'}>
                 {quoteLoading ? (
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <LoaderCircle className="size-3 animate-spin" />
                     Pricing…
                   </span>
-                ) : quoteComplete ? (
-                  formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)
+                ) : hasPricedDelivery ? (
+                  <>
+                    {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}
+                    {unpricedShopCount > 0 ? (
+                      <span className="block text-xs text-muted-foreground">
+                        + {unpricedShopCount} shop{unpricedShopCount === 1 ? '' : 's'} arranged
+                        after ordering
+                      </span>
+                    ) : null}
+                  </>
                 ) : !recipientId ? (
                   'Pick a recipient'
                 ) : (
@@ -849,6 +869,7 @@ export function CheckoutPage() {
                     {choice.mode === 'seller_delivery' && choice.is_free
                       ? 'Free'
                       : formatPriceAmount(choice.amount, choice.currency)}
+                    {sameCurrency(choice.currency, currency) ? null : ' · not added'}
                   </dd>
                 </div>
               )
@@ -857,31 +878,21 @@ export function CheckoutPage() {
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 text-base font-medium">
               <dt>Total</dt>
               <dd className="text-right">
-                {quoteComplete && sameCurrency(deliveryCurrency, currency) ? (
-                  formatPriceAmount(
-                    majorToMinor(subtotal, currency) + selectedDeliveryAmount,
-                    currency,
-                  )
-                ) : quoteComplete ? (
-                  <span className="inline-flex flex-col items-end">
-                    <span>{money(subtotal)}</span>
-                    <span className="text-sm font-normal text-muted-foreground">
-                      + {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}{' '}
-                      delivery
-                    </span>
-                  </span>
-                ) : (
-                  money(subtotal)
-                )}
+                {hasPricedDelivery
+                  ? formatPriceAmount(
+                      majorToMinor(subtotal, currency) + selectedDeliveryAmount,
+                      currency,
+                    )
+                  : money(subtotal)}
               </dd>
             </div>
           </dl>
 
-          {quoteComplete && !sameCurrency(deliveryCurrency, currency) ? (
+          {otherCurrencySelections > 0 ? (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              The carrier quotes delivery in {deliveryCurrency.toUpperCase()} while this
-              cart is priced in {currency.toUpperCase()}, so the two are shown
-              separately rather than converted at a rate we cannot verify.
+              Delivery for {otherCurrencySelections === 1 ? 'one shop is' : 'some shops are'}{' '}
+              quoted in a different currency from this {currency.toUpperCase()} cart. It is
+              not added to the total; the shop arranges that delivery after you order.
             </p>
           ) : null}
 

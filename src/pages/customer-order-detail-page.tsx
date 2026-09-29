@@ -277,11 +277,47 @@ export function CustomerOrderDetailPage() {
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Delivery</dt>
                 <dd>
-                  {order.delivery_amount === 0
-                    ? "Free"
-                    : formatPriceAmount(order.delivery_amount, order.currency)}
+                  {order.delivery_amount === 0 && !order.shop_deliveries?.length
+                    ? "Arranged by the shop"
+                    : order.delivery_amount === 0
+                      ? "Free"
+                      : formatPriceAmount(order.delivery_amount, order.currency)}
                 </dd>
               </div>
+              {(order.shop_deliveries ?? []).map((delivery) => (
+                <div
+                  key={delivery.shop_id}
+                  className="flex justify-between gap-3 text-xs text-muted-foreground"
+                >
+                  <dt className="min-w-0 truncate">
+                    {delivery.shop_name || "Shop"} ·{" "}
+                    {delivery.mode === "seller_delivery"
+                      ? "Shop delivery"
+                      : `${delivery.provider} ${delivery.service_name}`}
+                  </dt>
+                  <dd className="shrink-0">
+                    {delivery.amount === 0
+                      ? "Free"
+                      : formatPriceAmount(delivery.amount, delivery.currency)}
+                  </dd>
+                </div>
+              ))}
+              {(() => {
+                const priced = new Set(
+                  (order.shop_deliveries ?? []).map((delivery) => delivery.shop_id),
+                );
+                const unpriced = new Set(
+                  order.items
+                    .map((item) => item.shop_id)
+                    .filter((shopId) => !priced.has(shopId)),
+                ).size;
+                return unpriced > 0 && priced.size > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Delivery for {unpriced === 1 ? "one shop" : `${unpriced} shops`} is
+                    arranged by the shop.
+                  </p>
+                ) : null;
+              })()}
               <div className="flex justify-between gap-3 border-t border-border/60 pt-2 font-medium">
                 <dt>Total</dt>
                 <dd>{formatPriceAmount(order.total_amount, order.currency)}</dd>

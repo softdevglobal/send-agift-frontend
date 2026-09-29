@@ -1,4 +1,5 @@
 export { CartProvider, useCart } from './cart-context'
+export { cartShops, MIXED_SHOPS_MESSAGE, type CartShop } from './cart-shops'
 export { CustomerPageHeader } from './customer-page-header'
 export { CustomerEmptyState } from './customer-empty-state'
 export { GiftCard } from './gift-card'

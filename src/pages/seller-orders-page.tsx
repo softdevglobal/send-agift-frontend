@@ -47,7 +47,7 @@ export function SellerOrdersPage() {
         <SellerEmptyState
           icon={ShoppingBag}
           title="No orders yet"
-          description="When a buyer purchases from one of your shops, the order item will show up here so you can accept it and buy a shipping label."
+          description="When a buyer purchases from one of your shops, the order will show up here so you can accept it and buy one shipping label for its products."
           action={
             <Button asChild className="h-10 rounded-full px-4">
               <Link to="/seller/shops">Set up a shop</Link>
@@ -58,6 +58,7 @@ export function SellerOrdersPage() {
 
       <SellerOrderItemDetailPanel
         orderItemId={orderItemId ?? null}
+        orderItems={items}
         onClose={() => navigate('/seller/orders')}
         onChanged={refresh}
       />
