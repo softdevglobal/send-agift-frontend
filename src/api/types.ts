@@ -27,6 +27,8 @@ export const COUNTRY_CAPABILITY_FLAGS = [
   'points_earning_enabled',
   'points_usage_enabled',
   'skill_competitions_enabled',
+  'progressive_prizes_enabled',
+  'chance_games_enabled',
   'app_store_available',
 ] as const
 
@@ -44,6 +46,8 @@ export const DEFAULT_COUNTRY_CAPABILITY_INPUT: CountryCapabilityInput = {
   points_earning_enabled: true,
   points_usage_enabled: true,
   skill_competitions_enabled: false,
+  progressive_prizes_enabled: false,
+  chance_games_enabled: false,
   app_store_available: true,
 }
 

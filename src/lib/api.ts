@@ -18,6 +18,11 @@ export class ApiError extends Error {
   }
 }
 
+/** The full URL of an API path, for things fetch() does not cover (EventSource). */
+export function apiUrl(path: string): string {
+  return `${API_BASE}${path}`
+}
+
 export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
   if (error instanceof ApiError) return error.message
   if (error instanceof Error && error.message) return error.message
@@ -68,12 +73,65 @@ function redirectToLogin(): void {
   window.location.assign(loginPath)
 }
 
+// ─── Re-authentication ─────────────────────────────────────────────────────
+// Money-moving admin actions need the admin's password confirmed in the last
+// few minutes. The server answers 403 REAUTH_REQUIRED; api() then asks the
+// registered prompt (the admin shell's password dialog) for a confirmation,
+// keeps it in memory until it expires, and retries the request once.
+
+type Reauth = { token: string; expiresAt: number }
+let reauth: Reauth | null = null
+let reauthPrompt: (() => Promise<Reauth | null>) | null = null
+let pendingPrompt: Promise<Reauth | null> | null = null
+
+/** The admin shell registers the password dialog here. */
+export function setReauthPrompt(prompt: (() => Promise<Reauth | null>) | null): void {
+  reauthPrompt = prompt
+}
+
+/** Confirms the signed-in admin's password; used by the prompt. */
+export async function confirmPassword(password: string): Promise<Reauth> {
+  const res = await api<{ reauth_token: string; expires_at: string }>('/admin/reauth', {
+    method: 'POST',
+    body: { password },
+  })
+  return { token: res.reauth_token, expiresAt: new Date(res.expires_at).getTime() }
+}
+
+function currentReauth(): string | null {
+  if (reauth && reauth.expiresAt - 10_000 > Date.now()) return reauth.token
+  reauth = null
+  return null
+}
+
+function isReauthRequired(status: number, body: unknown): boolean {
+  return status === 403 && isRecord(body) && body.code === 'REAUTH_REQUIRED'
+}
+
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
+  try {
+    return await request<T>(path, options)
+  } catch (err) {
+    if (!(err instanceof ApiError) || !isReauthRequired(err.status, err.body) || !reauthPrompt) throw err
+    // One dialog for however many requests are waiting on it.
+    pendingPrompt ??= reauthPrompt().finally(() => {
+      pendingPrompt = null
+    })
+    const confirmed = await pendingPrompt
+    if (!confirmed) throw new ApiError('Password confirmation was cancelled.', 403, err.body)
+    reauth = confirmed
+    return request<T>(path, options)
+  }
+}
+
+async function request<T>(path: string, options: ApiOptions): Promise<T> {
   const { method = 'GET', body, headers = {}, auth = true, signal } = options
   const token = getToken()
 
   const requestHeaders = new Headers(headers)
   requestHeaders.set('Accept', 'application/json')
+  const confirmed = currentReauth()
+  if (auth && confirmed) requestHeaders.set('X-Reauth-Token', confirmed)
 
   if (body !== undefined) {
     requestHeaders.set('Content-Type', 'application/json')

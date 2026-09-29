@@ -21,6 +21,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { InboxProvider, useSharedInbox } from '@/features/messaging'
 import type { UserRole } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { ReauthDialog } from './reauth-dialog'
 
 function AdminNavLinks({
   onNavigate,
@@ -284,6 +285,7 @@ function AdminShellLayout() {
           />
           <div className="relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
             <Outlet />
+            <ReauthDialog />
           </div>
         </main>
       </div>

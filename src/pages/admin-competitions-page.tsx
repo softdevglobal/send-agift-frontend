@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/sheet'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
+import { isSuperAdmin } from '@/lib/auth'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
@@ -34,6 +35,7 @@ const filters: { value: CompetitionStatus | 'all'; label: string }[] = [
   { value: 'draft', label: 'Draft' },
   { value: 'scheduled', label: 'Scheduled' },
   { value: 'live', label: 'Live' },
+  { value: 'paused', label: 'Paused' },
   { value: 'closed', label: 'Closed' },
   { value: 'finalised', label: 'Finalised' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -90,12 +92,14 @@ export function AdminCompetitionsPage() {
       <AdminPageHeader
         eyebrow="Games"
         title="Competitions"
-        description="Prize competitions run on the skill games. Each needs a funded prize reserve and published rules before it can be scheduled, and every action here is audited."
+        description="Prize rounds run on the skill games, with a fixed prize or one that grows with every play. Each needs a funded reserve and published rules before it can be scheduled, and every action here is audited."
         action={
-          <Button type="button" className="h-10" onClick={() => setCreating(true)}>
-            <Plus className="size-4" />
-            New competition
-          </Button>
+          isSuperAdmin() ? (
+            <Button type="button" className="h-10" onClick={() => setCreating(true)}>
+              <Plus className="size-4" />
+              New competition
+            </Button>
+          ) : null
         }
       />
 
@@ -158,12 +162,17 @@ export function AdminCompetitionsPage() {
               </div>
               <div className="text-right text-sm">
                 <p className="font-medium">
-                  {c.prize_value_amount !== undefined && c.prize_currency
-                    ? formatPriceAmount(c.prize_value_amount, c.prize_currency)
+                  {c.prize_currency
+                    ? formatPriceAmount(c.final_prize_cents ?? (c.status === 'draft' ? c.start_prize_cents : c.current_prize_cents), c.prize_currency)
                     : c.prize_description}
+                  {c.prize_growth_enabled ? (
+                    <span className="ml-1.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                      GROWING
+                    </span>
+                  ) : null}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {c.attempts} attempts · {c.submissions} scores
+                  Round {c.round_no} · {c.eligible_play_count.toLocaleString()} plays
                   {c.under_review > 0 ? ` · ${c.under_review} to review` : ''}
                 </p>
               </div>

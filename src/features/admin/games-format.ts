@@ -79,6 +79,7 @@ export const competitionStatusTone: Record<CompetitionStatus, Tone> = {
   draft: 'neutral',
   scheduled: 'info',
   live: 'good',
+  paused: 'warn',
   closed: 'warn',
   frozen: 'warn',
   finalised: 'good',

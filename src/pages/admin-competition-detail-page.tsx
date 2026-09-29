@@ -4,6 +4,10 @@ import {
   Ban,
   CalendarClock,
   Check,
+  CopyPlus,
+  Pause,
+  Play,
+  Square,
   Crown,
   Gavel,
   LoaderCircle,
@@ -14,12 +18,21 @@ import {
   Wallet,
   X,
 } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import {
   CANCEL_REASONS,
   cancelCompetition,
+  closeCompetition,
   disqualifyWinner,
+  getCompetitionAnalytics,
+  getDraw,
+  getPrizeLedger,
+  listPlays,
+  pauseCompetition,
+  reconcilePrize,
+  resumeCompetition,
+  runDraw,
   finaliseCompetition,
   freezeCompetition,
   fulfilClaim,
@@ -36,11 +49,15 @@ import {
   validateWinner,
   verifyClaim,
   type AdminCompetition,
+  type AdminPlay,
   type CancelReason,
+  type CompetitionAnalytics,
   type CompetitionInput,
   type CompetitionLeaderRow,
   type CompetitionStatus,
   type CompetitionWinner,
+  type PrizeDraw,
+  type PrizeLedgerView,
   type ScoreSubmission,
 } from '@/api/competitions'
 import { listCountries } from '@/api/countries'
@@ -77,6 +94,19 @@ import {
   scoreStatusTone,
 } from '@/features/admin/games-format'
 import { GameBadge, Loading, ReasonDialog, StatusPill } from '@/features/admin/games-ui'
+import {
+  AdjustPrizeDialog,
+  DrawPanel,
+  DuplicateDialog,
+  LedgerPanel,
+  PlaysPanel,
+  PrizeDashboard,
+  RiskPanel,
+  SettleDialog,
+  VoidPlayDialog,
+} from '@/features/admin/prize-panels'
+import { prizeMoney, useLivePrize } from '@/features/admin/prize-live'
+import { isSuperAdmin } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
@@ -109,7 +139,7 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
 }
 
 function Stepper({ status }: { status: CompetitionStatus }) {
-  const current = lifecycle.indexOf(status)
+  const current = lifecycle.indexOf(status === 'paused' ? 'live' : status)
   return (
     <ol className="flex flex-wrap gap-2">
       {lifecycle.map((step, i) => (
@@ -123,7 +153,7 @@ function Stepper({ status }: { status: CompetitionStatus }) {
           )}
         >
           {i < current ? <Check className="size-3" /> : <span className="text-[10px]">{i + 1}</span>}
-          {competitionStatusLabel(step)}
+          {competitionStatusLabel(step === 'live' && status === 'paused' ? 'paused' : step)}
         </li>
       ))}
     </ol>
@@ -142,8 +172,9 @@ function ReserveCard({
   const reserve = comp.prize_reserve
   const [amount, setAmount] = useState(() => {
     if (reserve) return String(minorToMajor(reserve.reserve_amount, reserve.currency))
-    if (comp.prize_value_amount !== undefined && comp.prize_currency) {
-      return String(minorToMajor(comp.prize_value_amount, comp.prize_currency))
+    const liability = comp.prize_growth_enabled ? comp.max_prize_cents : comp.start_prize_cents
+    if (liability !== undefined && comp.prize_currency) {
+      return String(minorToMajor(liability, comp.prize_currency))
     }
     return ''
   })
@@ -171,8 +202,8 @@ function ReserveCard({
   return (
     <Panel title="Prize reserve" icon={<Wallet className="size-5 text-primary" />}>
       <p className="mb-4 text-sm text-muted-foreground">
-        The prize must be held before the competition opens — funded by SendAgift or an approved sponsor, never by
-        points or entries.
+        The most the prize can reach must be held before the round opens — the fixed prize, or the maximum of a growing
+        one — funded by SendAgift or an approved sponsor.
       </p>
       <div className="grid gap-3 sm:grid-cols-[1fr_110px_1fr_auto] sm:items-end">
         <div className="space-y-2">
@@ -288,15 +319,39 @@ export function AdminCompetitionDetailPage() {
   const [cancelNote, setCancelNote] = useState('')
   const [rejecting, setRejecting] = useState<ScoreSubmission | null>(null)
   const [disqualifying, setDisqualifying] = useState<CompetitionWinner | null>(null)
+  const [analytics, setAnalytics] = useState<CompetitionAnalytics | null>(null)
+  const [ledger, setLedger] = useState<PrizeLedgerView | null>(null)
+  const [plays, setPlays] = useState<AdminPlay[]>([])
+  const [draw, setDraw] = useState<PrizeDraw | null>(null)
+  const [adjustOpen, setAdjustOpen] = useState(false)
+  const [settleOpen, setSettleOpen] = useState(false)
+  const [duplicateOpen, setDuplicateOpen] = useState(false)
+  const [voiding, setVoiding] = useState<AdminPlay | null>(null)
+  const navigate = useNavigate()
+  const superadmin = isSuperAdmin()
 
   const load = useCallback(async () => {
     const c = await getAdminCompetition(id)
     setComp(c)
-    const [b, q, w] = await Promise.all([getCompetitionLeaderboard(id), getReviewQueue(id), listWinners(id)])
+    const [b, q, w, a, l, p] = await Promise.all([
+      getCompetitionLeaderboard(id),
+      getReviewQueue(id),
+      listWinners(id),
+      getCompetitionAnalytics(id),
+      getPrizeLedger(id),
+      listPlays(id),
+    ])
     setBoard(b)
     setQueue(q)
     setWinners(w)
+    setAnalytics(a)
+    setLedger(l)
+    setPlays(p)
+    setDraw(c.winner_method === 'draw' ? await getDraw(id) : null)
   }, [id])
+
+  const running = comp?.effective_status === 'live' || comp?.effective_status === 'paused'
+  const live = useLivePrize(id, running)
 
   useEffect(() => {
     Promise.all([load(), listAdminGames().then(setGames), listCountries().then((l) => setCountries(Array.isArray(l) ? l : []))])
@@ -329,7 +384,15 @@ export function AdminCompetitionDetailPage() {
 
   const status = comp.effective_status
   const editable = comp.status === 'draft' || (comp.status === 'scheduled' && new Date(comp.starts_at) > new Date())
-  const canCancel = status !== 'finalised' && status !== 'cancelled'
+  const canCancel = superadmin && status !== 'finalised' && status !== 'cancelled'
+  const unpaid = winners.some((w) => w.status === 'validated' && w.settlement_status === 'pending')
+  const chance = comp.game_type === 'chance'
+  const closedish = status === 'closed' || status === 'frozen'
+  const done = async (message: string) => {
+    setNotice(message)
+    setError(null)
+    await load()
+  }
   const spinner = (label: string) => (busy === label ? <LoaderCircle className="size-4 animate-spin" /> : null)
 
   async function saveEdit(input: CompetitionInput) {
@@ -381,13 +444,15 @@ export function AdminCompetitionDetailPage() {
           title="Details"
           icon={<CalendarClock className="size-5 text-primary" />}
           action={
-            editable ? (
+            editable && superadmin ? (
               <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setEditing(true)}>
                 <Pencil className="size-3.5" />
                 Edit
               </Button>
             ) : (
-              <span className="text-xs text-muted-foreground">Rules are locked once it starts</span>
+              <span className="text-xs text-muted-foreground">
+                {editable ? 'Only a superadmin can edit' : 'Rules are locked once it starts'}
+              </span>
             )
           }
         >
@@ -399,12 +464,12 @@ export function AdminCompetitionDetailPage() {
               value={
                 <>
                   {comp.prize_description}
-                  {comp.prize_value_amount !== undefined && comp.prize_currency ? (
-                    <span className="block text-xs font-normal text-muted-foreground">
-                      {formatPriceAmount(comp.prize_value_amount, comp.prize_currency)} ·{' '}
-                      {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
-                    </span>
-                  ) : null}
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    {comp.prize_growth_enabled
+                      ? `${prizeMoney(comp.start_prize_cents, comp.prize_currency)} + ${prizeMoney(comp.increment_per_play_cents, comp.prize_currency)}/play, max ${prizeMoney(comp.max_prize_cents, comp.prize_currency)}`
+                      : prizeMoney(comp.start_prize_cents, comp.prize_currency)}{' '}
+                    · {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
+                  </span>
                 </>
               }
             />
@@ -412,14 +477,23 @@ export function AdminCompetitionDetailPage() {
               label="Entry"
               value={
                 <>
-                  {comp.max_attempts_per_customer} attempts · {comp.points_per_attempt} pts each
+                  {comp.max_attempts_per_customer} plays · {comp.points_per_attempt} pts each
                   <span className="block text-xs font-normal text-muted-foreground">
+                    {comp.daily_play_limit ? `${comp.daily_play_limit}/day · ` : ''}
+                    {comp.min_plays_to_win ? `${comp.min_plays_to_win} to win · ` : ''}
                     {comp.min_age}+{comp.requires_identity_verification ? ', ID verified' : ''} · {comp.timezone}
                   </span>
                 </>
               }
             />
-            <Fact label="Attempts" value={comp.attempts} />
+            <Fact label="Round" value={`Round ${comp.round_no}`} />
+            {comp.winner_method === 'instant' && comp.win_odds ? (
+              <Fact label="Win odds" value={`1 in ${comp.win_odds.toLocaleString()} per play`} />
+            ) : null}
+            {comp.winner_method === 'draw' ? <Fact label="Winners" value="Drawn at random from all entries" /> : null}
+            {comp.quiz_questions ? (
+              <Fact label="Quiz" value={`${comp.quiz_questions.length} questions · answers kept on the server`} />
+            ) : null}
             <Fact label="Scores" value={comp.submissions} />
             <Fact label="To review" value={comp.under_review} />
             <Fact label="Game version" value={`${comp.game_name} v${comp.game_version}`} />
@@ -434,17 +508,73 @@ export function AdminCompetitionDetailPage() {
           )}
         </Panel>
 
+        {status !== 'draft' ? <PrizeDashboard comp={comp} analytics={analytics} live={live} /> : null}
+
         {status !== 'cancelled' && (editable || comp.prize_reserve) ? (
-          <ReserveCard key={comp.updated_at} comp={comp} editable={editable} run={run} />
+          <ReserveCard key={comp.updated_at} comp={comp} editable={editable && superadmin} run={run} />
         ) : null}
 
         <Panel title="Actions" icon={<Gavel className="size-5 text-primary" />}>
           <div className="flex flex-wrap gap-2">
-            {comp.status === 'draft' ? (
+            {superadmin && status === 'live' ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10"
+                disabled={busy !== null}
+                onClick={() => run('pause', () => pauseCompetition(comp.id), 'Paused. New plays are refused; plays already started can finish.')}
+              >
+                {spinner('pause')}
+                <Pause className="size-4" />
+                Pause
+              </Button>
+            ) : null}
+            {superadmin && status === 'paused' ? (
               <Button
                 type="button"
                 className="h-10"
                 disabled={busy !== null}
+                onClick={() => run('resume', () => resumeCompetition(comp.id), 'Resumed. Plays are open again.')}
+              >
+                {spinner('resume')}
+                <Play className="size-4" />
+                Resume
+              </Button>
+            ) : null}
+            {superadmin && (status === 'live' || status === 'paused') ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10"
+                disabled={busy !== null}
+                onClick={() => {
+                  if (window.confirm('Close this round now? No new plays will be accepted.')) {
+                    void run('close', () => closeCompetition(comp.id), 'Closed. The prize is fixed at its current amount.')
+                  }
+                }}
+              >
+                {spinner('close')}
+                <Square className="size-4" />
+                Close now
+              </Button>
+            ) : null}
+            {superadmin && status === 'finalised' && unpaid ? (
+              <Button type="button" className="h-10" disabled={busy !== null} onClick={() => setSettleOpen(true)}>
+                <Wallet className="size-4" />
+                Record payout
+              </Button>
+            ) : null}
+            {superadmin ? (
+              <Button type="button" variant="outline" className="h-10" disabled={busy !== null} onClick={() => setDuplicateOpen(true)}>
+                <CopyPlus className="size-4" />
+                New round
+              </Button>
+            ) : null}
+            {superadmin && comp.status === 'draft' ? (
+              <Button
+                type="button"
+                className="h-10"
+                disabled={busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() => run('schedule', () => scheduleCompetition(comp.id), 'Scheduled. It goes live at its start time.')}
               >
                 {spinner('schedule')}
@@ -452,7 +582,7 @@ export function AdminCompetitionDetailPage() {
                 Schedule
               </Button>
             ) : null}
-            {status === 'closed' ? (
+            {status === 'closed' && !chance ? (
               <Button
                 type="button"
                 className="h-10"
@@ -464,7 +594,23 @@ export function AdminCompetitionDetailPage() {
                 Freeze leaderboard
               </Button>
             ) : null}
-            {status === 'frozen' ? (
+            {superadmin && closedish && comp.winner_method === 'draw' ? (
+              <Button
+                type="button"
+                className="h-10"
+                disabled={busy !== null}
+                onClick={() => {
+                  if (window.confirm('Run the draw now? Winners are picked at random from every entry, and it cannot be run again.')) {
+                    void run('draw', () => runDraw(comp.id), 'Draw complete. Validate the winners below.')
+                  }
+                }}
+              >
+                {spinner('draw')}
+                <Trophy className="size-4" />
+                Run the draw
+              </Button>
+            ) : null}
+            {superadmin && ((status === 'frozen' && !chance) || (closedish && comp.winner_method === 'instant')) ? (
               <Button
                 type="button"
                 className="h-10"
@@ -491,17 +637,52 @@ export function AdminCompetitionDetailPage() {
               </Button>
             ) : null}
           </div>
+          {status === 'draft' && comp.schedule_blockers.length > 0 ? (
+            <ul className="mt-3 list-disc space-y-0.5 pl-5 text-sm text-amber-800">
+              {comp.schedule_blockers.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+          ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
             {status === 'draft' &&
-              'Scheduling checks that competitions are enabled in the country, the rules are published and the funded reserve covers the prize.'}
+              'Scheduling checks that competitions are enabled in the country, the rules are published and the funded reserve covers the most the prize can reach. Publishing posts the starting prize to the ledger.'}
+            {status === 'paused' && 'Paused: new plays are refused. Plays already started can still be finished and scored.'}
             {status === 'scheduled' && 'It opens automatically at its start time.'}
             {status === 'live' && 'Scores are coming in. It closes automatically at its end time.'}
-            {status === 'closed' && 'Freeze to lock the board, then clear the review queue and finalise.'}
+            {status === 'closed' && !chance && 'Freeze to lock the board, then clear the review queue and finalise.'}
+            {closedish && comp.winner_method === 'draw' && 'Run the draw to pick the winners at random from every entry.'}
+            {closedish && comp.winner_method === 'instant' &&
+              (winners.length > 0
+                ? 'A play won the prize. Finalise, then validate the winner.'
+                : 'No play won before the round closed. Finalising releases the prize.')}
             {status === 'frozen' &&
               'Finalising replays the leading scores again, skips ineligible players and refuses ties at the prize cutoff.'}
-            {status === 'finalised' && 'Validate each winner to open their 14-day claim window.'}
+            {status === 'finalised' && 'Validate each winner to open their 14-day claim window, then record the payout.'}
           </p>
         </Panel>
+
+        {analytics && status !== 'draft' ? <RiskPanel analytics={analytics} /> : null}
+
+        {status !== 'draft' ? (
+          <LedgerPanel
+            comp={comp}
+            ledger={ledger}
+            busy={busy !== null}
+            onAdjust={
+              superadmin && ['scheduled', 'live', 'paused', 'closed', 'frozen'].includes(status)
+                ? () => setAdjustOpen(true)
+                : undefined
+            }
+            onReconcile={() =>
+              run('reconcile', () => reconcilePrize(comp.id), 'Reconciliation finished — see the ledger for the result.')
+            }
+          />
+        ) : null}
+
+        <PlaysPanel comp={comp} plays={plays} onVoid={superadmin ? setVoiding : undefined} />
+
+        {draw ? <DrawPanel draw={draw} /> : null}
 
         {queue.length > 0 ? (
           <Panel title={`Review queue (${queue.length})`} icon={<ShieldAlert className="size-5 text-amber-600" />}>
@@ -569,12 +750,18 @@ export function AdminCompetitionDetailPage() {
                       </p>
                     </div>
                     <StatusPill tone={winnerTone(w.status)}>{scoreStatusLabel(w.status)}</StatusPill>
+                    {w.prize_value_cents !== undefined ? (
+                      <StatusPill tone={w.settlement_status === 'settled' ? 'good' : 'info'}>
+                        {prizeMoney(w.prize_value_cents, comp.prize_currency)} ·{' '}
+                        {w.settlement_status === 'settled' ? 'paid' : w.settlement_status === 'pending' ? 'unpaid' : 'n/a'}
+                      </StatusPill>
+                    ) : null}
                     {claim ? (
                       <StatusPill tone={claim.status === 'fulfilled' ? 'good' : expired ? 'bad' : 'info'}>
                         Claim {expired ? 'expired' : claim.status} · due {formatDate(claim.claim_deadline_at)}
                       </StatusPill>
                     ) : null}
-                    <div className="ml-auto flex flex-wrap gap-2">
+                    <div className={cn('ml-auto flex flex-wrap gap-2', !superadmin && 'hidden')}>
                       {w.status === 'pending_validation' ? (
                         <Button
                           type="button"
@@ -623,7 +810,7 @@ export function AdminCompetitionDetailPage() {
                           Mark unclaimed
                         </Button>
                       ) : null}
-                      {w.status === 'pending_validation' || w.status === 'validated' ? (
+                      {(w.status === 'pending_validation' || w.status === 'validated') && w.settlement_status !== 'settled' ? (
                         <Button
                           type="button"
                           size="sm"
@@ -643,6 +830,7 @@ export function AdminCompetitionDetailPage() {
           </Panel>
         ) : null}
 
+        {chance ? null : (
         <Panel title="Leaderboard" icon={<Trophy className="size-5 text-primary" />}>
           {board.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">No scores yet.</p>
@@ -684,6 +872,7 @@ export function AdminCompetitionDetailPage() {
             </div>
           )}
         </Panel>
+        )}
       </div>
 
       <Sheet open={editing} onOpenChange={setEditing}>
@@ -748,6 +937,16 @@ export function AdminCompetitionDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AdjustPrizeDialog comp={comp} open={adjustOpen} onOpenChange={setAdjustOpen} onDone={done} />
+      <VoidPlayDialog comp={comp} play={voiding} onOpenChange={(open) => !open && setVoiding(null)} onDone={done} />
+      <SettleDialog comp={comp} open={settleOpen} onOpenChange={setSettleOpen} onDone={done} />
+      <DuplicateDialog
+        comp={comp}
+        open={duplicateOpen}
+        onOpenChange={setDuplicateOpen}
+        onCreated={(created) => navigate(`/admin/competitions/${created.id}`)}
+      />
 
       <ReasonDialog
         open={rejecting !== null}

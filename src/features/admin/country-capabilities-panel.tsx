@@ -54,6 +54,14 @@ const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: string }> 
     label: 'Skill competitions',
     hint: 'Skill-based competitions are available.',
   },
+  progressive_prizes_enabled: {
+    label: 'Growing prizes',
+    hint: 'Prizes that grow with every points-paid play. Turn on only after legal sign-off for this market.',
+  },
+  chance_games_enabled: {
+    label: 'Games of chance',
+    hint: 'Spin, scratch, treasure, instant win and prize draws. Often regulated as gambling or lotteries — legal sign-off first.',
+  },
   app_store_available: {
     label: 'App store',
     hint: 'The consumer app is listed for this market.',

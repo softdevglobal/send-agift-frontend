@@ -88,6 +88,15 @@ export function clearSession(): void {
   sessionStorage.removeItem(ROLE_KEY)
 }
 
+/**
+ * Only a superadmin may change prize economics or pay out (Progressive Prize
+ * spec §2); other admins see the same pages read-only. The server enforces
+ * this — the check here only hides buttons that would be refused.
+ */
+export function isSuperAdmin(): boolean {
+  return getRole() === 'superadmin'
+}
+
 export function isAdminRole(role: UserRole | null): boolean {
   return role === 'admin' || role === 'superadmin'
 }

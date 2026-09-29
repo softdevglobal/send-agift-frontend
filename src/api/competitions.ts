@@ -1,9 +1,10 @@
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 
 export type CompetitionStatus =
   | 'draft'
   | 'scheduled'
   | 'live'
+  | 'paused'
   | 'closed'
   | 'frozen'
   | 'finalised'
@@ -30,6 +31,8 @@ export type AdminCompetition = {
   game_version_status: string
   game_slug: string
   game_name: string
+  /** `chance` for spin, scratch, treasure, instant win and prize draw. */
+  game_type: string
   game_version: string
   title: string
   /** The stored status; `effective_status` layers the clock on top. */
@@ -59,7 +62,52 @@ export type AdminCompetition = {
   attempts: number
   submissions: number
   under_review: number
+  /** Why a draft cannot be published yet; empty once it can. */
+  schedule_blockers: string[]
+
+  // Progressive prize economics. Money is minor units of prize_currency.
+  prize_growth_enabled: boolean
+  prize_type: PrizeType
+  winner_method: 'score' | 'instant' | 'draw' | 'admin_approved'
+  /** Instant-win rounds: each play wins with probability 1 in win_odds. */
+  win_odds?: number
+  /** Quiz rounds: the questions with their answers (admins only). */
+  quiz_questions?: QuizQuestion[]
+  start_prize_cents: number
+  increment_per_play_cents: number
+  max_prize_cents?: number
+  continue_at_cap: boolean
+  daily_play_limit?: number
+  min_plays_to_win?: number
+  current_prize_cents: number
+  eligible_play_count: number
+  unique_player_count: number
+  prize_version: number
+  final_prize_cents?: number
+  round_no: number
+  previous_round_id?: string
+  config_version: number
+  paused_at?: string
+  closed_at?: string
 }
+
+/** One quiz question as the server keeps it, answer included. */
+export type QuizQuestion = {
+  prompt: string
+  options: string[]
+  correct_index: number
+  time_limit_seconds: number
+}
+
+export const PRIZE_TYPES = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'product', label: 'Product' },
+  { value: 'voucher', label: 'Voucher' },
+  { value: 'gift', label: 'Gift' },
+  { value: 'other', label: 'Other' },
+] as const
+
+export type PrizeType = (typeof PRIZE_TYPES)[number]['value']
 
 export type CompetitionInput = {
   country_id: string
@@ -77,6 +125,18 @@ export type CompetitionInput = {
   prize_value_amount: number | null
   prize_currency: string | null
   official_rules: string | null
+  prize_growth_enabled: boolean
+  prize_type: PrizeType
+  start_prize_cents: number | null
+  increment_per_play_cents: number
+  max_prize_cents: number | null
+  continue_at_cap: boolean
+  daily_play_limit: number | null
+  min_plays_to_win: number | null
+  win_odds: number | null
+  quiz_questions: QuizQuestion[] | null
+  /** The version being edited; a stale save is refused. */
+  config_version?: number
 }
 
 export type ReserveInput = {
@@ -153,12 +213,148 @@ export type CompetitionWinner = {
   duration_ms: number
   achieved_at: string
   claim?: PrizeClaim
+  prize_value_cents?: number
+  settlement_status: 'pending' | 'settled' | 'failed' | 'not_applicable'
+  settlement_reference?: string
+  settled_at?: string
+}
+
+export type PrizeLedgerEntryType =
+  | 'seed'
+  | 'play_increment'
+  | 'admin_adjustment'
+  | 'play_reversal'
+  | 'winner_settlement'
+  | 'correction'
+
+export type PrizeLedgerEntry = {
+  id: string
+  seq: number
+  competition_id: string
+  attempt_id?: string
+  winner_id?: string
+  entry_type: PrizeLedgerEntryType
+  amount_delta_cents: number
+  balance_after_cents: number
+  reason?: string
+  actor_type: 'admin' | 'system' | 'customer'
+  actor_id?: string
+  created_at: string
+}
+
+export type ReconciliationCheck = {
+  name: string
+  ok: boolean
+  expected: number
+  actual: number
+}
+
+export type Reconciliation = {
+  competition_id: string
+  status: 'ok' | 'discrepancy'
+  ledger_total_cents: number
+  current_prize_cents: number
+  checks: ReconciliationCheck[]
+  checked_at: string
+}
+
+export type PrizeLedgerView = {
+  entries: PrizeLedgerEntry[]
+  reconciliation: Reconciliation
+}
+
+/** A chance play's outcome and the draw behind it. */
+export type ChanceResult = {
+  mechanic: 'spin' | 'scratch' | 'treasure' | 'instant' | 'draw'
+  won?: boolean
+  odds?: number
+  draw?: number
+  algorithm?: string
+  entered?: boolean
+  entry_number?: number
+}
+
+export type AdminPlay = {
+  id: string
+  customer_id: string
+  display_name?: string
+  attempt_number: number
+  status: 'started' | 'submitted' | 'accepted' | 'rejected' | 'voided'
+  points_spent: number
+  prize_increment_cents: number
+  prize_after_cents?: number
+  score?: number
+  void_reason?: string
+  refunded_at?: string
+  started_at: string
+  result?: ChanceResult
+}
+
+export type PlayerActivity = {
+  customer_id: string
+  display_name?: string
+  plays: number
+  last_hour: number
+}
+
+export type SharedSource = { source: string; accounts: number; plays: number }
+
+export type DrawPick = {
+  order: number
+  entry_index: number
+  play_id: string
+  customer_id: string
+  outcome: 'winner' | 'skipped_repeat' | 'skipped_ineligible'
+  reason?: string
+}
+
+/** A prize draw, stored in full so it can be checked. */
+export type PrizeDraw = {
+  id: string
+  entry_count: number
+  entries_sha256: string
+  random_values: number[]
+  picks: DrawPick[]
+  algorithm: string
+  created_at: string
+}
+
+export type CompetitionAnalytics = {
+  competition_id: string
+  currency?: string
+  current_prize_cents: number
+  start_prize_cents: number
+  prize_growth_cents: number
+  max_prize_cents?: number
+  max_possible_liability_cents?: number
+  valid_plays: number
+  voided_plays: number
+  unique_players: number
+  repeat_players: number
+  repeat_play_rate: number
+  points_spent: number
+  points_refunded: number
+  net_points_consumed: number
+  increments_cents: number
+  adjustments_cents: number
+  reversals_cents: number
+  corrections_cents: number
+  settled_cents: number
+  rejected_by_reason: Record<string, number>
+  unique_viewers: number
+  view_to_play_rate: number
+  top_players: PlayerActivity[]
+  velocity_alerts: PlayerActivity[]
+  shared_devices: SharedSource[]
+  shared_networks: SharedSource[]
+  reconciliation_status: 'ok' | 'discrepancy' | 'not_run'
+  reconciliation_checked_at?: string
 }
 
 const base = (id: string) => `/admin/competitions/${id}`
 
-async function items<T>(path: string) {
-  const res = await api<{ items: T[] | null }>(path)
+async function items<T>(path: string, init?: Parameters<typeof api>[1]) {
+  const res = await api<{ items: T[] | null }>(path, init)
   return res.items ?? []
 }
 
@@ -254,3 +450,82 @@ export function verifyClaim(id: string, claimId: string) {
 export function fulfilClaim(id: string, claimId: string) {
   return api<PrizeClaim>(`${base(id)}/claims/${claimId}/fulfil`, { method: 'POST' })
 }
+
+export function pauseCompetition(id: string) {
+  return api<AdminCompetition>(`${base(id)}/pause`, { method: 'POST' })
+}
+
+export function resumeCompetition(id: string) {
+  return api<AdminCompetition>(`${base(id)}/resume`, { method: 'POST' })
+}
+
+export function closeCompetition(id: string) {
+  return api<AdminCompetition>(`${base(id)}/close`, { method: 'POST' })
+}
+
+/** A ledger entry, never an edit: e.g. $200 → $250 is +5000 cents with a reason. */
+export function adjustPrize(id: string, amountDeltaCents: number, reason: string) {
+  return api<PrizeLedgerEntry>(`${base(id)}/prize-adjustments`, {
+    method: 'POST',
+    body: { amount_delta_cents: amountDeltaCents, reason },
+  })
+}
+
+export function voidPlay(
+  id: string,
+  playId: string,
+  body: { reason: string; refund_points: boolean; reverse_prize: boolean },
+) {
+  return api<null>(`${base(id)}/plays/${playId}/void`, { method: 'POST', body })
+}
+
+export function settleWinners(id: string, reference?: string) {
+  return items<CompetitionWinner>(`${base(id)}/settle`, {
+    method: 'POST',
+    body: { reference: reference || null },
+  })
+}
+
+export function getPrizeLedger(id: string) {
+  return api<PrizeLedgerView>(`${base(id)}/ledger`)
+}
+
+export function listPlays(id: string, limit = 200) {
+  return items<AdminPlay>(`${base(id)}/plays?limit=${limit}`)
+}
+
+export function reconcilePrize(id: string) {
+  return api<Reconciliation>(`${base(id)}/reconcile`, { method: 'POST' })
+}
+
+export function getCompetitionAnalytics(id: string) {
+  return api<CompetitionAnalytics>(`${base(id)}/analytics`)
+}
+
+export function duplicateCompetition(
+  id: string,
+  body: { starts_at: string; ends_at: string; title?: string; next_round: boolean },
+) {
+  return api<AdminCompetition>(`${base(id)}/duplicate`, { method: 'POST', body })
+}
+
+/** Picks a closed prize draw's winners and finalises the round. */
+export function runDraw(id: string) {
+  return api<AdminCompetition>(`${base(id)}/draw`, { method: 'POST' })
+}
+
+export async function getDraw(id: string): Promise<PrizeDraw | null> {
+  try {
+    return await api<PrizeDraw>(`${base(id)}/draw`)
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) return null
+    throw err
+  }
+}
+
+/** True for spin, scratch, treasure, instant win and prize draw. */
+export function isChanceGame(slug: string): boolean {
+  return CHANCE_GAMES.has(slug)
+}
+
+export const CHANCE_GAMES = new Set(['spin-wheel', 'scratch-card', 'treasure-hunt', 'instant-win', 'prize-draw'])
