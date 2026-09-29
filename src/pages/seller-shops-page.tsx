@@ -53,10 +53,13 @@ import {
   sellerCardClass,
   sellerPanelClass,
 } from '@/features/seller'
+import { DeliveryRangeMap } from '@/features/seller/delivery-range-map'
+import type { ShopDeliveryZone } from '@/api/types'
 import { getErrorMessage } from '@/lib/api'
 import { optionalString, slugify } from '@/lib/form'
 import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
+import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 /** Shop covers are cropped to a wide banner so the card grid stays even. */
@@ -67,6 +70,14 @@ const statusOptions = [
   { value: 'inactive', label: 'Inactive' },
 ] as const
 
+const ZONE_CURRENCY = 'USD'
+
+type ZoneDraft = {
+  max_km: string
+  price_major: string
+  estimated_days: string
+}
+
 const emptyShop: ShopInput = {
   name: '',
   slug: '',
@@ -76,6 +87,68 @@ const emptyShop: ShopInput = {
   address_id: '',
   return_address_id: '',
   image_url: '',
+  delivery_zones: [],
+}
+
+function zonesToDrafts(zones?: ShopDeliveryZone[]): ZoneDraft[] {
+  return (zones ?? []).map((zone) => ({
+    max_km: String(zone.max_km),
+    price_major:
+      zone.is_free || zone.price_amount === 0
+        ? '0'
+        : String(minorToMajor(zone.price_amount, zone.currency || ZONE_CURRENCY)),
+    estimated_days: String(zone.estimated_days ?? 1),
+  }))
+}
+
+function draftsToZones(drafts: ZoneDraft[]): ShopDeliveryZone[] | string {
+  const zones: ShopDeliveryZone[] = []
+  for (const draft of drafts) {
+    const kmRaw = draft.max_km.trim()
+    const priceRaw = draft.price_major.trim()
+    if (!kmRaw && !priceRaw && !(draft.estimated_days ?? '').trim()) continue
+    const maxKm = Number(kmRaw)
+    const priceMajor = Number(priceRaw)
+    const days = Number((draft.estimated_days ?? '1').trim())
+    if (!Number.isFinite(maxKm) || maxKm <= 0) {
+      return 'Each delivery range needs a distance greater than 0 km.'
+    }
+    if (!Number.isFinite(priceMajor) || priceMajor < 0) {
+      return 'Each delivery range needs a price of 0 or more.'
+    }
+    if (!Number.isInteger(days) || days < 0) {
+      return 'Each delivery range needs whole days of 0 or more. 0 means same day.'
+    }
+    zones.push({
+      max_km: Math.round(maxKm * 100) / 100,
+      price_amount: majorToMinor(priceMajor, ZONE_CURRENCY),
+      currency: ZONE_CURRENCY,
+      estimated_days: days,
+    })
+  }
+  zones.sort((a, b) => a.max_km - b.max_km)
+  const seen = new Set<number>()
+  for (const zone of zones) {
+    if (seen.has(zone.max_km)) {
+      return 'Two delivery ranges cannot use the same distance.'
+    }
+    seen.add(zone.max_km)
+  }
+  return zones
+}
+
+function formatZoneSummary(zones?: ShopDeliveryZone[]): string {
+  if (!zones?.length) return ''
+  return [...zones]
+    .sort((a, b) => a.max_km - b.max_km)
+    .map((zone) => {
+      const price =
+        zone.is_free || zone.price_amount === 0
+          ? 'free'
+          : formatPriceAmount(zone.price_amount, ZONE_CURRENCY)
+      return `${zone.max_km} km ${price}`
+    })
+    .join(' · ')
 }
 
 function toShopInput(shop: Shop): ShopInput {
@@ -88,6 +161,7 @@ function toShopInput(shop: Shop): ShopInput {
     address_id: shop.address_id ?? '',
     return_address_id: shop.return_address_id ?? '',
     image_url: shop.image_url ?? '',
+    delivery_zones: shop.delivery_zones ?? [],
   }
 }
 
@@ -168,7 +242,7 @@ function ShopPreviewCard({ form }: { form: ShopInput }) {
   )
 }
 
-function serializeShop(input: ShopInput): ShopInput {
+function serializeShop(input: ShopInput, zones: ShopDeliveryZone[]): ShopInput {
   return {
     name: input.name.trim(),
     slug: optionalString(input.slug ?? ''),
@@ -178,6 +252,7 @@ function serializeShop(input: ShopInput): ShopInput {
     address_id: optionalString(input.address_id ?? '') ?? null,
     return_address_id: optionalString(input.return_address_id ?? '') ?? null,
     image_url: optionalString(input.image_url ?? '') ?? null,
+    delivery_zones: zones,
   }
 }
 
@@ -200,6 +275,9 @@ export function SellerShopsPage() {
     variant: 'success' | 'error'
   } | null>(null)
   const [form, setForm] = useState<ShopInput>(emptyShop)
+  const [zoneDrafts, setZoneDrafts] = useState<ZoneDraft[]>([])
+  /** Address currently pinned on the map. Follows the last dropdown pick. */
+  const [mapAddressId, setMapAddressId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [previewShop, setPreviewShop] = useState<Shop | null>(null)
@@ -268,6 +346,8 @@ export function SellerShopsPage() {
 
   function resetForm() {
     setForm(emptyShop)
+    setZoneDrafts([])
+    setMapAddressId(null)
     setSlugTouched(false)
     setEditingId(null)
     setShowForm(false)
@@ -275,6 +355,8 @@ export function SellerShopsPage() {
 
   function startCreate() {
     setForm(emptyShop)
+    setZoneDrafts([])
+    setMapAddressId(null)
     setSlugTouched(false)
     setEditingId(null)
     setShowForm(true)
@@ -288,6 +370,8 @@ export function SellerShopsPage() {
   function startEdit(shop: Shop) {
     setEditingId(shop.id)
     setForm(toShopInput(shop))
+    setZoneDrafts(zonesToDrafts(shop.delivery_zones))
+    setMapAddressId(shop.address_id || shop.return_address_id || null)
     // Keep the published slug stable when the name is edited.
     setSlugTouched(true)
     setShowForm(true)
@@ -334,9 +418,14 @@ export function SellerShopsPage() {
       setError('Shop name is required.')
       return
     }
+    const zones = draftsToZones(zoneDrafts)
+    if (typeof zones === 'string') {
+      setError(zones)
+      return
+    }
     setStatus('saving')
     try {
-      const body = serializeShop(form)
+      const body = serializeShop(form, zones)
       if (editingId) {
         await updateSellerShop(editingId, body)
       } else {
@@ -479,6 +568,14 @@ export function SellerShopsPage() {
                           <MapPin className="size-3 shrink-0" />
                           <span className="truncate">
                             {shop.customer_visible_location}
+                          </span>
+                        </p>
+                      ) : null}
+                      {formatZoneSummary(shop.delivery_zones) ? (
+                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Truck className="size-3 shrink-0" />
+                          <span className="truncate">
+                            {formatZoneSummary(shop.delivery_zones)}
                           </span>
                         </p>
                       ) : null}
@@ -731,7 +828,11 @@ export function SellerShopsPage() {
                       <select
                         id="shop-address"
                         value={form.address_id ?? ''}
-                        onChange={(event) => updateField('address_id', event.target.value)}
+                        onChange={(event) => {
+                          const addressId = event.target.value
+                          updateField('address_id', addressId)
+                          setMapAddressId(addressId || null)
+                        }}
                         className={selectClassName}
                       >
                         <option value="">No linked address</option>
@@ -772,9 +873,11 @@ export function SellerShopsPage() {
                     <select
                       id="shop-return-address"
                       value={form.return_address_id ?? ''}
-                      onChange={(event) =>
-                        updateField('return_address_id', event.target.value)
-                      }
+                      onChange={(event) => {
+                        const addressId = event.target.value
+                        updateField('return_address_id', addressId)
+                        setMapAddressId(addressId || null)
+                      }}
                       className={selectClassName}
                     >
                       <option value="">No linked address</option>
@@ -794,8 +897,145 @@ export function SellerShopsPage() {
                       </p>
                     ) : null}
                   </div>
+
+                  <div className="space-y-3">
+                    {(() => {
+                      const selectedId = mapAddressId || form.address_id || ''
+                      const selected = addresses.find((address) => address.id === selectedId)
+                      const latitude = Number(selected?.latitude)
+                      const longitude = Number(selected?.longitude)
+                      const rangesKm = zoneDrafts
+                        .map((zone) => Number(zone.max_km))
+                        .filter((km) => Number.isFinite(km) && km > 0)
+                      const label = selected
+                        ? selected.label
+                          ? `${selected.label} — ${selected.line1}`
+                          : selected.line1
+                        : undefined
+                      if (!selected || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+                        return (
+                          <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+                            Select a pickup or return address to show it on the map.
+                            The address needs a map pin, so save it from search.
+                          </p>
+                        )
+                      }
+                      return (
+                        <DeliveryRangeMap
+                          latitude={latitude}
+                          longitude={longitude}
+                          label={label}
+                          rangesKm={rangesKm}
+                        />
+                      )
+                    })()}
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <Label>Delivery range</Label>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          How far this shop delivers itself, and the price for each band.
+                          The closest band that covers the recipient is the price at checkout.
+                          Days is the delivery time; 0 means same day.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 shrink-0 rounded-full px-3"
+                        onClick={() =>
+                          setZoneDrafts((current) => [
+                            ...current,
+                            { max_km: '', price_major: '', estimated_days: '1' },
+                          ])
+                        }
+                      >
+                        <Plus className="size-3.5" />
+                        Add range
+                      </Button>
+                    </div>
+                    {zoneDrafts.length === 0 ? (
+                      <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+                        No shop-delivery ranges yet. Couriers can still be quoted.
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {zoneDrafts.map((zone, index) => (
+                          <li key={index} className="flex flex-wrap items-end gap-2">
+                            <div className="min-w-[7rem] flex-1 space-y-1">
+                              <Label htmlFor={`zone-km-${index}`}>Up to (km)</Label>
+                              <Input
+                                id={`zone-km-${index}`}
+                                inputMode="decimal"
+                                value={zone.max_km}
+                                placeholder="5"
+                                onChange={(event) =>
+                                  setZoneDrafts((current) =>
+                                    current.map((row, rowIndex) =>
+                                      rowIndex === index
+                                        ? { ...row, max_km: event.target.value }
+                                        : row,
+                                    ),
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="min-w-[7rem] flex-1 space-y-1">
+                              <Label htmlFor={`zone-price-${index}`}>Price (USD)</Label>
+                              <Input
+                                id={`zone-price-${index}`}
+                                inputMode="decimal"
+                                value={zone.price_major}
+                                placeholder="0 for free"
+                                onChange={(event) =>
+                                  setZoneDrafts((current) =>
+                                    current.map((row, rowIndex) =>
+                                      rowIndex === index
+                                        ? { ...row, price_major: event.target.value }
+                                        : row,
+                                    ),
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="w-24 space-y-1">
+                              <Label htmlFor={`zone-days-${index}`}>Days</Label>
+                              <Input
+                                id={`zone-days-${index}`}
+                                inputMode="numeric"
+                                value={zone.estimated_days ?? '1'}
+                                placeholder="0"
+                                onChange={(event) =>
+                                  setZoneDrafts((current) =>
+                                    current.map((row, rowIndex) =>
+                                      rowIndex === index
+                                        ? { ...row, estimated_days: event.target.value }
+                                        : row,
+                                    ),
+                                  )
+                                }
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="h-10 rounded-full px-3 text-muted-foreground"
+                              onClick={() =>
+                                setZoneDrafts((current) =>
+                                  current.filter((_, rowIndex) => rowIndex !== index),
+                                )
+                              }
+                            >
+                              <Trash2 className="size-4" />
+                              Remove
+                            </Button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
 
+                <FormAlert error={error} />
                 <div className="flex flex-wrap gap-2">
                   <SaveButton status={status}>
                     {editingId ? 'Update shop' : 'Create shop'}

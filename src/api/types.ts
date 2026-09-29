@@ -152,6 +152,17 @@ export type Seller = {
   image_url?: string
 }
 
+/** One shop-delivery band. The smallest `max_km` that covers the recipient wins. */
+export type ShopDeliveryZone = {
+  max_km: number
+  /** Minor units. 0 means free. */
+  price_amount: number
+  currency: string
+  is_free?: boolean
+  /** 0 means same day. */
+  estimated_days: number
+}
+
 export type Shop = {
   id: string
   seller_id: string
@@ -165,6 +176,8 @@ export type Shop = {
   created_at: string
   updated_at: string
   image_url?: string
+  /** Shop-delivery price bands, nearest first. */
+  delivery_zones?: ShopDeliveryZone[]
 }
 
 export type SellerDetails = Seller & { addresses: Address[]; shops: Shop[] }
@@ -178,6 +191,7 @@ export type ShopInput = {
   address_id?: string | null
   return_address_id?: string | null
   image_url?: string | null
+  delivery_zones?: ShopDeliveryZone[]
 }
 
 export type ProductStatus = 'draft' | 'published' | 'paused' | 'rejected'
@@ -552,6 +566,12 @@ export type ShippingRatesResult = {
   currency?: string
   /** When true, BuyLabel must use the customer courier (or chat to change). */
   must_buy_customer_courier?: boolean
+  /** Shop's own delivery when the recipient is inside a delivery range. */
+  seller_delivery?: SellerDeliveryQuote | null
+  /** `courier`, `seller_delivery`, or empty when checkout did not lock a mode. */
+  customer_selected_mode?: 'courier' | 'seller_delivery' | ''
+  /** Set when Shippo returned no rates but shop delivery is still available. */
+  carrier_rates_error?: string
 }
 
 /** Snapshot of the courier option the buyer picked at checkout. */
@@ -683,17 +703,53 @@ export type DeliveryQuoteOption = {
   shipment_object_id: string
 }
 
+/**
+ * Shop delivery-zone price. The API measures shop → recipient in km and
+ * returns the matching zone (or available: false when outside the farthest zone).
+ */
+export type SellerDeliveryQuote = {
+  mode: 'seller_delivery'
+  available: boolean
+  distance_km?: number
+  max_km?: number
+  farthest_km?: number
+  /** Minor units. 5000 = $50.00. */
+  price_amount: number
+  currency: string
+  is_free?: boolean
+  estimated_days?: number
+  estimated_delivery_date?: string
+  /** Set when available is false (outside zones, or coordinates missing). */
+  reason?: string
+}
+
+export type QuotePostalAddress = {
+  name?: string
+  line1: string
+  line2?: string
+  city?: string
+  region?: string
+  postal_code?: string
+  country?: string
+}
+
 export type DeliveryQuoteShop = {
   shop_id: string
   shop_name: string
   shipment_object_id?: string
+  /** Shop address the parcel leaves from. */
+  from?: QuotePostalAddress | null
+  /** Shippo courier rates. */
   options: DeliveryQuoteOption[]
+  /** Zone price for the shop delivering itself. */
+  seller_delivery?: SellerDeliveryQuote | null
 }
 
 /** The service chosen for one shop's parcel. */
 export type QuotedShipment = {
   shop_id: string
   shop_name: string
+  mode?: 'courier' | 'seller_delivery'
   provider: string
   service_name: string
   /** Minor units, in `currency`. */
@@ -739,10 +795,12 @@ export type OrderItemInput = {
 /** One shop's quoted rate locked in when placing the order. */
 export type OrderShippingQuote = {
   shop_id: string
-  rate_object_id: string
-  shipment_object_id: string
-  provider: string
-  service_name: string
+  /** `courier` uses the Shippo rate; `seller_delivery` uses the zone price. */
+  mode: 'courier' | 'seller_delivery'
+  rate_object_id?: string
+  shipment_object_id?: string
+  provider?: string
+  service_name?: string
   /** Minor units. */
   amount: number
   currency: string

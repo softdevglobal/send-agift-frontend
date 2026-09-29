@@ -311,3 +311,21 @@
     }
   }
 }
+
+/* Leaflet tiles must keep their pixel size; Tailwind's image reset otherwise stretches them. */
+.leaflet-container img {
+  max-width: none;
+  max-height: none;
+}
+
+.leaflet-container .delivery-range-tip {
+  border: 1px solid #93c5fd;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.leaflet-container .delivery-range-tip::before {
+  display: none;
+}

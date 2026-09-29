@@ -295,7 +295,7 @@ export function SellerOrderItemDetailPanel({
         setSelectedRate(null)
         setIdempotencyKey(null)
       }
-      if (!result.rates?.length) {
+      if (!result.rates?.length && !result.seller_delivery?.available) {
         setNotice('No shipping rates were returned. Check shop and recipient addresses.')
       }
     } catch (err) {
@@ -695,7 +695,7 @@ export function SellerOrderItemDetailPanel({
               />
             ) : null}
 
-            {rateable && ratesResult?.rates?.length ? (
+            {rateable && (ratesResult?.rates?.length || ratesResult?.seller_delivery?.available) ? (
               <SellerSheetSection icon={Truck} title="Shipping rates">
                 {ratesResult.checkout_selected ? (
                   <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-sm">
@@ -720,13 +720,58 @@ export function SellerOrderItemDetailPanel({
                   </div>
                 ) : null}
                 <p className="text-sm text-muted-foreground">
-                  {customerCourierLocked
-                    ? 'Customer courier is locked. Buy label uses their choice.'
-                    : 'Pick a rate, then buy the label.'}{' '}
-                  {SAMPLE_LABEL_NOTICE}
+                  {ratesResult.seller_delivery?.available
+                    ? 'The recipient is inside a shop delivery range. Deliver it yourself, or pick a courier.'
+                    : customerCourierLocked
+                      ? 'Customer courier is locked. Buy label uses their choice.'
+                      : 'Pick a rate, then buy the label.'}{' '}
+                  {ratesResult.rates?.length ? SAMPLE_LABEL_NOTICE : null}
                 </p>
                 <ul className="space-y-2">
-                  {ratesResult.rates.map((rate) => {
+                  {ratesResult.seller_delivery?.available ? (
+                    <li>
+                      <button
+                        type="button"
+                        onClick={() => setLocalDeliveryOpen(true)}
+                        className="w-full rounded-xl border border-border/50 px-4 py-3 text-left transition-colors hover:border-border hover:bg-muted/40"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="flex items-center gap-1.5 font-medium">
+                              <Bike className="size-3.5 shrink-0" />
+                              Delivery by shop
+                              {ratesResult.customer_selected_mode === 'seller_delivery' ? (
+                                <span className="text-xs font-normal text-primary">
+                                  Customer selected
+                                </span>
+                              ) : null}
+                            </p>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                              {ratesResult.seller_delivery.distance_km != null
+                                ? `${ratesResult.seller_delivery.distance_km} km`
+                                : 'Within the shop zone'}
+                              {ratesResult.seller_delivery.max_km
+                                ? ` · up to ${ratesResult.seller_delivery.max_km} km`
+                                : ''}
+                              {ratesResult.seller_delivery.estimated_days != null
+                                ? ` · ${ratesResult.seller_delivery.estimated_days} day${ratesResult.seller_delivery.estimated_days === 1 ? '' : 's'}`
+                                : ''}
+                            </p>
+                          </div>
+                          <p className="shrink-0 font-medium">
+                            {ratesResult.seller_delivery.is_free ||
+                            ratesResult.seller_delivery.price_amount === 0
+                              ? 'Free'
+                              : formatPriceAmount(
+                                  ratesResult.seller_delivery.price_amount,
+                                  ratesResult.seller_delivery.currency || currency,
+                                )}
+                          </p>
+                        </div>
+                      </button>
+                    </li>
+                  ) : null}
+                  {(ratesResult.rates ?? []).map((rate) => {
                     const recommendedId =
                       ratesResult.recommended_rate_object_id?.trim() || ''
                     const isRecommended = Boolean(
