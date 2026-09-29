@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
+  Bike,
   CalendarDays,
   Gift,
   LoaderCircle,
@@ -20,13 +21,15 @@ import {
   type RecipientDetails,
 } from '@/api/customers'
 import {
+  courierChoice,
   createOrder,
   defaultQuoteSelections,
   quoteDelivery,
   selectionsDeliveryAmount,
   selectionsToShippingQuotes,
+  sellerDeliveryChoice,
+  type CheckoutDeliveryChoice,
   type DeliveryQuote,
-  type DeliveryQuoteOption,
 } from '@/api/orders'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
@@ -101,13 +104,13 @@ function sameCurrency(a: string | undefined, b: string): boolean {
 
 function formatStreetAddress(
   address: {
-    line1: string
+    line1?: string
     line2?: string | null
-    city: string
+    city?: string
     region?: string | null
     postal_code?: string | null
   },
-  countryName?: string,
+  countryName?: string | null,
 ) {
   return [address.line1, address.line2, address.city, address.region, address.postal_code, countryName]
     .filter(Boolean)
@@ -131,7 +134,7 @@ export function CheckoutPage() {
   const [countryId, setCountryId] = useState('')
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
   const [quoteSelections, setQuoteSelections] = useState<
-    Record<string, DeliveryQuoteOption>
+    Record<string, CheckoutDeliveryChoice>
   >({})
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [customerType, setCustomerType] = useState<CartCustomerType>(
@@ -557,7 +560,7 @@ export function CheckoutPage() {
                 <div>
                   <h2 className="font-medium">Delivery options</h2>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    Pick a courier for each shop. Days available and price update the total.
+                    Pick a courier or shop delivery for each shop. The price updates the total.
                   </p>
                 </div>
               </div>
@@ -569,14 +572,100 @@ export function CheckoutPage() {
                 </p>
               ) : quote?.shops?.length ? (
                 <div className="space-y-5">
-                  {quote.shops.map((shop) => (
+                  {quote.shops.map((shop) => {
+                    const toAddress = recipientDetails
+                      ? defaultAddress(recipientDetails)
+                      : null
+                    const toCountry = toAddress
+                      ? countries.find((country) => country.id === toAddress.country_id)?.name
+                      : undefined
+                    return (
                     <div key={shop.shop_id} className="space-y-2">
                       <p className="text-sm font-medium">{shop.shop_name}</p>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        {shop.from ? (
+                          <p className="flex items-start gap-1.5">
+                            <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                              <span className="font-medium text-foreground">From </span>
+                              {formatStreetAddress(shop.from, shop.from.country)}
+                            </span>
+                          </p>
+                        ) : null}
+                        {toAddress ? (
+                          <p className="flex items-start gap-1.5">
+                            <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                            <span>
+                              <span className="font-medium text-foreground">To </span>
+                              {formatStreetAddress(toAddress, toCountry)}
+                            </span>
+                          </p>
+                        ) : null}
+                      </div>
                       <ul className="space-y-2">
+                        {shop.seller_delivery?.available ? (
+                          <li>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setQuoteSelections((current) => ({
+                                  ...current,
+                                  [shop.shop_id]: sellerDeliveryChoice(
+                                    shop.seller_delivery!,
+                                  ),
+                                }))
+                              }
+                              className={cn(
+                                'flex w-full items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
+                                quoteSelections[shop.shop_id]?.mode === 'seller_delivery'
+                                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                  : 'border-border/50 hover:border-border hover:bg-muted/40',
+                              )}
+                            >
+                              <div className="min-w-0">
+                                <p className="flex items-center gap-1.5 font-medium">
+                                  <Bike className="size-3.5 shrink-0" />
+                                  Shop delivery
+                                </p>
+                                <p className="mt-0.5 text-sm text-muted-foreground">
+                                  The shop delivers this address
+                                  {shop.seller_delivery.distance_km != null
+                                    ? ` · ${shop.seller_delivery.distance_km} km`
+                                    : ''}
+                                  {shop.seller_delivery.max_km != null
+                                    ? ` · up to ${shop.seller_delivery.max_km} km`
+                                    : ''}
+                                  {shop.seller_delivery.estimated_days != null
+                                    ? ` · ${shop.seller_delivery.estimated_days} day${shop.seller_delivery.estimated_days === 1 ? '' : 's'}`
+                                    : ''}
+                                </p>
+                              </div>
+                              <p className="shrink-0 font-medium">
+                                {shop.seller_delivery.is_free ||
+                                shop.seller_delivery.price_amount === 0
+                                  ? 'Free'
+                                  : formatPriceAmount(
+                                      shop.seller_delivery.price_amount,
+                                      shop.seller_delivery.currency,
+                                    )}
+                              </p>
+                            </button>
+                          </li>
+                        ) : shop.seller_delivery && !shop.seller_delivery.available ? (
+                          <li className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">
+                            Shop delivery is not available
+                            {shop.seller_delivery.reason
+                              ? ` — ${shop.seller_delivery.reason}`
+                              : shop.seller_delivery.distance_km != null
+                                ? ` (${shop.seller_delivery.distance_km} km is outside the shop zones)`
+                                : '.'}
+                          </li>
+                        ) : null}
                         {shop.options.map((option) => {
+                          const selection = quoteSelections[shop.shop_id]
                           const selected =
-                            quoteSelections[shop.shop_id]?.rate_object_id ===
-                            option.rate_object_id
+                            selection?.mode === 'courier' &&
+                            selection.rate_object_id === option.rate_object_id
                           return (
                             <li key={option.rate_object_id}>
                               <button
@@ -584,7 +673,7 @@ export function CheckoutPage() {
                                 onClick={() =>
                                   setQuoteSelections((current) => ({
                                     ...current,
-                                    [shop.shop_id]: option,
+                                    [shop.shop_id]: courierChoice(option),
                                   }))
                                 }
                                 className={cn(
@@ -604,8 +693,10 @@ export function CheckoutPage() {
                                     ) : null}
                                   </p>
                                   <p className="mt-0.5 text-sm text-muted-foreground">
-                                    {option.days_available} day
-                                    {option.days_available === 1 ? '' : 's'} available
+                                    Courier
+                                    {option.days_available
+                                      ? ` · ${option.days_available} day${option.days_available === 1 ? '' : 's'} available`
+                                      : ''}
                                     {option.estimated_days != null
                                       ? ` · ~${option.estimated_days} day transit`
                                       : ''}
@@ -618,9 +709,15 @@ export function CheckoutPage() {
                             </li>
                           )
                         })}
+                        {shop.options.length === 0 ? (
+                          <li className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">
+                            No courier is available for this route.
+                          </li>
+                        ) : null}
                       </ul>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : quote?.complete ? (
                 <p className="text-sm text-muted-foreground">
@@ -669,6 +766,17 @@ export function CheckoutPage() {
               <dd>{money(subtotal)}</dd>
             </div>
 
+            {quote?.shops?.map((shop) =>
+              shop.from ? (
+                <div key={`${shop.shop_id}-from`} className="flex justify-between gap-4 text-xs">
+                  <dt className="text-muted-foreground">From</dt>
+                  <dd className="max-w-[14rem] text-right">
+                    {formatStreetAddress(shop.from, shop.from.country)}
+                  </dd>
+                </div>
+              ) : null,
+            )}
+
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
               <dd className={quoteComplete ? undefined : 'text-muted-foreground'}>
@@ -687,12 +795,20 @@ export function CheckoutPage() {
               </dd>
             </div>
 
-            {Object.entries(quoteSelections).map(([shopId, option]) => {
+            {Object.entries(quoteSelections).map(([shopId, choice]) => {
               const shopName =
                 quote?.shops?.find((shop) => shop.shop_id === shopId)?.shop_name ||
                 quote?.shipments.find((shipment) => shipment.shop_id === shopId)
                   ?.shop_name ||
                 'Shop'
+              const label =
+                choice.mode === 'seller_delivery'
+                  ? `Shop delivery${choice.distance_km != null ? ` · ${choice.distance_km} km` : ''}`
+                  : `${choice.provider} ${choice.service_name}${
+                      choice.days_available > 0
+                        ? ` · ${choice.days_available} day${choice.days_available === 1 ? '' : 's'}`
+                        : ''
+                    }`
               return (
                 <div
                   key={shopId}
@@ -701,14 +817,13 @@ export function CheckoutPage() {
                   <dt className="flex min-w-0 items-start gap-1.5">
                     <Truck className="mt-0.5 size-3 shrink-0" />
                     <span className="min-w-0 truncate">
-                      {shopName} · {option.provider} {option.service_name}
-                      {option.days_available > 0
-                        ? ` · ${option.days_available} day${option.days_available === 1 ? '' : 's'}`
-                        : ''}
+                      {shopName} · {label}
                     </span>
                   </dt>
                   <dd className="shrink-0">
-                    {formatPriceAmount(option.amount, option.currency)}
+                    {choice.mode === 'seller_delivery' && choice.is_free
+                      ? 'Free'
+                      : formatPriceAmount(choice.amount, choice.currency)}
                   </dd>
                 </div>
               )

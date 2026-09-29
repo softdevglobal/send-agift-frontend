@@ -8,6 +8,7 @@ import type {
   OrderDetails,
   OrderShippingQuote,
   QuotedShipment,
+  SellerDeliveryQuote,
 } from '@/api/types'
 
 export type {
@@ -19,6 +20,7 @@ export type {
   DeliveryQuoteShop,
   OrderShippingQuote,
   QuotedShipment,
+  SellerDeliveryQuote,
   Order,
   OrderCreateInput,
   OrderDetails,
@@ -27,6 +29,55 @@ export type {
   OrderStatus,
   FulfilmentStatus,
 } from '@/api/types'
+
+/** What the customer picked for one shop at checkout. */
+export type CheckoutDeliveryChoice =
+  | {
+      mode: 'courier'
+      provider: string
+      service_name: string
+      amount: number
+      currency: string
+      estimated_days: number
+      days_available: number
+      rate_object_id: string
+      shipment_object_id: string
+    }
+  | {
+      mode: 'seller_delivery'
+      amount: number
+      currency: string
+      estimated_days: number
+      distance_km?: number
+      is_free?: boolean
+    }
+
+export function courierChoice(option: DeliveryQuoteOption): CheckoutDeliveryChoice {
+  return {
+    mode: 'courier',
+    provider: option.provider,
+    service_name: option.service_name,
+    amount: option.amount,
+    currency: option.currency,
+    estimated_days: option.estimated_days,
+    days_available: option.days_available,
+    rate_object_id: option.rate_object_id,
+    shipment_object_id: option.shipment_object_id,
+  }
+}
+
+export function sellerDeliveryChoice(
+  delivery: SellerDeliveryQuote,
+): CheckoutDeliveryChoice {
+  return {
+    mode: 'seller_delivery',
+    amount: delivery.is_free ? 0 : delivery.price_amount,
+    currency: delivery.currency,
+    estimated_days: delivery.estimated_days ?? 1,
+    distance_km: delivery.distance_km,
+    is_free: delivery.is_free || delivery.price_amount === 0,
+  }
+}
 
 /** Maps a quote shipment into the create-order `shipping_quotes` entry. */
 export function toOrderShippingQuote(
@@ -37,6 +88,7 @@ export function toOrderShippingQuote(
   if (!rateId || !shipmentId || !shipment.shop_id) return null
   return {
     shop_id: shipment.shop_id,
+    mode: shipment.mode === 'seller_delivery' ? 'seller_delivery' : 'courier',
     rate_object_id: rateId,
     shipment_object_id: shipmentId,
     provider: shipment.provider,
@@ -46,48 +98,64 @@ export function toOrderShippingQuote(
   }
 }
 
-/** Maps a customer-picked shop option into `shipping_quotes`. */
-export function optionToOrderShippingQuote(
+/** Maps a customer-picked shop choice into `shipping_quotes`. */
+export function choiceToOrderShippingQuote(
   shopId: string,
-  option: DeliveryQuoteOption,
+  choice: CheckoutDeliveryChoice,
 ): OrderShippingQuote | null {
-  const rateId = option.rate_object_id?.trim()
-  const shipmentId = option.shipment_object_id?.trim()
-  if (!rateId || !shipmentId || !shopId) return null
+  if (!shopId) return null
+  if (choice.mode === 'seller_delivery') {
+    return {
+      shop_id: shopId,
+      mode: 'seller_delivery',
+      amount: choice.amount,
+      currency: choice.currency,
+    }
+  }
+  const rateId = choice.rate_object_id?.trim()
+  const shipmentId = choice.shipment_object_id?.trim()
+  if (!rateId || !shipmentId) return null
   return {
     shop_id: shopId,
+    mode: 'courier',
     rate_object_id: rateId,
     shipment_object_id: shipmentId,
-    provider: option.provider,
-    service_name: option.service_name,
-    amount: option.amount,
-    currency: option.currency,
+    provider: choice.provider,
+    service_name: choice.service_name,
+    amount: choice.amount,
+    currency: choice.currency,
   }
 }
 
-/** Default pick per shop: recommended option, else first option. */
+/** Default pick per shop: recommended Shippo option, else first, else shop delivery. */
 export function defaultQuoteSelections(
   quote: DeliveryQuote,
-): Record<string, DeliveryQuoteOption> {
-  const selected: Record<string, DeliveryQuoteOption> = {}
+): Record<string, CheckoutDeliveryChoice> {
+  const selected: Record<string, CheckoutDeliveryChoice> = {}
   if (quote.shops?.length) {
     for (const shop of quote.shops) {
       const pick =
         shop.options.find((option) => option.recommended) ?? shop.options[0]
-      if (pick) selected[shop.shop_id] = pick
+      if (pick) {
+        selected[shop.shop_id] = courierChoice(pick)
+        continue
+      }
+      if (shop.seller_delivery?.available) {
+        selected[shop.shop_id] = sellerDeliveryChoice(shop.seller_delivery)
+      }
     }
     return selected
   }
   for (const shipment of quote.shipments ?? []) {
     if (!shipment.rate_object_id || !shipment.shipment_object_id) continue
     selected[shipment.shop_id] = {
+      mode: 'courier',
       provider: shipment.provider,
       service_name: shipment.service_name,
       amount: shipment.amount,
       currency: shipment.currency,
       estimated_days: shipment.estimated_days,
       days_available: shipment.days_available ?? shipment.estimated_days,
-      recommended: true,
       rate_object_id: shipment.rate_object_id,
       shipment_object_id: shipment.shipment_object_id,
     }
@@ -96,17 +164,17 @@ export function defaultQuoteSelections(
 }
 
 export function selectionsToShippingQuotes(
-  selections: Record<string, DeliveryQuoteOption>,
+  selections: Record<string, CheckoutDeliveryChoice>,
 ): OrderShippingQuote[] {
   return Object.entries(selections)
-    .map(([shopId, option]) => optionToOrderShippingQuote(shopId, option))
+    .map(([shopId, choice]) => choiceToOrderShippingQuote(shopId, choice))
     .filter((entry): entry is OrderShippingQuote => entry !== null)
 }
 
 export function selectionsDeliveryAmount(
-  selections: Record<string, DeliveryQuoteOption>,
+  selections: Record<string, CheckoutDeliveryChoice>,
 ): number {
-  return Object.values(selections).reduce((sum, option) => sum + (option.amount || 0), 0)
+  return Object.values(selections).reduce((sum, choice) => sum + (choice.amount || 0), 0)
 }
 
 function compactCreateOrder(input: CreateOrderInput): CreateOrderInput {
