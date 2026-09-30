@@ -26,7 +26,10 @@ export function DeliveryIntentBar({ className }: { className?: string }) {
     >
       <MapPin className="size-4 shrink-0 text-primary" />
       <span className="min-w-0 flex-1">
-        <span className="text-muted-foreground">Delivering to </span>
+        {/* Nothing to call "delivering to" yet when only a date was given. */}
+        {intent.address || intent.city ? (
+          <span className="text-muted-foreground">Delivering to </span>
+        ) : null}
         <span className="font-medium">{describeIntent(intent)}</span>
       </span>
       <Link

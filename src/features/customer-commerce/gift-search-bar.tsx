@@ -98,9 +98,14 @@ export function GiftSearchBar({
         city: place.city,
         date: date || undefined,
       })
-    } else if (date && intent) {
-      // A date on its own is still worth keeping for checkout.
+    } else if (date) {
+      // A date on its own is still worth keeping for checkout, even the
+      // first time — with no address yet, or no intent to add it to.
       setIntent({ ...intent, date })
+    } else if (!date && intent) {
+      // The date was cleared: drop it from what we remember, but keep the
+      // address if there is one.
+      setIntent(intent.address ? { ...intent, date: undefined } : null)
     }
 
     if (navigateOnSubmit) navigate('/products')

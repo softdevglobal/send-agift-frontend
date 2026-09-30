@@ -12,8 +12,11 @@ const INTENT_KEY = 'sag.delivery-intent'
 
 /** Where a gift is going and when it should arrive. */
 export type DeliveryIntent = {
-  /** What to show the shopper, e.g. "12 Galle Road, Colombo". */
-  address: string
+  /**
+   * What to show the shopper, e.g. "12 Galle Road, Colombo". Left out when
+   * only a date was given — a date alone is still worth remembering.
+   */
+  address?: string
   /** ISO-3166-1 alpha-2, when the place lookup gave one. */
   countryCode?: string
   countryName?: string
@@ -33,7 +36,11 @@ const DeliveryIntentContext = createContext<DeliveryIntentValue | null>(null)
 function isIntent(value: unknown): value is DeliveryIntent {
   if (!value || typeof value !== 'object') return false
   const intent = value as DeliveryIntent
-  return typeof intent.address === 'string' && intent.address.length > 0
+  const hasAddress = typeof intent.address === 'string' && intent.address.length > 0
+  const hasDate = typeof intent.date === 'string' && intent.date.length > 0
+  // Either one alone is still worth keeping; there is nothing to keep when
+  // both are missing.
+  return hasAddress || hasDate
 }
 
 function readIntent(): DeliveryIntent | null {
@@ -107,12 +114,14 @@ export function describeIntent(intent: DeliveryIntent): string {
   const where = intent.city
     ? [intent.city, intent.countryName].filter(Boolean).join(', ')
     : intent.address
-  if (!intent.date) return where
+  if (!intent.date) return where ?? ''
   const on = new Date(`${intent.date}T00:00:00`)
-  if (Number.isNaN(on.getTime())) return where
+  if (Number.isNaN(on.getTime())) return where ?? ''
   const when = on.toLocaleDateString(undefined, {
     day: 'numeric',
     month: 'short',
   })
+  // No address was given yet — the date is all there is to show.
+  if (!where) return `Arrives ${when}`
   return `${where} · arrives ${when}`
 }
