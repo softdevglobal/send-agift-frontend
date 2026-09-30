@@ -1,5 +1,5 @@
 import { CalendarDays, MapPin, Search } from 'lucide-react'
-import { useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import type { PlaceDetails } from '@/api/places'
@@ -74,15 +74,31 @@ export function GiftSearchBar({
   navigateOnSubmit?: boolean
 }) {
   const navigate = useNavigate()
-  const { intent, setIntent } = useDeliveryIntent()
+  const { intent, setIntent, clearIntent } = useDeliveryIntent()
 
   const [address, setAddress] = useState(intent?.address ?? '')
   const [date, setDate] = useState(intent?.date ?? '')
   const [place, setPlace] = useState<Partial<DeliveryIntent>>({
+    line1: intent?.line1,
+    line2: intent?.line2,
+    region: intent?.region,
+    postalCode: intent?.postalCode,
+    latitude: intent?.latitude,
+    longitude: intent?.longitude,
     countryCode: intent?.countryCode,
     countryName: intent?.countryName,
     city: intent?.city,
   })
+
+  // The X on the delivery reminder clears the saved place. The fields have
+  // their own state, so they have to follow that or the address stays put
+  // and the next search writes it straight back.
+  useEffect(() => {
+    if (intent) return
+    setAddress('')
+    setDate('')
+    setPlace({})
+  }, [intent])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -90,18 +106,23 @@ export function GiftSearchBar({
     // An address typed but never picked from the list still counts: the
     // shopper told us where it is going, we just have no country for it.
     const trimmed = address.trim()
-    if (trimmed) {
-      setIntent({
-        address: trimmed,
-        countryCode: place.countryCode,
-        countryName: place.countryName,
-        city: place.city,
-        date: date || undefined,
-      })
-    } else if (date && intent) {
-      // A date on its own is still worth keeping for checkout.
-      setIntent({ ...intent, date })
+    if (!trimmed) {
+      clearIntent()
+      return
     }
+    setIntent({
+      address: trimmed,
+      line1: place.line1 || trimmed,
+      line2: place.line2,
+      region: place.region,
+      postalCode: place.postalCode,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      countryCode: place.countryCode,
+      countryName: place.countryName,
+      city: place.city,
+      date: date || undefined,
+    })
 
     if (navigateOnSubmit) navigate('/products')
   }
@@ -119,14 +140,25 @@ export function GiftSearchBar({
               <AddressAutocomplete
                 id="gift-search-address"
                 value={address}
-                onQueryChange={setAddress}
-                onSelect={(found: PlaceDetails) =>
+                onQueryChange={(next) => {
+                  setAddress(next)
+                  setPlace({})
+                  if (!next.trim()) clearIntent()
+                }}
+                onSelect={(found: PlaceDetails) => {
+                  setAddress(found.formatted_address || found.line1)
                   setPlace({
+                    line1: found.line1,
+                    line2: found.line2,
+                    city: found.city,
+                    region: found.region,
+                    postalCode: found.postal_code,
                     countryCode: found.country_code,
                     countryName: found.country_name,
-                    city: found.city,
+                    latitude: found.latitude,
+                    longitude: found.longitude,
                   })
-                }
+                }}
                 label=""
                 helperText=""
                 placeholder="Where is it going?"

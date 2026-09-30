@@ -14,6 +14,13 @@ const INTENT_KEY = 'sag.delivery-intent'
 export type DeliveryIntent = {
   /** What to show the shopper, e.g. "12 Galle Road, Colombo". */
   address: string
+  /** Street parts from the place lookup. Needed to ask which shops can deliver. */
+  line1?: string
+  line2?: string
+  region?: string
+  postalCode?: string
+  latitude?: number
+  longitude?: number
   /** ISO-3166-1 alpha-2, when the place lookup gave one. */
   countryCode?: string
   countryName?: string
@@ -56,9 +63,8 @@ function readIntent(): DeliveryIntent | null {
  * browsing so the choice is not forgotten, and used to fill in checkout so
  * the same two questions are not asked twice.
  *
- * It does not decide which gifts are shown. Nothing in the public catalogue
- * says which gifts can reach which address, so filtering the shelves on it
- * would be a promise the data cannot keep.
+ * When the place was picked from the list, the gifts page uses the coordinates
+ * and the date to ask which shops can deliver, and hides the rest.
  */
 export function DeliveryIntentProvider({ children }: { children: ReactNode }) {
   const [intent, setIntentState] = useState<DeliveryIntent | null>(readIntent)

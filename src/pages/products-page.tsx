@@ -2,17 +2,21 @@ import { Gift, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import { checkDeliveryAvailability } from '@/api/availability'
+import { FormAlert } from '@/components/common/form-alert'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { GiftCard } from '@/features/customer-commerce'
 import { DeliveryIntentBar, GiftSearchBar } from '@/features/customer-commerce'
+import { useDeliveryIntent } from '@/features/customer-commerce/delivery-intent-context'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { giftCategories } from '@/features/marketing/data'
+import { getErrorMessage } from '@/lib/api'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { cn } from '@/lib/utils'
 import {
@@ -53,9 +57,33 @@ function localCatalog(): CatalogProduct[] {
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { intent } = useDeliveryIntent()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
   const [catalog, setCatalog] = useState<CatalogProduct[]>([])
+  const [availableShopIds, setAvailableShopIds] = useState<Set<string> | null>(null)
+  const [checkingDelivery, setCheckingDelivery] = useState(false)
+  const [deliveryError, setDeliveryError] = useState<string | null>(null)
+
+  const canCheckDelivery = Boolean(
+    intent?.line1 &&
+      intent.city &&
+      intent.countryCode &&
+      typeof intent.latitude === 'number' &&
+      typeof intent.longitude === 'number',
+  )
+  const deliveryKey = canCheckDelivery
+    ? [
+        intent?.line1,
+        intent?.city,
+        intent?.region,
+        intent?.postalCode,
+        intent?.countryCode,
+        intent?.latitude,
+        intent?.longitude,
+        intent?.date,
+      ].join('|')
+    : ''
 
   useEffect(() => {
     let cancelled = false
@@ -88,10 +116,54 @@ export function ProductsPage() {
     }
   }, [])
 
-  const products = useMemo(
-    () => catalog.filter((product) => matchesFilters(product, { query, category })),
-    [catalog, category, query],
-  )
+  useEffect(() => {
+    if (!canCheckDelivery || !intent?.line1 || !intent.city || !intent.countryCode) {
+      setAvailableShopIds(null)
+      setCheckingDelivery(false)
+      setDeliveryError(null)
+      return
+    }
+    const controller = new AbortController()
+    setCheckingDelivery(true)
+    setDeliveryError(null)
+    checkDeliveryAvailability(
+      {
+        delivery_date: intent.date ?? '',
+        destination: {
+          line1: intent.line1,
+          line2: intent.line2,
+          city: intent.city,
+          region: intent.region,
+          postal_code: intent.postalCode,
+          country: intent.countryCode,
+          latitude: intent.latitude as number,
+          longitude: intent.longitude as number,
+        },
+      },
+      controller.signal,
+    )
+      .then((result) => {
+        const ids = new Set(
+          (result.shops ?? []).filter((shop) => shop.available).map((shop) => shop.shop_id),
+        )
+        setAvailableShopIds(ids)
+      })
+      .catch((err: unknown) => {
+        if (controller.signal.aborted) return
+        setAvailableShopIds(null)
+        setDeliveryError(getErrorMessage(err, 'Could not check which gifts can be delivered.'))
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setCheckingDelivery(false)
+      })
+    return () => controller.abort()
+  }, [canCheckDelivery, deliveryKey, intent])
+
+  const products = useMemo(() => {
+    const matched = catalog.filter((product) => matchesFilters(product, { query, category }))
+    if (!availableShopIds) return matched
+    return matched.filter((product) => Boolean(product.shopId && availableShopIds.has(product.shopId)))
+  }, [availableShopIds, catalog, category, query])
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams)
@@ -145,9 +217,22 @@ export function ProductsPage() {
           </div>
         </div>
 
+        <FormAlert
+          className="mb-5"
+          error={deliveryError}
+          notice={
+            intent?.address && !canCheckDelivery
+              ? 'Pick the address from the suggestions. Until then every published gift is shown, and delivery is not filtered.'
+              : null
+          }
+        />
+
         <p className="mb-5 text-sm text-muted-foreground">
-          {products.length} gift{products.length === 1 ? '' : 's'}
-          {query ? ` matching ‘${query}’` : ''}
+          {checkingDelivery
+            ? 'Checking which gifts can arrive in time…'
+            : `${products.length} gift${products.length === 1 ? '' : 's'}${
+                query ? ` matching ‘${query}’` : ''
+              }${availableShopIds ? ' that can be delivered to this address' : ''}`}
         </p>
 
         {products.length ? (
@@ -166,14 +251,18 @@ export function ProductsPage() {
               )}
             </div>
             <p className="font-medium">
-              {query || category !== 'all'
-                ? 'No gifts match that search'
-                : 'No gifts published yet'}
+              {availableShopIds
+                ? 'No gifts can be delivered to this address by that date'
+                : query || category !== 'all'
+                  ? 'No gifts match that search'
+                  : 'No gifts published yet'}
             </p>
             <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {query || category !== 'all'
-                ? 'Try a different name, occasion, or clear the filters to see everything.'
-                : 'Sellers publish gifts from the seller portal. Published gifts show up here.'}
+              {availableShopIds
+                ? 'Try a later arrival date, or a different address.'
+                : query || category !== 'all'
+                  ? 'Try a different name, occasion, or clear the filters to see everything.'
+                  : 'Sellers publish gifts from the seller portal. Published gifts show up here.'}
             </p>
             {query || category !== 'all' ? (
               <Button
