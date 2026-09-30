@@ -22,6 +22,8 @@ export type CatalogProduct = GiftProduct & {
   catalogCustomerType?: CartCustomerType
   /** Gallery from API `media[]` (images + videos). */
   media?: CatalogProductMedia[]
+  /** Sellable quantity, present only while stock is low. */
+  stockLeft?: number
 }
 
 export type CatalogProductMedia = {

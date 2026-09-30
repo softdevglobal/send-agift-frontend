@@ -64,8 +64,8 @@ export function LocalDeliveryDialog({
         <DialogHeader>
           <DialogTitle>Deliver it yourself</DialogTitle>
           <DialogDescription>
-            Confirm you will hand this gift over in person. No Shippo label and
-            no tracking number — provider will show as “Local delivery”.
+            Confirm you will hand this gift over inside the shop's delivery
+            zone. It will show as local delivery, with no tracking number.
           </DialogDescription>
         </DialogHeader>
 

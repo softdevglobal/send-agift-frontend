@@ -17,10 +17,17 @@ export type DeliveryIntent = {
    * only a date was given — a date alone is still worth remembering.
    */
   address?: string
+  /** Street line copied onto the checkout recipient form. */
+  line1?: string
+  line2?: string
   /** ISO-3166-1 alpha-2, when the place lookup gave one. */
   countryCode?: string
   countryName?: string
   city?: string
+  region?: string
+  postalCode?: string
+  latitude?: number
+  longitude?: number
   /** `yyyy-mm-dd`, the day it should arrive. */
   date?: string
 }

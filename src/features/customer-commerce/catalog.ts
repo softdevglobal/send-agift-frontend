@@ -245,6 +245,7 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     currency: product.currency,
     priceAmount: product.price_amount,
     media: media.length ? media : undefined,
+    stockLeft: typeof product.stock_left === 'number' ? product.stock_left : undefined,
   }
 }
 
