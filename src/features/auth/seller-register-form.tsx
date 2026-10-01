@@ -48,7 +48,6 @@ export function SellerRegisterForm() {
   const [tradingName, setTradingName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -127,7 +126,6 @@ export function SellerRegisterForm() {
         password,
         trading_name: optionalString(tradingName),
         phone: optionalString(phone),
-        image_url: optionalString(imageUrl),
         addresses: hasAddress
           ? [
               {
@@ -282,19 +280,6 @@ export function SellerRegisterForm() {
             id="seller-phone"
             value={phone}
             onChange={setPhone}
-            disabled={isSubmitting}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="seller-image">Image URL</Label>
-          <Input
-            id="seller-image"
-            type="url"
-            placeholder="https://"
-            value={imageUrl}
-            onChange={(event) => setImageUrl(event.target.value)}
-            className="h-11 bg-surface px-3"
             disabled={isSubmitting}
           />
         </div>
