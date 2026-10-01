@@ -1235,7 +1235,7 @@ export function CheckoutPage() {
                 Placing order…
               </>
             ) : (
-              'Place order'
+              'Send A Gift'
             )}
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">
