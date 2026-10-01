@@ -103,6 +103,22 @@ export function parseNonNegativeInt(value: string, fallback = 0): number {
   return parsed
 }
 
+/** Split stored prep minutes into the hours and minutes shown in the form. */
+export function splitPrepMinutes(totalMinutes: string): { hours: string; minutes: string } {
+  const total = parseNonNegativeInt(totalMinutes, 0)
+  return {
+    hours: String(Math.floor(total / 60)),
+    minutes: String(total % 60),
+  }
+}
+
+/** Hours and minutes become the total minutes the API stores on the gift. */
+export function joinPrepMinutes(hours: string, minutes: string): string {
+  const hourCount = parseNonNegativeInt(hours, 0)
+  const minuteCount = Math.min(59, parseNonNegativeInt(minutes, 0))
+  return String(hourCount * 60 + minuteCount)
+}
+
 export function parseTags(value: string): string[] {
   return value
     .split(',')
