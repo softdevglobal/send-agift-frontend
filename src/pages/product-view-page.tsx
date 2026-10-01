@@ -44,6 +44,7 @@ import {
 import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { RewardBadge } from '@/features/points/reward-badge'
 
 export function ProductViewPage() {
   const { productId } = useParams()
@@ -314,6 +315,13 @@ export function ProductViewPage() {
                   ? 'Out of stock'
                   : `Only ${product.stockLeft} left`}
               </p>
+            ) : null}
+
+            {product.rewardPoints ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <RewardBadge points={product.rewardPoints} size="md" />
+                <span>per item, added to your points balance when you order.</span>
+              </div>
             ) : null}
 
             <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">

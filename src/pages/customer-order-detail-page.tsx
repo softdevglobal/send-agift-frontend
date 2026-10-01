@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, LoaderCircle, MessageSquare } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CalendarDays,
+  Coins,
+  Gift,
+  LoaderCircle,
+  MessageSquare,
+  Receipt,
+  Sparkles,
+} from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { getRecipient, type RecipientDetails } from "@/api/customers";
@@ -25,6 +35,7 @@ import {
 } from "@/features/customer-commerce/order-tracking";
 import { ParcelTracking } from "@/features/customer-commerce/parcel-tracking";
 import { useCustomerMessages } from "@/features/messaging";
+import { formatPoints } from "@/features/points/format";
 import { useMyReviews } from "@/features/reviews/my-reviews";
 import { ReviewOrderItemButton } from "@/features/reviews/review-order-item-button";
 import { ApiError, getErrorMessage } from "@/lib/api";
@@ -142,22 +153,109 @@ export function CustomerOrderDetailPage() {
         ? "Your gift order is placed. Track its progress below."
         : null;
 
+  const rewardPoints = order.items.reduce(
+    (sum, item) =>
+      item.reward_status && item.reward_status !== "none"
+        ? sum + (item.reward_points ?? 0)
+        : sum,
+    0,
+  );
+  const rewardEarned = order.items.some((i) => i.reward_status === "awarded");
+
   return (
     <div>
-      <CustomerPageHeader
-        title={order.order_number}
-        description={`Placed ${formatOrderDate(order.created_at)}`}
-        action={
-          <Button asChild variant="outline" className="h-10 rounded-full px-4">
-            <Link to={listPath}>
-              <ArrowLeft className="size-4" />
+      <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-ink to-[oklch(0.32_0.14_296)] px-6 py-6 text-white shadow-[0_18px_48px_rgba(20,20,55,0.28)] ring-1 ring-white/10 sm:px-8 sm:py-7">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[var(--brand-violet)]/45 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 left-10 size-56 rounded-full bg-[var(--brand-teal)]/25 blur-3xl"
+        />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <Link
+              to={listPath}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white"
+            >
+              <ArrowLeft className="size-3.5" />
               {listLabel}
             </Link>
-          </Button>
-        }
-      />
+            <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+              {order.order_number}
+            </h1>
+            <p className="text-sm text-white/65">
+              Placed {formatOrderDate(order.created_at)}
+            </p>
+          </div>
+          <div className="rounded-full bg-white/95 px-1 py-1">
+            <OrderStatusBadge status={order.status} />
+          </div>
+        </div>
+        <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
+          <HeroFact
+            icon={CalendarDays}
+            label="Delivery"
+            value={formatDeliveryDate(order.delivery_date)}
+          />
+          <HeroFact
+            icon={Receipt}
+            label="Total"
+            value={formatPriceAmount(order.total_amount, order.currency)}
+          />
+          <HeroFact
+            icon={Coins}
+            label="Points"
+            value={
+              rewardPoints > 0
+                ? `${rewardEarned ? "+" : ""}${formatPoints(rewardPoints)}`
+                : "—"
+            }
+            highlight={rewardPoints > 0}
+          />
+        </div>
+      </section>
 
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
+
+      {rewardPoints > 0 || (order.gift_points && order.gift_points_status !== "none") ? (
+        <section className="relative mb-6 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,oklch(0.97_0.05_88),oklch(0.93_0.09_80))] p-5 ring-1 ring-[oklch(0.85_0.1_80)] sm:p-6">
+          <Sparkles
+            aria-hidden
+            className="pointer-events-none absolute -right-3 -bottom-4 size-28 text-[oklch(0.8_0.13_78)]/40"
+          />
+          <div className="relative flex flex-wrap items-center gap-4">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.86_0.14_85),oklch(0.76_0.15_65))] text-white shadow-md">
+              <Coins className="size-6" />
+            </span>
+            <div className="min-w-[12rem] flex-1">
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-[oklch(0.45_0.1_70)] uppercase">
+                Points from this order
+              </p>
+              {rewardPoints > 0 ? (
+                <p className="font-display text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
+                  {rewardEarned
+                    ? `+${formatPoints(rewardPoints)} points added to your balance`
+                    : rewardLine(order.items.find((i) => i.reward_points)?.reward_status, rewardPoints)}
+                </p>
+              ) : null}
+              {order.gift_points && order.gift_points_status !== "none" ? (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-[oklch(0.4_0.08_65)]">
+                  <Gift className="size-4" />
+                  {giftPointsLine(order.gift_points_status, order.gift_points)}
+                </p>
+              ) : null}
+            </div>
+            <Button asChild className="h-10 rounded-full bg-[oklch(0.32_0.07_60)] px-4 text-white hover:bg-[oklch(0.28_0.07_60)]">
+              <Link to="/account/points">
+                My points
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       <section className={cn(customerPanelClass, "mb-6 p-5 sm:p-6")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -211,6 +309,12 @@ export function CustomerOrderDetailPage() {
                         {formatPriceAmount(item.unit_amount, order.currency)} ·{" "}
                         {fulfilmentStatusLabel(item.fulfilment_status)}
                       </p>
+                      {item.reward_points && item.reward_status !== "none" ? (
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[oklch(0.45_0.12_75)]">
+                          <Coins className="size-3.5" />
+                          {rewardLine(item.reward_status, item.reward_points)}
+                        </p>
+                      ) : null}
                       <button
                         type="button"
                         onClick={() =>
@@ -370,8 +474,86 @@ export function CustomerOrderDetailPage() {
                 {order.gift_message}
               </p>
             ) : null}
+            {order.gift_points && order.gift_points_status !== "none" ? (
+              <p className="mt-3 flex items-start gap-2 rounded-lg bg-[oklch(0.96_0.05_85)] px-3 py-2 text-sm text-[oklch(0.4_0.1_70)]">
+                <Coins className="mt-0.5 size-4 shrink-0" />
+                {giftPointsLine(order.gift_points_status, order.gift_points)}
+              </p>
+            ) : null}
           </section>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Where a line's reward points are, in words. */
+function rewardLine(status: string | undefined, points: number) {
+  const n = formatPoints(points);
+  switch (status) {
+    case "reserved":
+      return `Earns ${n} points when delivered`;
+    case "awarded":
+      return `${n} points added to your balance`;
+    case "released":
+      return `${n} points not earned — item cancelled`;
+    case "reversed":
+      return `${n} points taken back after a refund`;
+    default:
+      return `${n} points`;
+  }
+}
+
+/** Where the points sent with the gift are, in words. */
+function giftPointsLine(status: string | undefined, points: number) {
+  const n = formatPoints(points);
+  switch (status) {
+    case "held":
+      return `${n} points are travelling with this gift.`;
+    case "delivered":
+      return `${n} points reached the recipient’s account.`;
+    case "returned":
+      return `${n} points came back to you — the recipient has no SendAGift account, or the gift was cancelled.`;
+    case "reversed":
+      return `${n} points were returned after a refund.`;
+    default:
+      return `${n} points sent with this gift.`;
+  }
+}
+
+function HeroFact({
+  icon: Icon,
+  label,
+  value,
+  highlight = false,
+}: {
+  icon: typeof Coins;
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-2xl px-4 py-3 ring-1 backdrop-blur-sm",
+        highlight
+          ? "bg-[oklch(0.86_0.14_85)]/20 ring-[oklch(0.86_0.14_85)]/40"
+          : "bg-white/8 ring-white/10",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-9 items-center justify-center rounded-xl",
+          highlight ? "bg-[oklch(0.86_0.14_85)] text-[oklch(0.3_0.07_60)]" : "bg-white/12 text-white",
+        )}
+      >
+        <Icon className="size-4" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-medium tracking-[0.14em] text-white/55 uppercase">
+          {label}
+        </p>
+        <p className="truncate font-medium">{value}</p>
       </div>
     </div>
   );

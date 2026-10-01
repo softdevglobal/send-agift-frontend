@@ -49,6 +49,8 @@ export type ProductFormState = {
   occasion_tags: string
   customer_type_visibility: CustomerTypeVisibility
   points_display_enabled: boolean
+  /** Points a customer earns per unit bought, paid from the seller's balance. */
+  reward_points: string
   prep_minutes: string
   /**
    * Cover fallback when the product has no `media` yet (legacy listings).
@@ -80,6 +82,7 @@ export const emptyForm: ProductFormState = {
   occasion_tags: '',
   customer_type_visibility: 'both',
   points_display_enabled: false,
+  reward_points: '0',
   prep_minutes: '0',
   image_url: '',
   media: [],
@@ -327,7 +330,13 @@ export function toProductInput(
   if (form.customer_type_visibility) {
     input.customer_type_visibility = form.customer_type_visibility
   }
-  input.points_display_enabled = form.points_display_enabled
+  const reward = form.reward_points.trim() === '' ? 0 : Number(form.reward_points)
+  if (!Number.isInteger(reward) || reward < 0 || reward > 1_000_000) {
+    return 'Reward points must be a whole number from 0 to 1,000,000.'
+  }
+  input.reward_points = reward
+  // The older "show points" flag follows the reward, so the two never disagree.
+  input.points_display_enabled = reward > 0
   if (form.prep_minutes.trim() !== '') {
     const prep = Number.parseInt(form.prep_minutes, 10)
     if (!Number.isFinite(prep) || prep < 0) {
@@ -362,6 +371,7 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
     occasion_tags: (product.occasion_tags ?? []).join(', '),
     customer_type_visibility: product.customer_type_visibility,
     points_display_enabled: product.points_display_enabled,
+    reward_points: String(product.reward_points ?? 0),
     prep_minutes: String(product.prep_minutes ?? 0),
     image_url: imageUrl,
     media,
@@ -378,3 +388,13 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
   }
 }
 /** Product images are square, matching the customer gift card. */
+
+/**
+ * The reward a new gift starts with: 10% of its price back as points, at the
+ * $0.10-a-point rate sellers buy them at — so one point per whole unit of
+ * price ($25 → 25 points). Only a starting value; the seller can change it.
+ */
+export function suggestedRewardPoints(priceMajor: number): number {
+  if (!Number.isFinite(priceMajor) || priceMajor <= 0) return 0
+  return Math.min(1_000_000, Math.floor(priceMajor))
+}

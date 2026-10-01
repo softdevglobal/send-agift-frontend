@@ -138,6 +138,9 @@ function compactCreateOrder(input: CreateOrderInput): CreateOrderInput {
   if (input.shipping_quotes?.length) {
     body.shipping_quotes = input.shipping_quotes
   }
+  if (typeof input.gift_points === 'number' && input.gift_points > 0) {
+    body.gift_points = Math.floor(input.gift_points)
+  }
 
   return body
 }

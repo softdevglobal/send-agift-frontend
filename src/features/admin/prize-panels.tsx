@@ -97,7 +97,11 @@ export function PrizeDashboard({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           label={comp.final_prize_cents !== undefined ? 'Final prize' : 'Current prize'}
-          value={prizeMoney(comp.final_prize_cents ?? current, cur)}
+          value={
+            comp.prize_type === 'points'
+              ? `${(comp.prize_points ?? 0).toLocaleString()} pts each`
+              : prizeMoney(comp.final_prize_cents ?? current, cur)
+          }
           hint={capped ? 'Maximum reached' : comp.prize_growth_enabled ? `+${prizeMoney(comp.increment_per_play_cents, cur)} a play` : 'Fixed'}
         />
         <Card label="Starting prize" value={prizeMoney(comp.start_prize_cents, cur)} />

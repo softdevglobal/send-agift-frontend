@@ -76,14 +76,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import {
   competitionStatusLabel,
@@ -465,9 +459,11 @@ export function AdminCompetitionDetailPage() {
                 <>
                   {comp.prize_description}
                   <span className="block text-xs font-normal text-muted-foreground">
-                    {comp.prize_growth_enabled
-                      ? `${prizeMoney(comp.start_prize_cents, comp.prize_currency)} + ${prizeMoney(comp.increment_per_play_cents, comp.prize_currency)}/play, max ${prizeMoney(comp.max_prize_cents, comp.prize_currency)}`
-                      : prizeMoney(comp.start_prize_cents, comp.prize_currency)}{' '}
+                    {comp.prize_type === 'points'
+                      ? `${(comp.prize_points ?? 0).toLocaleString()} points each`
+                      : comp.prize_growth_enabled
+                        ? `${prizeMoney(comp.start_prize_cents, comp.prize_currency)} + ${prizeMoney(comp.increment_per_play_cents, comp.prize_currency)}/play, max ${prizeMoney(comp.max_prize_cents, comp.prize_currency)}`
+                        : prizeMoney(comp.start_prize_cents, comp.prize_currency)}{' '}
                     · {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
                   </span>
                 </>
@@ -750,7 +746,12 @@ export function AdminCompetitionDetailPage() {
                       </p>
                     </div>
                     <StatusPill tone={winnerTone(w.status)}>{scoreStatusLabel(w.status)}</StatusPill>
-                    {w.prize_value_cents !== undefined ? (
+                    {comp.prize_type === 'points' ? (
+                      <StatusPill tone={w.status === 'validated' ? 'good' : 'info'}>
+                        {(comp.prize_points ?? 0).toLocaleString()} pts ·{' '}
+                        {w.status === 'validated' ? 'credited' : 'on validation'}
+                      </StatusPill>
+                    ) : w.prize_value_cents !== undefined ? (
                       <StatusPill tone={w.settlement_status === 'settled' ? 'good' : 'info'}>
                         {prizeMoney(w.prize_value_cents, comp.prize_currency)} ·{' '}
                         {w.settlement_status === 'settled' ? 'paid' : w.settlement_status === 'pending' ? 'unpaid' : 'n/a'}
@@ -875,17 +876,14 @@ export function AdminCompetitionDetailPage() {
         )}
       </div>
 
-      <Sheet open={editing} onOpenChange={setEditing}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>Edit competition</SheetTitle>
-            <SheetDescription>Saving returns it to draft, so every publishing check runs again.</SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-6">
-            <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
-          </div>
-        </SheetContent>
-      </Sheet>
+      <CompetitionDialog
+        open={editing}
+        onOpenChange={setEditing}
+        title="Edit competition"
+        description="Saving returns it to draft, so every publishing check runs again."
+      >
+        <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
+      </CompetitionDialog>
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>

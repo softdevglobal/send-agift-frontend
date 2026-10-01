@@ -43,10 +43,10 @@ function AdminNavLinks({
     .filter((group) => group.items.length > 0)
 
   return (
-    <nav className="flex flex-1 flex-col gap-6">
+    <nav className="flex flex-1 flex-col gap-3">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-2 text-[10px] font-medium tracking-[0.18em] text-white/40 uppercase">
+          <p className="px-3 pb-1 text-[10px] font-medium tracking-[0.18em] text-white/40 uppercase">
             {group.label}
           </p>
           <div className="space-y-0.5">
@@ -58,7 +58,7 @@ function AdminNavLinks({
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
+                    'group flex items-center gap-3 rounded-xl px-2.5 py-1 text-sm font-medium transition-all',
                     isActive
                       ? 'bg-white/10 text-white'
                       : 'text-white/60 hover:bg-white/6 hover:text-white',
@@ -69,7 +69,7 @@ function AdminNavLinks({
                   <>
                     <span
                       className={cn(
-                        'flex size-8 items-center justify-center rounded-lg ring-1 transition-colors',
+                        'flex size-7 items-center justify-center rounded-lg ring-1 transition-colors',
                         isActive
                           ? 'bg-white/10 text-white ring-white/15'
                           : 'bg-white/5 text-current ring-white/10',
@@ -83,9 +83,6 @@ function AdminNavLinks({
                         <span className="sr-only">Unread messages: </span>
                         {unreadMessages > 99 ? '99+' : unreadMessages}
                       </span>
-                    ) : null}
-                    {item.soon ? (
-                      <span className="size-1.5 rounded-full bg-white/25" />
                     ) : null}
                   </>
                 )}
@@ -153,7 +150,7 @@ function AdminShellLayout() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[oklch(0.24_0.02_120)] px-3 py-5 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[oklch(0.24_0.02_120)] px-3 py-4 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
           menuOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
@@ -162,10 +159,10 @@ function AdminShellLayout() {
           className="pointer-events-none absolute -top-24 -left-10 size-56 rounded-full bg-[oklch(0.72_0.09_125/0.14)] blur-2xl"
         />
 
-        <div className="relative mb-7 flex items-start gap-2 px-2">
+        <div className="relative mb-3 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">
-            <BrandLogo to="/admin" onDark className="max-w-full" imgClassName="h-12" />
-            <p className="mt-1.5 text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
+            <BrandLogo to="/admin" onDark className="max-w-full" imgClassName="h-9" />
+            <p className="mt-1 text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
               Console
             </p>
           </div>
@@ -181,7 +178,9 @@ function AdminShellLayout() {
           </Button>
         </div>
 
-        <div className="relative flex-1 overflow-y-auto">
+        {/* min-h-0 lets this shrink and scroll only when the menu is taller
+            than the window, instead of the list being cut to a small box. */}
+        <div className="relative min-h-0 flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <AdminNavLinks
             onNavigate={() => setMenuOpen(false)}
             unreadMessages={unreadTotal}
@@ -189,7 +188,9 @@ function AdminShellLayout() {
           />
         </div>
 
-        <div className="relative mt-6 border-t border-white/10 pt-4">
+        {/* One row — who is signed in, and sign out — so the menu above
+            keeps the height. */}
+        <div className="relative mt-3 border-t border-white/10 pt-3">
           <div className="flex items-center gap-3 px-2">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/15">
               {adminInitials(admin)}
@@ -200,16 +201,18 @@ function AdminShellLayout() {
               </p>
               <p className="truncate text-[11px] text-white/45">{roleLabel}</p>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              title="Sign out"
+              aria-label="Sign out"
+              className="size-9 shrink-0 rounded-lg text-white/60 hover:bg-white/10 hover:text-white"
+              onClick={() => setSignOutOpen(true)}
+            >
+              <LogOut className="size-4" />
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            className="mt-3 h-9 w-full justify-start rounded-lg px-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
-            onClick={() => setSignOutOpen(true)}
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </Button>
         </div>
       </aside>
 

@@ -1,5 +1,16 @@
-import { useState, type FormEvent } from 'react'
-import { LoaderCircle } from 'lucide-react'
+import { useState, type FormEvent, type ReactNode } from 'react'
+import {
+  CalendarClock,
+  Coins,
+  Dices,
+  Gamepad2,
+  Gift as GiftIcon,
+  Info,
+  LoaderCircle,
+  ShieldCheck,
+  Sparkles,
+  Trophy,
+} from 'lucide-react'
 
 import {
   PRIZE_TYPES,
@@ -13,13 +24,83 @@ import { emptyQuestion } from '@/features/admin/quiz'
 import { QuizEditor } from '@/features/admin/quiz-editor'
 import type { AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { DateTimePicker } from '@/components/common/datetime-picker'
 import { FormAlert } from '@/components/common/form-alert'
+import { TimezoneSelect } from '@/components/common/timezone-select'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
+import { cn } from '@/lib/utils'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
+
+/** Icon accents per prize type, so the Prize card's colour tells you what it
+ * is at a glance rather than only the dropdown text. */
+const prizeTint: Record<PrizeType, string> = {
+  cash: 'from-emerald-50 to-emerald-100/40 ring-emerald-200',
+  product: 'from-violet-50 to-violet-100/40 ring-violet-200',
+  voucher: 'from-sky-50 to-sky-100/40 ring-sky-200',
+  gift: 'from-rose-50 to-rose-100/40 ring-rose-200',
+  points: 'from-amber-50 to-amber-100/40 ring-amber-200',
+  other: 'from-muted to-muted/40 ring-border',
+}
+const prizeIconTint: Record<PrizeType, string> = {
+  cash: 'bg-emerald-600',
+  product: 'bg-violet-600',
+  voucher: 'bg-sky-600',
+  gift: 'bg-rose-600',
+  points: 'bg-amber-500',
+  other: 'bg-muted-foreground',
+}
+const prizeIcon: Record<PrizeType, typeof Trophy> = {
+  cash: Coins,
+  product: GiftIcon,
+  voucher: Trophy,
+  gift: GiftIcon,
+  points: Sparkles,
+  other: Trophy,
+}
+
+/** One titled section of the form, with an icon that carries its theme. */
+function SectionCard({
+  icon: Icon,
+  title,
+  description,
+  children,
+  tone = 'bg-muted/40 ring-border/60',
+  iconTone = 'bg-primary',
+}: {
+  icon: typeof Info
+  title: string
+  description?: string
+  children: ReactNode
+  tone?: string
+  iconTone?: string
+}) {
+  return (
+    <section className={cn('space-y-4 rounded-2xl bg-gradient-to-br p-4 ring-1', tone)}>
+      <div className="flex items-start gap-2.5">
+        <span
+          className={cn(
+            'mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg text-white shadow-sm',
+            iconTone,
+          )}
+        >
+          <Icon className="size-3.5" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          {description ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+          ) : null}
+        </div>
+      </div>
+      {children}
+    </section>
+  )
+}
 
 type FormState = {
   country_id: string
@@ -45,6 +126,7 @@ type FormState = {
   daily_play_limit: string
   min_plays_to_win: string
   win_odds: string
+  prize_points: string
   quiz_questions: QuizQuestion[]
 }
 
@@ -54,6 +136,29 @@ function toLocalInput(iso: string): string {
   if (Number.isNaN(d.getTime())) return ''
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/**
+ * Number fields are plain text boxes that only keep what a number can hold:
+ * no browser spinner arrows, and a scroll over the field never changes it.
+ */
+function digitsOnly(raw: string): string {
+  return raw.replace(/[^0-9]/g, '')
+}
+
+/** Digits and one decimal point, for money amounts. */
+function decimalsOnly(raw: string): string {
+  const cleaned = raw.replace(/[^0-9.]/g, '')
+  const dot = cleaned.indexOf('.')
+  return dot === -1 ? cleaned : cleaned.slice(0, dot + 1) + cleaned.slice(dot + 1).replace(/\./g, '')
+}
+
+/** Minutes from now until 9am tomorrow, for the "Tomorrow, 9am" preset. */
+function minutesUntilTomorrow9am(): number {
+  const target = new Date()
+  target.setDate(target.getDate() + 1)
+  target.setHours(9, 0, 0, 0)
+  return Math.round((target.getTime() - Date.now()) / 60_000)
 }
 
 function money(minor: number | undefined, currency: string | undefined): string {
@@ -85,6 +190,7 @@ function fromCompetition(c: AdminCompetition): FormState {
     daily_play_limit: c.daily_play_limit ? String(c.daily_play_limit) : '',
     min_plays_to_win: c.min_plays_to_win ? String(c.min_plays_to_win) : '',
     win_odds: c.win_odds ? String(c.win_odds) : '',
+    prize_points: c.prize_points ? String(c.prize_points) : '',
     quiz_questions: c.quiz_questions ?? [],
   }
 }
@@ -113,6 +219,7 @@ const emptyForm: FormState = {
   daily_play_limit: '',
   min_plays_to_win: '',
   win_odds: '',
+  prize_points: '',
   quiz_questions: [],
 }
 
@@ -186,7 +293,14 @@ export function CompetitionForm({
     }
     const increment = amount(form.increment)
     const max = amount(form.max_prize)
-    if (form.prize_growth_enabled) {
+    // A points prize is paid in points, per winner, and never grows.
+    const pointsPrize = form.prize_type === 'points'
+    const prizePoints = Number(form.prize_points)
+    if (pointsPrize && !(Number.isInteger(prizePoints) && prizePoints >= 1)) {
+      setError('Set how many points each winner receives.')
+      return
+    }
+    if (form.prize_growth_enabled && !pointsPrize) {
       if (!currency) {
         setError('A growing prize needs a currency.')
         return
@@ -231,14 +345,16 @@ export function CompetitionForm({
       requires_identity_verification: form.requires_identity_verification,
       number_of_winners: instant ? 1 : Number(form.number_of_winners) || 0,
       prize_description: form.prize_description.trim(),
-      prize_value_amount: cents(value),
-      prize_currency: currency || null,
+      prize_value_amount: pointsPrize ? null : cents(value),
+      prize_currency: pointsPrize ? null : currency || null,
       official_rules: form.official_rules.trim() || null,
       prize_type: form.prize_type,
-      prize_growth_enabled: form.prize_growth_enabled,
-      start_prize_cents: cents(value),
-      increment_per_play_cents: form.prize_growth_enabled ? (cents(increment) ?? 0) : 0,
-      max_prize_cents: form.prize_growth_enabled ? cents(max) : null,
+      prize_growth_enabled: pointsPrize ? false : form.prize_growth_enabled,
+      start_prize_cents: pointsPrize ? 0 : cents(value),
+      increment_per_play_cents:
+        form.prize_growth_enabled && !pointsPrize ? (cents(increment) ?? 0) : 0,
+      max_prize_cents: form.prize_growth_enabled && !pointsPrize ? cents(max) : null,
+      prize_points: pointsPrize ? prizePoints : null,
       continue_at_cap: form.continue_at_cap,
       daily_play_limit: count(form.daily_play_limit),
       min_plays_to_win: count(form.min_plays_to_win),
@@ -259,56 +375,61 @@ export function CompetitionForm({
 
   const playable = games.filter((g) => g.playable)
 
+  const chance = isChanceGame(form.game_slug)
+  const instantWinner = chance && form.game_slug !== 'prize-draw'
+  const PrizeIcon = prizeIcon[form.prize_type]
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="space-y-2">
-        <Label htmlFor="c-title">Title</Label>
-        <Input
-          id="c-title"
-          required
-          value={form.title}
-          onChange={(e) => set('title', e.target.value)}
-          placeholder="Spring 2048 Cup"
-          className="h-11"
-        />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
+      <SectionCard icon={Info} title="Basics" iconTone="bg-primary">
         <div className="space-y-2">
-          <Label htmlFor="c-game">Game</Label>
-          <select
-            id="c-game"
+          <Label htmlFor="c-title">Title</Label>
+          <Input
+            id="c-title"
             required
-            className={selectClassName}
-            value={form.game_slug}
-            onChange={(e) => set('game_slug', e.target.value)}
-          >
-            <option value="">Choose a game</option>
-            {playable.map((g) => (
-              <option key={g.slug} value={g.slug}>
-                {g.name} (v{g.version})
-              </option>
-            ))}
-          </select>
+            value={form.title}
+            onChange={(e) => set('title', e.target.value)}
+            placeholder="Spring 2048 Cup"
+            className="h-11 bg-surface"
+          />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-country">Country</Label>
-          <select
-            id="c-country"
-            required
-            className={selectClassName}
-            value={form.country_id}
-            onChange={(e) => chooseCountry(e.target.value)}
-          >
-            <option value="">Choose a country</option>
-            {countries.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="c-game">Game</Label>
+            <select
+              id="c-game"
+              required
+              className={selectClassName}
+              value={form.game_slug}
+              onChange={(e) => set('game_slug', e.target.value)}
+            >
+              <option value="">Choose a game</option>
+              {playable.map((g) => (
+                <option key={g.slug} value={g.slug}>
+                  {g.name} (v{g.version})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-country">Country</Label>
+            <select
+              id="c-country"
+              required
+              className={selectClassName}
+              value={form.country_id}
+              onChange={(e) => chooseCountry(e.target.value)}
+            >
+              <option value="">Choose a country</option>
+              {countries.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </SectionCard>
 
       {form.game_slug === 'quiz' ? (
         <QuizEditor
@@ -317,19 +438,23 @@ export function CompetitionForm({
         />
       ) : null}
 
-      {isChanceGame(form.game_slug) ? (
-        <div className="space-y-3 rounded-2xl bg-amber-50 p-4 text-sm ring-1 ring-amber-200">
-          <p className="font-semibold text-amber-900">Game of chance</p>
+      {chance ? (
+        <SectionCard
+          icon={Dices}
+          title="Game of chance"
+          tone="from-amber-50 to-amber-100/30 ring-amber-200"
+          iconTone="bg-amber-500"
+        >
           {form.game_slug === 'prize-draw' ? (
-            <p className="text-amber-900/80">
-              Every play is one entry. When the round closes you run the draw: winners are picked at random from all
-              entries by the server, and the full draw is kept for audit.
+            <p className="text-sm text-amber-900/80">
+              Every play is one entry. When the round closes you run the draw: winners are picked
+              at random from all entries by the server, and the full draw is kept for audit.
             </p>
           ) : (
             <>
-              <p className="text-amber-900/80">
-                The server decides each play the moment it is made. The first winning play takes the prize and closes
-                the round, so there is one winner.
+              <p className="text-sm text-amber-900/80">
+                The server decides each play the moment it is made. The first winning play takes
+                the prize and closes the round, so there is one winner.
               </p>
               <div className="flex items-center gap-2">
                 <Label htmlFor="c-odds" className="shrink-0">
@@ -337,148 +462,162 @@ export function CompetitionForm({
                 </Label>
                 <Input
                   id="c-odds"
-                  type="number"
-                  min={2}
-                  step={1}
+                  inputMode="numeric"
                   value={form.win_odds}
-                  onChange={(e) => set('win_odds', e.target.value)}
+                  onChange={(e) => set('win_odds', digitsOnly(e.target.value))}
                   placeholder="500"
-                  className="h-10 w-32"
+                  className="h-10 w-32 bg-surface"
                 />
               </div>
             </>
           )}
           <p className="text-xs text-amber-900/70">
-            Needs the country&apos;s &quot;Games of chance&quot; approval before it can be published.
+            Needs the country&apos;s &quot;Games of chance&quot; approval before it can be
+            published.
           </p>
-        </div>
+        </SectionCard>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor="c-start">Starts</Label>
-          <Input
-            id="c-start"
-            type="datetime-local"
-            required
-            value={form.starts_at}
-            onChange={(e) => set('starts_at', e.target.value)}
-            className="h-11"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-end">Ends</Label>
-          <Input
-            id="c-end"
-            type="datetime-local"
-            required
-            value={form.ends_at}
-            onChange={(e) => set('ends_at', e.target.value)}
-            className="h-11"
-          />
+      <SectionCard
+        icon={CalendarClock}
+        title="Schedule"
+        description="When the round opens and closes, in its own time zone."
+        tone="from-sky-50 to-sky-100/30 ring-sky-200"
+        iconTone="bg-sky-600"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="c-start">Starts</Label>
+            <DateTimePicker
+              id="c-start"
+              value={form.starts_at}
+              onChange={(value) => set('starts_at', value)}
+              min={toLocalInput(new Date().toISOString())}
+              presets={[
+                { label: 'In 1 hour', minutesFromNow: 60 },
+                { label: 'Tomorrow, 9am', minutesFromNow: minutesUntilTomorrow9am() },
+                { label: 'In 1 week', minutesFromNow: 60 * 24 * 7 },
+              ]}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-end">Ends</Label>
+            <DateTimePicker
+              id="c-end"
+              value={form.ends_at}
+              onChange={(value) => set('ends_at', value)}
+              min={form.starts_at || undefined}
+              presets={[
+                { label: '+1 day', minutesFromNow: 60 * 24 },
+                { label: '+1 week', minutesFromNow: 60 * 24 * 7 },
+                { label: '+1 month', minutesFromNow: 60 * 24 * 30 },
+              ]}
+            />
+          </div>
         </div>
         <div className="space-y-2">
           <Label htmlFor="c-tz">Time zone</Label>
-          <Input
+          <TimezoneSelect
             id="c-tz"
-            required
             value={form.timezone}
-            onChange={(e) => set('timezone', e.target.value)}
-            placeholder="Pacific/Auckland"
-            className="h-11"
+            onChange={(zone) => set('timezone', zone)}
           />
         </div>
-      </div>
+      </SectionCard>
 
-      <div className="grid gap-4 sm:grid-cols-4">
-        <div className="space-y-2">
-          <Label htmlFor="c-points">Points per play</Label>
-          <Input
-            id="c-points"
-            type="number"
-            min={0}
-            value={form.points_per_attempt}
-            onChange={(e) => set('points_per_attempt', e.target.value)}
-            className="h-11"
-          />
+      <SectionCard
+        icon={Gamepad2}
+        title="Rules & eligibility"
+        tone="from-violet-50 to-violet-100/30 ring-violet-200"
+        iconTone="bg-violet-600"
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="c-points">Points per play</Label>
+            <Input
+              id="c-points"
+              inputMode="numeric"
+              value={form.points_per_attempt}
+              onChange={(e) => set('points_per_attempt', digitsOnly(e.target.value))}
+              className="h-11 bg-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-attempts">Plays each</Label>
+            <Input
+              id="c-attempts"
+              inputMode="numeric"
+              value={form.max_attempts_per_customer}
+              onChange={(e) => set('max_attempts_per_customer', digitsOnly(e.target.value))}
+              className="h-11 bg-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-age">Minimum age</Label>
+            <Input
+              id="c-age"
+              inputMode="numeric"
+              value={form.min_age}
+              onChange={(e) => set('min_age', digitsOnly(e.target.value))}
+              className="h-11 bg-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-winners">Winners</Label>
+            <Input
+              id="c-winners"
+              inputMode="numeric"
+              disabled={instantWinner}
+              value={instantWinner ? '1' : form.number_of_winners}
+              onChange={(e) => set('number_of_winners', digitsOnly(e.target.value))}
+              className="h-11 bg-surface"
+            />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-attempts">Plays each</Label>
-          <Input
-            id="c-attempts"
-            type="number"
-            min={1}
-            max={10000}
-            value={form.max_attempts_per_customer}
-            onChange={(e) => set('max_attempts_per_customer', e.target.value)}
-            className="h-11"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-age">Minimum age</Label>
-          <Input
-            id="c-age"
-            type="number"
-            min={18}
-            value={form.min_age}
-            onChange={(e) => set('min_age', e.target.value)}
-            className="h-11"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-winners">Winners</Label>
-          <Input
-            id="c-winners"
-            type="number"
-            min={1}
-            max={100}
-            disabled={isChanceGame(form.game_slug) && form.game_slug !== 'prize-draw'}
-            value={isChanceGame(form.game_slug) && form.game_slug !== 'prize-draw' ? '1' : form.number_of_winners}
-            onChange={(e) => set('number_of_winners', e.target.value)}
-            className="h-11"
-          />
-        </div>
-      </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          className="size-4 accent-primary"
-          checked={form.requires_identity_verification}
-          onChange={(e) => set('requires_identity_verification', e.target.checked)}
-        />
-        Entrants must have their identity verified
-      </label>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="c-daily">Plays per day (optional)</Label>
-          <Input
-            id="c-daily"
-            type="number"
-            min={1}
-            value={form.daily_play_limit}
-            onChange={(e) => set('daily_play_limit', e.target.value)}
-            placeholder="No daily limit"
-            className="h-11"
+        <label className="flex items-center justify-between gap-3 rounded-xl bg-surface/70 px-3.5 py-3 text-sm ring-1 ring-border/50">
+          <span className="flex items-center gap-2 font-medium">
+            <ShieldCheck className="size-4 text-violet-600" />
+            Entrants must have their identity verified
+          </span>
+          <Switch
+            checked={form.requires_identity_verification}
+            onCheckedChange={(checked) => set('requires_identity_verification', checked === true)}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="c-minplays">Plays needed to win (optional)</Label>
-          <Input
-            id="c-minplays"
-            type="number"
-            min={1}
-            value={form.min_plays_to_win}
-            onChange={(e) => set('min_plays_to_win', e.target.value)}
-            placeholder="Any number"
-            className="h-11"
-          />
-        </div>
-      </div>
+        </label>
 
-      <fieldset className="space-y-4 rounded-2xl bg-muted/40 p-4 ring-1 ring-border/60">
-        <legend className="px-1 text-sm font-semibold">Prize</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="c-daily">Plays per day (optional)</Label>
+            <Input
+              id="c-daily"
+              inputMode="numeric"
+              value={form.daily_play_limit}
+              onChange={(e) => set('daily_play_limit', digitsOnly(e.target.value))}
+              placeholder="No daily limit"
+              className="h-11 bg-surface"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="c-minplays">Plays needed to win (optional)</Label>
+            <Input
+              id="c-minplays"
+              inputMode="numeric"
+              value={form.min_plays_to_win}
+              onChange={(e) => set('min_plays_to_win', digitsOnly(e.target.value))}
+              placeholder="Any number"
+              className="h-11 bg-surface"
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        icon={PrizeIcon}
+        title="Prize"
+        tone={prizeTint[form.prize_type]}
+        iconTone={prizeIconTint[form.prize_type]}
+      >
         <div className="grid gap-4 sm:grid-cols-[1fr_130px]">
           <div className="space-y-2">
             <Label htmlFor="c-prize">Description</Label>
@@ -488,7 +627,7 @@ export function CompetitionForm({
               value={form.prize_description}
               onChange={(e) => set('prize_description', e.target.value)}
               placeholder="Cash prize, paid by bank transfer"
-              className="h-11"
+              className="h-11 bg-surface"
             />
           </div>
           <div className="space-y-2">
@@ -507,88 +646,104 @@ export function CompetitionForm({
             </select>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
+        {form.prize_type === 'points' ? (
           <div className="space-y-2">
-            <Label htmlFor="c-value">{form.prize_growth_enabled ? 'Starting prize' : 'Prize value'}</Label>
+            <Label htmlFor="c-prize-points">Points per winner</Label>
             <Input
-              id="c-value"
-              type="number"
-              min={0}
-              step="0.01"
-              value={form.prize_value}
-              onChange={(e) => set('prize_value', e.target.value)}
-              className="h-11"
+              id="c-prize-points"
+              inputMode="numeric"
+              value={form.prize_points}
+              onChange={(e) => set('prize_points', digitsOnly(e.target.value))}
+              placeholder="500"
+              className="h-11 bg-surface"
             />
+            <p className="text-xs text-muted-foreground">
+              Credited to each winner’s points balance the moment you validate them — nothing to
+              claim or ship, and no money reserve is needed.
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="c-currency">Currency</Label>
-            <Input
-              id="c-currency"
-              maxLength={3}
-              value={form.prize_currency}
-              onChange={(e) => set('prize_currency', e.target.value.toUpperCase())}
-              placeholder="USD"
-              className="h-11 uppercase"
-            />
-          </div>
-        </div>
-
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={form.prize_growth_enabled}
-            onChange={(e) => set('prize_growth_enabled', e.target.checked)}
-          />
-          Grow the prize with every play
-        </label>
-        {form.prize_growth_enabled ? (
+        ) : (
           <>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-[1fr_110px]">
               <div className="space-y-2">
-                <Label htmlFor="c-inc">Added per play</Label>
+                <Label htmlFor="c-value">
+                  {form.prize_growth_enabled ? 'Starting prize' : 'Prize value'}
+                </Label>
                 <Input
-                  id="c-inc"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.increment}
-                  onChange={(e) => set('increment', e.target.value)}
-                  placeholder="1.00"
-                  className="h-11"
+                  id="c-value"
+                  inputMode="decimal"
+                  value={form.prize_value}
+                  onChange={(e) => set('prize_value', decimalsOnly(e.target.value))}
+                  className="h-11 bg-surface"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="c-max">Maximum prize</Label>
+                <Label htmlFor="c-currency">Currency</Label>
                 <Input
-                  id="c-max"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.max_prize}
-                  onChange={(e) => set('max_prize', e.target.value)}
-                  placeholder="5000.00"
-                  className="h-11"
+                  id="c-currency"
+                  maxLength={3}
+                  value={form.prize_currency}
+                  onChange={(e) => set('prize_currency', e.target.value.toUpperCase())}
+                  placeholder="USD"
+                  className="h-11 bg-surface uppercase"
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                className="size-4 accent-primary"
-                checked={form.continue_at_cap}
-                onChange={(e) => set('continue_at_cap', e.target.checked)}
+
+            <label className="flex items-center justify-between gap-3 rounded-xl bg-surface/70 px-3.5 py-3 text-sm ring-1 ring-border/50">
+              <span className="font-medium">Grow the prize with every play</span>
+              <Switch
+                checked={form.prize_growth_enabled}
+                onCheckedChange={(checked) => set('prize_growth_enabled', checked === true)}
               />
-              Keep taking plays once the prize reaches its maximum
             </label>
-            {growthPreview(form) ? <p className="text-sm text-muted-foreground">{growthPreview(form)}</p> : null}
-            <p className="text-xs text-muted-foreground">
-              The funded reserve must cover the maximum, and growing prizes must be approved for the country before
-              the round can be published.
-            </p>
+            {form.prize_growth_enabled ? (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="c-inc">Added per play</Label>
+                    <Input
+                      id="c-inc"
+                      inputMode="decimal"
+                      value={form.increment}
+                      onChange={(e) => set('increment', decimalsOnly(e.target.value))}
+                      placeholder="1.00"
+                      className="h-11 bg-surface"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="c-max">Maximum prize</Label>
+                    <Input
+                      id="c-max"
+                      inputMode="decimal"
+                      value={form.max_prize}
+                      onChange={(e) => set('max_prize', decimalsOnly(e.target.value))}
+                      placeholder="5000.00"
+                      className="h-11 bg-surface"
+                    />
+                  </div>
+                </div>
+                <label className="flex items-center justify-between gap-3 rounded-xl bg-surface/70 px-3.5 py-3 text-sm ring-1 ring-border/50">
+                  <span className="font-medium">
+                    Keep taking plays once the prize reaches its maximum
+                  </span>
+                  <Switch
+                    checked={form.continue_at_cap}
+                    onCheckedChange={(checked) => set('continue_at_cap', checked === true)}
+                  />
+                </label>
+                {growthPreview(form) ? (
+                  <p className="text-sm text-muted-foreground">{growthPreview(form)}</p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  The funded reserve must cover the maximum, and growing prizes must be approved
+                  for the country before the round can be published.
+                </p>
+              </>
+            ) : null}
           </>
-        ) : null}
-      </fieldset>
+        )}
+      </SectionCard>
 
       <div className="space-y-2">
         <Label htmlFor="c-rules">Official rules</Label>
