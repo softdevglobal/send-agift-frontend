@@ -1,32 +1,18 @@
 import { api } from '@/lib/api'
 import type {
-  BuyLabelInput,
   LocalDeliveryInput,
-  ManualShipmentInput,
   OrderItem,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
-  ShippingLabelLink,
-  ShippingRatesResult,
-  ShippingShipmentInput,
 } from '@/api/types'
 
 export type {
-  BuyLabelInput,
-  CustomsDeclarationInput,
-  CustomsItemInput,
   LocalDeliveryInput,
-  ManualShipmentInput,
   OrderItem,
-  ParcelInput,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
-  ShippingLabelLink,
-  ShippingRatesResult,
-  ShippingShipmentInput,
-  ShippoRate,
 } from '@/api/types'
 
 export function listSellerOrderItems() {
@@ -53,31 +39,6 @@ function shippingPath(parcel: ShopParcel) {
   return `/sellers/me/orders/${parcel.orderId}/shops/${parcel.shopId}/shipping`
 }
 
-export function getShippingRates(parcel: ShopParcel, body?: ShippingShipmentInput) {
-  const hasPayload = Boolean(body?.parcel || body?.customs_declaration)
-  return api<ShippingRatesResult>(
-    `${shippingPath(parcel)}/rates`,
-    hasPayload ? { method: 'POST', body } : { method: 'POST' },
-  )
-}
-
-/**
- * A fresh download link for the label already bought for this parcel.
- *
- * Fetched on demand rather than stored with the item: the link expires, so one
- * held from page load would be dead by the time a seller clicked it.
- */
-export function getShippingLabelLink(parcel: ShopParcel) {
-  return api<ShippingLabelLink>(`${shippingPath(parcel)}/label`)
-}
-
-export function buyShippingLabel(parcel: ShopParcel, body: BuyLabelInput) {
-  return api<Shipment>(`${shippingPath(parcel)}/labels`, {
-    method: 'POST',
-    body,
-  })
-}
-
 /**
  * Starts a delivery the seller is making personally: no courier, no tracking
  * number. Dispatches every product in the parcel straight away.
@@ -101,14 +62,3 @@ export function completeLocalDelivery(parcel: ShopParcel) {
   })
 }
 
-/**
- * Records a seller-arranged shipment and dispatches the parcel — no Shippo
- * label, no carrier rate. The fallback for when GetRates has no rates to
- * offer because no connected carrier serves the lane at all.
- */
-export function markShippingManual(parcel: ShopParcel, body: ManualShipmentInput) {
-  return api<Shipment>(`${shippingPath(parcel)}/manual`, {
-    method: 'POST',
-    body,
-  })
-}

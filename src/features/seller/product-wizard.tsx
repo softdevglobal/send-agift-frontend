@@ -24,10 +24,12 @@ import {
   emptyForm,
   isProductImageMedia,
   isProductVideoMime,
+  joinPrepMinutes,
   MAX_PRODUCT_MEDIA,
   parcelComplete,
   parseTags,
   suggestedRewardPoints,
+  splitPrepMinutes,
   toProductInput,
   type ProductFormMedia,
   type ProductFormState,
@@ -141,6 +143,9 @@ export function ProductWizard({
   const priceLabel = priceValid
     ? formatPriceAmount(majorToMinor(priceMajor, form.currency), form.currency)
     : '—'
+  const prepParts = splitPrepMinutes(form.prep_minutes)
+  const prepTotal = Number.parseInt(form.prep_minutes, 10)
+  const prepTotalLabel = Number.isFinite(prepTotal) && prepTotal > 0 ? String(prepTotal) : '0'
 
   async function handleMediaFiles(
     files: FileList | null,
@@ -501,16 +506,52 @@ export function ProductWizard({
           </WizardField>
           <WizardField
             label="Preparation"
-            htmlFor="wizard-prep"
-            hint="Minutes needed before this can ship."
+            hint={`Hours and minutes needed before this can ship. Saved as ${prepTotalLabel} minutes.`}
           >
-            <Input
-              id="wizard-prep"
-              inputMode="numeric"
-              value={form.prep_minutes}
-              onChange={(event) => update('prep_minutes', event.target.value)}
-              placeholder="30"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label
+                  htmlFor="wizard-prep-hours"
+                  className="text-xs text-muted-foreground"
+                >
+                  Hours
+                </label>
+                <Input
+                  id="wizard-prep-hours"
+                  inputMode="numeric"
+                  value={prepParts.hours}
+                  onChange={(event) =>
+                    update(
+                      'prep_minutes',
+                      joinPrepMinutes(event.target.value, prepParts.minutes),
+                    )
+                  }
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="wizard-prep-minutes"
+                  className="text-xs text-muted-foreground"
+                >
+                  Minutes
+                </label>
+                <Input
+                  id="wizard-prep-minutes"
+                  inputMode="numeric"
+                  min={0}
+                  max={59}
+                  value={prepParts.minutes}
+                  onChange={(event) =>
+                    update(
+                      'prep_minutes',
+                      joinPrepMinutes(prepParts.hours, event.target.value),
+                    )
+                  }
+                  placeholder="0"
+                />
+              </div>
+            </div>
           </WizardField>
         </WizardFields>
       ),
@@ -980,6 +1021,10 @@ export function ProductWizard({
                     ? 'Everyone'
                     : `${form.customer_type_visibility} buyers`
                 }
+              />
+              <SummaryRow
+                label="Preparation"
+                value={`${prepParts.hours}h ${prepParts.minutes}m (${prepTotalLabel} min)`}
               />
               <SummaryRow label="In stock" value={form.available_qty || '0'} />
               <SummaryRow

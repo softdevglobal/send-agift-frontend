@@ -9,7 +9,6 @@ import {
   Package,
   PackageCheck,
   Truck,
-  TriangleAlert,
   User,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -17,16 +16,11 @@ import { Link } from 'react-router-dom'
 import { listCountries, type Country } from '@/api/countries'
 import {
   acceptSellerOrderItem,
-  buyShippingLabel,
   completeLocalDelivery,
   getSellerOrderItem,
-  getShippingRates,
   type SellerOrderItemDetails,
   type SellerOrderItemSummary,
   type Shipment,
-  type ShopParcel,
-  type ShippingRatesResult,
-  type ShippoRate,
 } from '@/api/seller-orders'
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
@@ -42,46 +36,20 @@ import {
   SellerSheetFacts,
   SellerSheetRow,
   SellerSheetSection,
-  sellerDisplayName,
 } from '@/features/seller'
 import {
-  buildShippingRatesBody,
   canAcceptOrderItem,
   canGetShippingRates,
-  defaultCustomsForm,
-  DEFAULT_PARCEL_FORM,
-  EMPTY_CUSTOMS_FORM,
-  EMPTY_PARCEL_FORM,
-  formatShippoRateAmount,
-  formatCheckoutSelectedAmount,
   formatShippingAddress,
   hasShippingAddress,
   isDispatchedOrderItem,
   isInternationalShipment,
   isLocalDeliveryTracking,
-  newLabelIdempotencyKey,
-  parcelFormFromProduct,
-  resolveShipFrom,
-  resolveShipTo,
-  type CustomsFormState,
-  type ParcelFormState,
 } from '@/features/seller-orders/order-item-display'
 import { FulfilmentStatusBadge } from '@/features/seller-orders/fulfilment-status-badge'
-import { LabelDownloadButton } from '@/features/seller-orders/label-download-button'
 import { LocalDeliveryDialog } from '@/features/seller-orders/local-delivery-dialog'
-import { ManualShipmentDialog } from '@/features/seller-orders/manual-shipment-dialog'
-import { ShippingRatesForm } from '@/features/seller-orders/shipping-rates-form'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
-import { cn } from '@/lib/utils'
-
-const RATES_ADDRESS_HINT =
-  'Set your shop ship-from address (address_id) and make sure the recipient has street, city, and country (ISO 2).'
-
-const SHIPPING_NOT_CONFIGURED_HINT =
-  'Shipping is not connected on the API. Add SHIPPO_API_KEY to the backend .env (use a shippo_test_… key for local labels) and restart the server on port 8081.'
-
-const SAMPLE_LABEL_NOTICE = 'Test labels are watermarked SAMPLE — do not mail.'
 
 type OrderItemDetailPanelProps = {
   /** The item to show. `null` closes the panel. */
@@ -117,25 +85,9 @@ export function SellerOrderItemDetailPanel({
   const [toast, setToast] = useState<string | null>(null)
 
   const [accepting, setAccepting] = useState(false)
-  const [ratesLoading, setRatesLoading] = useState(false)
-  const [buying, setBuying] = useState(false)
-  const [forceInternational, setForceInternational] = useState(false)
-
-  const [ratesResult, setRatesResult] = useState<ShippingRatesResult | null>(null)
-  const [selectedRate, setSelectedRate] = useState<ShippoRate | null>(null)
-  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null)
   const [shipment, setShipment] = useState<Shipment | null>(null)
-  const [manualShipOpen, setManualShipOpen] = useState(false)
   const [localDeliveryOpen, setLocalDeliveryOpen] = useState(false)
   const [completingLocal, setCompletingLocal] = useState(false)
-  // Set when Shippo answered but no carrier account covers this route, which
-  // no retry can change — the seller's only way forward is shipping it
-  // themselves, so the offer to do that belongs next to the error.
-  const [laneUnservable, setLaneUnservable] = useState(false)
-
-  const [parcel, setParcel] = useState<ParcelFormState>(EMPTY_PARCEL_FORM)
-  const [customs, setCustoms] = useState<CustomsFormState>(EMPTY_CUSTOMS_FORM)
-  const [formItemId, setFormItemId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!orderItemId) return
@@ -155,11 +107,7 @@ export function SellerOrderItemDetailPanel({
       setItem(null)
       setError(null)
       setNotice(null)
-      setRatesResult(null)
-      setSelectedRate(null)
-      setIdempotencyKey(null)
       setShipment(null)
-      setLaneUnservable(false)
       setLocalDeliveryOpen(false)
       return
     }
@@ -186,71 +134,7 @@ export function SellerOrderItemDetailPanel({
     return isInternationalShipment({ item, seller, countries })
   }, [item, seller, countries])
 
-  const international = forceInternational || detectedInternational
-  const parcelTarget: ShopParcel | null = item
-    ? { orderId: item.order_id, shopId: item.shop_id }
-    : null
-  const shipFrom = item ? resolveShipFrom({ item, seller, countries }) : null
-  const shipTo = item ? resolveShipTo({ item, countries }) : null
-
-  useEffect(() => {
-    if (!item) return
-    const origin = shipFrom?.iso || ''
-    const signer =
-      shipFrom?.shopName ||
-      (seller ? sellerDisplayName(seller) : '') ||
-      seller?.legal_name ||
-      ''
-    const detected = isInternationalShipment({ item, seller, countries })
-    const itemChanged = formItemId !== item.id
-
-    if (itemChanged) {
-      setFormItemId(item.id)
-      setForceInternational(false)
-      const fromProduct = parcelFormFromProduct(item.product?.parcel)
-      setParcel(
-        fromProduct ?? (detected ? DEFAULT_PARCEL_FORM : EMPTY_PARCEL_FORM),
-      )
-      setCustoms(
-        defaultCustomsForm({ item, certifySigner: signer, originCountry: origin }),
-      )
-      return
-    }
-
-    if (!international) return
-
-    setParcel((current) =>
-      current.length || current.width || current.height || current.weight
-        ? current
-        : DEFAULT_PARCEL_FORM,
-    )
-    setCustoms((current) => ({
-      ...current,
-      ...(current.origin_country.trim() ? {} : { origin_country: origin }),
-      ...(current.certify_signer.trim() ? {} : { certify_signer: signer }),
-      ...(current.description.trim()
-        ? {}
-        : { description: item.product?.name || current.description }),
-      ...(current.net_weight.trim() ? {} : { net_weight: DEFAULT_PARCEL_FORM.weight }),
-    }))
-  }, [item, formItemId, international, seller, countries, shipFrom?.iso, shipFrom?.shopName])
-
-  function clearShippingDraft() {
-    setRatesResult(null)
-    setSelectedRate(null)
-    setIdempotencyKey(null)
-  }
-
-  function selectRate(rate: ShippoRate) {
-    if (!item) return
-    if (ratesResult?.must_buy_customer_courier) {
-      const recommendedId = ratesResult.recommended_rate_object_id?.trim()
-      if (!recommendedId || rate.object_id !== recommendedId) return
-    }
-    if (selectedRate?.object_id === rate.object_id) return
-    setSelectedRate(rate)
-    setIdempotencyKey(newLabelIdempotencyKey(item.id))
-  }
+  const international = detectedInternational
 
   async function handleAccept() {
     if (!item) return
@@ -275,13 +159,12 @@ export function SellerOrderItemDetailPanel({
       for (const id of ids) {
         await acceptSellerOrderItem(id)
       }
-      clearShippingDraft()
       await load()
       onChanged?.()
       setToast(
         ids.length > 1
-          ? 'All products accepted. Shipping rates cover them as one parcel.'
-          : 'Order item accepted. You can get shipping rates now.',
+          ? 'All products accepted. Deliver them together from this shop.'
+          : 'Order item accepted. You can start shop delivery now.',
       )
     } catch (err) {
       setError(getErrorMessage(err, 'Could not accept this order item.'))
@@ -290,70 +173,6 @@ export function SellerOrderItemDetailPanel({
       }
     } finally {
       setAccepting(false)
-    }
-  }
-
-  async function handleGetRates() {
-    if (!item || !canGetShippingRates(item.fulfilment_status)) return
-    setError(null)
-    setNotice(null)
-    const built = buildShippingRatesBody(international, parcel, customs)
-    if (built.error) {
-      setError(built.error)
-      return
-    }
-    setRatesLoading(true)
-    setLaneUnservable(false)
-    try {
-      const result = await getShippingRates(
-        { orderId: item.order_id, shopId: item.shop_id },
-        built.body,
-      )
-      setRatesResult(result)
-      const preferredId = result.recommended_rate_object_id?.trim() || ''
-      const preferred = preferredId
-        ? result.rates?.find((rate) => rate.object_id === preferredId)
-        : undefined
-      if (preferred) {
-        setSelectedRate(preferred)
-        setIdempotencyKey(newLabelIdempotencyKey(item.id))
-      } else if (result.must_buy_customer_courier) {
-        // Option B: server matches the customer courier; no rate pick needed.
-        setSelectedRate(null)
-        setIdempotencyKey(newLabelIdempotencyKey(item.id))
-      } else {
-        setSelectedRate(null)
-        setIdempotencyKey(null)
-      }
-      if (!result.rates?.length && !result.seller_delivery?.available) {
-        setNotice('No shipping rates were returned. Check shop and recipient addresses.')
-      }
-    } catch (err) {
-      setRatesResult(null)
-      setSelectedRate(null)
-      setIdempotencyKey(null)
-      const message = getErrorMessage(err, 'Could not load shipping rates.')
-      setError(message)
-      // 502 carries Shippo's own explanation; "no rates returned" means every
-      // carrier account declined the lane rather than anything being wrong
-      // with this order.
-      if (err instanceof ApiError && message.toLowerCase().includes('no rates returned')) {
-        setLaneUnservable(true)
-      }
-      if (err instanceof ApiError && err.status === 503) {
-        setNotice(SHIPPING_NOT_CONFIGURED_HINT)
-      } else if (err instanceof ApiError && err.status === 400) {
-        if (message.toLowerCase().includes('customs')) {
-          setForceInternational(true)
-          setNotice(
-            'International shipments need parcel dimensions/weight and a customs declaration.',
-          )
-        } else {
-          setNotice(RATES_ADDRESS_HINT)
-        }
-      }
-    } finally {
-      setRatesLoading(false)
     }
   }
 
@@ -378,50 +197,6 @@ export function SellerOrderItemDetailPanel({
     }
   }
 
-  async function handleBuyLabel() {
-    if (!item || !idempotencyKey) return
-    if (!canGetShippingRates(item.fulfilment_status)) return
-    const locked = Boolean(ratesResult?.must_buy_customer_courier)
-    if (!locked && !selectedRate) return
-    setError(null)
-    setNotice(null)
-    setBuying(true)
-    try {
-      const purchased = await buyShippingLabel(
-        { orderId: item.order_id, shopId: item.shop_id },
-        locked
-          ? {
-              use_customer_selected: true,
-              idempotency_key: idempotencyKey,
-            }
-          : {
-              rate_object_id: selectedRate!.object_id,
-              provider: selectedRate!.provider,
-              idempotency_key: idempotencyKey,
-            },
-      )
-      setShipment(purchased)
-      clearShippingDraft()
-      await load()
-      onChanged?.()
-      setNotice(SAMPLE_LABEL_NOTICE)
-      setToast('Shipping label created.')
-    } catch (err) {
-      const message = getErrorMessage(err, 'Could not buy a shipping label.')
-      setError(message)
-      if (err instanceof ApiError && err.status === 409) {
-        // API already explains the lock; keep a single banner.
-        setNotice(null)
-      } else if (err instanceof ApiError && err.status === 503) {
-        setNotice(SHIPPING_NOT_CONFIGURED_HINT)
-      } else if (err instanceof ApiError && err.status === 404) {
-        await load().catch(() => undefined)
-      }
-    } finally {
-      setBuying(false)
-    }
-  }
-
   const currency = item?.order?.currency || 'USD'
   const product = item?.product
   const shopItems = item
@@ -443,7 +218,6 @@ export function SellerOrderItemDetailPanel({
   )
   const recipient = item?.recipient
   const shippingAddress = item?.shipping_address
-  const missingAddress = !hasShippingAddress(shippingAddress)
   const pending = item ? canAcceptOrderItem(item.fulfilment_status) : false
   const rateable = item ? canGetShippingRates(item.fulfilment_status) : false
   const dispatched = item ? isDispatchedOrderItem(item.fulfilment_status) : false
@@ -457,10 +231,6 @@ export function SellerOrderItemDetailPanel({
     localDelivery &&
     (deliveryStatus === 'delivered' || itemDelivered)
   const showShipmentSection = dispatched || itemDelivered
-  const customerCourierLocked = Boolean(ratesResult?.must_buy_customer_courier)
-  const canBuyLabel =
-    Boolean(idempotencyKey) &&
-    (customerCourierLocked || Boolean(selectedRate))
 
   return (
     <>
@@ -500,67 +270,21 @@ export function SellerOrderItemDetailPanel({
               ) : null}
 
               {rateable ? (
-                <>
-                  <div className="rounded-2xl border border-primary/25 bg-primary/5 p-3">
-                    <p className="text-sm font-medium">Deliver it yourself</p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      Hand the gift over in person — no Shippo label or tracking
-                      number. Mark delivered after you hand it over.
-                    </p>
-                    <Button
-                      type="button"
-                      onClick={() => setLocalDeliveryOpen(true)}
-                      className="mt-3 h-11 w-full rounded-full"
-                    >
-                      <Bike className="size-4" />
-                      Start local delivery
-                    </Button>
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:flex-row">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={ratesLoading}
-                      onClick={handleGetRates}
-                      className="h-11 flex-1 rounded-full"
-                    >
-                      {ratesLoading ? (
-                        <>
-                          <LoaderCircle className="animate-spin" />
-                          Getting rates…
-                        </>
-                      ) : (
-                        'Get shipping rates'
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled={!canBuyLabel || buying}
-                      onClick={handleBuyLabel}
-                      className="h-11 flex-1 rounded-full"
-                    >
-                      {buying ? (
-                        <>
-                          <LoaderCircle className="animate-spin" />
-                          Buying label…
-                        </>
-                      ) : (
-                        'Buy shipping label'
-                      )}
-                    </Button>
-                  </div>
-
+                <div className="rounded-2xl border border-primary/25 bg-primary/5 p-3">
+                  <p className="text-sm font-medium">Deliver this gift</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Hand it over inside the shop's delivery zone. Mark delivered
+                    after you hand it over.
+                  </p>
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={() => setManualShipOpen(true)}
-                    className="h-11 w-full rounded-full"
+                    onClick={() => setLocalDeliveryOpen(true)}
+                    className="mt-3 h-11 w-full rounded-full"
                   >
-                    <Truck className="size-4" />
-                    Use your own courier
+                    <Bike className="size-4" />
+                    Start shop delivery
                   </Button>
-                </>
+                </div>
               ) : null}
 
               {dispatched && localDelivery && !localDeliveryComplete ? (
@@ -596,46 +320,6 @@ export function SellerOrderItemDetailPanel({
         ) : (
           <>
             <FormAlert error={error} notice={notice} />
-
-            {laneUnservable && rateable ? (
-              <div className="rounded-xl border border-border/60 bg-surface/60 p-4">
-                <p className="text-sm font-medium">No carrier covers this route</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Every carrier on the account declined this origin and
-                  destination, so there is no rate to buy a label from. Retrying
-                  will return the same answer. Deliver it yourself, or ship with
-                  your own courier and record the tracking number here.
-                </p>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <Button
-                    type="button"
-                    onClick={() => setLocalDeliveryOpen(true)}
-                    className="h-10 flex-1 rounded-full"
-                  >
-                    <Bike className="size-4" />
-                    Deliver it yourself
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setManualShipOpen(true)}
-                    className="h-10 flex-1 rounded-full"
-                  >
-                    <Truck className="size-4" />
-                    Use your own courier
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            {missingAddress && rateable ? (
-              <div className="flex items-start gap-2.5 rounded-xl border border-border/60 bg-surface/60 p-4">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  This recipient needs a shipping address before you can get rates.
-                </p>
-              </div>
-            ) : null}
 
             <SellerSheetSection icon={Gift} title={productsInShipment.length > 1 ? 'Products' : 'Gift'}>
               <ul className="space-y-2">
@@ -679,8 +363,7 @@ export function SellerOrderItemDetailPanel({
               </ul>
               {productsInShipment.length > 1 ? (
                 <p className="text-sm text-muted-foreground">
-                  These products ship as one parcel from {item.shop_name || 'this shop'}.
-                  Shipping rates are for this parcel only.
+                  These products leave together from {item.shop_name || 'this shop'}.
                 </p>
               ) : null}
               {orderHasOtherShops ? (
@@ -767,164 +450,12 @@ export function SellerOrderItemDetailPanel({
                   <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
                     {hasShippingAddress(shippingAddress)
-                      ? `${formatShippingAddress(shippingAddress)}${shipTo?.iso ? ` · ${shipTo.iso}` : ''}`
+                      ? formatShippingAddress(shippingAddress)
                       : 'Recipient needs a shipping address.'}
                   </p>
                 </div>
               </div>
             </SellerSheetSection>
-
-            {rateable ? (
-              <ShippingRatesForm
-                flat
-                international={international}
-                originIso={shipFrom?.iso ?? null}
-                destIso={shipTo?.iso ?? null}
-                parcel={parcel}
-                customs={customs}
-                onParcelChange={(patch) =>
-                  setParcel((current) => ({ ...current, ...patch }))
-                }
-                onCustomsChange={(patch) =>
-                  setCustoms((current) => ({ ...current, ...patch }))
-                }
-              />
-            ) : null}
-
-            {rateable && (ratesResult?.rates?.length || ratesResult?.seller_delivery?.available) ? (
-              <SellerSheetSection icon={Truck} title="Shipping rates">
-                {ratesResult.checkout_selected ? (
-                  <div className="rounded-xl border border-border/60 bg-muted/40 px-4 py-3 text-sm">
-                    <p className="font-medium">Customer selected at checkout</p>
-                    <p className="mt-0.5 text-muted-foreground">
-                      {ratesResult.checkout_selected.provider} ·{' '}
-                      {ratesResult.checkout_selected.service_name} ·{' '}
-                      {formatCheckoutSelectedAmount(ratesResult.checkout_selected)}
-                    </p>
-                    {customerCourierLocked ? (
-                      <p className="mt-2 text-muted-foreground">
-                        Buy label uses this courier. To change it,{' '}
-                        <Link
-                          to={`/seller/inbox?orderItem=${item.id}`}
-                          className="font-medium text-primary hover:underline"
-                        >
-                          message the customer
-                        </Link>{' '}
-                        first.
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <p className="text-sm text-muted-foreground">
-                  {(ratesResult.combined_item_count ?? 0) > 1
-                    ? `One rate for all ${ratesResult.combined_item_count} products in this order. `
-                    : null}
-                  {ratesResult.seller_delivery?.available
-                    ? 'The recipient is inside a shop delivery range. Deliver it yourself, or pick a courier.'
-                    : customerCourierLocked
-                      ? 'Customer courier is locked. Buy label uses their choice.'
-                      : 'Pick a rate, then buy the label.'}{' '}
-                  {ratesResult.rates?.length ? SAMPLE_LABEL_NOTICE : null}
-                </p>
-                <ul className="space-y-2">
-                  {ratesResult.seller_delivery?.available ? (
-                    <li>
-                      <button
-                        type="button"
-                        onClick={() => setLocalDeliveryOpen(true)}
-                        className="w-full rounded-xl border border-border/50 px-4 py-3 text-left transition-colors hover:border-border hover:bg-muted/40"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="flex items-center gap-1.5 font-medium">
-                              <Bike className="size-3.5 shrink-0" />
-                              Delivery by shop
-                              {ratesResult.customer_selected_mode === 'seller_delivery' ? (
-                                <span className="text-xs font-normal text-primary">
-                                  Customer selected
-                                </span>
-                              ) : null}
-                            </p>
-                            <p className="mt-0.5 text-sm text-muted-foreground">
-                              {ratesResult.seller_delivery.distance_km != null
-                                ? `${ratesResult.seller_delivery.distance_km} km`
-                                : 'Within the shop zone'}
-                              {ratesResult.seller_delivery.max_km
-                                ? ` · up to ${ratesResult.seller_delivery.max_km} km`
-                                : ''}
-                              {ratesResult.seller_delivery.estimated_days != null
-                                ? ` · ${ratesResult.seller_delivery.estimated_days} day${ratesResult.seller_delivery.estimated_days === 1 ? '' : 's'}`
-                                : ''}
-                            </p>
-                          </div>
-                          <p className="shrink-0 font-medium">
-                            {ratesResult.seller_delivery.is_free ||
-                            ratesResult.seller_delivery.price_amount === 0
-                              ? 'Free'
-                              : formatPriceAmount(
-                                  ratesResult.seller_delivery.price_amount,
-                                  ratesResult.seller_delivery.currency || currency,
-                                )}
-                          </p>
-                        </div>
-                      </button>
-                    </li>
-                  ) : null}
-                  {(ratesResult.rates ?? []).map((rate) => {
-                    const recommendedId =
-                      ratesResult.recommended_rate_object_id?.trim() || ''
-                    const isRecommended = Boolean(
-                      recommendedId && rate.object_id === recommendedId,
-                    )
-                    const selected = selectedRate?.object_id === rate.object_id
-                    const lockedOut = customerCourierLocked && !isRecommended
-                    return (
-                      <li key={rate.object_id}>
-                        <button
-                          type="button"
-                          disabled={lockedOut}
-                          onClick={() => selectRate(rate)}
-                          className={cn(
-                            'w-full rounded-xl border px-4 py-3 text-left transition-colors',
-                            lockedOut && 'cursor-not-allowed opacity-50',
-                            selected
-                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                              : lockedOut
-                                ? 'border-border/40 bg-muted/20'
-                                : 'border-border/50 hover:border-border hover:bg-muted/40',
-                          )}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium">
-                                {rate.provider} · {rate.service_name}
-                                {isRecommended ? (
-                                  <span className="ml-2 text-xs font-normal text-primary">
-                                    Customer courier
-                                  </span>
-                                ) : null}
-                              </p>
-                              <p className="mt-0.5 text-sm text-muted-foreground">
-                                {rate.estimated_days != null
-                                  ? `${rate.estimated_days} day${rate.estimated_days === 1 ? '' : 's'} estimated`
-                                  : null}
-                                {rate.estimated_days != null && rate.duration_terms
-                                  ? ' · '
-                                  : null}
-                                {rate.duration_terms}
-                              </p>
-                            </div>
-                            <p className="shrink-0 font-medium">
-                              {formatShippoRateAmount(rate)}
-                            </p>
-                          </div>
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </SellerSheetSection>
-            ) : null}
 
             {showShipmentSection ? (
               <SellerSheetSection
@@ -1013,21 +544,9 @@ export function SellerOrderItemDetailPanel({
                           <ExternalLink className="size-3.5" />
                         </a>
                       ) : null}
-                      {shipment.delivery_mode === 'seller_managed' ? (
-                        <p className="mt-3 text-xs text-muted-foreground">
-                          Shipped with your own courier — no Shippo label for this item.
-                        </p>
-                      ) : (
-                        <>
-                          <LabelDownloadButton
-                            parcel={parcelTarget!}
-                            className="mt-3"
-                          />
-                          <p className="mt-3 text-xs text-muted-foreground">
-                            {SAMPLE_LABEL_NOTICE}
-                          </p>
-                        </>
-                      )}
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        The shop is delivering this gift.
+                      </p>
                     </>
                   ) : (
                     <>
@@ -1062,12 +581,7 @@ export function SellerOrderItemDetailPanel({
                           <ExternalLink className="size-3.5" />
                         </a>
                       ) : null}
-                      {item.tracking?.delivery_mode !== 'seller_managed' ? (
-                        <LabelDownloadButton
-                          parcel={parcelTarget!}
-                          className="mt-3"
-                        />
-                      ) : null}
+
                     </>
                   )}
                 </div>
@@ -1090,25 +604,9 @@ export function SellerOrderItemDetailPanel({
           onOpenChange={setLocalDeliveryOpen}
           onStarted={(started) => {
             setShipment(started)
-            clearShippingDraft()
             void load()
             onChanged?.()
             setToast('Delivery started. Confirm it once handed over.')
-          }}
-        />
-      ) : null}
-
-      {item ? (
-        <ManualShipmentDialog
-          parcel={{ orderId: item.order_id, shopId: item.shop_id }}
-          open={manualShipOpen}
-          onOpenChange={setManualShipOpen}
-          onShipped={(shipped) => {
-            setShipment(shipped)
-            clearShippingDraft()
-            void load()
-            onChanged?.()
-            setToast('Marked as shipped.')
           }}
         />
       ) : null}

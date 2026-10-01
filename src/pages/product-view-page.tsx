@@ -309,6 +309,13 @@ export function ProductViewPage() {
                 </p>
               ) : null}
             </div>
+            {product.stockLeft != null ? (
+              <p className="mt-2 text-sm font-medium text-amber-700">
+                {product.stockLeft <= 0
+                  ? 'Out of stock'
+                  : `Only ${product.stockLeft} left`}
+              </p>
+            ) : null}
 
             {product.rewardPoints ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

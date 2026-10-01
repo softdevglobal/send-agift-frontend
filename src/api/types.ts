@@ -229,6 +229,8 @@ export type Product = {
   parcel?: ParcelInput | null
   /** Gallery images and videos (ordered by position). */
   media?: ProductMedia[]
+  /** Set when sellable stock is at or below the low-stock threshold. */
+  stock_left?: number
 }
 
 /** One gallery file on a product response. */
@@ -790,11 +792,8 @@ export type QuotePostalAddress = {
 export type DeliveryQuoteShop = {
   shop_id: string
   shop_name: string
-  shipment_object_id?: string
   /** Shop address the parcel leaves from. */
   from?: QuotePostalAddress | null
-  /** Shippo courier rates. */
-  options: DeliveryQuoteOption[]
   /** Zone price for the shop delivering itself. */
   seller_delivery?: SellerDeliveryQuote | null
 }
@@ -803,7 +802,7 @@ export type DeliveryQuoteShop = {
 export type QuotedShipment = {
   shop_id: string
   shop_name: string
-  mode?: 'courier' | 'seller_delivery'
+  mode?: 'seller_delivery'
   provider: string
   service_name: string
   /** Minor units, in `currency`. */
@@ -811,16 +810,10 @@ export type QuotedShipment = {
   currency: string
   estimated_days: number
   days_available?: number
-  /** Nothing quoted could make the date; the fastest was chosen instead. */
-  misses_delivery_date: boolean
-  /** Shippo rate id — pass back on create order as `shipping_quotes`. */
-  rate_object_id?: string
-  /** Shippo shipment id — pass back on create order as `shipping_quotes`. */
-  shipment_object_id?: string
 }
 
 export type DeliveryQuote = {
-  /** Per-shop courier menus for the checkout picker. */
+  /** Per-shop zone delivery for the checkout picker. */
   shops?: DeliveryQuoteShop[]
   /** Recommended option per shop (same as picking each shop's recommended). */
   shipments: QuotedShipment[]
@@ -853,8 +846,8 @@ export type OrderItemInput = {
 /** One shop's quoted rate locked in when placing the order. */
 export type OrderShippingQuote = {
   shop_id: string
-  /** `courier` uses the Shippo rate; `seller_delivery` uses the zone price. */
-  mode: 'courier' | 'seller_delivery'
+  /** Shop delivery, priced from the shop's zones. */
+  mode: 'seller_delivery'
   rate_object_id?: string
   shipment_object_id?: string
   provider?: string

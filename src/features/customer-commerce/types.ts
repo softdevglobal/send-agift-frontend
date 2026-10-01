@@ -24,6 +24,8 @@ export type CatalogProduct = GiftProduct & {
   media?: CatalogProductMedia[]
   /** Points earned per unit on delivery; 0 when the seller can't fund a reward. */
   rewardPoints?: number
+  /** Sellable quantity, present only while stock is low. */
+  stockLeft?: number
 }
 
 export type CatalogProductMedia = {
