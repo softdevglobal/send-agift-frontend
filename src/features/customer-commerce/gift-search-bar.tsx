@@ -1,4 +1,4 @@
-import { CalendarDays, Gift, MapPin, Search } from 'lucide-react'
+import { CalendarDays, LoaderCircle, MapPin, Search, X } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -6,12 +6,14 @@ import type { PlaceDetails } from '@/api/places'
 import { DatePicker } from '@/components/common/date-picker'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   useDeliveryIntent,
   type DeliveryIntent,
 } from '@/features/customer-commerce/delivery-intent-context'
 import { cn } from '@/lib/utils'
+
+/** How long Find gifts keeps its spinner up, even when the check is instant. */
+const FINDING_MS = 1000
 
 /** One tap for the days people actually ask for. */
 const DATE_PRESETS = [
@@ -25,11 +27,14 @@ function Field({
   icon,
   label,
   children,
+  action,
   className,
 }: {
   icon: ReactNode
   label: string
   children: ReactNode
+  /** Shown beside the field, for example a control that clears it. */
+  action?: ReactNode
   className?: string
 }) {
   return (
@@ -49,18 +54,21 @@ function Field({
       >
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-          {label}
-        </p>
-        {children}
+      <div className="flex min-w-0 flex-1 items-center gap-1">
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.7rem] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
+            {label}
+          </p>
+          {children}
+        </div>
+        {action}
       </div>
     </div>
   )
 }
 
 /**
- * What you are looking for, where it is going, and when it has to be there.
+ * Where the gift is going, and when it has to be there.
  *
  * Where and when are remembered rather than used to filter the shelves — they
  * are carried through browsing and fill in checkout, so a shopper is not asked
@@ -68,85 +76,139 @@ function Field({
  */
 export function GiftSearchBar({
   className,
-  initialQuery = '',
-  onSearch,
+  navigateOnSubmit = true,
+  finding = false,
+  onFindingChange,
 }: {
   className?: string
-  /** Seeds the text field, e.g. from the URL on the products page. */
-  initialQuery?: string
+  /** Home sends the shopper to the catalog. The products page stays put. */
+  navigateOnSubmit?: boolean
+  /** The gifts page is still applying the zone check. */
+  finding?: boolean
   /**
-   * Handles the search in place. Without it the bar navigates to the
-   * products page, which is what the home page wants.
+   * Fires when Find gifts starts and when the wait ends.
+   * `willRefresh` is true when a picked address should reload the gift list.
    */
-  onSearch?: (query: string) => void
+  onFindingChange?: (finding: boolean, willRefresh?: boolean) => void
 }) {
   const navigate = useNavigate()
   const { intent, setIntent } = useDeliveryIntent()
 
-  const [query, setQuery] = useState(initialQuery)
   const [address, setAddress] = useState(intent?.address ?? '')
   const [date, setDate] = useState(intent?.date ?? '')
+  const [submitting, setSubmitting] = useState(false)
+  const busy = finding || submitting
   const [place, setPlace] = useState<Partial<DeliveryIntent>>({
+    line1: intent?.line1,
+    line2: intent?.line2,
     countryCode: intent?.countryCode,
     countryName: intent?.countryName,
     city: intent?.city,
+    region: intent?.region,
+    postalCode: intent?.postalCode,
+    latitude: intent?.latitude,
+    longitude: intent?.longitude,
   })
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    // An address typed but never picked from the list still counts: the
-    // shopper told us where it is going, we just have no country for it.
-    const trimmed = address.trim()
-    if (trimmed) {
-      setIntent({
-        address: trimmed,
-        countryCode: place.countryCode,
-        countryName: place.countryName,
-        city: place.city,
-        date: date || undefined,
-      })
-    } else if (date) {
-      // A date on its own is still worth keeping for checkout, even the
-      // first time — with no address yet, or no intent to add it to.
-      setIntent({ ...intent, date })
-    } else if (!date && intent) {
-      // The date was cleared: drop it from what we remember, but keep the
-      // address if there is one.
-      setIntent(intent.address ? { ...intent, date: undefined } : null)
-    }
-
-    const trimmedQuery = query.trim()
-    if (onSearch) {
-      onSearch(trimmedQuery)
-      return
-    }
-    const params = new URLSearchParams()
-    if (trimmedQuery) params.set('q', trimmedQuery)
-    navigate(params.size ? `/products?${params.toString()}` : '/products')
+  function rememberAddress(trimmed: string) {
+    setIntent({
+      address: trimmed,
+      line1: place.line1 || trimmed,
+      line2: place.line2,
+      countryCode: place.countryCode,
+      countryName: place.countryName,
+      city: place.city,
+      region: place.region,
+      postalCode: place.postalCode,
+      latitude: place.latitude,
+      longitude: place.longitude,
+      date: date || undefined,
+    })
   }
 
-  const fieldClass =
-    'h-9 border-0 bg-transparent p-0 text-base font-medium shadow-none placeholder:font-normal focus-visible:ring-0 focus-visible:ring-offset-0'
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy) return
+
+    setSubmitting(true)
+    onFindingChange?.(true)
+    let willRefresh = false
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, FINDING_MS))
+
+      // An address typed but never picked from the list still counts: the
+      // shopper told us where it is going, we just have no country for it.
+      const trimmed = address.trim()
+      if (trimmed) {
+        rememberAddress(trimmed)
+        willRefresh =
+          typeof place.latitude === 'number' && typeof place.longitude === 'number'
+      } else if (date) {
+        // A date on its own is still worth keeping for checkout, even the
+        // first time — with no address yet, or no intent to add it to.
+        setIntent({ ...intent, date })
+      } else if (!date && intent) {
+        // The date was cleared: drop it from what we remember, but keep the
+        // address if there is one.
+        setIntent(intent.address ? { ...intent, date: undefined } : null)
+      }
+
+      if (navigateOnSubmit) navigate('/products')
+    } finally {
+      setSubmitting(false)
+      onFindingChange?.(false, willRefresh)
+    }
+  }
+
+  function clearAddress() {
+    setAddress('')
+    setPlace({})
+    setIntent(date ? { date } : null)
+  }
+
+  function clearDate() {
+    setDate('')
+    const trimmed = address.trim()
+    if (!trimmed) {
+      setIntent(null)
+      return
+    }
+    setIntent({
+      address: trimmed,
+      line1: place.line1 || trimmed,
+      line2: place.line2,
+      countryCode: place.countryCode,
+      countryName: place.countryName,
+      city: place.city,
+      region: place.region,
+      postalCode: place.postalCode,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    })
+  }
 
   return (
     <form onSubmit={handleSubmit} className={cn('relative', className)}>
       {/* A thin brand edge, enough to mark the bar out without it glowing. */}
       <div className="relative rounded-[32px] bg-gradient-to-r from-primary/45 via-fuchsia-400/35 to-amber-300/45 p-[1.5px] shadow-lg shadow-black/5">
         <div className="rounded-[30px] bg-surface/98 backdrop-blur">
-          <div className="grid divide-y divide-border/70 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_minmax(0,0.85fr)_auto] lg:divide-x lg:divide-y-0">
-            <Field icon={<Gift className="size-5" />} label="Gift">
-              <Input
-                id="gift-search-query"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search gifts"
-                aria-label="Search gifts"
-                className={fieldClass}
-              />
-            </Field>
-
-            <Field icon={<MapPin className="size-5" />} label="Deliver to">
+          <div className="grid divide-y divide-border/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_auto] lg:divide-x lg:divide-y-0">
+            <Field
+              icon={<MapPin className="size-5" />}
+              label="Deliver to"
+              action={
+                address.trim() ? (
+                  <button
+                    type="button"
+                    onClick={clearAddress}
+                    aria-label="Clear delivery address"
+                    className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                ) : null
+              }
+            >
               {/* Its own label and helper are turned off: the segment already
                   says what it is, and the helper text pushed the row out of
                   line with the others. */}
@@ -154,13 +216,29 @@ export function GiftSearchBar({
                 id="gift-search-address"
                 value={address}
                 onQueryChange={setAddress}
-                onSelect={(found: PlaceDetails) =>
-                  setPlace({
+                onSelect={(found: PlaceDetails) => {
+                  const next: Partial<DeliveryIntent> = {
+                    line1: found.line1,
+                    line2: found.line2,
                     countryCode: found.country_code,
                     countryName: found.country_name,
                     city: found.city,
+                    region: found.region,
+                    postalCode: found.postal_code,
+                    latitude: found.latitude,
+                    longitude: found.longitude,
+                  }
+                  setPlace(next)
+                  // Keep it as soon as they pick, so checkout can open the
+                  // recipient form already filled — even before Find gifts.
+                  const shown = found.formatted_address || found.line1
+                  setIntent({
+                    ...next,
+                    address: shown,
+                    line1: found.line1 || shown,
+                    date: date || undefined,
                   })
-                }
+                }}
                 label=""
                 helperText=""
                 placeholder="Where is it going?"
@@ -168,26 +246,55 @@ export function GiftSearchBar({
               />
             </Field>
 
-            <Field icon={<CalendarDays className="size-5" />} label="Arrive by">
+            <Field
+              icon={<CalendarDays className="size-5" />}
+              label="Arrive by"
+              action={
+                date ? (
+                  <button
+                    type="button"
+                    onClick={clearDate}
+                    aria-label="Clear arrival date"
+                    className="grid size-8 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-4" />
+                  </button>
+                ) : null
+              }
+            >
               <DatePicker
                 id="gift-search-date"
                 value={date}
-                onChange={setDate}
+                onChange={(next) => {
+                  if (!next) {
+                    clearDate()
+                    return
+                  }
+                  setDate(next)
+                }}
                 presets={DATE_PRESETS}
+                clearLabel="Clear"
               />
             </Field>
 
             <div className="p-4 lg:pr-4 lg:pl-2">
               <Button
                 type="submit"
+                disabled={busy}
+                aria-busy={busy}
                 className={cn(
                   'h-14 w-full gap-2 rounded-2xl px-8 text-base font-semibold lg:w-auto',
                   'bg-gradient-to-br from-primary to-fuchsia-500',
                   'shadow-lg shadow-primary/30 transition hover:scale-[1.03] hover:shadow-xl',
+                  'disabled:hover:scale-100',
                 )}
               >
-                <Search className="size-5" />
-                Find gifts
+                {busy ? (
+                  <LoaderCircle className="size-5 animate-spin" />
+                ) : (
+                  <Search className="size-5" />
+                )}
+                {busy ? 'Finding…' : 'Find gifts'}
               </Button>
             </div>
           </div>

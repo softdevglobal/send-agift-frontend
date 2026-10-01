@@ -110,6 +110,11 @@ export function GiftCard({ product, href }: GiftCardProps) {
               </span>
             ) : null}
           </div>
+          {isCatalogProduct(product) && product.stockLeft != null ? (
+            <p className="text-xs font-medium text-amber-700">
+              {product.stockLeft <= 0 ? 'Out of stock' : `Only ${product.stockLeft} left`}
+            </p>
+          ) : null}
         </div>
 
         <Button

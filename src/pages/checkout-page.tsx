@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   Bike,
   CalendarDays,
   Gift,
   LoaderCircle,
   MapPin,
+  Plus,
   Truck,
   TriangleAlert,
   User,
@@ -13,6 +14,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import {
+  createRecipient,
   getCustomerMe,
   getRecipient,
   listRecipients,
@@ -20,8 +22,9 @@ import {
   type RecipientAddress,
   type RecipientDetails,
 } from '@/api/customers'
+import { addressFieldsFromPlace } from '@/api/places'
+import type { PlaceDetails } from '@/api/types'
 import {
-  courierChoice,
   createOrder,
   defaultQuoteSelections,
   quoteDelivery,
@@ -31,8 +34,10 @@ import {
   type CheckoutDeliveryChoice,
   type DeliveryQuote,
 } from '@/api/orders'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -47,12 +52,48 @@ import type { CartCustomerType } from '@/features/customer-commerce/types'
 import {
   describeIntent,
   useDeliveryIntent,
+  type DeliveryIntent,
 } from '@/features/customer-commerce/delivery-intent-context'
+import { PhoneField } from '@/features/auth/phone-field'
 import { getErrorMessage } from '@/lib/api'
+import { optionalString } from '@/lib/form'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { isUuid } from '@/lib/uuid'
 import { cn } from '@/lib/utils'
+
+function blankRecipient(country = '') {
+  return {
+    name: '',
+    phone: '',
+    country_id: country,
+    label: '',
+    address_type: 'shipping',
+    line1: '',
+    line2: '',
+    city: '',
+    region: '',
+    postal_code: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
+    is_default: true,
+  }
+}
+
+/** The address chosen on the home search, ready to drop into a new recipient. */
+function recipientFromSearch(intent: DeliveryIntent | null) {
+  const searched = intent?.address?.trim() ?? ''
+  return {
+    ...blankRecipient(),
+    line1: intent?.line1?.trim() || searched,
+    line2: intent?.line2 ?? '',
+    city: intent?.city ?? '',
+    region: intent?.region ?? '',
+    postal_code: intent?.postalCode ?? '',
+    latitude: typeof intent?.latitude === 'number' ? intent.latitude : null,
+    longitude: typeof intent?.longitude === 'number' ? intent.longitude : null,
+  }
+}
 
 function tomorrow() {
   const date = new Date()
@@ -143,12 +184,19 @@ export function CheckoutPage() {
   const [recipientId, setRecipientId] = useState('')
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null)
   const [recipientLoading, setRecipientLoading] = useState(false)
+  const [addingRecipient, setAddingRecipient] = useState(() =>
+    Boolean(intent?.address?.trim()),
+  )
+  const [savingRecipient, setSavingRecipient] = useState(false)
+  const [newRecipient, setNewRecipient] = useState(() => recipientFromSearch(intent))
+  const appliedSearchCountry = useRef(false)
   const [countryId, setCountryId] = useState('')
   const [quote, setQuote] = useState<DeliveryQuote | null>(null)
   const [quoteSelections, setQuoteSelections] = useState<
     Record<string, CheckoutDeliveryChoice>
   >({})
   const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteSettled, setQuoteSettled] = useState(false)
   const [customerType, setCustomerType] = useState<CartCustomerType>(
     cartCustomerType ?? 'personal',
   )
@@ -164,6 +212,24 @@ export function CheckoutPage() {
   useEffect(() => {
     if (cartCustomerType) setCustomerType(cartCustomerType)
   }, [cartCustomerType])
+
+  // The country list arrives after the form opens. Match it once to the
+  // country from the home search, then leave later edits alone.
+  useEffect(() => {
+    if (appliedSearchCountry.current) return
+    if (!intent?.countryCode || countries.length === 0) return
+    const matched = countries.find(
+      (country) =>
+        country.iso_code.toLowerCase() === intent.countryCode?.toLowerCase(),
+    )
+    if (!matched) return
+    appliedSearchCountry.current = true
+    setNewRecipient((current) =>
+      current.country_id === matched.id
+        ? current
+        : { ...current, country_id: matched.id },
+    )
+  }, [intent, countries])
 
   useEffect(() => {
     let cancelled = false
@@ -241,10 +307,13 @@ export function CheckoutPage() {
     if (!recipientId || !deliveryDate || items.length === 0) {
       setQuote(null)
       setQuoteSelections({})
+      setQuoteLoading(false)
+      setQuoteSettled(false)
       return
     }
     let cancelled = false
     setQuoteLoading(true)
+    setQuoteSettled(false)
     quoteDelivery({
       recipient_id: recipientId,
       delivery_date: deliveryDate,
@@ -256,15 +325,16 @@ export function CheckoutPage() {
         setQuoteSelections(defaultQuoteSelections(result))
       })
       .catch(() => {
-        // A failed quote must not block checkout — delivery is then arranged
-        // after the order, exactly as it was before this existed.
         if (!cancelled) {
           setQuote(null)
           setQuoteSelections({})
         }
       })
       .finally(() => {
-        if (!cancelled) setQuoteLoading(false)
+        if (!cancelled) {
+          setQuoteLoading(false)
+          setQuoteSettled(true)
+        }
       })
     return () => {
       cancelled = true
@@ -288,20 +358,34 @@ export function CheckoutPage() {
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
-  // Each shop is its own parcel. Only shops quoted in the cart currency can be
-  // added to the order; the rest are arranged by the shop after ordering.
+  // Each shop is its own parcel. A selection only counts when it is quoted in
+  // the cart currency — otherwise the order cannot be placed.
   const chargeableSelections = Object.fromEntries(
     Object.entries(quoteSelections).filter(([, choice]) => sameCurrency(choice.currency, currency)),
   )
   const selectedDeliveryAmount = selectionsDeliveryAmount(chargeableSelections)
   const deliveryCurrency = currency
   const pricedShopCount = Object.keys(chargeableSelections).length
-  const shopCount = quote?.shops?.length ?? pricedShopCount
-  const unpricedShopCount = Math.max(0, shopCount - pricedShopCount)
   const hasPricedDelivery = pricedShopCount > 0
   const otherCurrencySelections = Object.keys(quoteSelections).length - pricedShopCount
 
   const mixedShops = cartShops(lines).length > 1
+
+  const quotedShops = quote?.shops ?? []
+  const hasChargeableDelivery =
+    quotedShops.length > 0 &&
+    quotedShops.every(
+      (shop) =>
+        Boolean(shop.seller_delivery?.available) &&
+        Boolean(chargeableSelections[shop.shop_id]),
+    )
+  const awaitingDeliveryQuote = Boolean(recipientId) && !quoteSettled
+  const noDeliveryOptions = Boolean(recipientId) && quoteSettled && !hasChargeableDelivery
+  const shopsLackOptions =
+    quotedShops.length === 0 ||
+    quotedShops.some(
+      (shop) => !shop.seller_delivery?.available,
+    )
 
   const blocker = unorderable.length
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
@@ -313,7 +397,99 @@ export function CheckoutPage() {
         ? 'Your cart mixes personal and corporate catalog items. Remove one type to check out.'
         : typeMismatch
           ? 'Order type must match the catalog you used when adding these gifts to your cart.'
-          : null
+          : noDeliveryOptions
+            ? shopsLackOptions
+              ? 'This address is outside the shop delivery zones, so this order cannot be placed.'
+              : 'Delivery for this order is not priced in the cart currency, so it cannot be placed.'
+            : null
+
+  function openAddRecipient() {
+    setAddingRecipient(true)
+    setNewRecipient((current) => ({
+      ...current,
+      country_id: current.country_id || countryId,
+    }))
+  }
+
+  function applyNewAddress(place: PlaceDetails) {
+    const fields = addressFieldsFromPlace(place)
+    const matched = countries.find(
+      (country) =>
+        country.iso_code.toLowerCase() === (place.country_code ?? '').toLowerCase(),
+    )
+    // Some places omit a city. Take the next-to-last part of the formatted
+    // address so city, and therefore Save, still have something to use.
+    const parts = (place.formatted_address ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean)
+    const city =
+      fields.city ||
+      fields.region ||
+      (parts.length > 1 ? parts[parts.length - 2] : '')
+    setNewRecipient((current) => ({
+      ...current,
+      line1: fields.line1 || place.formatted_address || current.line1,
+      line2: fields.line2,
+      city,
+      region: fields.region,
+      postal_code: fields.postal_code,
+      latitude: fields.latitude,
+      longitude: fields.longitude,
+      country_id: matched?.id || current.country_id || countryId,
+    }))
+  }
+
+  async function handleCreateRecipient() {
+    const name = newRecipient.name.trim()
+    const addressCountry = newRecipient.country_id || countryId
+    if (!name) {
+      setError('Enter the recipient’s name.')
+      return
+    }
+    const line1 = newRecipient.line1.trim()
+    const city = newRecipient.city.trim() || newRecipient.region.trim()
+    if (!addressCountry || !line1 || !city) {
+      setError('Pick an address from the list so the street and city fill in.')
+      return
+    }
+    setSavingRecipient(true)
+    setError(null)
+    try {
+      const created = await createRecipient({
+        name,
+        phone: optionalString(newRecipient.phone) ?? null,
+        addresses: [
+          {
+            country_id: addressCountry,
+            label: optionalString(newRecipient.label) ?? null,
+            address_type: optionalString(newRecipient.address_type) || 'shipping',
+            line1,
+            line2: optionalString(newRecipient.line2) ?? null,
+            city,
+            region: optionalString(newRecipient.region) ?? null,
+            postal_code: optionalString(newRecipient.postal_code) ?? null,
+            latitude: newRecipient.latitude,
+            longitude: newRecipient.longitude,
+            is_default: newRecipient.is_default,
+          },
+        ],
+      })
+      const details = created.addresses?.length ? created : await getRecipient(created.id)
+      setRecipients((current) => [
+        ...current.filter((recipient) => recipient.id !== details.id),
+        details,
+      ])
+      setRecipientDetails(details)
+      setRecipientId(details.id)
+      setAddingRecipient(false)
+      setNewRecipient(blankRecipient(countryId))
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not add this recipient.'))
+    } finally {
+      setSavingRecipient(false)
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -382,7 +558,7 @@ export function CheckoutPage() {
               <div>
                 <h2 className="font-medium">Who is it for?</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Pick someone from your saved recipients, or send without one.
+                  Pick someone you have saved, or add them here.
                 </p>
               </div>
             </div>
@@ -402,15 +578,229 @@ export function CheckoutPage() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-muted-foreground">
-                Need someone new?{' '}
-                <Link
-                  to="/account/recipients"
-                  className="font-medium text-primary hover:underline"
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Need someone new? Add them here, or{' '}
+                  <Link
+                    to="/account/recipients"
+                    className="font-medium text-primary hover:underline"
+                  >
+                    manage recipients
+                  </Link>
+                  .
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-full"
+                  onClick={() =>
+                    addingRecipient ? setAddingRecipient(false) : openAddRecipient()
+                  }
                 >
-                  Manage recipients
-                </Link>
-              </p>
+                  <Plus className="size-3.5" />
+                  {addingRecipient ? 'Close' : 'Add recipient'}
+                </Button>
+              </div>
+
+              {addingRecipient ? (
+                <div
+                  className="space-y-3 rounded-xl border border-border/60 bg-surface/60 p-4"
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') event.preventDefault()
+                  }}
+                >
+                  <p className="text-sm font-medium">New recipient</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-name">Name</Label>
+                      <Input
+                        id="checkout-new-name"
+                        value={newRecipient.name}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            name: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                        placeholder="Jane Receiver"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-phone">Phone</Label>
+                      <PhoneField
+                        id="checkout-new-phone"
+                        value={newRecipient.phone}
+                        onChange={(phone) =>
+                          setNewRecipient((current) => ({ ...current, phone }))
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="checkout-new-country">Country</Label>
+                      <select
+                        id="checkout-new-country"
+                        value={newRecipient.country_id || countryId}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            country_id: event.target.value,
+                          }))
+                        }
+                        className={selectClassName}
+                      >
+                        <option value="">Select country</option>
+                        {countries.map((country) => (
+                          <option key={country.id} value={country.id}>
+                            {country.name} ({country.iso_code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-label">Label</Label>
+                      <Input
+                        id="checkout-new-label"
+                        value={newRecipient.label}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            label: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                        placeholder="Home"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-type">Address type</Label>
+                      <Input
+                        id="checkout-new-type"
+                        value={newRecipient.address_type}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            address_type: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                        placeholder="shipping"
+                      />
+                    </div>
+                    <AddressAutocomplete
+                      id="checkout-new-address-search"
+                      className="sm:col-span-2"
+                      countryCode={
+                        countries.find(
+                          (country) =>
+                            country.id === (newRecipient.country_id || countryId),
+                        )?.iso_code
+                      }
+                      onSelect={applyNewAddress}
+                    />
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="checkout-new-line1">Line 1</Label>
+                      <Input
+                        id="checkout-new-line1"
+                        value={newRecipient.line1}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            line1: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="checkout-new-line2">Line 2</Label>
+                      <Input
+                        id="checkout-new-line2"
+                        value={newRecipient.line2}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            line2: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-city">City</Label>
+                      <Input
+                        id="checkout-new-city"
+                        value={newRecipient.city}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            city: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-region">Region</Label>
+                      <Input
+                        id="checkout-new-region"
+                        value={newRecipient.region}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            region: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-new-postal">Postal code</Label>
+                      <Input
+                        id="checkout-new-postal"
+                        value={newRecipient.postal_code}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            postal_code: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 sm:col-span-2">
+                      <Checkbox
+                        id="checkout-new-default"
+                        checked={newRecipient.is_default}
+                        onCheckedChange={(value) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            is_default: value === true,
+                          }))
+                        }
+                      />
+                      <Label htmlFor="checkout-new-default" className="font-normal">
+                        Default address
+                      </Label>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    className="h-10 rounded-full"
+                    disabled={savingRecipient}
+                    onClick={() => void handleCreateRecipient()}
+                  >
+                    {savingRecipient ? (
+                      <>
+                        <LoaderCircle className="animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      'Create recipient'
+                    )}
+                  </Button>
+                </div>
+              ) : null}
 
               {recipientId ? (
                 recipientLoading ? (
@@ -597,7 +987,7 @@ export function CheckoutPage() {
                 <div>
                   <h2 className="font-medium">Delivery options</h2>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    Pick a courier or shop delivery for each shop. The price updates the total.
+                    Shop delivery is priced from each shop's zones. The price updates the total.
                   </p>
                 </div>
               </div>
@@ -605,7 +995,7 @@ export function CheckoutPage() {
               {quoteLoading ? (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <LoaderCircle className="size-3.5 animate-spin" />
-                  Getting courier options…
+                  Pricing shop delivery…
                 </p>
               ) : quote?.shops?.length ? (
                 <div className="space-y-5">
@@ -698,59 +1088,6 @@ export function CheckoutPage() {
                                 : '.'}
                           </li>
                         ) : null}
-                        {shop.options.map((option) => {
-                          const selection = quoteSelections[shop.shop_id]
-                          const selected =
-                            selection?.mode === 'courier' &&
-                            selection.rate_object_id === option.rate_object_id
-                          return (
-                            <li key={option.rate_object_id}>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setQuoteSelections((current) => ({
-                                    ...current,
-                                    [shop.shop_id]: courierChoice(option),
-                                  }))
-                                }
-                                className={cn(
-                                  'flex w-full items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
-                                  selected
-                                    ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                    : 'border-border/50 hover:border-border hover:bg-muted/40',
-                                )}
-                              >
-                                <div className="min-w-0">
-                                  <p className="font-medium">
-                                    {option.provider} · {option.service_name}
-                                    {option.recommended ? (
-                                      <span className="ml-2 text-xs font-normal text-primary">
-                                        Recommended
-                                      </span>
-                                    ) : null}
-                                  </p>
-                                  <p className="mt-0.5 text-sm text-muted-foreground">
-                                    Courier
-                                    {option.days_available
-                                      ? ` · ${option.days_available} day${option.days_available === 1 ? '' : 's'} available`
-                                      : ''}
-                                    {option.estimated_days != null
-                                      ? ` · ~${option.estimated_days} day transit`
-                                      : ''}
-                                  </p>
-                                </div>
-                                <p className="shrink-0 font-medium">
-                                  {formatPriceAmount(option.amount, option.currency)}
-                                </p>
-                              </button>
-                            </li>
-                          )
-                        })}
-                        {shop.options.length === 0 ? (
-                          <li className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">
-                            No courier is available for this route.
-                          </li>
-                        ) : null}
                       </ul>
                     </div>
                     )
@@ -758,11 +1095,11 @@ export function CheckoutPage() {
                 </div>
               ) : quote?.complete ? (
                 <p className="text-sm text-muted-foreground">
-                  Delivery is priced. Courier details will be confirmed with the shop.
+                  Delivery is priced from the shop's zones.
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Courier options appear once this address can be quoted.
+                  Shop delivery appears once this address can be priced.
                 </p>
               )}
             </section>
@@ -817,7 +1154,7 @@ export function CheckoutPage() {
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
               <dd className={hasPricedDelivery ? 'text-right' : 'text-muted-foreground'}>
-                {quoteLoading ? (
+                {quoteLoading || awaitingDeliveryQuote ? (
                   <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <LoaderCircle className="size-3 animate-spin" />
                     Pricing…
@@ -825,17 +1162,11 @@ export function CheckoutPage() {
                 ) : hasPricedDelivery ? (
                   <>
                     {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}
-                    {unpricedShopCount > 0 ? (
-                      <span className="block text-xs text-muted-foreground">
-                        + {unpricedShopCount} shop{unpricedShopCount === 1 ? '' : 's'} arranged
-                        after ordering
-                      </span>
-                    ) : null}
                   </>
                 ) : !recipientId ? (
                   'Pick a recipient'
                 ) : (
-                  'Arranged after ordering'
+                  'Not available'
                 )}
               </dd>
             </div>
@@ -846,14 +1177,7 @@ export function CheckoutPage() {
                 quote?.shipments.find((shipment) => shipment.shop_id === shopId)
                   ?.shop_name ||
                 'Shop'
-              const label =
-                choice.mode === 'seller_delivery'
-                  ? `Shop delivery${choice.distance_km != null ? ` · ${choice.distance_km} km` : ''}`
-                  : `${choice.provider} ${choice.service_name}${
-                      choice.days_available > 0
-                        ? ` · ${choice.days_available} day${choice.days_available === 1 ? '' : 's'}`
-                        : ''
-                    }`
+              const label = `Shop delivery${choice.distance_km != null ? ` · ${choice.distance_km} km` : ''}`
               return (
                 <div
                   key={shopId}
@@ -866,7 +1190,7 @@ export function CheckoutPage() {
                     </span>
                   </dt>
                   <dd className="shrink-0">
-                    {choice.mode === 'seller_delivery' && choice.is_free
+                    {choice.is_free
                       ? 'Free'
                       : formatPriceAmount(choice.amount, choice.currency)}
                     {sameCurrency(choice.currency, currency) ? null : ' · not added'}
@@ -890,28 +1214,8 @@ export function CheckoutPage() {
 
           {otherCurrencySelections > 0 ? (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Delivery for {otherCurrencySelections === 1 ? 'one shop is' : 'some shops are'}{' '}
-              quoted in a different currency from this {currency.toUpperCase()} cart. It is
-              not added to the total; the shop arranges that delivery after you order.
-            </p>
-          ) : null}
-
-          {quote?.shipments.some((shipment) => shipment.misses_delivery_date) ? (
-            <p className="mt-3 flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-xs leading-relaxed text-muted-foreground">
-              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-              <span>
-                No service can reach {recipientDetails?.name ?? 'the recipient'} by{' '}
-                {deliveryDate}. The fastest available has been picked, but it may
-                arrive after that date.
-              </span>
-            </p>
-          ) : null}
-
-          {quote && !quote.complete && quote.unquoted?.length ? (
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Delivery for {quote.unquoted.length === 1 ? 'one shop' : 'some shops'} could
-              not be priced ({quote.unquoted.join('; ')}), so the shop will arrange it
-              after you order.
+              Delivery is quoted in a different currency from this {currency.toUpperCase()}{' '}
+              cart, so it cannot be added and this order cannot be placed.
             </p>
           ) : null}
 
@@ -922,7 +1226,7 @@ export function CheckoutPage() {
           </p>
           <Button
             type="submit"
-            disabled={submitting || Boolean(blocker)}
+            disabled={submitting || Boolean(blocker) || awaitingDeliveryQuote}
             className="mt-5 h-11 w-full rounded-full"
           >
             {submitting ? (

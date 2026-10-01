@@ -1,12 +1,22 @@
-import { Gift, Search } from 'lucide-react'
+import { Gift, LoaderCircle, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
+import {
+  searchGiftAvailability,
+  type AvailabilityProduct,
+  type ShopGiftAvailability,
+} from '@/api/availability'
+import type { Product, Shop } from '@/api/types'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { GiftCard } from '@/features/customer-commerce'
-import { DeliveryIntentBar, GiftSearchBar } from '@/features/customer-commerce'
+import {
+  DeliveryIntentBar,
+  GiftSearchBar,
+  useDeliveryIntent,
+} from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
@@ -45,6 +55,38 @@ function matchesFilters(
     .includes(normalizedQuery)
 }
 
+function productFromSearch(shop: ShopGiftAvailability, gift: AvailabilityProduct): CatalogProduct {
+  const product: Product = {
+    id: gift.id,
+    shop_id: gift.shop_id,
+    name: gift.name,
+    slug: gift.slug,
+    description: gift.description,
+    product_type: 'gift',
+    price_amount: gift.price_amount,
+    currency: gift.currency,
+    status: 'published',
+    occasion_tags: gift.occasion_tags ?? [],
+    customer_type_visibility: 'both',
+    points_display_enabled: false,
+    prep_minutes: 0,
+    created_at: '',
+    updated_at: '',
+    image_url: gift.image_url,
+    stock_left: gift.stock_left,
+  }
+  const shopCard: Shop = {
+    id: shop.shop_id,
+    seller_id: shop.shop_id,
+    name: shop.shop_name,
+    slug: '',
+    status: 'active',
+    created_at: '',
+    updated_at: '',
+  }
+  return catalogProductFromApi(product, shopCard)
+}
+
 function localCatalog(): CatalogProduct[] {
   const mapped = listPublishedCatalog().map((product) => catalogProductFromApi(product))
   registerCatalogProducts(mapped)
@@ -53,11 +95,25 @@ function localCatalog(): CatalogProduct[] {
 
 export function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { intent } = useDeliveryIntent()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
   const [catalog, setCatalog] = useState<CatalogProduct[]>([])
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
+  const [buttonFinding, setButtonFinding] = useState(false)
+  const [searchGeneration, setSearchGeneration] = useState(0)
+  const [availabilityError, setAvailabilityError] = useState(false)
+  const giftsLoading = buttonFinding || checkingAvailability
+
+  const destinationLat = intent?.latitude
+  const destinationLng = intent?.longitude
+  const arrivalDate = intent?.date
+  const hasDestination =
+    typeof destinationLat === 'number' && typeof destinationLng === 'number'
 
   useEffect(() => {
+    // A searched address owns the shelf. The zone search loads only its gifts.
+    if (hasDestination) return
     let cancelled = false
     let fromApi = false
 
@@ -86,12 +142,53 @@ export function ProductsPage() {
       cancelled = true
       unsubCatalog()
     }
-  }, [])
+  }, [hasDestination])
+
+  useEffect(() => {
+    if (
+      typeof destinationLat !== 'number' ||
+      typeof destinationLng !== 'number'
+    ) {
+      setAvailabilityError(false)
+      setCheckingAvailability(false)
+      return
+    }
+    const latitude = destinationLat
+    const longitude = destinationLng
+    let cancelled = false
+    setCheckingAvailability(true)
+    setAvailabilityError(false)
+    searchGiftAvailability({
+      latitude,
+      longitude,
+      deliveryDate: arrivalDate,
+    })
+      .then((result) => {
+        if (cancelled) return
+        const matched = result.shops.flatMap((shop) =>
+          (shop.products ?? []).map((gift) => productFromSearch(shop, gift)),
+        )
+        registerCatalogProducts(matched)
+        setCatalog(matched)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setCatalog([])
+        setAvailabilityError(true)
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingAvailability(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [hasDestination, destinationLat, destinationLng, arrivalDate, searchGeneration])
 
   const products = useMemo(
     () => catalog.filter((product) => matchesFilters(product, { query, category })),
     [catalog, category, query],
   )
+  const filteredByDelivery = hasDestination
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams)
@@ -115,8 +212,15 @@ export function ProductsPage() {
             without going back for them. */}
         <GiftSearchBar
           className="mb-6"
-          initialQuery={query}
-          onSearch={(next) => updateParam('q', next)}
+          navigateOnSubmit={false}
+          finding={checkingAvailability}
+          onFindingChange={(finding, willRefresh) => {
+            setButtonFinding(finding)
+            if (!finding && willRefresh) {
+              setCheckingAvailability(true)
+              setSearchGeneration((generation) => generation + 1)
+            }
+          }}
         />
 
         {/* What was asked for, still in hand. */}
@@ -150,11 +254,22 @@ export function ProductsPage() {
         </div>
 
         <p className="mb-5 text-sm text-muted-foreground">
-          {products.length} gift{products.length === 1 ? '' : 's'}
-          {query ? ` matching ‘${query}’` : ''}
+          {giftsLoading
+            ? 'Checking which gifts can be delivered there…'
+            : `${products.length} gift${products.length === 1 ? '' : 's'}${
+                filteredByDelivery ? ' that can be delivered there' : ''
+              }${query ? ` matching ‘${query}’` : ''}`}
         </p>
 
-        {products.length ? (
+        {giftsLoading ? (
+          <div
+            aria-busy="true"
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-card py-20 text-sm text-muted-foreground shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60"
+          >
+            <LoaderCircle className="size-7 animate-spin text-primary" />
+            Finding gifts…
+          </div>
+        ) : products.length ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {products.map((product) => (
               <GiftCard key={product.id} product={product} />
@@ -170,14 +285,22 @@ export function ProductsPage() {
               )}
             </div>
             <p className="font-medium">
-              {query || category !== 'all'
-                ? 'No gifts match that search'
-                : 'No gifts published yet'}
+              {filteredByDelivery
+                ? availabilityError
+                  ? 'Delivery zones could not be checked'
+                  : 'No gifts can be delivered there'
+                : query || category !== 'all'
+                  ? 'No gifts match that search'
+                  : 'No gifts published yet'}
             </p>
             <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {query || category !== 'all'
-                ? 'Try a different name, occasion, or clear the filters to see everything.'
-                : 'Sellers publish gifts from the seller portal. Published gifts show up here.'}
+              {filteredByDelivery
+                ? availabilityError
+                  ? 'Refresh the page and search the address again.'
+                  : 'That address is outside every shop delivery zone, or the arrival day is too soon. Try another place or a later day.'
+                : query || category !== 'all'
+                  ? 'Try a different name, occasion, or clear the filters to see everything.'
+                  : 'Sellers publish gifts from the seller portal. Published gifts show up here.'}
             </p>
             {query || category !== 'all' ? (
               <Button
