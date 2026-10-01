@@ -14,6 +14,7 @@ import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
+import { AdminPointsPage } from '@/pages/admin-points-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
@@ -30,6 +31,7 @@ import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
+import { CustomerPointsPage } from '@/pages/customer-points-page'
 import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
@@ -44,6 +46,7 @@ import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerPointsPage } from '@/pages/seller-points-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
 import { SellerReviewsPage } from '@/pages/seller-reviews-page'
@@ -157,6 +160,7 @@ export function AppRouter() {
         <Route path="orders/:orderId" element={<RedirectOrder />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
+        <Route path="points" element={<CustomerPointsPage />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -246,6 +250,7 @@ export function AppRouter() {
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
         <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
+        <Route path="points" element={<SellerPointsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
         <Route path="profile" element={<SellerProfilePage />} />
@@ -262,6 +267,7 @@ export function AppRouter() {
         <Route path="inbox" element={<AdminInboxPage />} />
         <Route path="sellers" element={<AdminSellersPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
+        <Route path="points" element={<AdminPointsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}
         <Route

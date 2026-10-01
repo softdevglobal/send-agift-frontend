@@ -102,11 +102,11 @@ export function QuizEditor({
             ) : null}
             <label className="flex items-center gap-2 text-sky-900/80">
               <Input
-                type="number"
-                min={5}
-                max={120}
-                value={q.time_limit_seconds}
-                onChange={(e) => update(i, { time_limit_seconds: Number(e.target.value) || 0 })}
+                inputMode="numeric"
+                value={q.time_limit_seconds || ''}
+                onChange={(e) =>
+                  update(i, { time_limit_seconds: Number(e.target.value.replace(/[^0-9]/g, '')) || 0 })
+                }
                 className="h-8 w-20"
                 aria-label={`Seconds for question ${i + 1}`}
               />

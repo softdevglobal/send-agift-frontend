@@ -248,15 +248,10 @@ function WalletSheet({
                   {wallet.entries.map((e) => (
                     <li key={e.id} className="flex items-start gap-3 py-2.5 text-sm">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium">
-                          {POINTS_ENTRY_LABEL[e.entry_type]}
-                          {e.competition_title ? (
-                            <span className="font-normal text-muted-foreground"> · {e.competition_title}</span>
-                          ) : null}
-                        </p>
+                        <p className="font-medium">{e.description || POINTS_ENTRY_LABEL[e.entry_type]}</p>
                         <p className="truncate text-xs text-muted-foreground" title={e.reason}>
-                          {formatDate(e.created_at)}
-                          {e.reason ? ` · ${e.reason}` : ''}
+                          {POINTS_ENTRY_LABEL[e.entry_type] ?? e.entry_type} · {formatDate(e.created_at)}
+                          {e.reason && e.reason !== e.description ? ` · ${e.reason}` : ''}
                         </p>
                       </div>
                       <p

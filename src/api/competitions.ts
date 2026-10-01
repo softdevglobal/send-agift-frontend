@@ -71,6 +71,8 @@ export type AdminCompetition = {
   winner_method: 'score' | 'instant' | 'draw' | 'admin_approved'
   /** Instant-win rounds: each play wins with probability 1 in win_odds. */
   win_odds?: number
+  /** Points prizes: points each validated winner receives. */
+  prize_points?: number
   /** Quiz rounds: the questions with their answers (admins only). */
   quiz_questions?: QuizQuestion[]
   start_prize_cents: number
@@ -104,6 +106,7 @@ export const PRIZE_TYPES = [
   { value: 'product', label: 'Product' },
   { value: 'voucher', label: 'Voucher' },
   { value: 'gift', label: 'Gift' },
+  { value: 'points', label: 'Points' },
   { value: 'other', label: 'Other' },
 ] as const
 
@@ -134,6 +137,8 @@ export type CompetitionInput = {
   daily_play_limit: number | null
   min_plays_to_win: number | null
   win_odds: number | null
+  /** Points prizes only: credited to each winner when validated. */
+  prize_points: number | null
   quiz_questions: QuizQuestion[] | null
   /** The version being edited; a stale save is refused. */
   config_version?: number

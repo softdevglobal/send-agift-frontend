@@ -37,7 +37,9 @@ export function EarningRulesPanel({ editable }: { editable: boolean }) {
       setNotice(
         `Earning run done: ${r.orders_rewarded} orders rewarded (${r.points_awarded} pts), ` +
           `${r.orders_reversed} refunds taken back (${r.points_reversed} pts), ` +
-          `${r.signup_bonuses} welcome bonuses (${r.bonus_points_paid} pts).`,
+          `${r.signup_bonuses} welcome bonuses (${r.bonus_points_paid} pts), ` +
+          `${r.product_rewards} product rewards paid (${r.product_reward_points} pts), ` +
+          `${r.gift_points_delivered} gift points delivered, ${r.gift_points_returned} returned.`,
       )
     } catch (err) {
       setError(getErrorMessage(err))
