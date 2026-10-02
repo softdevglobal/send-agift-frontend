@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Plus, Trophy } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
 
 import {
   countryNames,
@@ -17,6 +16,7 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
+import { CompetitionSheet } from '@/features/admin/competition-sheet'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
@@ -36,7 +36,6 @@ const filters: { value: CompetitionStatus | 'all'; label: string }[] = [
 
 /** Superadmin: skill competitions, from draft to winners. */
 export function AdminCompetitionsPage() {
-  const navigate = useNavigate()
   const [competitions, setCompetitions] = useState<AdminCompetition[]>([])
   const [games, setGames] = useState<AdminGameSummary[]>([])
   const [countries, setCountries] = useState<Country[]>([])
@@ -44,6 +43,8 @@ export function AdminCompetitionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // The competition open in the side drawer.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const [list, gameList, countryList] = await Promise.all([
@@ -77,7 +78,8 @@ export function AdminCompetitionsPage() {
   async function create(input: CompetitionInput) {
     const created = await createCompetition(input)
     setCreating(false)
-    navigate(`/admin/competitions/${created.id}`)
+    await load()
+    setSelectedId(created.id)
   }
 
   return (
@@ -131,12 +133,14 @@ export function AdminCompetitionsPage() {
       ) : (
         <div className="space-y-3">
           {shown.map((c) => (
-            <Link
+            <button
               key={c.id}
-              to={`/admin/competitions/${c.id}`}
+              type="button"
+              onClick={() => setSelectedId(c.id)}
               className={cn(
                 adminPanelClass,
-                'group flex flex-wrap items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/30 sm:px-5',
+                'group flex w-full flex-wrap items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/30 sm:px-5',
+                selectedId === c.id && 'ring-2 ring-primary/40',
               )}
             >
               <GameBadge slug={c.game_slug} />
@@ -168,10 +172,18 @@ export function AdminCompetitionsPage() {
                 </p>
               </div>
               <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            </button>
           ))}
         </div>
       )}
+
+      <CompetitionSheet
+        id={selectedId}
+        onClose={() => setSelectedId(null)}
+        onChanged={() => void load()}
+        games={games}
+        countries={countries}
+      />
 
       <CompetitionForm
         open={creating}

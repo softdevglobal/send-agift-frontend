@@ -151,7 +151,8 @@ const emptyForm: FormState = {
   starts_at: '',
   ends_at: '',
   timezone: '',
-  max_attempts_per_customer: '3',
+  // 0 is no limit: players play as long as their points last.
+  max_attempts_per_customer: '0',
   min_age: '18',
   requires_identity_verification: true,
   number_of_winners: '1',
@@ -389,7 +390,7 @@ export function CompetitionForm({
     return [
       `${form.title.trim() || '[Competition name]'} — Official rules`,
       '',
-      `1. Who can enter: players aged ${form.min_age || 18}+ living in ${where}, with a verified account.`,
+      `1. Who can enter: players living in ${where}.`,
       `2. When: opens ${fmt(startsAt)} and closes ${fmt(endsAt)} (${form.timezone || 'time zone'}).`,
       `3. How to enter: each play costs ${game ? game.play_cost_points : '[points]'} points.`,
       `4. How the winner is chosen: ${how}`,

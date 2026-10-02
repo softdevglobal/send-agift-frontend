@@ -287,6 +287,19 @@ function AdminShellLayout() {
             className="pointer-events-none absolute top-40 -right-20 size-[18rem] rounded-full bg-[oklch(0.93_0.03_80/0.22)]"
           />
           <div className="relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
+            {/* The role in this sign-in was fixed when it was issued; after a
+                role change, the new one only applies once you sign in again. */}
+            {admin?.role && role && admin.role !== role ? (
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+                <p>
+                  Your role is now <span className="font-semibold">{adminRoleLabel(admin.role as UserRole)}</span>.
+                  Sign out and back in to use it.
+                </p>
+                <Button type="button" size="sm" className="h-8" onClick={() => setSignOutOpen(true)}>
+                  Sign out
+                </Button>
+              </div>
+            ) : null}
             <Outlet />
             <ReauthDialog />
           </div>
