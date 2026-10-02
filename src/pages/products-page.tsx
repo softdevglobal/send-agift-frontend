@@ -78,6 +78,9 @@ function productFromSearch(shop: ShopGiftAvailability, gift: AvailabilityProduct
   const shopCard: Shop = {
     id: shop.shop_id,
     seller_id: shop.shop_id,
+    // The availability search does not return the shop's country, and the
+    // card only reads the name.
+    country_id: '',
     name: shop.shop_name,
     slug: '',
     status: 'active',
