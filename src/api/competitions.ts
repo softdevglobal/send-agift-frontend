@@ -76,6 +76,14 @@ export type AdminCompetition = {
   under_review: number
   /** Why a draft cannot be published yet; empty once it can. */
   schedule_blockers: string[]
+  /** The push notification sent to players in its countries when it was published. */
+  announcement?: {
+    queued: number
+    pending: number
+    sent: number
+    skipped: number
+    failed: number
+  }
 
   // Progressive prize economics. Money is minor units of prize_currency.
   prize_growth_enabled: boolean
@@ -516,13 +524,6 @@ export function reconcilePrize(id: string) {
 
 export function getCompetitionAnalytics(id: string) {
   return api<CompetitionAnalytics>(`${base(id)}/analytics`)
-}
-
-export function duplicateCompetition(
-  id: string,
-  body: { starts_at: string; ends_at: string; title?: string; next_round: boolean },
-) {
-  return api<AdminCompetition>(`${base(id)}/duplicate`, { method: 'POST', body })
 }
 
 /** Picks a closed prize draw's winners and finalises the round. */

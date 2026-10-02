@@ -17,7 +17,6 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
-import { isSuperAdmin } from '@/lib/auth'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
@@ -88,12 +87,10 @@ export function AdminCompetitionsPage() {
         title="Competitions"
         description="Prize rounds run on the skill games, with a fixed prize or one that grows with every play. Each needs a funded reserve and published rules before it can be scheduled, and every action here is audited."
         action={
-          isSuperAdmin() ? (
-            <Button type="button" className="h-10" onClick={() => setCreating(true)}>
-              <Plus className="size-4" />
-              New competition
-            </Button>
-          ) : null
+          <Button type="button" className="h-10" onClick={() => setCreating(true)}>
+            <Plus className="size-4" />
+            New competition
+          </Button>
         }
       />
 

@@ -4,7 +4,6 @@ import {
   Ban,
   CalendarClock,
   Check,
-  CopyPlus,
   Pause,
   Play,
   Square,
@@ -17,8 +16,9 @@ import {
   Trophy,
   Wallet,
   X,
+  Send,
 } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
 import {
   countryNames,
@@ -92,7 +92,6 @@ import { GameBadge, Loading, ReasonDialog, StatusPill } from '@/features/admin/g
 import {
   AdjustPrizeDialog,
   DrawPanel,
-  DuplicateDialog,
   LedgerPanel,
   PlaysPanel,
   PrizeDashboard,
@@ -319,9 +318,7 @@ export function AdminCompetitionDetailPage() {
   const [draw, setDraw] = useState<PrizeDraw | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [settleOpen, setSettleOpen] = useState(false)
-  const [duplicateOpen, setDuplicateOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
-  const navigate = useNavigate()
   const superadmin = isSuperAdmin()
 
   const load = useCallback(async () => {
@@ -438,14 +435,15 @@ export function AdminCompetitionDetailPage() {
           title="Details"
           icon={<CalendarClock className="size-5 text-primary" />}
           action={
-            editable && superadmin ? (
+            // Any admin edits a draft; a published one is a superadmin's call.
+            editable && (superadmin || comp.status === 'draft') ? (
               <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setEditing(true)}>
                 <Pencil className="size-3.5" />
                 Edit
               </Button>
             ) : (
               <span className="text-xs text-muted-foreground">
-                {editable ? 'Only a superadmin can edit' : 'Rules are locked once it starts'}
+                {editable ? 'Only a superadmin can edit a published competition' : 'Rules are locked once it starts'}
               </span>
             )
           }
@@ -490,6 +488,29 @@ export function AdminCompetitionDetailPage() {
             {comp.quiz_questions ? (
               <Fact label="Quiz" value={`${comp.quiz_questions.length} questions · answers kept on the server`} />
             ) : null}
+            <Fact
+              label="Players notified"
+              value={
+                !comp.announcement?.queued ? (
+                  <span className="font-normal text-muted-foreground">
+                    {comp.status === 'draft' ? 'Sent when it is published' : 'No players in its countries'}
+                  </span>
+                ) : (
+                  <>
+                    {comp.announcement.sent.toLocaleString()} of {comp.announcement.queued.toLocaleString()}
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      {[
+                        comp.announcement.pending ? `${comp.announcement.pending} sending` : '',
+                        comp.announcement.skipped ? `${comp.announcement.skipped} not reached` : '',
+                        comp.announcement.failed ? `${comp.announcement.failed} failed` : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || 'push notification'}
+                    </span>
+                  </>
+                )
+              }
+            />
             <Fact label="Scores" value={comp.submissions} />
             <Fact label="To review" value={comp.under_review} />
             <Fact label="Game version" value={`${comp.game_name} v${comp.game_version}`} />
@@ -560,22 +581,29 @@ export function AdminCompetitionDetailPage() {
                 Record payout
               </Button>
             ) : null}
-            {superadmin ? (
-              <Button type="button" variant="outline" className="h-10" disabled={busy !== null} onClick={() => setDuplicateOpen(true)}>
-                <CopyPlus className="size-4" />
-                New round
-              </Button>
-            ) : null}
-            {superadmin && comp.status === 'draft' ? (
+            {comp.status === 'draft' ? (
               <Button
                 type="button"
                 className="h-10"
-                disabled={busy !== null || comp.schedule_blockers.length > 0}
-                onClick={() => run('schedule', () => scheduleCompetition(comp.id), 'Scheduled. It goes live at its start time.')}
+                title={
+                  !superadmin
+                    ? 'Only a super admin can publish'
+                    : comp.schedule_blockers.length > 0
+                      ? 'Finish the steps listed below first'
+                      : undefined
+                }
+                disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
+                onClick={() =>
+                  run(
+                    'schedule',
+                    () => scheduleCompetition(comp.id),
+                    `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
+                  )
+                }
               >
                 {spinner('schedule')}
-                <CalendarClock className="size-4" />
-                Schedule
+                <Send className="size-4" />
+                Publish
               </Button>
             ) : null}
             {status === 'closed' && !chance ? (
@@ -635,6 +663,7 @@ export function AdminCompetitionDetailPage() {
           </div>
           {status === 'draft' && comp.schedule_blockers.length > 0 ? (
             <ul className="mt-3 list-disc space-y-0.5 pl-5 text-sm text-amber-800">
+              <li className="list-none -ml-5 font-medium">Before it can be published:</li>
               {comp.schedule_blockers.map((b) => (
                 <li key={b}>{b}</li>
               ))}
@@ -642,7 +671,8 @@ export function AdminCompetitionDetailPage() {
           ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
             {status === 'draft' &&
-              'Scheduling checks that competitions are enabled in every chosen country, the rules are published and the funded reserve covers the most the prize can reach. Publishing posts the starting prize to the ledger.'}
+              'Publishing checks that competitions are enabled in every chosen country, the rules are written and the funded reserve covers the most the prize can reach. It then sends a push notification to every player in those countries.'}
+            {status === 'draft' && !superadmin && ' A super admin funds the reserve and publishes it.'}
             {status === 'paused' && 'Paused: new plays are refused. Plays already started can still be finished and scored.'}
             {status === 'scheduled' && 'It opens automatically at its start time.'}
             {status === 'live' && 'Scores are coming in. It closes automatically at its end time.'}
@@ -942,12 +972,6 @@ export function AdminCompetitionDetailPage() {
       <AdjustPrizeDialog comp={comp} open={adjustOpen} onOpenChange={setAdjustOpen} onDone={done} />
       <VoidPlayDialog comp={comp} play={voiding} onOpenChange={(open) => !open && setVoiding(null)} onDone={done} />
       <SettleDialog comp={comp} open={settleOpen} onOpenChange={setSettleOpen} onDone={done} />
-      <DuplicateDialog
-        comp={comp}
-        open={duplicateOpen}
-        onOpenChange={setDuplicateOpen}
-        onCreated={(created) => navigate(`/admin/competitions/${created.id}`)}
-      />
 
       <ReasonDialog
         open={rejecting !== null}

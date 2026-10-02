@@ -541,13 +541,18 @@ export function CompetitionForm({
               : null,
       content: (
         <WizardFields>
-          <WizardField label="Starts" htmlFor="c-start">
+          <WizardField
+            label="Starts"
+            htmlFor="c-start"
+            hint="Pick “Right now” to open it the moment it is published."
+          >
             <DateTimePicker
               id="c-start"
               value={form.starts_at}
               onChange={(value) => set('starts_at', value)}
               min={toLocalInput(new Date().toISOString())}
               presets={[
+                { label: 'Right now', minutesFromNow: 0 },
                 { label: 'In 1 hour', minutesFromNow: 60 },
                 { label: 'Tomorrow, 9am', minutesFromNow: minutesUntilTomorrow9am() },
                 { label: 'In 1 week', minutesFromNow: 60 * 24 * 7 },
