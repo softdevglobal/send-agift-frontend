@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { listCountries, type Country } from '@/api/countries'
 import { uploadPublicImage } from '@/api/media'
 import {
   createSellerShop,
@@ -56,6 +57,7 @@ import {
 import { DeliveryRangeMap } from '@/features/seller/delivery-range-map'
 import type { ShopDeliveryZone } from '@/api/types'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString, slugify } from '@/lib/form'
 import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
@@ -70,16 +72,17 @@ const statusOptions = [
   { value: 'inactive', label: 'Inactive' },
 ] as const
 
-const ZONE_CURRENCY = 'USD'
-
 type ZoneDraft = {
   max_km: string
   price_major: string
   estimated_days: string
 }
 
+const blankZone: ZoneDraft = { max_km: '', price_major: '', estimated_days: '1' }
+
 const emptyShop: ShopInput = {
   name: '',
+  country_id: '',
   slug: '',
   description: '',
   customer_visible_location: '',
@@ -96,13 +99,14 @@ function zonesToDrafts(zones?: ShopDeliveryZone[]): ZoneDraft[] {
     price_major:
       zone.is_free || zone.price_amount === 0
         ? '0'
-        : String(minorToMajor(zone.price_amount, zone.currency || ZONE_CURRENCY)),
+        : String(minorToMajor(zone.price_amount, zone.currency || 'USD')),
     estimated_days: String(zone.estimated_days ?? 1),
   }))
 }
 
-function draftsToZones(drafts: ZoneDraft[]): ShopDeliveryZone[] | string {
+function draftsToZones(drafts: ZoneDraft[], currency: string): ShopDeliveryZone[] | string {
   const zones: ShopDeliveryZone[] = []
+  const code = currency.trim().toUpperCase()
   for (const draft of drafts) {
     const kmRaw = draft.max_km.trim()
     const priceRaw = draft.price_major.trim()
@@ -121,8 +125,8 @@ function draftsToZones(drafts: ZoneDraft[]): ShopDeliveryZone[] | string {
     }
     zones.push({
       max_km: Math.round(maxKm * 100) / 100,
-      price_amount: majorToMinor(priceMajor, ZONE_CURRENCY),
-      currency: ZONE_CURRENCY,
+      price_amount: majorToMinor(priceMajor, code),
+      currency: code,
       estimated_days: days,
     })
   }
@@ -145,7 +149,7 @@ function formatZoneSummary(zones?: ShopDeliveryZone[]): string {
       const price =
         zone.is_free || zone.price_amount === 0
           ? 'free'
-          : formatPriceAmount(zone.price_amount, ZONE_CURRENCY)
+          : formatPriceAmount(zone.price_amount, zone.currency || 'USD')
       return `${zone.max_km} km ${price}`
     })
     .join(' · ')
@@ -154,6 +158,7 @@ function formatZoneSummary(zones?: ShopDeliveryZone[]): string {
 function toShopInput(shop: Shop): ShopInput {
   return {
     name: shop.name,
+    country_id: shop.country_id ?? '',
     slug: shop.slug ?? '',
     description: shop.description ?? '',
     customer_visible_location: shop.customer_visible_location ?? '',
@@ -245,6 +250,7 @@ function ShopPreviewCard({ form }: { form: ShopInput }) {
 function serializeShop(input: ShopInput, zones: ShopDeliveryZone[]): ShopInput {
   return {
     name: input.name.trim(),
+    country_id: input.country_id.trim(),
     slug: optionalString(input.slug ?? ''),
     description: optionalString(input.description ?? ''),
     customer_visible_location: optionalString(input.customer_visible_location ?? ''),
@@ -276,6 +282,7 @@ export function SellerShopsPage() {
   } | null>(null)
   const [form, setForm] = useState<ShopInput>(emptyShop)
   const [zoneDrafts, setZoneDrafts] = useState<ZoneDraft[]>([])
+  const [countries, setCountries] = useState<Country[]>([])
   /** Address currently pinned on the map. Follows the last dropdown pick. */
   const [mapAddressId, setMapAddressId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -293,10 +300,14 @@ export function SellerShopsPage() {
   const savedTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const load = useCallback(async () => {
-    const me = await getSellerMe()
+    const [me, countryList] = await Promise.all([
+      getSellerMe(),
+      listCountries().catch(() => [] as Country[]),
+    ])
     publishSellerToMarketplace(me)
     setShops(me.shops ?? [])
     setAddresses(me.addresses ?? [])
+    setCountries(Array.isArray(countryList) ? countryList : [])
   }, [])
 
   useEffect(() => {
@@ -344,6 +355,9 @@ export function SellerShopsPage() {
     }))
   }
 
+  const shopCountry = countries.find((country) => country.id === form.country_id) ?? null
+  const zoneCurrency = shopCountry?.default_currency?.trim().toUpperCase() ?? ''
+
   function resetForm() {
     setForm(emptyShop)
     setZoneDrafts([])
@@ -355,7 +369,7 @@ export function SellerShopsPage() {
 
   function startCreate() {
     setForm(emptyShop)
-    setZoneDrafts([])
+    setZoneDrafts([{ ...blankZone }])
     setMapAddressId(null)
     setSlugTouched(false)
     setEditingId(null)
@@ -370,7 +384,8 @@ export function SellerShopsPage() {
   function startEdit(shop: Shop) {
     setEditingId(shop.id)
     setForm(toShopInput(shop))
-    setZoneDrafts(zonesToDrafts(shop.delivery_zones))
+    const drafts = zonesToDrafts(shop.delivery_zones)
+    setZoneDrafts(drafts.length ? drafts : [{ ...blankZone }])
     setMapAddressId(shop.address_id || shop.return_address_id || null)
     // Keep the published slug stable when the name is edited.
     setSlugTouched(true)
@@ -418,9 +433,17 @@ export function SellerShopsPage() {
       setError('Shop name is required.')
       return
     }
-    const zones = draftsToZones(zoneDrafts)
+    if (!form.country_id.trim() || !zoneCurrency.trim()) {
+      setError('Choose the shop country. Its currency is used for products and delivery.')
+      return
+    }
+    const zones = draftsToZones(zoneDrafts, zoneCurrency)
     if (typeof zones === 'string') {
       setError(zones)
+      return
+    }
+    if (zones.length === 0) {
+      setError('Add at least one delivery range.')
       return
     }
     setStatus('saving')
@@ -508,7 +531,9 @@ export function SellerShopsPage() {
               </p>
 
               <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {shops.map((shop) => (
+                {shops.map((shop) => {
+                  const country = countries.find((item) => item.id === shop.country_id)
+                  return (
                   <li
                     key={shop.id}
                     className={cn(
@@ -556,6 +581,11 @@ export function SellerShopsPage() {
                       {shop.slug ? (
                         <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
                           /{shop.slug}
+                        </p>
+                      ) : null}
+                      {country ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {countryOptionLabel(country)}
                         </p>
                       ) : null}
                       {shop.description ? (
@@ -613,7 +643,8 @@ export function SellerShopsPage() {
                       </div>
                     </div>
                   </li>
-                ))}
+                  )
+                })}
               </ul>
             </>
           ) : showForm ? null : (
@@ -736,6 +767,28 @@ export function SellerShopsPage() {
                     title="Shop details"
                     description="Name, slug, and how it appears to customers."
                   />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-country">Country</Label>
+                    <select
+                      id="shop-country"
+                      value={form.country_id}
+                      onChange={(event) => updateField('country_id', event.target.value)}
+                      className={selectClassName}
+                      required
+                    >
+                      <option value="">Select country</option>
+                      {countries.map((country) => (
+                        <option key={country.id} value={country.id}>
+                          {countryOptionLabel(country)}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">
+                      This shop&apos;s products and delivery prices use this country&apos;s
+                      currency.
+                    </p>
+                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="shop-name">Name</Label>
@@ -929,13 +982,13 @@ export function SellerShopsPage() {
                         />
                       )
                     })()}
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
                         <Label>Delivery range</Label>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          How far this shop delivers itself, and the price for each band.
-                          The closest band that covers the recipient is the price at checkout.
-                          Days is the delivery time; 0 means same day.
+                        <p className="mt-1 text-sm font-medium">
+                          {shopCountry
+                            ? `${shopCountry.name} · ${zoneCurrency}`
+                            : 'Choose the shop country above.'}
                         </p>
                       </div>
                       <Button
@@ -953,9 +1006,15 @@ export function SellerShopsPage() {
                         Add range
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Required. How far this shop delivers itself, and the price for each band.
+                      The closest band that covers the recipient is the price at checkout.
+                      Days is the delivery time; 0 means same day. The price uses your shop
+                      country’s currency.
+                    </p>
                     {zoneDrafts.length === 0 ? (
                       <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-                        No shop-delivery ranges yet. Couriers can still be quoted.
+                        Add at least one delivery range before saving this shop.
                       </p>
                     ) : (
                       <ul className="space-y-2">
@@ -980,7 +1039,9 @@ export function SellerShopsPage() {
                               />
                             </div>
                             <div className="min-w-[7rem] flex-1 space-y-1">
-                              <Label htmlFor={`zone-price-${index}`}>Price (USD)</Label>
+                              <Label htmlFor={`zone-price-${index}`}>
+                                Price ({zoneCurrency || '—'})
+                              </Label>
                               <Input
                                 id={`zone-price-${index}`}
                                 inputMode="decimal"
@@ -1019,6 +1080,7 @@ export function SellerShopsPage() {
                               type="button"
                               variant="ghost"
                               className="h-10 rounded-full px-3 text-muted-foreground"
+                              disabled={zoneDrafts.length === 1}
                               onClick={() =>
                                 setZoneDrafts((current) =>
                                   current.filter((_, rowIndex) => rowIndex !== index),

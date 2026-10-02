@@ -63,6 +63,7 @@ import {
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { CurrencySelect } from '@/components/common/currency-select'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -215,13 +216,12 @@ function ReserveCard({
         </div>
         <div className="space-y-2">
           <Label htmlFor="r-currency">Currency</Label>
-          <Input
+          <CurrencySelect
             id="r-currency"
-            maxLength={3}
             value={currency}
             disabled={!editable}
-            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-            className="h-10 uppercase"
+            onChange={setCurrency}
+            className="h-10"
           />
         </div>
         <div className="space-y-2">

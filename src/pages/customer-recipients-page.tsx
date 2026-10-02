@@ -51,6 +51,7 @@ import {
 } from '@/features/customer-commerce'
 import { PhoneField } from '@/features/auth/phone-field'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
@@ -1064,7 +1065,7 @@ function AddressFields({
             <option value="">Select country</option>
             {countries.map((country) => (
               <option key={country.id} value={country.id}>
-                {country.name} ({country.iso_code})
+                {countryOptionLabel(country)}
               </option>
             ))}
           </select>
