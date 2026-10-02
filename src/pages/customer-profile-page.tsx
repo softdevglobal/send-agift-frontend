@@ -21,6 +21,7 @@ import {
   type CustomerStatus,
 } from '@/features/auth/customer-register-options'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 
@@ -157,7 +158,7 @@ export function CustomerProfilePage() {
                   >
                     {countries.map((country) => (
                       <option key={country.id} value={country.id}>
-                        {country.name} ({country.iso_code})
+                        {countryOptionLabel(country)}
                       </option>
                     ))}
                   </select>

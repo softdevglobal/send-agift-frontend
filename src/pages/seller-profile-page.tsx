@@ -65,6 +65,7 @@ import {
   sellerVerificationTone,
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
 import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName } from '@/lib/form-styles'
@@ -583,7 +584,7 @@ export function SellerProfilePage() {
                       >
                         {countries.map((country) => (
                           <option key={country.id} value={country.id}>
-                            {country.name} ({country.iso_code})
+                            {countryOptionLabel(country)}
                           </option>
                         ))}
                       </select>

@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { LoaderCircle, MapPin, Search } from 'lucide-react'
 
 import {
@@ -98,6 +99,13 @@ export function AddressAutocomplete({
   const [error, setError] = useState<string | null>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const anchorRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  // Viewport position of the list. It is drawn on <body>, so this has to be
+  // measured rather than left to absolute positioning inside the field.
+  const [place, setPlace] = useState<{ top: number; left: number; width: number } | null>(
+    null,
+  )
   // One session token spans every keystroke of a search plus the details call
   // that follows, so Google bills the whole lookup once.
   const sessionToken = useRef(newPlacesSessionToken())
@@ -155,11 +163,46 @@ export function AddressAutocomplete({
     }
   }, [query, countryCode, types])
 
-  // Close the dropdown when focus or a click lands outside the field.
+  // The list is rendered into <body>, not inside the field. The gift search
+  // bar blurs what is behind it, and a backdrop-filter makes a stacking
+  // context of its own: anything drawn inside it, whatever its z-index, only
+  // ranks inside the bar, so the product cards further down the page paint
+  // straight over the suggestions. Out at the top of the document, nothing on
+  // the page can sit on top of the list or clip it.
+  useLayoutEffect(() => {
+    if (!open) return
+    function measure() {
+      const anchor = anchorRef.current
+      const list = listRef.current
+      if (!anchor || !list) return
+      const rect = anchor.getBoundingClientRect()
+      const margin = 8
+      // Width first, so the height we read already matches the field.
+      list.style.width = `${rect.width}px`
+      const height = list.offsetHeight
+      const below = rect.bottom + 4
+      const top =
+        below + height > window.innerHeight - margin && rect.top - 4 - height > margin
+          ? rect.top - 4 - height
+          : below
+      setPlace({ top, left: rect.left, width: rect.width })
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, true)
+    return () => {
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('scroll', measure, true)
+    }
+  }, [open, suggestions])
+
+  // Close the dropdown when a click lands outside the field or the list.
   useEffect(() => {
     if (!open) return
     function handlePointerDown(event: MouseEvent) {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+      const target = event.target as Node
+      if (containerRef.current?.contains(target) || listRef.current?.contains(target)) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', handlePointerDown)
     return () => document.removeEventListener('mousedown', handlePointerDown)
@@ -222,7 +265,7 @@ export function AddressAutocomplete({
   return (
     <div className={cn('space-y-2', className)} ref={containerRef}>
       {label ? <Label htmlFor={inputId}>{label}</Label> : null}
-      <div className="relative">
+      <div className="relative" ref={anchorRef}>
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           id={inputId}
@@ -249,41 +292,58 @@ export function AddressAutocomplete({
           <LoaderCircle className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
         ) : null}
 
-        {open && suggestions.length > 0 ? (
-          <ul
-            id={listboxId}
-            role="listbox"
-            className="absolute z-50 mt-1 max-h-72 w-full overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg"
-          >
-            {suggestions.map((suggestion, index) => (
-              <li key={suggestion.place_id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={index === activeIndex}
-                  onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => void handlePick(suggestion)}
-                  className={cn(
-                    'flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors',
-                    index === activeIndex ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/60',
-                  )}
-                >
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {suggestion.main_text || suggestion.description}
-                    </span>
-                    {suggestion.secondary_text ? (
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {suggestion.secondary_text}
+        {open && suggestions.length > 0
+          ? createPortal(
+              <ul
+                ref={listRef}
+                id={listboxId}
+                role="listbox"
+                style={
+                  place
+                    ? { top: place.top, left: place.left, width: place.width }
+                    : undefined
+                }
+                className={cn(
+                  // Radix Dialog/Sheet sets pointer-events: none on <body>
+                  // while open, so a list rendered beside it needs them back.
+                  'pointer-events-auto fixed z-[100] max-h-72 overflow-auto rounded-lg border border-border bg-popover p-1 shadow-lg',
+                  !place && 'invisible',
+                )}
+              >
+                {suggestions.map((suggestion, index) => (
+                  <li key={suggestion.place_id}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={index === activeIndex}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => void handlePick(suggestion)}
+                      className={cn(
+                        'flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors',
+                        index === activeIndex
+                          ? 'bg-accent text-accent-foreground'
+                          : 'hover:bg-accent/60',
+                      )}
+                    >
+                      <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {suggestion.main_text || suggestion.description}
+                        </span>
+                        {suggestion.secondary_text ? (
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {suggestion.secondary_text}
+                          </span>
+                        ) : null}
                       </span>
-                    ) : null}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>,
+              document.body,
+            )
+          : null}
       </div>
       {error ? (
         <p className="text-xs text-destructive">{error}</p>

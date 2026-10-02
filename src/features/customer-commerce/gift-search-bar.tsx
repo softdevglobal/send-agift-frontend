@@ -2,7 +2,12 @@ import { CalendarDays, LoaderCircle, MapPin, Search, X } from 'lucide-react'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import type { PlaceDetails } from '@/api/places'
+import {
+  autocompletePlaces,
+  getPlaceDetails,
+  newPlacesSessionToken,
+  type PlaceDetails,
+} from '@/api/places'
 import { DatePicker } from '@/components/common/date-picker'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
@@ -110,20 +115,51 @@ export function GiftSearchBar({
     longitude: intent?.longitude,
   })
 
-  function rememberAddress(trimmed: string) {
+  function rememberAddress(trimmed: string, picked: Partial<DeliveryIntent> = place) {
     setIntent({
       address: trimmed,
-      line1: place.line1 || trimmed,
-      line2: place.line2,
-      countryCode: place.countryCode,
-      countryName: place.countryName,
-      city: place.city,
-      region: place.region,
-      postalCode: place.postalCode,
-      latitude: place.latitude,
-      longitude: place.longitude,
+      line1: picked.line1 || trimmed,
+      line2: picked.line2,
+      countryCode: picked.countryCode,
+      countryName: picked.countryName,
+      city: picked.city,
+      region: picked.region,
+      postalCode: picked.postalCode,
+      latitude: picked.latitude,
+      longitude: picked.longitude,
       date: date || undefined,
     })
+  }
+
+  /** Turns a typed address into coordinates when no suggestion was picked. */
+  async function resolveTypedAddress(trimmed: string): Promise<{
+    shown: string
+    picked: Partial<DeliveryIntent>
+  } | null> {
+    try {
+      const session = newPlacesSessionToken()
+      const suggestions = await autocompletePlaces(trimmed, { sessionToken: session })
+      const first = suggestions[0]
+      if (!first) return null
+      const found = await getPlaceDetails(first.place_id, { sessionToken: session })
+      const shown = found.formatted_address || found.line1 || trimmed
+      return {
+        shown,
+        picked: {
+          line1: found.line1,
+          line2: found.line2,
+          countryCode: found.country_code,
+          countryName: found.country_name,
+          city: found.city,
+          region: found.region,
+          postalCode: found.postal_code,
+          latitude: found.latitude,
+          longitude: found.longitude,
+        },
+      }
+    } catch {
+      return null
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -136,13 +172,26 @@ export function GiftSearchBar({
     try {
       await new Promise((resolve) => window.setTimeout(resolve, FINDING_MS))
 
-      // An address typed but never picked from the list still counts: the
-      // shopper told us where it is going, we just have no country for it.
+      // The gift list waits for this button. A suggestion only fills the
+      // field; coordinates are stored here, which is what reloads the shelf.
       const trimmed = address.trim()
+      let shown = trimmed
+      let picked = place
+      const hasPoint =
+        typeof picked.latitude === 'number' && typeof picked.longitude === 'number'
+      if (trimmed && !hasPoint) {
+        const resolved = await resolveTypedAddress(trimmed)
+        if (resolved) {
+          shown = resolved.shown
+          picked = resolved.picked
+          setAddress(shown)
+          setPlace(picked)
+        }
+      }
       if (trimmed) {
-        rememberAddress(trimmed)
+        rememberAddress(shown, picked)
         willRefresh =
-          typeof place.latitude === 'number' && typeof place.longitude === 'number'
+          typeof picked.latitude === 'number' && typeof picked.longitude === 'number'
       } else if (date) {
         // A date on its own is still worth keeping for checkout, even the
         // first time — with no address yet, or no intent to add it to.
@@ -215,9 +264,22 @@ export function GiftSearchBar({
               <AddressAutocomplete
                 id="gift-search-address"
                 value={address}
-                onQueryChange={setAddress}
+                onQueryChange={(value) => {
+                  setAddress(value)
+                  // Editing after a pick drops the old point, so Find gifts
+                  // looks up the text that is actually in the field.
+                  setPlace((current) =>
+                    current.latitude == null && current.longitude == null
+                      ? current
+                      : { ...current, latitude: undefined, longitude: undefined },
+                  )
+                }}
                 onSelect={(found: PlaceDetails) => {
-                  const next: Partial<DeliveryIntent> = {
+                  const shown = found.formatted_address || found.line1
+                  setAddress(shown)
+                  // Held until Find gifts. Writing it into the delivery intent
+                  // now would reload the gift list before the button is pressed.
+                  setPlace({
                     line1: found.line1,
                     line2: found.line2,
                     countryCode: found.country_code,
@@ -227,16 +289,6 @@ export function GiftSearchBar({
                     postalCode: found.postal_code,
                     latitude: found.latitude,
                     longitude: found.longitude,
-                  }
-                  setPlace(next)
-                  // Keep it as soon as they pick, so checkout can open the
-                  // recipient form already filled — even before Find gifts.
-                  const shown = found.formatted_address || found.line1
-                  setIntent({
-                    ...next,
-                    address: shown,
-                    line1: found.line1 || shown,
-                    date: date || undefined,
                   })
                 }}
                 label=""

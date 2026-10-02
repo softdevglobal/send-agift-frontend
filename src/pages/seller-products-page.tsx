@@ -332,6 +332,7 @@ export function SellerProductsPage() {
         }}
         shopName={selectedShop?.name ?? 'Your shop'}
         mode={editing ? 'edit' : 'create'}
+        shopCountryId={selectedShop?.country_id}
         initialForm={editing?.form ?? null}
         onSubmit={handleWizardSubmit}
       />

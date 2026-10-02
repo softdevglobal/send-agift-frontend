@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { listCountries, type Country } from '@/api/countries'
 import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { selectClassName } from '@/lib/form-styles'
 
 type CountrySelectFieldProps = {
@@ -75,7 +76,7 @@ export function CountrySelectField({
         </option>
         {countries.map((country) => (
           <option key={country.id} value={country.id}>
-            {country.name} ({country.iso_code})
+            {countryOptionLabel(country)}
           </option>
         ))}
       </select>

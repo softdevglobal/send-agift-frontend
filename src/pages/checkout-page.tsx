@@ -58,6 +58,7 @@ import {
 } from '@/features/customer-commerce/delivery-intent-context'
 import { PhoneField } from '@/features/auth/phone-field'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
@@ -138,6 +139,77 @@ function recipientLabel(recipient: Recipient) {
     : recipient.name
 }
 
+function normalizePart(value?: string | null) {
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[.,#]/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+type AddressProbe = {
+  address?: string
+  line1?: string
+  city?: string
+  postalCode?: string
+  latitude?: number | null
+  longitude?: number | null
+}
+
+function coordsClose(
+  aLat?: number | null,
+  aLng?: number | null,
+  bLat?: number | null,
+  bLng?: number | null,
+) {
+  if (
+    typeof aLat !== 'number' ||
+    typeof aLng !== 'number' ||
+    typeof bLat !== 'number' ||
+    typeof bLng !== 'number'
+  ) {
+    return false
+  }
+  return Math.abs(aLat - bLat) < 0.001 && Math.abs(aLng - bLng) < 0.001
+}
+
+/** True when the address being filled is one this recipient already has saved. */
+function savedAddressMatches(probe: AddressProbe, address: RecipientAddress) {
+  if (coordsClose(probe.latitude, probe.longitude, address.latitude, address.longitude)) {
+    return true
+  }
+  const savedLine = normalizePart(address.line1)
+  if (!savedLine) return false
+  const probeLine = normalizePart(probe.line1)
+  const probeAddress = normalizePart(probe.address)
+  const lineHit =
+    (probeLine !== '' &&
+      (probeLine === savedLine ||
+        probeLine.includes(savedLine) ||
+        savedLine.includes(probeLine))) ||
+    (probeAddress !== '' && probeAddress.includes(savedLine))
+  if (!lineHit) return false
+  const savedPostal = normalizePart(address.postal_code)
+  const probePostal = normalizePart(probe.postalCode)
+  if (savedPostal && probePostal) {
+    return savedPostal === probePostal || probeAddress.includes(savedPostal)
+  }
+  if (savedPostal && probeAddress.includes(savedPostal)) return true
+  const savedCity = normalizePart(address.city)
+  const probeCity = normalizePart(probe.city)
+  if (savedCity && probeCity) return savedCity === probeCity
+  if (savedCity && probeAddress.includes(savedCity)) return true
+  return false
+}
+
+function recipientForAddress(recipients: RecipientDetails[], probe: AddressProbe) {
+  return (
+    recipients.find((details) =>
+      details.addresses.some((address) => savedAddressMatches(probe, address)),
+    ) ?? null
+  )
+}
+
 /** The address a recipient would actually be shipped to: their default, or their only one. */
 function defaultAddress(details: RecipientDetails): RecipientAddress | null {
   return (
@@ -188,9 +260,11 @@ export function CheckoutPage() {
   const [recipientId, setRecipientId] = useState('')
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null)
   const [recipientLoading, setRecipientLoading] = useState(false)
-  const [addingRecipient, setAddingRecipient] = useState(() =>
-    Boolean(intent?.address?.trim()),
-  )
+  const [addingRecipient, setAddingRecipient] = useState(false)
+  const [savedRecipients, setSavedRecipients] = useState<RecipientDetails[]>([])
+  const [savedRecipientsReady, setSavedRecipientsReady] = useState(false)
+  const appliedAddressMatch = useRef(false)
+  const skipAddressMatch = useRef(false)
   const [savingRecipient, setSavingRecipient] = useState(false)
   const [newRecipient, setNewRecipient] = useState(() => recipientFromSearch(intent))
   const appliedSearchCountry = useRef(false)
@@ -282,6 +356,54 @@ export function CheckoutPage() {
       cancelled = true
     }
   }, [cartCustomerType])
+
+  // The recipient list is names only. Load each saved address so a delivery
+  // address that already belongs to someone can select them instead of
+  // opening a new recipient form.
+  useEffect(() => {
+    if (loading) return
+    if (recipients.length === 0) {
+      setSavedRecipients([])
+      setSavedRecipientsReady(true)
+      return
+    }
+    let cancelled = false
+    setSavedRecipientsReady(false)
+    Promise.all(recipients.map((recipient) => getRecipient(recipient.id).catch(() => null)))
+      .then((rows) => {
+        if (cancelled) return
+        setSavedRecipients(rows.filter((row): row is RecipientDetails => row != null))
+        setSavedRecipientsReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, recipients])
+
+  // The address from Find gifts is only filled into a new recipient when no
+  // saved recipient already has it. A match selects that recipient.
+  useEffect(() => {
+    if (appliedAddressMatch.current || skipAddressMatch.current || loading) return
+    const hasSearch = Boolean(intent?.address?.trim() || intent?.line1?.trim())
+    if (!hasSearch) return
+    if (!savedRecipientsReady) return
+    appliedAddressMatch.current = true
+    const match = recipientForAddress(savedRecipients, {
+      address: intent?.address,
+      line1: intent?.line1,
+      city: intent?.city,
+      postalCode: intent?.postalCode,
+      latitude: intent?.latitude,
+      longitude: intent?.longitude,
+    })
+    if (match) {
+      setRecipientId(match.id)
+      setAddingRecipient(false)
+      setNewRecipient(blankRecipient())
+      return
+    }
+    setAddingRecipient(true)
+  }, [loading, savedRecipientsReady, savedRecipients, intent])
 
   // Loads the picked recipient's saved addresses — the list only carries a
   // name, so the address has to be fetched once someone is actually chosen.
@@ -424,11 +546,20 @@ export function CheckoutPage() {
             : null
 
   function openAddRecipient() {
+    skipAddressMatch.current = true
     setAddingRecipient(true)
     setNewRecipient((current) => ({
       ...current,
       country_id: current.country_id || countryId,
     }))
+  }
+
+  function selectSavedRecipient(id: string) {
+    skipAddressMatch.current = true
+    setRecipientId(id)
+    setAddingRecipient(false)
+    setNewRecipient(blankRecipient())
+    setError(null)
   }
 
   function applyNewAddress(place: PlaceDetails) {
@@ -447,6 +578,18 @@ export function CheckoutPage() {
       fields.city ||
       fields.region ||
       (parts.length > 1 ? parts[parts.length - 2] : '')
+    const existing = recipientForAddress(savedRecipients, {
+      address: place.formatted_address,
+      line1: fields.line1 || place.formatted_address,
+      city,
+      postalCode: fields.postal_code,
+      latitude: fields.latitude,
+      longitude: fields.longitude,
+    })
+    if (existing) {
+      selectSavedRecipient(existing.id)
+      return
+    }
     setNewRecipient((current) => ({
       ...current,
       line1: fields.line1 || place.formatted_address || current.line1,
@@ -607,7 +750,11 @@ export function CheckoutPage() {
               <select
                 id="checkout-recipient"
                 value={recipientId}
-                onChange={(event) => setRecipientId(event.target.value)}
+                onChange={(event) => {
+                  skipAddressMatch.current = true
+                  setRecipientId(event.target.value)
+                  if (event.target.value) setAddingRecipient(false)
+                }}
                 className={selectClassName}
               >
                 <option value="">Send without a recipient</option>
@@ -691,7 +838,7 @@ export function CheckoutPage() {
                         <option value="">Select country</option>
                         {countries.map((country) => (
                           <option key={country.id} value={country.id}>
-                            {country.name} ({country.iso_code})
+                            {countryOptionLabel(country)}
                           </option>
                         ))}
                       </select>
@@ -922,7 +1069,7 @@ export function CheckoutPage() {
                     <option value="">Select a country</option>
                     {countries.map((country) => (
                       <option key={country.id} value={country.id}>
-                        {country.name}
+                        {countryOptionLabel(country)}
                       </option>
                     ))}
                   </select>

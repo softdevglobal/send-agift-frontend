@@ -170,6 +170,7 @@ export type ShopDeliveryZone = {
 export type Shop = {
   id: string
   seller_id: string
+  country_id: string
   name: string
   slug: string
   description?: string
@@ -188,6 +189,7 @@ export type SellerDetails = Seller & { addresses: Address[]; shops: Shop[] }
 
 export type ShopInput = {
   name: string
+  country_id: string
   slug?: string
   description?: string
   customer_visible_location?: string

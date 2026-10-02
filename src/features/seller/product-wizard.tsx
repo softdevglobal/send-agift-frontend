@@ -15,10 +15,12 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+import { listCountries, type Country } from '@/api/countries'
+import { CurrencySelect } from '@/components/common/currency-select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicFile } from '@/api/media'
-import { KNOWN_CURRENCIES, PARCEL_DISTANCE_UNITS, PARCEL_MASS_UNITS } from '@/api/types'
+import { PARCEL_DISTANCE_UNITS, PARCEL_MASS_UNITS } from '@/api/types'
 import {
   coverImageUrl,
   emptyForm,
@@ -56,6 +58,8 @@ type ProductWizardProps = {
    * and listing one are the same flow.
    */
   mode?: 'create' | 'edit'
+  /** Shop country. A new gift uses that country's currency. */
+  shopCountryId?: string
   /** Starting values for `edit`. Ignored in `create`. */
   initialForm?: ProductFormState | null
   /**
@@ -78,6 +82,7 @@ export function ProductWizard({
   onOpenChange,
   shopName,
   mode = 'create',
+  shopCountryId,
   initialForm,
   onSubmit,
 }: ProductWizardProps) {
@@ -93,6 +98,7 @@ export function ProductWizard({
   const [error, setError] = useState<string | null>(null)
   const [draggingPhotoIndex, setDraggingPhotoIndex] = useState<number | null>(null)
   const [dropPhotoIndex, setDropPhotoIndex] = useState<number | null>(null)
+  const [countryRows, setCountryRows] = useState<Country[]>([])
   const photoInputRef = useRef<HTMLInputElement | null>(null)
   const videoInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -109,6 +115,32 @@ export function ProductWizard({
       setDropPhotoIndex(null)
     }
   }, [open, initialForm])
+
+  // A new gift takes the currency of the shop's country.
+  useEffect(() => {
+    if (!open || !shopCountryId) return
+    let cancelled = false
+    listCountries()
+      .then((list) => {
+        if (cancelled) return
+        const rows = Array.isArray(list) ? list : []
+        setCountryRows(rows)
+        const code = rows
+          .find((country) => country.id === shopCountryId)
+          ?.default_currency?.trim()
+          .toUpperCase()
+        if (!code) return
+        setForm((current) =>
+          current.currency === code ? current : { ...current, currency: code },
+        )
+      })
+      .catch(() => {
+        // The dropdown still lists whatever countries it can load.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open, shopCountryId])
 
   function update<K extends keyof ProductFormState>(
     key: K,
@@ -139,6 +171,7 @@ export function ProductWizard({
   )
   const galleryRoom = MAX_PRODUCT_MEDIA - form.media.length
   const uploading = uploadingKind !== null
+  const shopCountry = countryRows.find((country) => country.id === shopCountryId) ?? null
 
   const priceLabel = priceValid
     ? formatPriceAmount(majorToMinor(priceMajor, form.currency), form.currency)
@@ -427,18 +460,13 @@ export function ProductWizard({
             />
           </WizardField>
           <WizardField label="Currency" htmlFor="wizard-currency">
-            <select
+            <CurrencySelect
               id="wizard-currency"
               value={form.currency}
-              onChange={(event) => update('currency', event.target.value)}
-              className={selectClassName}
-            >
-              {KNOWN_CURRENCIES.map((code) => (
-                <option key={code} value={code}>
-                  {code}
-                </option>
-              ))}
-            </select>
+              onChange={(code) => update('currency', code)}
+              countries={shopCountry ? [shopCountry] : undefined}
+              disabled={Boolean(shopCountry)}
+            />
           </WizardField>
           <WizardField
             label="Reward points"

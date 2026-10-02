@@ -24,6 +24,7 @@ import { emptyQuestion } from '@/features/admin/quiz'
 import { QuizEditor } from '@/features/admin/quiz-editor'
 import type { AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { CurrencySelect } from '@/components/common/currency-select'
 import { DateTimePicker } from '@/components/common/datetime-picker'
 import { FormAlert } from '@/components/common/form-alert'
 import { TimezoneSelect } from '@/components/common/timezone-select'
@@ -32,6 +33,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getErrorMessage } from '@/lib/api'
+import { countryOptionLabel } from '@/lib/country-options'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
@@ -274,7 +276,7 @@ export function CompetitionForm({
       ...prev,
       country_id: id,
       timezone: prev.timezone || country?.default_timezone || '',
-      prize_currency: prev.prize_currency || country?.default_currency || '',
+      prize_currency: country?.default_currency?.trim().toUpperCase() || prev.prize_currency,
     }))
   }
 
@@ -423,7 +425,7 @@ export function CompetitionForm({
               <option value="">Choose a country</option>
               {countries.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {countryOptionLabel(c)}
                 </option>
               ))}
             </select>
@@ -679,13 +681,12 @@ export function CompetitionForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="c-currency">Currency</Label>
-                <Input
+                <CurrencySelect
                   id="c-currency"
-                  maxLength={3}
                   value={form.prize_currency}
-                  onChange={(e) => set('prize_currency', e.target.value.toUpperCase())}
-                  placeholder="USD"
-                  className="h-11 bg-surface uppercase"
+                  onChange={(code) => set('prize_currency', code)}
+                  countries={countries}
+                  className="h-11"
                 />
               </div>
             </div>
