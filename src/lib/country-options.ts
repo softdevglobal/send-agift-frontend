@@ -22,3 +22,10 @@ export function countryOptionLabel(
   if (code) return `${country.name} · ${code}`
   return country.name
 }
+
+/** "LK" → 🇱🇰, or nothing for a code that is not two letters. */
+export function flagOf(iso: string | undefined): string {
+  const code = iso?.trim().toUpperCase() ?? ''
+  if (!/^[A-Z]{2}$/.test(code)) return ''
+  return String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
+}

@@ -3,6 +3,7 @@ import { ArrowRight, Plus, Trophy } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
 import {
+  countryNames,
   createCompetition,
   listAdminCompetitions,
   type AdminCompetition,
@@ -15,7 +16,6 @@ import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
-import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import { isSuperAdmin } from '@/lib/auth'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
@@ -123,7 +123,7 @@ export function AdminCompetitionsPage() {
         <AdminEmptyState
           icon={Trophy}
           title={filter === 'all' ? 'No competitions yet' : 'Nothing here'}
-          description="Create a competition, fund its prize reserve and publish its rules — then schedule it for players in its country."
+          description="Create a competition, fund its prize reserve and publish its rules — then schedule it for players in the countries it runs in."
           action={
             <Button type="button" className="h-10" onClick={() => setCreating(true)}>
               <Plus className="size-4" />
@@ -151,7 +151,7 @@ export function AdminCompetitionsPage() {
                   </StatusPill>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
-                  {c.game_name} · {c.country_name} · {formatDate(c.starts_at)} → {formatDate(c.ends_at)}
+                  {c.game_name} · {countryNames(c)} · {formatDate(c.starts_at)} → {formatDate(c.ends_at)}
                 </p>
               </div>
               <div className="text-right text-sm">
@@ -176,19 +176,16 @@ export function AdminCompetitionsPage() {
         </div>
       )}
 
-      <CompetitionDialog
+      <CompetitionForm
         open={creating}
         onOpenChange={setCreating}
         title="New competition"
-        description="It starts as a draft. Publish it once the prize reserve is funded and the rules are written."
-      >
-        <CompetitionForm
-          games={games}
-          countries={countries}
-          submitLabel="Create draft"
-          onSubmit={create}
-        />
-      </CompetitionDialog>
+        description="Set it up step by step. It starts as a draft you publish once the prize is funded."
+        games={games}
+        countries={countries}
+        submitLabel="Create draft"
+        onSubmit={create}
+      />
     </>
   )
 }

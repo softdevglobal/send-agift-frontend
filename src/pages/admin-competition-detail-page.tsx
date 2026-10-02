@@ -21,6 +21,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import {
+  countryNames,
   CANCEL_REASONS,
   cancelCompetition,
   closeCompetition,
@@ -78,7 +79,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
-import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import {
   competitionStatusLabel,
@@ -407,7 +407,7 @@ export function AdminCompetitionDetailPage() {
       </Link>
 
       <AdminPageHeader
-        eyebrow={`${comp.game_name} · ${comp.country_name}`}
+        eyebrow={`${comp.game_name} · ${countryNames(comp)}`}
         title={comp.title}
         action={
           <div className="flex items-center gap-3">
@@ -642,7 +642,7 @@ export function AdminCompetitionDetailPage() {
           ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
             {status === 'draft' &&
-              'Scheduling checks that competitions are enabled in the country, the rules are published and the funded reserve covers the most the prize can reach. Publishing posts the starting prize to the ledger.'}
+              'Scheduling checks that competitions are enabled in every chosen country, the rules are published and the funded reserve covers the most the prize can reach. Publishing posts the starting prize to the ledger.'}
             {status === 'paused' && 'Paused: new plays are refused. Plays already started can still be finished and scored.'}
             {status === 'scheduled' && 'It opens automatically at its start time.'}
             {status === 'live' && 'Scores are coming in. It closes automatically at its end time.'}
@@ -876,14 +876,17 @@ export function AdminCompetitionDetailPage() {
         )}
       </div>
 
-      <CompetitionDialog
+      <CompetitionForm
         open={editing}
         onOpenChange={setEditing}
         title="Edit competition"
         description="Saving returns it to draft, so every publishing check runs again."
-      >
-        <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
-      </CompetitionDialog>
+        initial={comp}
+        games={games}
+        countries={countries}
+        submitLabel="Save changes"
+        onSubmit={saveEdit}
+      />
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>

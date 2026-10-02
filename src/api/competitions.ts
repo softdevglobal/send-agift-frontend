@@ -22,11 +22,23 @@ export type PrizeReserve = {
   funded_at?: string
 }
 
+/** One country a competition runs in. */
+export type CompetitionCountry = {
+  id: string
+  iso_code: string
+  name: string
+  default_currency: string
+}
+
+/** "New Zealand, Australia" — the countries a competition runs in. */
+export function countryNames(c: Pick<AdminCompetition, 'countries'>): string {
+  return (c.countries ?? []).map((co) => co.name).join(', ')
+}
+
 export type AdminCompetition = {
   id: string
-  country_id: string
-  country_code: string
-  country_name: string
+  /** Players from any of these countries may enter. */
+  countries: CompetitionCountry[]
   game_version_id: string
   game_version_status: string
   game_slug: string
@@ -113,13 +125,12 @@ export const PRIZE_TYPES = [
 export type PrizeType = (typeof PRIZE_TYPES)[number]['value']
 
 export type CompetitionInput = {
-  country_id: string
+  country_ids: string[]
   game_slug: string
   title: string
   starts_at: string
   ends_at: string
   timezone: string
-  points_per_attempt: number
   max_attempts_per_customer: number
   min_age: number
   requires_identity_verification: boolean
