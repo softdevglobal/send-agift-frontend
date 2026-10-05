@@ -1,6 +1,7 @@
 import { api, ApiError } from '@/lib/api'
 import type {
   Admin,
+  AdminSellerDetails,
   AdminSellerList,
   Country,
   CountryCapability,
@@ -9,7 +10,6 @@ import type {
   CountryInput,
   MessageResponse,
   Seller,
-  SellerDetails,
 } from '@/api/types'
 
 export type { Admin } from '@/api/types'
@@ -97,7 +97,12 @@ export function listAdminSellers(
 }
 
 export function getAdminSeller(id: string) {
-  return api<SellerDetails>(`/admin/sellers/${id}`)
+  return api<AdminSellerDetails>(`/admin/sellers/${id}`)
+}
+
+/** A short-lived link to the seller's business registration document. */
+export function getAdminSellerDocumentUrl(id: string) {
+  return api<{ url: string }>(`/admin/sellers/${id}/document`)
 }
 
 /** Approves or rejects a seller; the seller is emailed the outcome. */
