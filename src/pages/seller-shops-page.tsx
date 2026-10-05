@@ -37,6 +37,7 @@ import {
   type ShopInput,
 } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { TimezoneSelect } from '@/components/common/timezone-select'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
@@ -76,13 +77,15 @@ type ZoneDraft = {
   max_km: string
   price_major: string
   estimated_days: string
+  cutoff_time: string
 }
 
-const blankZone: ZoneDraft = { max_km: '', price_major: '', estimated_days: '1' }
+const blankZone: ZoneDraft = { max_km: '', price_major: '', estimated_days: '1', cutoff_time: '' }
 
 const emptyShop: ShopInput = {
   name: '',
   country_id: '',
+  timezone: '',
   slug: '',
   description: '',
   customer_visible_location: '',
@@ -101,6 +104,7 @@ function zonesToDrafts(zones?: ShopDeliveryZone[]): ZoneDraft[] {
         ? '0'
         : String(minorToMajor(zone.price_amount, zone.currency || 'USD')),
     estimated_days: String(zone.estimated_days ?? 1),
+    cutoff_time: zone.cutoff_time ?? '',
   }))
 }
 
@@ -110,7 +114,7 @@ function draftsToZones(drafts: ZoneDraft[], currency: string): ShopDeliveryZone[
   for (const draft of drafts) {
     const kmRaw = draft.max_km.trim()
     const priceRaw = draft.price_major.trim()
-    if (!kmRaw && !priceRaw && !(draft.estimated_days ?? '').trim()) continue
+    if (!kmRaw && !priceRaw && !(draft.estimated_days ?? '').trim() && !draft.cutoff_time.trim()) continue
     const maxKm = Number(kmRaw)
     const priceMajor = Number(priceRaw)
     const days = Number((draft.estimated_days ?? '1').trim())
@@ -123,11 +127,16 @@ function draftsToZones(drafts: ZoneDraft[], currency: string): ShopDeliveryZone[
     if (!Number.isInteger(days) || days < 0) {
       return 'Each delivery range needs whole days of 0 or more. 0 means same day.'
     }
+    const cutoff = draft.cutoff_time.trim()
+    if (days === 0 && !/^\d{2}:\d{2}$/.test(cutoff)) {
+      return 'Same-day delivery needs a cutoff time.'
+    }
     zones.push({
       max_km: Math.round(maxKm * 100) / 100,
       price_amount: majorToMinor(priceMajor, code),
       currency: code,
       estimated_days: days,
+      ...(days === 0 ? { cutoff_time: cutoff } : {}),
     })
   }
   zones.sort((a, b) => a.max_km - b.max_km)
@@ -150,7 +159,8 @@ function formatZoneSummary(zones?: ShopDeliveryZone[]): string {
         zone.is_free || zone.price_amount === 0
           ? 'free'
           : formatPriceAmount(zone.price_amount, zone.currency || 'USD')
-      return `${zone.max_km} km ${price}`
+      const sameDay = zone.estimated_days === 0 && zone.cutoff_time ? ` by ${zone.cutoff_time}` : ''
+      return `${zone.max_km} km ${price}${sameDay}`
     })
     .join(' · ')
 }
@@ -159,6 +169,7 @@ function toShopInput(shop: Shop): ShopInput {
   return {
     name: shop.name,
     country_id: shop.country_id ?? '',
+    timezone: shop.timezone ?? '',
     slug: shop.slug ?? '',
     description: shop.description ?? '',
     customer_visible_location: shop.customer_visible_location ?? '',
@@ -251,6 +262,7 @@ function serializeShop(input: ShopInput, zones: ShopDeliveryZone[]): ShopInput {
   return {
     name: input.name.trim(),
     country_id: input.country_id.trim(),
+    timezone: (input.timezone ?? '').trim(),
     slug: optionalString(input.slug ?? ''),
     description: optionalString(input.description ?? ''),
     customer_visible_location: optionalString(input.customer_visible_location ?? ''),
@@ -292,6 +304,7 @@ export function SellerShopsPage() {
   const [deleting, setDeleting] = useState(false)
   /** Once the slug is edited by hand (or loaded from an existing shop) it stops tracking the name. */
   const [slugTouched, setSlugTouched] = useState(false)
+  const [timezoneTouched, setTimezoneTouched] = useState(false)
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(
     null,
   )
@@ -355,6 +368,22 @@ export function SellerShopsPage() {
     }))
   }
 
+  function handleCountryChange(countryId: string) {
+    const next = countries.find((country) => country.id === countryId)
+    setForm((current) => {
+      const previous = countries.find((country) => country.id === current.country_id)
+      const currentZone = (current.timezone ?? '').trim()
+      const inherited =
+        !timezoneTouched &&
+        (currentZone === '' || currentZone === (previous?.default_timezone ?? ''))
+      return {
+        ...current,
+        country_id: countryId,
+        timezone: inherited ? next?.default_timezone || currentZone : currentZone,
+      }
+    })
+  }
+
   const shopCountry = countries.find((country) => country.id === form.country_id) ?? null
   const zoneCurrency = shopCountry?.default_currency?.trim().toUpperCase() ?? ''
 
@@ -363,6 +392,7 @@ export function SellerShopsPage() {
     setZoneDrafts([])
     setMapAddressId(null)
     setSlugTouched(false)
+    setTimezoneTouched(false)
     setEditingId(null)
     setShowForm(false)
   }
@@ -372,6 +402,7 @@ export function SellerShopsPage() {
     setZoneDrafts([{ ...blankZone }])
     setMapAddressId(null)
     setSlugTouched(false)
+    setTimezoneTouched(false)
     setEditingId(null)
     setShowForm(true)
     setError(null)
@@ -389,6 +420,7 @@ export function SellerShopsPage() {
     setMapAddressId(shop.address_id || shop.return_address_id || null)
     // Keep the published slug stable when the name is edited.
     setSlugTouched(true)
+    setTimezoneTouched(false)
     setShowForm(true)
     setError(null)
     requestAnimationFrame(() => {
@@ -437,6 +469,11 @@ export function SellerShopsPage() {
       setError('Choose the shop country. Its currency is used for products and delivery.')
       return
     }
+    const timezone = (form.timezone ?? '').trim() || shopCountry?.default_timezone || ''
+    if (!timezone) {
+      setError('Choose the shop timezone. Same-day cutoffs use this clock.')
+      return
+    }
     const zones = draftsToZones(zoneDrafts, zoneCurrency)
     if (typeof zones === 'string') {
       setError(zones)
@@ -448,7 +485,7 @@ export function SellerShopsPage() {
     }
     setStatus('saving')
     try {
-      const body = serializeShop(form, zones)
+      const body = serializeShop({ ...form, timezone }, zones)
       if (editingId) {
         await updateSellerShop(editingId, body)
       } else {
@@ -583,9 +620,11 @@ export function SellerShopsPage() {
                           /{shop.slug}
                         </p>
                       ) : null}
-                      {country ? (
+                      {country || shop.timezone ? (
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {countryOptionLabel(country)}
+                          {[country ? countryOptionLabel(country) : '', shop.timezone]
+                            .filter(Boolean)
+                            .join(' ┬╖ ')}
                         </p>
                       ) : null}
                       {shop.description ? (
@@ -773,7 +812,7 @@ export function SellerShopsPage() {
                     <select
                       id="shop-country"
                       value={form.country_id}
-                      onChange={(event) => updateField('country_id', event.target.value)}
+                      onChange={(event) => handleCountryChange(event.target.value)}
                       className={selectClassName}
                       required
                     >
@@ -787,6 +826,22 @@ export function SellerShopsPage() {
                     <p className="text-xs text-muted-foreground">
                       This shop&apos;s products and delivery prices use this country&apos;s
                       currency.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shop-timezone">Timezone</Label>
+                    <TimezoneSelect
+                      id="shop-timezone"
+                      value={form.timezone || shopCountry?.default_timezone || ''}
+                      onChange={(zone) => {
+                        setTimezoneTouched(true)
+                        updateField('timezone', zone)
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Same-day cutoffs use this clock. It starts as the country&apos;s
+                      timezone, and you can change it when the country has more than one.
                     </p>
                   </div>
 
@@ -998,7 +1053,7 @@ export function SellerShopsPage() {
                         onClick={() =>
                           setZoneDrafts((current) => [
                             ...current,
-                            { max_km: '', price_major: '', estimated_days: '1' },
+                            { max_km: '', price_major: '', estimated_days: '1', cutoff_time: '' },
                           ])
                         }
                       >
@@ -1009,8 +1064,9 @@ export function SellerShopsPage() {
                     <p className="text-xs text-muted-foreground">
                       Required. How far this shop delivers itself, and the price for each band.
                       The closest band that covers the recipient is the price at checkout.
-                      Days is the delivery time; 0 means same day. The price uses your shop
-                      country’s currency.
+                      Days is the delivery time. Use Same day for a band that leaves today;
+                      that band needs a cutoff time, and orders after it arrive the next day.
+                      The price uses your shop country’s currency.
                     </p>
                     {zoneDrafts.length === 0 ? (
                       <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
@@ -1018,7 +1074,9 @@ export function SellerShopsPage() {
                       </p>
                     ) : (
                       <ul className="space-y-2">
-                        {zoneDrafts.map((zone, index) => (
+                        {zoneDrafts.map((zone, index) => {
+                          const sameDay = zone.estimated_days.trim() === '0'
+                          return (
                           <li key={index} className="flex flex-wrap items-end gap-2">
                             <div className="min-w-[7rem] flex-1 space-y-1">
                               <Label htmlFor={`zone-km-${index}`}>Up to (km)</Label>
@@ -1058,24 +1116,63 @@ export function SellerShopsPage() {
                                 }
                               />
                             </div>
-                            <div className="w-24 space-y-1">
-                              <Label htmlFor={`zone-days-${index}`}>Days</Label>
-                              <Input
-                                id={`zone-days-${index}`}
-                                inputMode="numeric"
-                                value={zone.estimated_days ?? '1'}
-                                placeholder="0"
-                                onChange={(event) =>
-                                  setZoneDrafts((current) =>
-                                    current.map((row, rowIndex) =>
-                                      rowIndex === index
-                                        ? { ...row, estimated_days: event.target.value }
-                                        : row,
-                                    ),
-                                  )
-                                }
-                              />
-                            </div>
+                            {sameDay ? null : (
+                              <div className="w-24 space-y-1">
+                                <Label htmlFor={`zone-days-${index}`}>Days</Label>
+                                <Input
+                                  id={`zone-days-${index}`}
+                                  inputMode="numeric"
+                                  value={zone.estimated_days}
+                                  placeholder="1"
+                                  onChange={(event) =>
+                                    setZoneDrafts((current) =>
+                                      current.map((row, rowIndex) =>
+                                        rowIndex === index
+                                          ? { ...row, estimated_days: event.target.value }
+                                          : row,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </div>
+                            )}
+                            <Button
+                              type="button"
+                              variant={sameDay ? 'default' : 'outline'}
+                              className="h-10 rounded-full px-3"
+                              onClick={() =>
+                                setZoneDrafts((current) =>
+                                  current.map((row, rowIndex) =>
+                                    rowIndex === index
+                                      ? sameDay
+                                        ? { ...row, estimated_days: '1', cutoff_time: '' }
+                                        : { ...row, estimated_days: '0' }
+                                      : row,
+                                  ),
+                                )
+                              }
+                            >
+                              Same day
+                            </Button>
+                            {sameDay ? (
+                              <div className="w-32 space-y-1">
+                                <Label htmlFor={`zone-cutoff-${index}`}>Cutoff</Label>
+                                <Input
+                                  id={`zone-cutoff-${index}`}
+                                  type="time"
+                                  value={zone.cutoff_time}
+                                  onChange={(event) =>
+                                    setZoneDrafts((current) =>
+                                      current.map((row, rowIndex) =>
+                                        rowIndex === index
+                                          ? { ...row, cutoff_time: event.target.value }
+                                          : row,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </div>
+                            ) : null}
                             <Button
                               type="button"
                               variant="ghost"
@@ -1091,7 +1188,8 @@ export function SellerShopsPage() {
                               Remove
                             </Button>
                           </li>
-                        ))}
+                          )
+                        })}
                       </ul>
                     )}
                   </div>
@@ -1229,6 +1327,9 @@ export function SellerShopsPage() {
                 <SellerSheetRow label="Status">
                   {previewShop.status === 'active' ? 'Active' : 'Inactive'}
                 </SellerSheetRow>
+                {previewShop.timezone ? (
+                  <SellerSheetRow label="Timezone">{previewShop.timezone}</SellerSheetRow>
+                ) : null}
                 {previewShop.customer_visible_location ? (
                   <SellerSheetRow label="Location">
                     {previewShop.customer_visible_location}
