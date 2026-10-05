@@ -114,7 +114,10 @@ function GameCard({ game }: { game: AdminGameSummary }) {
 
 /** Superadmin: every game, who plays, and who holds the best verified score. */
 export function AdminGamesPage() {
-  const [games, setGames] = useState<AdminGameSummary[]>([])
+  const [allGames, setGames] = useState<AdminGameSummary[]>([])
+  // Only games customers play on their own. Chance games and quizzes are
+  // competition formats with no scores of their own, so they are left out.
+  const games = useMemo(() => allGames.filter((g) => g.practice), [allGames])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 

@@ -3,7 +3,6 @@ import { Activity, Download, LoaderCircle, RefreshCw, Scale, ShieldAlert, Undo2 
 
 import {
   adjustPrize,
-  duplicateCompetition,
   settleWinners,
   voidPlay,
   type AdminCompetition,
@@ -733,88 +732,6 @@ export function SettleDialog({
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
             Record payout
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function localInput(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
-
-/**
- * Copies a round into a new draft. "Next round" is how a game is reset: the
- * old round and its ledger stay exactly as they were.
- */
-export function DuplicateDialog({
-  comp,
-  open,
-  onOpenChange,
-  onCreated,
-}: {
-  comp: AdminCompetition
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onCreated: (created: AdminCompetition) => void
-}) {
-  const length = new Date(comp.ends_at).getTime() - new Date(comp.starts_at).getTime()
-  const [startsAt, setStartsAt] = useState(() => localInput(new Date(Date.now() + 24 * 3600 * 1000)))
-  const [endsAt, setEndsAt] = useState(() => localInput(new Date(Date.now() + 24 * 3600 * 1000 + length)))
-  const [nextRound, setNextRound] = useState(true)
-  const { busy, error, submit } = useAsyncDialog(onOpenChange)
-  return (
-    <Dialog open={open} onOpenChange={(next) => !busy && onOpenChange(next)}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>New round from this one</DialogTitle>
-          <DialogDescription>
-            Copies the game, rules and prize economics into a new draft with a fresh board. It needs its own funded
-            reserve before it can be published.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="dup-start">Starts</Label>
-              <Input id="dup-start" type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="h-10" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="dup-end">Ends</Label>
-              <Input id="dup-end" type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="h-10" />
-            </div>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-primary" checked={nextRound} onChange={(e) => setNextRound(e.target.checked)} />
-            Make it round {comp.round_no + 1} of this game (otherwise an unlinked copy)
-          </label>
-          <FormAlert error={error} />
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="outline" className="h-10">
-              Cancel
-            </Button>
-          </DialogClose>
-          <Button
-            type="button"
-            className="h-10"
-            disabled={busy}
-            onClick={() =>
-              submit(async () => {
-                const created = await duplicateCompetition(comp.id, {
-                  starts_at: new Date(startsAt).toISOString(),
-                  ends_at: new Date(endsAt).toISOString(),
-                  next_round: nextRound,
-                })
-                onCreated(created)
-              })
-            }
-          >
-            {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Create draft
           </Button>
         </DialogFooter>
       </DialogContent>

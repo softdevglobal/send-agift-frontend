@@ -1,24 +1,22 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
-  ArrowLeft,
   Ban,
   CalendarClock,
   Check,
-  CopyPlus,
   Pause,
   Play,
   Square,
   Crown,
   Gavel,
   LoaderCircle,
-  Pencil,
   ShieldAlert,
   Snowflake,
   Trophy,
   Wallet,
   X,
+  Send,
 } from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import {
   CANCEL_REASONS,
@@ -36,7 +34,6 @@ import {
   finaliseCompetition,
   freezeCompetition,
   fulfilClaim,
-  fundPrizeReserve,
   getAdminCompetition,
   getCompetitionLeaderboard,
   getReviewQueue,
@@ -44,7 +41,6 @@ import {
   markWinnerUnclaimed,
   reviewSubmission,
   scheduleCompetition,
-  setPrizeReserve,
   updateCompetition,
   validateWinner,
   verifyClaim,
@@ -54,7 +50,6 @@ import {
   type CompetitionAnalytics,
   type CompetitionInput,
   type CompetitionLeaderRow,
-  type CompetitionStatus,
   type CompetitionWinner,
   type PrizeDraw,
   type PrizeLedgerView,
@@ -63,7 +58,6 @@ import {
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
-import { CurrencySelect } from '@/components/common/currency-select'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -75,24 +69,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
-import { CompetitionDialog } from '@/features/admin/competition-dialog'
+import { formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
+import { CompetitionHero, CompetitionStats, LeaderPodium, LifecycleTrack } from '@/features/admin/competition-hero'
+import { Panel, ReserveCard } from '@/features/admin/competition-panels'
 import {
-  competitionStatusLabel,
-  competitionStatusTone,
   formatPlayTime,
   formatScore,
   scoreStatusLabel,
   scoreStatusTone,
 } from '@/features/admin/games-format'
-import { GameBadge, Loading, ReasonDialog, StatusPill } from '@/features/admin/games-ui'
+import { Loading, ReasonDialog, StatusPill } from '@/features/admin/games-ui'
 import {
   AdjustPrizeDialog,
   DrawPanel,
-  DuplicateDialog,
   LedgerPanel,
   PlaysPanel,
   PrizeDashboard,
@@ -104,25 +94,8 @@ import { prizeMoney, useLivePrize } from '@/features/admin/prize-live'
 import { isSuperAdmin } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
-import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
+
 import { cn } from '@/lib/utils'
-
-const lifecycle: CompetitionStatus[] = ['draft', 'scheduled', 'live', 'closed', 'frozen', 'finalised']
-
-function Panel({ title, icon, children, action }: { title: string; icon?: ReactNode; children: ReactNode; action?: ReactNode }) {
-  return (
-    <section className={cn(adminPanelClass, 'p-5')}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 font-display text-lg tracking-tight">
-          {icon}
-          {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
 
 function Fact({ label, value }: { label: string; value: ReactNode }) {
   return (
@@ -130,161 +103,6 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
       <p className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">{label}</p>
       <div className="mt-0.5 text-sm font-medium">{value}</div>
     </div>
-  )
-}
-
-function Stepper({ status }: { status: CompetitionStatus }) {
-  const current = lifecycle.indexOf(status === 'paused' ? 'live' : status)
-  return (
-    <ol className="flex flex-wrap gap-2">
-      {lifecycle.map((step, i) => (
-        <li
-          key={step}
-          className={cn(
-            'flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1',
-            i < current && 'bg-emerald-50 text-emerald-800 ring-emerald-200',
-            i === current && 'bg-foreground text-background ring-foreground',
-            i > current && 'text-muted-foreground ring-border',
-          )}
-        >
-          {i < current ? <Check className="size-3" /> : <span className="text-[10px]">{i + 1}</span>}
-          {competitionStatusLabel(step === 'live' && status === 'paused' ? 'paused' : step)}
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function ReserveCard({
-  comp,
-  editable,
-  run,
-}: {
-  comp: AdminCompetition
-  editable: boolean
-  run: (label: string, action: () => Promise<unknown>, success: string) => Promise<void>
-}) {
-  const reserve = comp.prize_reserve
-  const [amount, setAmount] = useState(() => {
-    if (reserve) return String(minorToMajor(reserve.reserve_amount, reserve.currency))
-    const liability = comp.prize_growth_enabled ? comp.max_prize_cents : comp.start_prize_cents
-    if (liability !== undefined && comp.prize_currency) {
-      return String(minorToMajor(liability, comp.prize_currency))
-    }
-    return ''
-  })
-  const [currency, setCurrency] = useState(reserve?.currency ?? comp.prize_currency ?? '')
-  const [source, setSource] = useState<'sendagift' | 'approved_sponsor'>(reserve?.funding_source ?? 'sendagift')
-  const [evidence, setEvidence] = useState('')
-
-  if (reserve?.status === 'funded') {
-    return (
-      <Panel title="Prize reserve" icon={<Wallet className="size-5 text-emerald-600" />}>
-        <div className="flex flex-wrap items-center gap-3">
-          <StatusPill tone="good">Funded</StatusPill>
-          <p className="font-medium">{formatPriceAmount(reserve.reserve_amount, reserve.currency)}</p>
-          <p className="text-sm text-muted-foreground">
-            by {reserve.funding_source === 'sendagift' ? 'SendAgift' : 'an approved sponsor'} ·{' '}
-            {formatDate(reserve.funded_at)}
-          </p>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">Evidence: {reserve.evidence_reference}</p>
-      </Panel>
-    )
-  }
-
-  const cur = currency.trim().toUpperCase()
-  return (
-    <Panel title="Prize reserve" icon={<Wallet className="size-5 text-primary" />}>
-      <p className="mb-4 text-sm text-muted-foreground">
-        The most the prize can reach must be held before the round opens — the fixed prize, or the maximum of a growing
-        one — funded by SendAgift or an approved sponsor.
-      </p>
-      <div className="grid gap-3 sm:grid-cols-[1fr_110px_1fr_auto] sm:items-end">
-        <div className="space-y-2">
-          <Label htmlFor="r-amount">Amount</Label>
-          <Input
-            id="r-amount"
-            type="number"
-            min={0}
-            step="0.01"
-            value={amount}
-            disabled={!editable}
-            onChange={(e) => setAmount(e.target.value)}
-            className="h-10"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="r-currency">Currency</Label>
-          <CurrencySelect
-            id="r-currency"
-            value={currency}
-            disabled={!editable}
-            onChange={setCurrency}
-            className="h-10"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="r-source">Funded by</Label>
-          <select
-            id="r-source"
-            className={cn(selectClassName, 'h-10')}
-            value={source}
-            disabled={!editable}
-            onChange={(e) => setSource(e.target.value as 'sendagift' | 'approved_sponsor')}
-          >
-            <option value="sendagift">SendAgift</option>
-            <option value="approved_sponsor">Approved sponsor</option>
-          </select>
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10"
-          disabled={!editable || !amount || cur.length !== 3}
-          onClick={() =>
-            run(
-              'reserve',
-              () =>
-                setPrizeReserve(comp.id, {
-                  reserve_amount: majorToMinor(Number(amount), cur),
-                  currency: cur,
-                  funding_source: source,
-                }),
-              'Prize reserve saved.',
-            )
-          }
-        >
-          {reserve ? 'Update' : 'Set reserve'}
-        </Button>
-      </div>
-
-      {reserve ? (
-        <div className="mt-5 grid gap-3 border-t border-border/50 pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div className="space-y-2">
-            <Label htmlFor="r-evidence">Funding evidence</Label>
-            <Input
-              id="r-evidence"
-              value={evidence}
-              onChange={(e) => setEvidence(e.target.value)}
-              placeholder="Escrow, purchase or insurance reference"
-              className="h-10"
-            />
-          </div>
-          <Button
-            type="button"
-            className="h-10"
-            disabled={!evidence.trim()}
-            onClick={() =>
-              run('fund', () => fundPrizeReserve(comp.id, evidence.trim()), 'Prize reserve marked as funded.')
-            }
-          >
-            <Check className="size-4" />
-            Mark funded
-          </Button>
-        </div>
-      ) : null}
-    </Panel>
   )
 }
 
@@ -319,9 +137,7 @@ export function AdminCompetitionDetailPage() {
   const [draw, setDraw] = useState<PrizeDraw | null>(null)
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [settleOpen, setSettleOpen] = useState(false)
-  const [duplicateOpen, setDuplicateOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
-  const navigate = useNavigate()
   const superadmin = isSuperAdmin()
 
   const load = useCallback(async () => {
@@ -398,58 +214,31 @@ export function AdminCompetitionDetailPage() {
 
   return (
     <>
-      <Link
-        to="/admin/competitions"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        All competitions
-      </Link>
-
-      <AdminPageHeader
-        eyebrow={`${comp.game_name} · ${comp.country_name}`}
-        title={comp.title}
-        action={
-          <div className="flex items-center gap-3">
-            <StatusPill tone={competitionStatusTone[status]} className="px-3 py-1 text-xs">
-              {competitionStatusLabel(status)}
-            </StatusPill>
-            <GameBadge slug={comp.game_slug} />
-          </div>
-        }
+      <CompetitionHero
+        comp={comp}
+        status={status}
+        livePrizeCents={live?.current_prize_cents}
+        // Any admin edits a draft; a published one is a superadmin's call.
+        onEdit={editable && (superadmin || comp.status === 'draft') ? () => setEditing(true) : undefined}
+        editNote={editable ? 'Only a superadmin can edit it now' : 'Rules are locked once it starts'}
       />
 
-      <FormAlert error={error} notice={notice} className="mb-6" />
+      <FormAlert error={error} notice={notice} className="mb-5" />
 
       {status === 'cancelled' ? (
-        <div className="mb-6 rounded-2xl bg-red-50 px-5 py-4 text-sm text-red-800 ring-1 ring-red-200">
+        <div className="mb-5 rounded-2xl bg-red-50 px-5 py-4 text-sm text-red-800 ring-1 ring-red-200">
           Cancelled {formatDate(comp.cancelled_at)} —{' '}
           {CANCEL_REASONS.find((r) => r.value === comp.cancel_reason)?.label ?? comp.cancel_reason}.
           {comp.cancel_note ? ` ${comp.cancel_note}` : ''} Every attempt was voided and no winner will be declared.
         </div>
       ) : (
-        <div className="mb-6">
-          <Stepper status={status} />
-        </div>
+        <LifecycleTrack status={status} />
       )}
 
+      <CompetitionStats comp={comp} livePlays={live?.eligible_play_count} />
+
       <div className="grid gap-4">
-        <Panel
-          title="Details"
-          icon={<CalendarClock className="size-5 text-primary" />}
-          action={
-            editable && superadmin ? (
-              <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => setEditing(true)}>
-                <Pencil className="size-3.5" />
-                Edit
-              </Button>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {editable ? 'Only a superadmin can edit' : 'Rules are locked once it starts'}
-              </span>
-            )
-          }
-        >
+        <Panel title="Setup" icon={<CalendarClock className="size-5 text-sky-600" />}>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Fact label="Opens" value={formatDate(comp.starts_at)} />
             <Fact label="Closes" value={formatDate(comp.ends_at)} />
@@ -473,11 +262,12 @@ export function AdminCompetitionDetailPage() {
               label="Entry"
               value={
                 <>
-                  {comp.max_attempts_per_customer} plays · {comp.points_per_attempt} pts each
+                  {comp.max_attempts_per_customer ? `${comp.max_attempts_per_customer} plays` : 'No play limit'} ·{' '}
+                  {comp.points_per_attempt} pts each
                   <span className="block text-xs font-normal text-muted-foreground">
                     {comp.daily_play_limit ? `${comp.daily_play_limit}/day · ` : ''}
                     {comp.min_plays_to_win ? `${comp.min_plays_to_win} to win · ` : ''}
-                    {comp.min_age}+{comp.requires_identity_verification ? ', ID verified' : ''} · {comp.timezone}
+                    {comp.timezone}
                   </span>
                 </>
               }
@@ -490,8 +280,6 @@ export function AdminCompetitionDetailPage() {
             {comp.quiz_questions ? (
               <Fact label="Quiz" value={`${comp.quiz_questions.length} questions · answers kept on the server`} />
             ) : null}
-            <Fact label="Scores" value={comp.submissions} />
-            <Fact label="To review" value={comp.under_review} />
             <Fact label="Game version" value={`${comp.game_name} v${comp.game_version}`} />
           </div>
           {comp.official_rules ? (
@@ -560,22 +348,29 @@ export function AdminCompetitionDetailPage() {
                 Record payout
               </Button>
             ) : null}
-            {superadmin ? (
-              <Button type="button" variant="outline" className="h-10" disabled={busy !== null} onClick={() => setDuplicateOpen(true)}>
-                <CopyPlus className="size-4" />
-                New round
-              </Button>
-            ) : null}
-            {superadmin && comp.status === 'draft' ? (
+            {comp.status === 'draft' ? (
               <Button
                 type="button"
                 className="h-10"
-                disabled={busy !== null || comp.schedule_blockers.length > 0}
-                onClick={() => run('schedule', () => scheduleCompetition(comp.id), 'Scheduled. It goes live at its start time.')}
+                title={
+                  !superadmin
+                    ? 'Only a super admin can publish'
+                    : comp.schedule_blockers.length > 0
+                      ? 'Finish the steps listed below first'
+                      : undefined
+                }
+                disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
+                onClick={() =>
+                  run(
+                    'schedule',
+                    () => scheduleCompetition(comp.id),
+                    `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
+                  )
+                }
               >
                 {spinner('schedule')}
-                <CalendarClock className="size-4" />
-                Schedule
+                <Send className="size-4" />
+                Publish
               </Button>
             ) : null}
             {status === 'closed' && !chance ? (
@@ -635,6 +430,7 @@ export function AdminCompetitionDetailPage() {
           </div>
           {status === 'draft' && comp.schedule_blockers.length > 0 ? (
             <ul className="mt-3 list-disc space-y-0.5 pl-5 text-sm text-amber-800">
+              <li className="list-none -ml-5 font-medium">Before it can be published:</li>
               {comp.schedule_blockers.map((b) => (
                 <li key={b}>{b}</li>
               ))}
@@ -642,7 +438,8 @@ export function AdminCompetitionDetailPage() {
           ) : null}
           <p className="mt-3 text-xs text-muted-foreground">
             {status === 'draft' &&
-              'Scheduling checks that competitions are enabled in the country, the rules are published and the funded reserve covers the most the prize can reach. Publishing posts the starting prize to the ledger.'}
+              'Publishing checks that competitions are enabled in every chosen country, the rules are written and the funded reserve covers the most the prize can reach. It then sends a push notification to every player in those countries.'}
+            {status === 'draft' && !superadmin && ' A super admin funds the reserve and publishes it.'}
             {status === 'paused' && 'Paused: new plays are refused. Plays already started can still be finished and scored.'}
             {status === 'scheduled' && 'It opens automatically at its start time.'}
             {status === 'live' && 'Scores are coming in. It closes automatically at its end time.'}
@@ -832,10 +629,23 @@ export function AdminCompetitionDetailPage() {
         ) : null}
 
         {chance ? null : (
-        <Panel title="Leaderboard" icon={<Trophy className="size-5 text-primary" />}>
+        <Panel
+          title="Leaderboard"
+          icon={<Trophy className="size-5 text-amber-500" />}
+          action={board.length ? <span className="text-xs text-muted-foreground">{board.length} ranked</span> : undefined}
+        >
           {board.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">No scores yet.</p>
+            <div className="flex flex-col items-center gap-2 py-10 text-center">
+              <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-md">
+                <Trophy className="size-7" />
+              </span>
+              <p className="font-medium">No scores yet</p>
+              <p className="text-sm text-muted-foreground">The first verified score takes the top spot.</p>
+            </div>
           ) : (
+            <>
+            <LeaderPodium rows={board.slice(0, 3)} />
+            {board.length > 3 ? (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-sm">
                 <thead>
@@ -849,7 +659,7 @@ export function AdminCompetitionDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {board.map((row) => (
+                  {board.slice(3).map((row) => (
                     <tr key={`${row.rank}-${row.customer_id}`} className="border-b border-border/30 last:border-0">
                       <td className="py-2.5 pr-4 font-semibold">{row.rank}</td>
                       <td className="py-2.5 pr-4">
@@ -871,19 +681,24 @@ export function AdminCompetitionDetailPage() {
                 </tbody>
               </table>
             </div>
+            ) : null}
+            </>
           )}
         </Panel>
         )}
       </div>
 
-      <CompetitionDialog
+      <CompetitionForm
         open={editing}
         onOpenChange={setEditing}
         title="Edit competition"
         description="Saving returns it to draft, so every publishing check runs again."
-      >
-        <CompetitionForm initial={comp} games={games} countries={countries} submitLabel="Save changes" onSubmit={saveEdit} />
-      </CompetitionDialog>
+        initial={comp}
+        games={games}
+        countries={countries}
+        submitLabel="Save changes"
+        onSubmit={saveEdit}
+      />
 
       <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
         <DialogContent>
@@ -939,12 +754,6 @@ export function AdminCompetitionDetailPage() {
       <AdjustPrizeDialog comp={comp} open={adjustOpen} onOpenChange={setAdjustOpen} onDone={done} />
       <VoidPlayDialog comp={comp} play={voiding} onOpenChange={(open) => !open && setVoiding(null)} onDone={done} />
       <SettleDialog comp={comp} open={settleOpen} onOpenChange={setSettleOpen} onDone={done} />
-      <DuplicateDialog
-        comp={comp}
-        open={duplicateOpen}
-        onOpenChange={setDuplicateOpen}
-        onCreated={(created) => navigate(`/admin/competitions/${created.id}`)}
-      />
 
       <ReasonDialog
         open={rejecting !== null}

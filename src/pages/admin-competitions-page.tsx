@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Plus, Trophy } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
 
 import {
+  countryNames,
   createCompetition,
   listAdminCompetitions,
   type AdminCompetition,
@@ -15,9 +15,8 @@ import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
-import { CompetitionDialog } from '@/features/admin/competition-dialog'
 import { CompetitionForm } from '@/features/admin/competition-form'
-import { isSuperAdmin } from '@/lib/auth'
+import { CompetitionSheet } from '@/features/admin/competition-sheet'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
@@ -37,7 +36,6 @@ const filters: { value: CompetitionStatus | 'all'; label: string }[] = [
 
 /** Superadmin: skill competitions, from draft to winners. */
 export function AdminCompetitionsPage() {
-  const navigate = useNavigate()
   const [competitions, setCompetitions] = useState<AdminCompetition[]>([])
   const [games, setGames] = useState<AdminGameSummary[]>([])
   const [countries, setCountries] = useState<Country[]>([])
@@ -45,6 +43,8 @@ export function AdminCompetitionsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
+  // The competition open in the side drawer.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const [list, gameList, countryList] = await Promise.all([
@@ -78,7 +78,8 @@ export function AdminCompetitionsPage() {
   async function create(input: CompetitionInput) {
     const created = await createCompetition(input)
     setCreating(false)
-    navigate(`/admin/competitions/${created.id}`)
+    await load()
+    setSelectedId(created.id)
   }
 
   return (
@@ -88,12 +89,10 @@ export function AdminCompetitionsPage() {
         title="Competitions"
         description="Prize rounds run on the skill games, with a fixed prize or one that grows with every play. Each needs a funded reserve and published rules before it can be scheduled, and every action here is audited."
         action={
-          isSuperAdmin() ? (
-            <Button type="button" className="h-10" onClick={() => setCreating(true)}>
-              <Plus className="size-4" />
-              New competition
-            </Button>
-          ) : null
+          <Button type="button" className="h-10" onClick={() => setCreating(true)}>
+            <Plus className="size-4" />
+            New competition
+          </Button>
         }
       />
 
@@ -123,7 +122,7 @@ export function AdminCompetitionsPage() {
         <AdminEmptyState
           icon={Trophy}
           title={filter === 'all' ? 'No competitions yet' : 'Nothing here'}
-          description="Create a competition, fund its prize reserve and publish its rules — then schedule it for players in its country."
+          description="Create a competition, fund its prize reserve and publish its rules — then schedule it for players in the countries it runs in."
           action={
             <Button type="button" className="h-10" onClick={() => setCreating(true)}>
               <Plus className="size-4" />
@@ -134,12 +133,14 @@ export function AdminCompetitionsPage() {
       ) : (
         <div className="space-y-3">
           {shown.map((c) => (
-            <Link
+            <button
               key={c.id}
-              to={`/admin/competitions/${c.id}`}
+              type="button"
+              onClick={() => setSelectedId(c.id)}
               className={cn(
                 adminPanelClass,
-                'group flex flex-wrap items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/30 sm:px-5',
+                'group flex w-full flex-wrap items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/30 sm:px-5',
+                selectedId === c.id && 'ring-2 ring-primary/40',
               )}
             >
               <GameBadge slug={c.game_slug} />
@@ -151,7 +152,7 @@ export function AdminCompetitionsPage() {
                   </StatusPill>
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
-                  {c.game_name} · {c.country_name} · {formatDate(c.starts_at)} → {formatDate(c.ends_at)}
+                  {c.game_name} · {countryNames(c)} · {formatDate(c.starts_at)} → {formatDate(c.ends_at)}
                 </p>
               </div>
               <div className="text-right text-sm">
@@ -171,24 +172,29 @@ export function AdminCompetitionsPage() {
                 </p>
               </div>
               <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-            </Link>
+            </button>
           ))}
         </div>
       )}
 
-      <CompetitionDialog
+      <CompetitionSheet
+        id={selectedId}
+        onClose={() => setSelectedId(null)}
+        onChanged={() => void load()}
+        games={games}
+        countries={countries}
+      />
+
+      <CompetitionForm
         open={creating}
         onOpenChange={setCreating}
         title="New competition"
-        description="It starts as a draft. Publish it once the prize reserve is funded and the rules are written."
-      >
-        <CompetitionForm
-          games={games}
-          countries={countries}
-          submitLabel="Create draft"
-          onSubmit={create}
-        />
-      </CompetitionDialog>
+        description="Set it up step by step. It starts as a draft you publish once the prize is funded."
+        games={games}
+        countries={countries}
+        submitLabel="Create draft"
+        onSubmit={create}
+      />
     </>
   )
 }
