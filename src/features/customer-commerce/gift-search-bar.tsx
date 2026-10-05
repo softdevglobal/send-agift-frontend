@@ -75,7 +75,7 @@ function Field({
 /**
  * Where the gift is going, and when it has to be there.
  *
- * Where and when are remembered rather than used to filter the shelves — they
+ * Where and when are remembered rather than used to filter the shelves. They
  * are carried through browsing and fill in checkout, so a shopper is not asked
  * the same two questions again at the end.
  */
@@ -194,7 +194,7 @@ export function GiftSearchBar({
           typeof picked.latitude === 'number' && typeof picked.longitude === 'number'
       } else if (date) {
         // A date on its own is still worth keeping for checkout, even the
-        // first time — with no address yet, or no intent to add it to.
+        // first time. With no address yet, or no intent to add it to.
         setIntent({ ...intent, date })
       } else if (!date && intent) {
         // The date was cleared: drop it from what we remember, but keep the

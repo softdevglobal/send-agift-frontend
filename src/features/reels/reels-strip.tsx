@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
  * Home-page entry point into the feed: a soft tinted card with a scrollable
  * row of the newest reels.
  *
- * Cards are stills, not autoplaying video — a row of clips competing for
+ * Cards are stills, not autoplaying video. A row of clips competing for
  * attention on a landing page is noise, and each one costs a stream. Watching
  * happens on /reels.
  *
@@ -45,7 +45,7 @@ export function ReelsStrip() {
               Watch it made, then send it
             </h2>
             <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
-              Real clips from the people who make these gifts — send one straight
+              Real clips from the people who make these gifts. Send one straight
               from the feed.
             </p>
           </div>

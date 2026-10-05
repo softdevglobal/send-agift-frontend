@@ -135,7 +135,7 @@ function Lightbox({
 export type ReviewCardProps = {
   review: ProductReview
   /**
-   * Casting a vote. Omit for guests — the button then invites them to sign in
+   * Casting a vote. Omit for guests. The button then invites them to sign in
    * rather than failing the call with a 401.
    */
   onVote?: (review: ProductReview, isHelpful: boolean) => void
@@ -185,7 +185,7 @@ export function ReviewCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <span className="truncate text-sm font-semibold">{name}</span>
-            {/* Every review here came from a delivered order line — the
+            {/* Every review here came from a delivered order line. The
                 backend will not create one any other way. */}
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
               <BadgeCheck className="size-3.5" />

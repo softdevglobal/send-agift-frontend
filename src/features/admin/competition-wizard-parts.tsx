@@ -30,7 +30,7 @@ function priceLabel(points: number): string {
 
 /**
  * The working games as picture cards, with a search. Chance mechanics and
- * quizzes are not games of their own, so they are left out — unless an older
+ * quizzes are not games of their own, so they are left out. Unless an older
  * competition already uses one, which stays selectable so it can be edited.
  */
 export function GamePicker({
@@ -231,7 +231,7 @@ export function ScheduleTimeline({
       <EmptyHint
         icon={CalendarClock}
         title="Pick a start and an end"
-        text="The round opens and closes on its own at these times — no need to come back and press anything."
+        text="The round opens and closes on its own at these times. No need to come back and press anything."
       />
     )
   }

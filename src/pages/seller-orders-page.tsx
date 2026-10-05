@@ -15,7 +15,7 @@ import {
  *
  * `/seller/orders/:orderItemId` is this same page with the panel open, so a
  * deep link still lands on one item while the seller who clicked a row keeps
- * the list — and their scroll position — behind it.
+ * the list. And their scroll position. Behind it.
  */
 export function SellerOrdersPage() {
   const { orderItemId } = useParams()

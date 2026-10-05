@@ -54,7 +54,7 @@ type ProductWizardProps = {
   shopName: string
   /**
    * `edit` prefills every step and lets the seller jump straight to Save;
-   * `create` starts blank. It is the same dialog either way — editing a gift
+   * `create` starts blank. It is the same dialog either way. Editing a gift
    * and listing one are the same flow.
    */
   mode?: 'create' | 'edit'
@@ -71,7 +71,7 @@ type ProductWizardProps = {
 
 /**
  * Listing or editing a gift, one step at a time: what it is, what it costs,
- * how it looks, how many there are, the parcel size — and a preview of the
+ * how it looks, how many there are, the parcel size. And a preview of the
  * shelf card.
  *
  * Deliberately the same shell, rhythm and preview step as the reel wizard, so
@@ -175,7 +175,7 @@ export function ProductWizard({
 
   const priceLabel = priceValid
     ? formatPriceAmount(majorToMinor(priceMajor, form.currency), form.currency)
-    : '—'
+    : '-'
   const prepParts = splitPrepMinutes(form.prep_minutes)
   const prepTotal = Number.parseInt(form.prep_minutes, 10)
   const prepTotalLabel = Number.isFinite(prepTotal) && prepTotal > 0 ? String(prepTotal) : '0'
@@ -383,7 +383,7 @@ export function ProductWizard({
             label="Description"
             htmlFor="wizard-description"
             full
-            hint="Two or three lines is plenty — this shows on the gift page."
+            hint="Two or three lines is plenty. This shows on the gift page."
           >
             <textarea
               id="wizard-description"
@@ -409,7 +409,7 @@ export function ProductWizard({
           <WizardField
             label="Occasions"
             htmlFor="wizard-tags"
-            hint="Comma separated — birthday, anniversary…"
+            hint="Comma separated. Birthday, anniversary…"
           >
             <Input
               id="wizard-tags"
@@ -422,7 +422,7 @@ export function ProductWizard({
             label="Link slug"
             htmlFor="wizard-slug"
             full
-            hint="Optional. The gift’s address in the catalog — leave blank to generate it."
+            hint="Optional. The gift’s address in the catalog. Leave blank to generate it."
           >
             <Input
               id="wizard-slug"
@@ -491,7 +491,7 @@ export function ProductWizard({
                     Use the suggested {suggestedReward.toLocaleString()}
                   </button>
                 ) : (
-                  <>Filled in as 10% of the price back — change it to anything, or 0 for none.</>
+                  <>Filled in as 10% of the price back. Change it to anything, or 0 for none.</>
                 )}
               </>
             }
@@ -828,7 +828,7 @@ export function ProductWizard({
           </section>
 
           <p className="text-xs text-muted-foreground">
-            Combined limit {MAX_PRODUCT_MEDIA} files. Drag photos to reorder — the first
+            Combined limit {MAX_PRODUCT_MEDIA} files. Drag photos to reorder. The first
             photo is the cover.
           </p>
         </div>
@@ -852,7 +852,7 @@ export function ProductWizard({
           <WizardField
             label="Reserved quantity"
             htmlFor="wizard-reserved"
-            hint="Held back from sale — pending orders, samples."
+            hint="Held back from sale. Pending orders, samples."
           >
             <Input
               id="wizard-reserved"
@@ -895,8 +895,8 @@ export function ProductWizard({
               }
               className={selectClassName}
             >
-              <option value="published">Published — live in the catalog</option>
-              <option value="draft">Draft — only you can see it</option>
+              <option value="published">Published. Live in the catalog</option>
+              <option value="draft">Draft. Only you can see it</option>
             </select>
           </WizardField>
         </WizardFields>

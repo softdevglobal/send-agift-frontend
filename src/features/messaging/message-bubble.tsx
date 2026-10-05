@@ -18,7 +18,7 @@ export type MessageDelivery = 'sent' | 'seen'
 type MessageBubbleProps = {
   message: ChatMessage
   own: boolean
-  /** Who sent it — only for the first bubble of a group in threads with 3+ people. */
+  /** Who sent it. Only for the first bubble of a group in threads with 3+ people. */
   senderLabel?: string | null
   /** The other side's avatar beside their last bubble in a group; null keeps the gutter. */
   avatar?: ReactNode

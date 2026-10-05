@@ -137,6 +137,8 @@ export type Customer = {
   updated_at: string
   deleted_at?: string
   image_url?: string
+  /** True for an account made for a gift recipient still on its temporary password. */
+  password_change_required?: boolean
 }
 
 export type CustomerDetails = Customer & { addresses: Address[] }
@@ -149,11 +151,155 @@ export type Seller = {
   trading_name?: string
   email: string
   phone?: string
+  /** unverified (email not confirmed) → pending (admin review) → verified | rejected */
   verification_status: string
   status: string
   created_at: string
   updated_at: string
   image_url?: string
+  email_verified_at?: string
+  /** What the admin told the seller when approving or rejecting them. */
+  verification_note?: string
+  verification_reviewed_at?: string
+}
+
+/** A seller row in the admin review queue. */
+/** An address on a seller application, in any country (ISO code, or ZZ). */
+export type ApplicationAddress = {
+  country: string
+  country_other?: string | null
+  line1: string
+  line2?: string | null
+  city: string
+  region?: string | null
+  postal_code?: string | null
+  latitude?: number | null
+  longitude?: number | null
+}
+
+/** Everything a seller tells us when they apply, for admin review. */
+export type SellerApplication = {
+  business: {
+    country: string
+    entity_type: string
+    entity_type_other?: string | null
+    legal_name: string
+    local_name?: string | null
+    trading_name?: string | null
+    registration_status: 'registered' | 'pending' | 'no_number'
+    registration_note?: string | null
+    identifiers: {
+      type: string
+      type_label?: string | null
+      value: string
+      authority?: string | null
+      jurisdiction?: string | null
+    }[]
+    tax_status: 'registered' | 'not_registered' | 'unsure'
+    tax_registrations: {
+      country: string
+      jurisdiction?: string | null
+      scheme: string
+      number: string
+    }[]
+  }
+  representative: {
+    full_name: string
+    role: string
+    job_title?: string | null
+    language: string
+    language_other?: string | null
+    authority_confirmed: boolean
+  }
+  addresses: {
+    registered: ApplicationAddress
+    pickup: ApplicationAddress
+    return: ApplicationAddress
+    pickup_same_as_registered: boolean
+    return_same_as_pickup: boolean
+  }
+  shop: {
+    display_name: string
+    slug: string
+    description: string
+    categories: string[]
+    website?: string | null
+    currency: string
+    time_zone: string
+    support_email?: string | null
+    public_location: string
+    gift_options: string[]
+  }
+  fulfilment: {
+    delivery_enabled: boolean
+    pickup_enabled: boolean
+    bands: { up_to_km: number; fee: number; days: number }[]
+    order_cutoff?: string | null
+    delivery_notes?: string | null
+    working_days: string[]
+    pickup_instructions?: string | null
+    returns_policy: string
+    cross_border_interest: boolean
+  }
+  payout: {
+    bank_country: string
+    bank_country_other?: string | null
+    currency: string
+  }
+  consents: {
+    details_confirmed: boolean
+    terms_accepted: boolean
+    marketing_opt_in: boolean
+  }
+}
+
+/** A stored application, as an admin sees it. */
+export type SellerApplicationRecord = SellerApplication & {
+  seller_id: string
+  review_reasons: string[]
+  document: { name: string; content_type: string; uploaded_at: string } | null
+  submitted_at: string
+  updated_at: string
+}
+
+export type AdminSellerDetails = SellerDetails & {
+  application: SellerApplicationRecord | null
+}
+
+export type AdminSellerSummary = Seller & {
+  country_name: string
+  shop_count: number
+  city?: string
+}
+
+export type AdminSellerList = {
+  sellers: AdminSellerSummary[]
+  total: number
+  counts: Record<'unverified' | 'pending' | 'verified' | 'rejected', number>
+}
+
+/** A delivered gift someone sent to the signed-in customer. No prices. */
+export type ReceivedGift = {
+  order_id: string
+  order_number: string
+  sender_name: string
+  gift_message?: string
+  gift_points: number
+  delivered_at: string
+  items: ReceivedGiftItem[]
+}
+
+export type ReceivedGiftItem = {
+  id: string
+  product_id: string
+  product_name: string
+  product_slug: string
+  product_image_url?: string
+  shop_name: string
+  quantity: number
+  fulfilment_status: string
+  /** Set once the line has a review, by the recipient or the sender. */
+  review_id?: string
 }
 
 /** One shop-delivery band. The smallest `max_km` that covers the recipient wins. */
@@ -225,7 +371,7 @@ export type Product = {
   prep_minutes: number
   created_at: string
   updated_at: string
-  /** Cover image — usually the first gallery image's CDN URL. */
+  /** Cover image. Usually the first gallery image's CDN URL. */
   image_url?: string | null
   /** Optional shipping dimensions used for checkout quotes and seller rates. */
   parcel?: ParcelInput | null
@@ -300,7 +446,7 @@ export type ProductInput = {
   /** Points a customer earns per unit bought (0–1,000,000). */
   reward_points?: number
   prep_minutes?: number
-  /** Optional — API sets this from the first image in `media` when omitted. */
+  /** Optional. API sets this from the first image in `media` when omitted. */
   image_url?: string | null
   inventory?: InventoryInput
   /** Shipping parcel for checkout quotes and seller labels. */
@@ -360,11 +506,13 @@ export type RecipientInput = {
   image_url?: string | null
   default_address_id?: string | null
   preferences?: Record<string, unknown>
-  /** Create only. Ignored on PUT — use recipient address endpoints. */
+  /** Create only. Ignored on PUT. Use recipient address endpoints. */
   addresses?: AddressInput[]
 }
 
 export const MEDIA_FOLDERS = [
+  'customer-profile',
+  'seller-document',
   'seller-profile',
   'shop-image',
   'product-image',
@@ -434,7 +582,7 @@ export type Order = {
   recipient_id?: string | null
   country_id: string
   customer_type: string
-  /** RFC3339 timestamp — the date part is the delivery day. */
+  /** RFC3339 timestamp. The date part is the delivery day. */
   delivery_date: string
   status: OrderStatus
   /** Minor units of `currency`. */
@@ -611,7 +759,7 @@ export type ShippingRatesResult = {
   /** Rate the customer chose at checkout for this line's shop, when still known. */
   checkout_selected?: CheckoutSelectedRate | null
   /**
-   * Fresh Shippo rate to buy — always use this for BuyLabel when present.
+   * Fresh Shippo rate to buy. Always use this for BuyLabel when present.
    * Never reuse `checkout_selected.rate_object_id` (it expires).
    */
   recommended_rate_object_id?: string | null
@@ -642,7 +790,7 @@ export type CheckoutSelectedRate = {
   amount_major?: string
   currency: string
   /**
-   * Checkout-time Shippo rate id when returned — history only; do not BuyLabel with it.
+   * Checkout-time Shippo rate id when returned. History only; do not BuyLabel with it.
    * Matching for buy uses provider + service_name → recommended_rate_object_id.
    */
   rate_object_id?: string
@@ -723,7 +871,7 @@ export type ShippingLabelLink = {
 /**
  * Body for recording a shipment the seller arranged themselves, bypassing
  * Shippo entirely. The fallback for a lane no connected carrier account
- * quotes — for example none of Shippo's test carriers serve a domestic Sri
+ * quotes. For example none of Shippo's test carriers serve a domestic Sri
  * Lanka shipment, so GetRates can return zero rates for a perfectly valid
  * order with nothing wrong to fix.
  */
@@ -741,12 +889,12 @@ export type DeliveryQuoteLine = {
 
 export type DeliveryQuoteInput = {
   recipient_id: string
-  /** The date it should arrive — picks the cheapest service that makes it. */
+  /** The date it should arrive. Picks the cheapest service that makes it. */
   delivery_date?: string
   items: DeliveryQuoteLine[]
 }
 
-/** One courier option for a shop — AliExpress-style delivery picker. */
+/** One courier option for a shop. AliExpress-style delivery picker. */
 export type DeliveryQuoteOption = {
   provider: string
   service_name: string
@@ -821,13 +969,13 @@ export type DeliveryQuote = {
   shipments: QuotedShipment[]
   amount: number
   currency: string
-  /** False when at least one shop could not be priced — see `unquoted`. */
+  /** False when at least one shop could not be priced. See `unquoted`. */
   complete: boolean
   unquoted?: string[]
 }
 
 /**
- * Body for a seller delivering an item personally — no courier, no tracking.
+ * Body for a seller delivering an item personally. No courier, no tracking.
  * The note is optional and only for the seller's own record.
  */
 export type LocalDeliveryInput = {
@@ -870,7 +1018,7 @@ export type CreateOrderInput = {
   media_greeting_id?: string
   /** Minor units. Line prices come from the product, not the client. */
   delivery_amount?: number
-  /** Quoted rates from POST /shipping/quote — optional but preferred when present. */
+  /** Quoted rates from POST /shipping/quote. Optional but preferred when present. */
   shipping_quotes?: OrderShippingQuote[]
   items: OrderItemInput[]
   /**
@@ -945,7 +1093,7 @@ export type ReelMediaItem = {
   asset_type: 'image' | 'video'
   bucket: string
   object_path: string
-  /** Only filled for objects under `public/` — a private object has no playable URL. */
+  /** Only filled for objects under `public/`. A private object has no playable URL. */
   cdn_url?: string | null
   mime_type: string
   size_bytes: number
@@ -988,7 +1136,7 @@ export type ReelDetails = {
   like_count?: number
   comment_count?: number
   /**
-   * Never computed on the public feed routes — they read no identity — so it
+   * Never computed on the public feed routes. They read no identity. So it
    * is always false there. `GET /reels/{id}/likes` answers it per viewer.
    */
   liked_by_me?: boolean
@@ -1098,7 +1246,7 @@ export type Conversation = {
   last_message_at?: string | null
   created_at: string
   updated_at: string
-  /** What the thread is about — empty for support threads. */
+  /** What the thread is about. Empty for support threads. */
   product_name?: string | null
   product_image_url?: string | null
   shop_name?: string | null

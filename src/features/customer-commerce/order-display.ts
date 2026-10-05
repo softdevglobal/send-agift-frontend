@@ -24,7 +24,7 @@ const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   refunded: 'This order was refunded.',
 }
 
-/** Orders still moving through fulfilment — shown on Track orders. */
+/** Orders still moving through fulfilment. Shown on Track orders. */
 const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'draft',
   'pending_payment',
@@ -34,7 +34,7 @@ const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'dispatched',
 ])
 
-/** Finished orders — shown on Order history. */
+/** Finished orders. Shown on Order history. */
 const HISTORY_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'delivered',
   'cancelled',

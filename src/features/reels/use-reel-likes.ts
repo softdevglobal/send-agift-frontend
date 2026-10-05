@@ -17,7 +17,7 @@ export type LikeGate = 'sign-in' | 'customer-only' | null
  *
  * Anyone sees the like count; only a signed-in customer can like. The public
  * feed never says whether *this* viewer liked a reel, so that is asked per
- * reel as it reaches the screen — once, and only for a customer.
+ * reel as it reaches the screen. Once, and only for a customer.
  */
 export function useReelLikes(patchReel: (reelId: string, patch: ReelPatch) => void) {
   const { role, isAuthenticated } = useAuth()
@@ -72,7 +72,7 @@ export function useReelLikes(patchReel: (reelId: string, patch: ReelPatch) => vo
         patchReel(reel.id, { likedByMe: result.liked, likeCount: result.like_count })
       } catch (error) {
         if (!like && error instanceof ApiError && error.status === 404) {
-          // Already unliked elsewhere — the heart is right to be empty.
+          // Already unliked elsewhere. The heart is right to be empty.
           patchReel(reel.id, { likedByMe: false })
         } else {
           patchReel(reel.id, { likedByMe: reel.likedByMe, likeCount: reel.likeCount })

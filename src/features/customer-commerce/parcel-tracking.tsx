@@ -53,7 +53,7 @@ function CopyNumber({ value }: { value: string }) {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)
     } catch {
-      // Clipboard blocked (insecure origin, denied permission) — the number is
+      // Clipboard blocked (insecure origin, denied permission). The number is
       // on screen and selectable, so there is nothing to recover from.
     }
   }

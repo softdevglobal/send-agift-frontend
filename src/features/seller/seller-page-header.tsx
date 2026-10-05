@@ -12,7 +12,7 @@ type SellerPageHeaderProps = {
   icon?: LucideIcon
   tone?: SellerTone
   /**
-   * Extra content along the bottom of the card — a filter row, a stat strip,
+   * Extra content along the bottom of the card. A filter row, a stat strip,
    * a tab bar. Sits under a hairline, inside the same panel.
    */
   children?: ReactNode
@@ -31,7 +31,7 @@ const toneGlow: Record<SellerTone, string> = {
  * icon, name and one-line purpose, with room for the page's primary action and
  * an optional strip of controls beneath.
  *
- * Dark on purpose — it echoes the sidebar and the dashboard hero, so each page
+ * Dark on purpose. It echoes the sidebar and the dashboard hero, so each page
  * announces itself the way the portal's chrome does rather than floating as
  * bare text on the page background.
  */

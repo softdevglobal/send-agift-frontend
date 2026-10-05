@@ -111,7 +111,7 @@ function inDays(days: number) {
 
 /**
  * Shortcuts for when a gift should land. Delivery cost depends on the date, so
- * these are not only convenience — they let someone see the price move.
+ * these are not only convenience. They let someone see the price move.
  */
 const DATE_PRESETS = [
   { label: 'Tomorrow', days: 1 },
@@ -218,7 +218,7 @@ function defaultAddress(details: RecipientDetails): RecipientAddress | null {
 
 /**
  * Delivery is quoted in the carrier's currency, which is not always the
- * currency the cart is priced in — USPS quotes USD for a cart priced in AUD.
+ * currency the cart is priced in. USPS quotes USD for a cart priced in AUD.
  * Adding the two numbers would be nonsense, so a combined total is only ever
  * shown when both sides agree.
  */
@@ -385,7 +385,7 @@ export function CheckoutPage() {
     setAddingRecipient(true)
   }, [loading, savedRecipientsReady, savedRecipients, intent])
 
-  // Loads the picked recipient's saved addresses — the list only carries a
+  // Loads the picked recipient's saved addresses. The list only carries a
   // name, so the address has to be fetched once someone is actually chosen.
   useEffect(() => {
     if (!recipientId) {
@@ -464,7 +464,7 @@ export function CheckoutPage() {
     // quoteKey stands in for the cart contents; `lines` is a new array each render.
   }, [recipientId, deliveryDate, quoteKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Only API-backed products can be ordered — demo catalog entries have no server record.
+  // Only API-backed products can be ordered. Demo catalog entries have no server record.
   const unorderable = useMemo(
     () => lines.filter((line) => !isUuid(line.product.id)),
     [lines],
@@ -481,7 +481,7 @@ export function CheckoutPage() {
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
 
   // Each shop is its own parcel. A selection only counts when it is quoted in
-  // the cart currency — otherwise the order cannot be placed.
+  // the cart currency. Otherwise the order cannot be placed.
   const chargeableSelections = Object.fromEntries(
     Object.entries(quoteSelections).filter(([, choice]) => sameCurrency(choice.currency, currency)),
   )
@@ -1059,7 +1059,7 @@ export function CheckoutPage() {
                     <span className="font-medium text-foreground">
                       {describeIntent(intent)}
                     </span>
-                    . Pick the recipient whose address matches — theirs is
+                    . Pick the recipient whose address matches. Theirs is
                     where it will actually go.
                   </p>
                 </div>
@@ -1125,7 +1125,7 @@ export function CheckoutPage() {
                   value={giftMessage}
                   onChange={(event) => setGiftMessage(event.target.value)}
                   className={textareaClassName}
-                  placeholder="Happy birthday — thinking of you"
+                  placeholder="Happy birthday. Thinking of you"
                 />
               </div>
 
@@ -1236,7 +1236,7 @@ export function CheckoutPage() {
                           <li className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">
                             Shop delivery is not available
                             {shop.seller_delivery.reason
-                              ? ` — ${shop.seller_delivery.reason}`
+                              ? `. ${shop.seller_delivery.reason}`
                               : shop.seller_delivery.distance_km != null
                                 ? ` (${shop.seller_delivery.distance_km} km is outside the shop zones)`
                                 : '.'}
@@ -1385,7 +1385,7 @@ export function CheckoutPage() {
 
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             Line prices are confirmed by the seller when the order is created, so the
-            final total may differ. Payment is not captured yet — new orders stay
+            final total may differ. Payment is not captured yet. New orders stay
             awaiting payment.
           </p>
           <Button

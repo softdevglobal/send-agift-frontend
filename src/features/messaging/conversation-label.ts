@@ -30,7 +30,7 @@ export type ConversationLabel = {
   context?: ConversationContext | null
 }
 
-/** Enough of a conversation to name it — a real one, or a draft that doesn't exist yet. */
+/** Enough of a conversation to name it. A real one, or a draft that doesn't exist yet. */
 export type ConversationLabelSource = Pick<
   Conversation,
   'type' | 'product_id' | 'shop_id' | 'order_item_id'
@@ -46,7 +46,7 @@ function participantWithRole(
   return source.participants?.find((participant) => participant.role === role)
 }
 
-/** Lowercased shop and gift names for a customer's thread — what their inbox search matches. */
+/** Lowercased shop and gift names for a customer's thread. What their inbox search matches. */
 export function customerConversationText(source: ConversationLabelSource): string {
   if (source.type === 'support') {
     return `sendagift support ${source.support_case?.subject ?? ''}`.toLowerCase()
@@ -149,7 +149,7 @@ export function useConversationLabel(
   if (viewer === 'seller') {
     const productName = sellerProduct?.name ?? sellerOrderItem?.product?.name
     const productImage = sellerProduct?.image_url ?? sellerOrderItem?.product?.image_url
-    // Who wrote in — the customer participant's name and photo from the API.
+    // Who wrote in. The customer participant's name and photo from the API.
     const customer = participantWithRole(source, 'customer')
     const customerName = customer?.display_name?.trim() || null
     const avatar = {

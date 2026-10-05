@@ -20,7 +20,7 @@ export async function fetchAllMyReviews(): Promise<ProductReview[]> {
 }
 
 export type MyReviewsState = {
-  /** Keyed by `order_item_id` — one review per delivered line, by definition. */
+  /** Keyed by `order_item_id`. One review per delivered line, by definition. */
   byOrderItem: Map<string, ProductReview>
   reviews: ProductReview[]
   loading: boolean

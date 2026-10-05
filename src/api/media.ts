@@ -71,7 +71,7 @@ export async function uploadPublicImage(file: File, folder: MediaFolder): Promis
 
 /** What an upload leaves behind: the S3 key a reel is posted with, and the URL to preview it. */
 export type UploadedFile = {
-  /** The `key` from presign — this is what a reel's `object_path` must be. */
+  /** The `key` from presign. This is what a reel's `object_path` must be. */
   objectPath: string
   publicUrl: string
   mimeType: string
@@ -102,8 +102,8 @@ async function imageMetadata(
 /**
  * Uploads any supported file (image or video) and returns its storage key.
  *
- * Reels are posted with the S3 `key`, not the public URL — the API resolves
- * the URL itself — so this returns both rather than the URL alone.
+ * Reels are posted with the S3 `key`, not the public URL. The API resolves
+ * the URL itself. So this returns both rather than the URL alone.
  */
 export async function uploadPublicFile(
   file: File,

@@ -97,7 +97,7 @@ export function ProductReviews({
   }, [cursor, productId])
 
   /**
-   * Votes are applied to the row optimistically and rolled back on failure —
+   * Votes are applied to the row optimistically and rolled back on failure.
    * a thumbs-up that waits for a round trip feels broken at this size.
    */
   async function handleVote(review: ProductReview, isHelpful: boolean) {
@@ -164,7 +164,7 @@ export function ProductReviews({
           <div className="mt-4 grid gap-5 rounded-2xl border border-border/60 bg-surface p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-8">
             <div className="text-center sm:text-left">
               <p className="font-display text-5xl leading-none tracking-tight">
-                {summary ? summary.avg_rating.toFixed(1) : '—'}
+                {summary ? summary.avg_rating.toFixed(1) : '-'}
               </p>
               <StarMeter
                 value={summary?.avg_rating ?? 0}

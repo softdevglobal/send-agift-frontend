@@ -21,7 +21,7 @@ export type AdminNavItem = {
   label: string
   icon: LucideIcon
   end?: boolean
-  /** Section has no backend endpoints yet — renders a placeholder screen. */
+  /** Section has no backend endpoints yet. Renders a placeholder screen. */
   soon?: boolean
   /** Shows the unread-messages count beside the label. */
   showsUnread?: boolean

@@ -62,7 +62,7 @@ type TimezoneSelectProps = {
 
 /**
  * A searchable list of IANA time zones, each shown with its current UTC
- * offset — the thing that actually decides when a round opens, which a bare
+ * offset. The thing that actually decides when a round opens, which a bare
  * "Pacific/Auckland" text field left the admin to work out themselves.
  */
 export function TimezoneSelect({

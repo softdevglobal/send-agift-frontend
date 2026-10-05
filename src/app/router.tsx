@@ -32,6 +32,7 @@ import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
 import { CustomerPointsPage } from '@/pages/customer-points-page'
+import { CustomerReceivedGiftsPage } from '@/pages/customer-received-gifts-page'
 import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
@@ -53,6 +54,7 @@ import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
+import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -83,7 +85,7 @@ function RedirectOrder() {
 export function AppRouter() {
   return (
     <Routes>
-      {/* Storefront — the same pages for guests and signed-in customers. */}
+      {/* Storefront. The same pages for guests and signed-in customers. */}
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/products/:productId" element={<ProductViewPage />} />
@@ -158,6 +160,7 @@ export function AppRouter() {
         <Route path="orders" element={<Navigate to="/orders" replace />} />
         <Route path="orders/history" element={<Navigate to="/orders/history" replace />} />
         <Route path="orders/:orderId" element={<RedirectOrder />} />
+        <Route path="gifts" element={<CustomerReceivedGiftsPage />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="points" element={<CustomerPointsPage />} />
@@ -219,6 +222,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/seller/verify-email"
+        element={
+          <GuestRoute forRole="seller">
+            <SellerVerifyEmailPage />
+          </GuestRoute>
+        }
+      />
+      <Route
         path="/admin/login"
         element={
           <GuestRoute forRole="admin">
@@ -243,7 +254,7 @@ export function AppRouter() {
         {/*
           One route, optional param: `/seller/orders/:orderItemId` opens the
           detail panel over the list. Two separate routes would remount the
-          page — and refetch the whole list — every time a row is opened.
+          page and refetch the whole list every time a row is opened.
         */}
         <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
         {/* The detail used to be its own page; keep those links working. */}

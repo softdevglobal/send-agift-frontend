@@ -125,7 +125,7 @@ export function HomePage() {
                 Discover the best gifts for every moment.
               </h1>
               <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Browse gifts right away — no account needed. Sign in when you
+                Browse gifts right away. No account needed. Sign in when you
                 want to save favorites, checkout, and track deliveries.
               </p>
 

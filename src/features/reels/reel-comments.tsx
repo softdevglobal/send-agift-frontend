@@ -146,7 +146,7 @@ export function ReelCommentsPanel({ reel, onClose, onPatch, className }: ReelCom
     }))
   }
 
-  /** `deleted` is false when the API refused — the comment stays, the controls go. */
+  /** `deleted` is false when the API refused. The comment stays, the controls go. */
   function handleRemoved(commentId: string, deleted: boolean) {
     forgetOwnComment(customerId, commentId)
     setOwnIds((ids) => {
@@ -625,7 +625,7 @@ function CommentComposer({
 }
 
 /**
- * Stands in for the composer when nobody is signed in. It says so in place —
+ * Stands in for the composer when nobody is signed in. It says so in place.
  * only the button itself leaves the feed, and only if the viewer chooses it.
  */
 function SignInToComment({ signedInAsOtherRole }: { signedInAsOtherRole: boolean }) {
@@ -696,7 +696,7 @@ const AVATAR_COLORS = [
   'bg-fuchsia-600',
 ]
 
-/** Same name, same colour — so a commenter is recognisable down the list. */
+/** Same name, same colour. So a commenter is recognisable down the list. */
 function avatarColor(name: string): string {
   let hash = 0
   for (const char of name) hash = (hash * 31 + char.charCodeAt(0)) | 0
@@ -792,7 +792,7 @@ function useMyProfile(customerId: string | null): MyProfile | null {
   return customerId ? profile : null
 }
 
-/** "just now", "5 minutes ago", "3 weeks ago", "1 month ago" — YouTube's wording. */
+/** "just now", "5 minutes ago", "3 weeks ago", "1 month ago". YouTube's wording. */
 function timeAgo(iso: string): string {
   const then = new Date(iso).getTime()
   if (Number.isNaN(then)) return ''

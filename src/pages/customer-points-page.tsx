@@ -150,7 +150,7 @@ export function CustomerPointsPage() {
             <CustomerEmptyState
               icon={Coins}
               title="No points yet"
-              description="Look for gifts marked “Earn points” — the points land here as soon as you order."
+              description="Look for gifts marked “Earn points”. The points land here as soon as you order."
               action={
                 <Button asChild className="rounded-full">
                   <Link to="/products">Browse gifts</Link>

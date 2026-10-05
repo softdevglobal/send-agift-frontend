@@ -21,7 +21,7 @@ export type ReviewMedia = {
   size_bytes: number
 }
 
-/** The reviewer as the public sees them — "Anonymous" when they asked for it. */
+/** The reviewer as the public sees them. "Anonymous" when they asked for it. */
 export type ReviewCustomer = {
   display_name?: string | null
   image_url?: string | null
@@ -72,7 +72,7 @@ export type ReviewSummary = {
   rating_breakdown: Record<string, number>
 }
 
-/** A file already PUT to storage — send the presign `key` as `object_path`. */
+/** A file already PUT to storage. Send the presign `key` as `object_path`. */
 export type ReviewMediaInput = {
   object_path: string
   mime_type: string

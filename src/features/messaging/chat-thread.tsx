@@ -42,7 +42,7 @@ import {
 import { uploadChatFiles, useThread } from './use-thread'
 
 export type ChatDraft = {
-  /** What the thread will be about — used for its header before it exists. */
+  /** What the thread will be about. Used for its header before it exists. */
   source: ConversationLabelSource
   /**
    * Creates (or reuses) the conversation on the first send, carrying that
@@ -57,7 +57,7 @@ type ChatThreadProps = {
   /** Shown when there's no conversation yet; the first send creates it. */
   draft?: ChatDraft | null
   onStarted?: (conversation: ConversationDetails) => void
-  /** Something the inbox should reflect changed — a send, a read, a reopen. */
+  /** Something the inbox should reflect changed. A send, a read, a reopen. */
   onChanged?: () => void
   onBack?: () => void
   backClassName?: string
@@ -141,7 +141,7 @@ export function ChatThread({
     if (scroller && stickToBottom.current) scroller.scrollTop = scroller.scrollHeight
   }, [lastMessageId, thread.loaded])
 
-  // Loading older messages prepends them — keep the viewer's place.
+  // Loading older messages prepends them. Keep the viewer's place.
   useLayoutEffect(() => {
     const scroller = scrollRef.current
     if (!scroller || restoreFromBottom.current === null) return
@@ -215,7 +215,7 @@ export function ChatThread({
   const messages = thread.messages
 
   // Which side a bubble is on. A customer↔seller thread has exactly one
-  // participant per side, so the sender's role is authoritative there — more
+  // participant per side, so the sender's role is authoritative there. More
   // reliable than the local token's subject, which can be a different role
   // signed into the same browser or simply stale. Support threads can hold two
   // admins, so there the token subject is the only way to tell them apart.
@@ -418,7 +418,7 @@ export function ChatThread({
 
       {thread.error && messages.length ? (
         <p className="border-t border-border/60 bg-muted/40 px-4 py-1.5 text-center text-xs text-muted-foreground">
-          Trouble reaching messages — retrying…
+          Trouble reaching messages. Retrying…
         </p>
       ) : null}
 

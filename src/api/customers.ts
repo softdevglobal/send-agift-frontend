@@ -76,6 +76,13 @@ export function updateCustomerMe(body: CustomerUpdateRequest) {
   })
 }
 
+export function changeCustomerPassword(body: { current_password: string; new_password: string }) {
+  return api<MessageResponse>('/customers/me/password', {
+    method: 'PUT',
+    body,
+  })
+}
+
 export function deleteCustomerMe() {
   return api<MessageResponse>('/customers/me', {
     method: 'DELETE',

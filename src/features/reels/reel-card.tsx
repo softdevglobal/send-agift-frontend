@@ -134,7 +134,7 @@ export function ReelCard({
   const railItems = (overlay: boolean) => (
     <>
       {/* A viewer who cannot like gets a note beside the heart, as on
-          YouTube — the feed stays where it is. On the mobile overlay the
+          YouTube. The feed stays where it is. On the mobile overlay the
           rail sits in the corner, so the note opens toward the middle of
           the screen instead of off the edge. */}
       <Popover.Root open={likeHintOpen} onOpenChange={setLikeHintOpen}>
@@ -219,7 +219,7 @@ export function ReelCard({
     <div className="flex h-full w-full items-center justify-center sm:w-auto sm:gap-4">
       <article
         /*
-         * Mobile: fills the phone, both axes definite — no `aspect-ratio`, so
+         * Mobile: fills the phone, both axes definite. No `aspect-ratio`, so
          * there is nothing for the browser to widen the box to; the video
          * `object-cover`s the frame. Desktop: `aspect-[9/16]` + `w-auto`
          * derives the width from the height, so the player takes only the
@@ -309,7 +309,7 @@ export function ReelCard({
           </div>
         ) : null}
 
-        {/* On a phone the rail overlays the clip bottom-right, TikTok-style —
+        {/* On a phone the rail overlays the clip bottom-right, TikTok-style.
             there is no room for a column beside it. The caption gets right
             padding so its text and button stop before the rail. */}
         <div className="pointer-events-auto absolute right-2 bottom-4 z-20 flex flex-col items-center gap-4 sm:hidden">

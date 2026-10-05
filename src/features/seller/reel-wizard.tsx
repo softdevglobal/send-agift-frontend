@@ -53,7 +53,7 @@ type ReelWizardProps = {
 
 /**
  * Posting or editing a reel, one step at a time: the clip, the words, the gift
- * it sells, how it goes out — and a preview of the finished post.
+ * it sells, how it goes out. And a preview of the finished post.
  */
 export function ReelWizard({
   open,
@@ -280,7 +280,7 @@ export function ReelWizard({
               id="reel-caption"
               value={caption}
               onChange={(event) => setCaption(event.target.value)}
-              placeholder="Say what the clip shows — this is the line customers read under it."
+              placeholder="Say what the clip shows. This is the line customers read under it."
               className={textareaClassName}
             />
           </WizardField>
@@ -330,7 +330,7 @@ export function ReelWizard({
               onChange={(event) => setProductId(event.target.value)}
               className={selectClassName}
             >
-              <option value="">No gift — shop promo only</option>
+              <option value="">No gift. Shop promo only</option>
               {products.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.name} · {formatPriceAmount(item.price_amount, item.currency)}
@@ -379,8 +379,8 @@ export function ReelWizard({
               onChange={(event) => setStatus(event.target.value as 'draft' | 'published')}
               className={selectClassName}
             >
-              <option value="published">Published — live in the feed</option>
-              <option value="draft">Draft — only you can see it</option>
+              <option value="published">Published. Live in the feed</option>
+              <option value="draft">Draft. Only you can see it</option>
             </select>
           </WizardField>
           <WizardField label="Visibility" htmlFor="reel-visibility">
@@ -420,7 +420,7 @@ export function ReelWizard({
               <SummaryRow label="Shop" value={shopName} />
               <SummaryRow
                 label="Tagged gift"
-                value={product ? product.name : 'None — shop promo'}
+                value={product ? product.name : 'None. Shop promo'}
               />
               <SummaryRow
                 label="Status"

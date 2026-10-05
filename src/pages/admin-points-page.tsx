@@ -46,7 +46,7 @@ const statusTone = {
 
 /**
  * Sellers' points purchases. Points are only credited once a payment is
- * confirmed — by the provider's webhook, or here by a Super Admin who has
+ * confirmed. By the provider's webhook, or here by a Super Admin who has
  * seen the money arrive. Both are audited.
  */
 export function AdminPointsPage() {

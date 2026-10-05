@@ -4,8 +4,8 @@ import { formatPoints } from '@/features/points/format'
 import { cn } from '@/lib/utils'
 
 /**
- * "Earn 100 points" on a gift. Only shown for a reward the seller can pay —
- * the API hides the rest — so it is a promise, not an advert.
+ * "Earn 100 points" on a gift. Only shown for a reward the seller can pay.
+ * the API hides the rest. So it is a promise, not an advert.
  */
 export function RewardBadge({
   points,

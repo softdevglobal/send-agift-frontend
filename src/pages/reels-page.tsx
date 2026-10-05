@@ -18,7 +18,7 @@ import { useMediaQuery } from '@/lib/use-media-query'
  * the mobile app's centre tab gives. Any reel with a product tagged offers to
  * send it as a gift, which lands on that product's page.
  *
- * The footer is dropped and the page title with it — like Shorts, the feed
+ * The footer is dropped and the page title with it. Like Shorts, the feed
  * *is* the page, filling everything under the header edge to edge.
  */
 export function ReelsPage() {
@@ -88,7 +88,7 @@ export function ReelsPage() {
           panelDocked ? 'max-w-7xl' : 'max-w-6xl',
         )}
       >
-        {/* A quiet way back to the shelves, kept off the player itself — and
+        {/* A quiet way back to the shelves, kept off the player itself. And
             out of the way of the docked panel's close button. */}
         {panelDocked ? null : (
           <Button

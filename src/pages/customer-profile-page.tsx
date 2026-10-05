@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
-import { LoaderCircle } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Camera, LoaderCircle, MapPin, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import {
   deleteCustomerMe,
@@ -8,10 +9,13 @@ import {
   type CustomerDetails,
 } from '@/api/customers'
 import { listCountries, type Country } from '@/api/countries'
+import { uploadPublicImage } from '@/api/media'
+import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangePasswordCard } from '@/features/account/change-password-card'
 import { useAuth } from '@/features/auth/auth-context'
 import { PhoneField } from '@/features/auth/phone-field'
 import { CustomerPageHeader } from '@/features/customer-commerce'
@@ -41,6 +45,9 @@ export function CustomerProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const photoInput = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([
@@ -101,6 +108,55 @@ export function CustomerProfilePage() {
     }
   }
 
+  /** Saves the photo straight away, with the rest of the profile as it was loaded. */
+  async function savePhoto(url: string) {
+    if (!profile) return
+    setError(null)
+    setNotice(null)
+    setUploadingPhoto(true)
+    try {
+      const updated = await updateCustomerMe({
+        country_id: profile.country_id,
+        customer_type: profile.customer_type,
+        date_of_birth: optionalString(toDateInputValue(profile.date_of_birth)),
+        status: profile.status,
+        phone: profile.phone,
+        display_name: profile.display_name,
+        image_url: url,
+      })
+      setImageUrl(updated.image_url ?? '')
+      setProfile((prev) => (prev ? { ...prev, image_url: updated.image_url } : prev))
+      setNotice(url ? 'Photo updated.' : 'Photo removed.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not save your photo.'))
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  function handlePhotoPicked(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      setError('Choose an image file.')
+      return
+    }
+    setPendingImage({ src: URL.createObjectURL(file), name: file.name })
+  }
+
+  async function handleCropConfirm(cropped: File) {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.src)
+    setPendingImage(null)
+    setUploadingPhoto(true)
+    try {
+      await savePhoto(await uploadPublicImage(cropped, 'customer-profile'))
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not upload your photo.'))
+      setUploadingPhoto(false)
+    }
+  }
+
   async function handleDeleteAccount() {
     const confirmed = window.confirm(
       'Delete your customer account? This cannot be undone.',
@@ -134,16 +190,74 @@ export function CustomerProfilePage() {
             className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
           >
             <h2 className="font-display text-xl">Account</h2>
-            <div className="flex items-center gap-4">
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt=""
-                  className="size-16 rounded-full object-cover ring-1 ring-border"
-                />
-              ) : null}
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                onClick={() => photoInput.current?.click()}
+                disabled={uploadingPhoto}
+                className="group relative size-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-primary/15 to-pink-200 ring-2 ring-background shadow-md"
+                aria-label={imageUrl ? 'Change photo' : 'Add a photo'}
+              >
+                {imageUrl ? (
+                  <img src={imageUrl} alt="" className="size-full object-cover" />
+                ) : (
+                  <span className="flex size-full items-center justify-center font-display text-2xl text-primary">
+                    {(displayName || profile?.email || '?').trim().charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <span className="absolute inset-0 flex items-center justify-center bg-foreground/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                  {uploadingPhoto ? <LoaderCircle className="size-5 animate-spin" /> : <Camera className="size-5" />}
+                </span>
+              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{displayName || 'Your profile'}</p>
+                <p className="truncate text-sm text-muted-foreground">{profile?.email}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-8"
+                    disabled={uploadingPhoto}
+                    onClick={() => photoInput.current?.click()}
+                  >
+                    <Camera className="size-3.5" />
+                    {imageUrl ? 'Change photo' : 'Add a photo'}
+                  </Button>
+                  {imageUrl ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-muted-foreground"
+                      disabled={uploadingPhoto}
+                      onClick={() => void savePhoto('')}
+                    >
+                      <Trash2 className="size-3.5" />
+                      Remove
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              <input
+                ref={photoInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoPicked}
+              />
             </div>
+
+            {profile && profile.addresses.length === 0 ? (
+              <Link
+                to="/account/addresses"
+                className="flex items-center gap-3 rounded-xl bg-accent/60 px-4 py-3 text-sm text-accent-foreground ring-1 ring-primary/15 transition-colors hover:bg-accent"
+              >
+                <MapPin className="size-4 shrink-0" />
+                <span className="flex-1">Add a delivery address so checkout is one tap.</span>
+                <span className="font-medium">Add address →</span>
+              </Link>
+            ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
@@ -220,17 +334,6 @@ export function CustomerProfilePage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profile-image">Image URL</Label>
-              <Input
-                id="profile-image"
-                type="url"
-                value={imageUrl}
-                onChange={(event) => setImageUrl(event.target.value)}
-                className="h-11 bg-surface px-3"
-                placeholder="https://"
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="profile-status">Status</Label>
               <select
                 id="profile-status"
@@ -264,6 +367,21 @@ export function CustomerProfilePage() {
               )}
             </Button>
           </form>
+
+          {pendingImage ? (
+            <ImageCropDialog
+              open
+              imageSrc={pendingImage.src}
+              fileName={pendingImage.name}
+              onCancel={() => {
+                URL.revokeObjectURL(pendingImage.src)
+                setPendingImage(null)
+              }}
+              onConfirm={handleCropConfirm}
+            />
+          ) : null}
+
+          <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
 
           <section className="rounded-2xl bg-card p-6 ring-1 ring-destructive/20">
             <h2 className="font-display text-xl">Delete account</h2>

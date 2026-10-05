@@ -1,7 +1,7 @@
 /**
  * The word shown beside a score while picking.
  *
- * Kept out of the component file so that module exports components only —
+ * Kept out of the component file so that module exports components only.
  * React Fast Refresh gives up on a file that mixes the two.
  */
 const RATING_WORDS = [

@@ -42,7 +42,7 @@ export const catalogProducts: CatalogProduct[] = [
     categoryId: 'hampers',
     sellerName: 'Sunday Pour',
     description:
-      'A handmade ceramic dripper, carafe, and filters — ready to wrap as a slow-morning coffee ritual.',
+      'A handmade ceramic dripper, carafe, and filters. Ready to wrap as a slow-morning coffee ritual.',
   },
   {
     id: '3',
@@ -96,7 +96,7 @@ export const catalogProducts: CatalogProduct[] = [
     categoryId: 'flowers',
     sellerName: 'Bloom Atelier',
     description:
-      'A lasting dried bouquet of oats, ruscus, and strawflowers — no vase required, just unwrap and display.',
+      'A lasting dried bouquet of oats, ruscus, and strawflowers. No vase required, just unwrap and display.',
   },
   {
     id: '7',
@@ -123,7 +123,7 @@ export const catalogProducts: CatalogProduct[] = [
     categoryId: 'birthday',
     sellerName: 'Sugar Press',
     description:
-      'Bake-at-home vanilla layers, frosting, and a custom topper — a birthday they can make together.',
+      'Bake-at-home vanilla layers, frosting, and a custom topper. A birthday they can make together.',
   },
   {
     id: '9',
@@ -150,7 +150,7 @@ export const catalogProducts: CatalogProduct[] = [
     categoryId: 'wellness',
     sellerName: 'Still Room',
     description:
-      'A weighted linen eye mask with two tins of herbal tea — a small, thoughtful wind-down gift.',
+      'A weighted linen eye mask with two tins of herbal tea. A small, thoughtful wind-down gift.',
   },
   {
     id: '11',

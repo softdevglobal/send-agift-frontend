@@ -105,7 +105,7 @@ export function PrizeDashboard({
         />
         <Card label="Starting prize" value={prizeMoney(comp.start_prize_cents, cur)} />
         <Card label="Prize growth" value={signed(analytics?.prize_growth_cents ?? current - comp.start_prize_cents, cur)} />
-        <Card label="Max prize" value={comp.prize_growth_enabled ? prizeMoney(comp.max_prize_cents, cur) : '—'} />
+        <Card label="Max prize" value={comp.prize_growth_enabled ? prizeMoney(comp.max_prize_cents, cur) : '-'} />
         <Card label="Valid plays" value={plays.toLocaleString()} hint={analytics?.voided_plays ? `${analytics.voided_plays} voided` : undefined} />
         <Card
           label="Unique players"
@@ -323,7 +323,7 @@ export function LedgerPanel({
           <p className="font-medium">
             {rec.status === 'ok'
               ? `Reconciled: the ledger adds up to ${prizeMoney(rec.ledger_total_cents, cur)}, matching the prize shown.`
-              : 'Discrepancy — nothing has been corrected automatically. Investigate before paying out.'}
+              : 'Discrepancy. Nothing has been corrected automatically. Investigate before paying out.'}
           </p>
           {rec.status !== 'ok' ? (
             <ul className="mt-2 list-disc pl-5">
@@ -387,7 +387,7 @@ export function LedgerPanel({
 /** A play's score, or a chance play's outcome. */
 function playOutcome(p: AdminPlay): string {
   const r = p.result
-  if (!r) return p.score === undefined ? '—' : String(p.score)
+  if (!r) return p.score === undefined ? '-' : String(p.score)
   if (r.mechanic === 'draw') return `Entry #${r.entry_number ?? '?'}`
   return r.won ? `WON (draw ${r.draw} of ${r.odds})` : `No win (${r.draw} of ${r.odds})`
 }
@@ -467,7 +467,7 @@ export function PlaysPanel({
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums">{p.points_spent}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">
-                  {p.prize_increment_cents ? prizeMoney(p.prize_increment_cents, cur) : '—'}
+                  {p.prize_increment_cents ? prizeMoney(p.prize_increment_cents, cur) : '-'}
                 </td>
                 <td className="py-2 pr-3 text-right tabular-nums">{playOutcome(p)}</td>
                 <td className="py-2 pr-3">
@@ -566,7 +566,7 @@ export function AdjustPrizeDialog({
             className={textareaClassName}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Reason — kept on the ledger for good"
+            placeholder="Reason. Kept on the ledger for good"
             aria-label="Reason"
           />
           <FormAlert error={error} />

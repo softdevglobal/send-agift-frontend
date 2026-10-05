@@ -35,7 +35,7 @@ type ConversationListProps = {
 
 /**
  * The seller and admin inbox list: who wrote in, what it's about, and
- * anything unread pulled into its own section at the top — same shape as the
+ * anything unread pulled into its own section at the top. Same shape as the
  * customer's conversation list, mirrored so the person comes first here (a
  * seller cares who's asking before what gift it's about).
  */
@@ -131,7 +131,7 @@ function ConversationRow({
   const priority = viewer === 'admin' ? conversation.support_case?.priority : undefined
   const flagged = priority === 'high' || priority === 'urgent'
   const type = TYPE_META[conversation.type]
-  // A gift/order thumbnail badges the person's avatar — a seller cares who's
+  // A gift/order thumbnail badges the person's avatar. A seller cares who's
   // writing first, what it's about second.
   const badgeImage = label.context?.imageUrl ?? null
 

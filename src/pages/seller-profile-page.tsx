@@ -92,9 +92,9 @@ const setupStepLinks: Record<string, string> = {
 }
 
 function monthYear(iso?: string) {
-  if (!iso) return '—'
+  if (!iso) return '-'
   const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
 }
 
@@ -966,14 +966,14 @@ export function SellerProfilePage() {
                 <dl className="mt-4 space-y-3 text-sm">
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-muted-foreground">Status</dt>
-                    <dd className="font-medium capitalize">{profile?.status ?? '—'}</dd>
+                    <dd className="font-medium capitalize">{profile?.status ?? '-'}</dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <dt className="text-muted-foreground">Seller type</dt>
                     <dd className="truncate font-medium">
                       {sellerTypes.find((item) => item.value === sellerType)?.label ??
                         sellerType ??
-                        '—'}
+                        '-'}
                     </dd>
                   </div>
                   <div className="flex items-center justify-between gap-3">

@@ -148,7 +148,7 @@ export function CustomerOrderDetailPage() {
     : "Track orders";
   const placedNotice =
     justPlaced && order.status === "pending_payment"
-      ? "Your gift order is placed. Payment has not been captured yet — track progress below while it awaits payment."
+      ? "Your gift order is placed. Payment has not been captured yet. Track progress below while it awaits payment."
       : justPlaced
         ? "Your gift order is placed. Track its progress below."
         : null;
@@ -210,7 +210,7 @@ export function CustomerOrderDetailPage() {
             value={
               rewardPoints > 0
                 ? `${rewardEarned ? "+" : ""}${formatPoints(rewardPoints)}`
-                : "—"
+                : "-"
             }
             highlight={rewardPoints > 0}
           />
@@ -496,7 +496,7 @@ function rewardLine(status: string | undefined, points: number) {
     case "awarded":
       return `${n} points added to your balance`;
     case "released":
-      return `${n} points not earned — item cancelled`;
+      return `${n} points not earned. Item cancelled`;
     case "reversed":
       return `${n} points taken back after a refund`;
     default:
@@ -513,7 +513,7 @@ function giftPointsLine(status: string | undefined, points: number) {
     case "delivered":
       return `${n} points reached the recipient’s account.`;
     case "returned":
-      return `${n} points came back to you — the recipient has no SendAGift account, or the gift was cancelled.`;
+      return `${n} points came back to you. The recipient has no SendAGift account, or the gift was cancelled.`;
     case "reversed":
       return `${n} points were returned after a refund.`;
     default:

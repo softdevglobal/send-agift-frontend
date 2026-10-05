@@ -3,12 +3,13 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { accountNavGroups } from '@/features/account/account-nav'
+import { TemporaryPasswordBanner } from '@/features/account/temporary-password-banner'
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { cn } from '@/lib/utils'
 
 /**
  * Shared frame for the signed-in account pages. It is the ordinary storefront
- * layout plus a side nav — deliberately not a dashboard: customers browse the
+ * layout plus a side nav. Deliberately not a dashboard: customers browse the
  * same pages as guests and only drop in here for order and profile management.
  */
 export function AccountLayout() {
@@ -58,6 +59,7 @@ export function AccountLayout() {
           </aside>
 
           <div className="min-w-0">
+            <TemporaryPasswordBanner />
             <Outlet />
           </div>
         </div>

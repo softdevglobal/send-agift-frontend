@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 /**
  * Stars, three ways.
  *
- * `StarMeter` shows a score and fills the last star *partially* — a 4.3 looks
+ * `StarMeter` shows a score and fills the last star *partially*. A 4.3 looks
  * like a 4.3 rather than rounding to a flat 4, which is the whole point of
  * showing a decimal average at all.
  *
@@ -112,7 +112,7 @@ type StarPickerProps = {
  *
  * Hovering previews a score without committing it, so the stars answer
  * "what would 4 look like?" before the click. Arrow keys move the score for
- * anyone not using a pointer — the group is one tab stop, not five.
+ * anyone not using a pointer. The group is one tab stop, not five.
  */
 export function StarPicker({
   value,
@@ -175,7 +175,7 @@ export function StarPicker({
               type="button"
               role="radio"
               aria-checked={value === rating}
-              aria-label={`${rating} ${rating === 1 ? 'star' : 'stars'} — ${ratingWord(rating)}`}
+              aria-label={`${rating} ${rating === 1 ? 'star' : 'stars'}. ${ratingWord(rating)}`}
               disabled={disabled}
               tabIndex={-1}
               onMouseEnter={() => setHovered(rating)}
@@ -202,7 +202,7 @@ export function StarPicker({
                   lit
                     ? 'fill-amber-400 text-amber-400 drop-shadow-[0_1px_6px_rgb(251_191_36/0.45)]'
                     : 'text-muted-foreground/35',
-                  // Only the star that was clicked springs — popping the whole
+                  // Only the star that was clicked springs. Popping the whole
                   // row on every click turns a small confirmation into noise.
                   justPicked === rating && 'animate-star-pop',
                 )}

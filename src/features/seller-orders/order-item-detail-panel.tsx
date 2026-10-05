@@ -66,7 +66,7 @@ type OrderItemDetailPanelProps = {
  * orders table.
  *
  * This was a full route. Sellers work an order list top to bottom, and going
- * out to a page and back lost their scroll position on every item — the panel
+ * out to a page and back lost their scroll position on every item. The panel
  * keeps the list in place behind it. The route still exists and deep links
  * still open this panel; the orders page owns the URL.
  */
@@ -381,7 +381,7 @@ export function SellerOrderItemDetailPanel({
             >
               <SellerSheetFacts>
                 <SellerSheetRow label="Delivery">
-                  {item.order ? formatDeliveryDate(item.order.delivery_date) : '—'}
+                  {item.order ? formatDeliveryDate(item.order.delivery_date) : '-'}
                 </SellerSheetRow>
                 <SellerSheetRow label="Shipment">
                   {international ? 'International' : 'Domestic'}
@@ -480,7 +480,7 @@ export function SellerOrderItemDetailPanel({
                         </span>
                       </p>
                       <p className="mt-3 text-xs text-muted-foreground">
-                        Delivered by you — no carrier label for this item.
+                        Delivered by you. No carrier label for this item.
                       </p>
                       {localDeliveryComplete ? (
                         <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">

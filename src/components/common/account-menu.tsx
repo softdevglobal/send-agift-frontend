@@ -40,7 +40,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
         if (!cancelled) setProfile(data)
       })
       .catch(() => {
-        // The greeting is decorative — a failure here must not break the header.
+        // The greeting is decorative. A failure here must not break the header.
       })
     return () => {
       cancelled = true
@@ -111,11 +111,11 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-lg"
+          className="absolute right-0 z-50 mt-2 flex max-h-[calc(100svh-5.5rem)] w-64 flex-col overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-lg"
         >
           {isCustomer ? (
             <>
-              <div className="flex items-center gap-3 border-b border-border/60 px-4 py-3">
+              <div className="flex shrink-0 items-center gap-3 border-b border-border/60 px-4 py-3">
                 {profile?.image_url ? (
                   <img
                     src={profile.image_url}
@@ -137,7 +137,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 </div>
               </div>
 
-              <div className="border-b border-border/60 py-1.5">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
                 <button
                   type="button"
                   role="menuitem"
@@ -145,27 +145,19 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                     setOpen(false)
                     openMessages()
                   }}
-                  className="flex w-full items-start gap-3 px-4 py-2 text-left text-sm transition-colors hover:bg-muted"
+                  className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm font-medium transition-colors hover:bg-muted"
                 >
-                  <MessageSquare className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">Messages</span>
-                    <span className="block text-xs text-muted-foreground">
-                      Chat with shops about gifts and orders
-                    </span>
-                  </span>
+                  <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                  <span className="flex-1">Messages</span>
                   {unreadCount > 0 ? (
-                    <span className="mt-0.5 flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                    <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   ) : null}
                 </button>
-              </div>
-
-              <div className="py-1.5">
                 {accountNavGroups.map((group) => (
-                  <div key={group.label} className="py-0.5">
-                    <p className="px-4 py-1 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
+                  <div key={group.label} className="pt-1">
+                    <p className="px-4 pt-2 pb-1 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
                       {group.label}
                     </p>
                     {group.items.map((item) => (
@@ -173,24 +165,18 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                         key={item.to}
                         to={item.to}
                         role="menuitem"
-                        className="flex items-start gap-3 px-4 py-2 text-sm transition-colors hover:bg-muted"
+                        title={item.hint}
+                        className="flex items-center gap-3 px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
                       >
-                        <item.icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                        <span className="min-w-0">
-                          <span className="block font-medium">{item.label}</span>
-                          {item.hint ? (
-                            <span className="block text-xs text-muted-foreground">
-                              {item.hint}
-                            </span>
-                          ) : null}
-                        </span>
+                        <item.icon className="size-4 shrink-0 text-muted-foreground" />
+                        {item.label}
                       </Link>
                     ))}
                   </div>
                 ))}
               </div>
 
-              <div className="border-t border-border/60 py-1.5">
+              <div className="shrink-0 border-t border-border/60 bg-popover py-1">
                 <Link
                   to="/become-a-seller"
                   role="menuitem"

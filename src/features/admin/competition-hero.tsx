@@ -266,7 +266,7 @@ export function CompetitionStats({ comp, livePlays }: { comp: AdminCompetition; 
       <StatTile
         icon={BellRing}
         label="Notified"
-        value={a?.queued ? `${a.sent.toLocaleString()}/${a.queued.toLocaleString()}` : '—'}
+        value={a?.queued ? `${a.sent.toLocaleString()}/${a.queued.toLocaleString()}` : '-'}
         hint={
           !a?.queued
             ? comp.status === 'draft'

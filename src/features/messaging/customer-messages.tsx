@@ -46,9 +46,9 @@ import { useInbox, useResolvedConversation } from './use-inbox'
 
 type CustomerMessagesContextValue = {
   unreadCount: number
-  /** The customer's threads — for "continue a conversation" shortcuts. */
+  /** The customer's threads. For "continue a conversation" shortcuts. */
   conversations: ConversationSummary[]
-  /** Opens the messages panel — on one thread when an id is given. */
+  /** Opens the messages panel. On one thread when an id is given. */
   openMessages: (conversationId?: string) => void
   /** Opens the thread about a gift, or a fresh one to ask the shop about it. */
   askAboutProduct: (productId: string) => void
@@ -176,7 +176,7 @@ export function CustomerMessagesProvider({ children }: { children: ReactNode }) 
     if (replied) setNoticeId(replied.id)
   }, [conversations, inbox.loaded, open])
 
-  // "(2) Send A Gift" — unread replies show on the tab even when it's in the background.
+  // "(2) Send A Gift". Unread replies show on the tab even when it's in the background.
   const unreadTotal = inbox.unreadTotal
   useEffect(() => {
     const base = document.title.replace(/^\(\d+\+?\)\s*/, '')
@@ -223,7 +223,7 @@ export function CustomerMessagesProvider({ children }: { children: ReactNode }) 
           start: (first) =>
             startConversationWithMessage({ type: 'order', order_item_id: orderItemId }, first),
         },
-        'Message the shop about delivery, changes, or a problem with the gift — you can attach photos.',
+        'Message the shop about delivery, changes, or a problem with the gift. You can attach photos.',
       )
     },
     [openExistingOrDraft],
@@ -490,7 +490,7 @@ const WELCOME_STEPS: { icon: LucideIcon; title: string; body: string }[] = [
   {
     icon: Paperclip,
     title: 'Show, don’t just tell',
-    body: 'Attach photos or PDFs — up to five per message.',
+    body: 'Attach photos or PDFs. Up to five per message.',
   },
 ]
 
@@ -536,7 +536,7 @@ function MessagesWelcome() {
   )
 }
 
-/** Two chat bubbles and a gift tag, drawn in CSS — no image to load. */
+/** Two chat bubbles and a gift tag, drawn in CSS. No image to load. */
 function ChatScene() {
   return (
     <div aria-hidden className="relative h-36 w-52">

@@ -54,7 +54,7 @@ export function startLocalDelivery(parcel: ShopParcel, body?: LocalDeliveryInput
  * Confirms the seller handed the gift over. Marks the parcel's products
  * delivered, and the whole order too once nothing on it is still open.
  *
- * No request body — call only after POST .../shipping/local.
+ * No request body. Call only after POST .../shipping/local.
  */
 export function completeLocalDelivery(parcel: ShopParcel) {
   return api<Shipment>(`${shippingPath(parcel)}/local/delivered`, {

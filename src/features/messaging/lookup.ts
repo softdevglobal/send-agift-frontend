@@ -53,8 +53,8 @@ export function useLookup<T>(lookup: Lookup<T>, id: string | null | undefined): 
   return useSyncExternalStore(lookup.subscribe, () => (id ? lookup.get(id) : null))
 }
 
-/** The seller's own products — the gift a buyer is asking about. */
+/** The seller's own products. The gift a buyer is asking about. */
 export const sellerProductLookup = createLookup(getSellerProduct)
 
-/** The seller's order items — for the order number on an order chat. */
+/** The seller's order items. For the order number on an order chat. */
 export const sellerOrderItemLookup = createLookup(getSellerOrderItem)

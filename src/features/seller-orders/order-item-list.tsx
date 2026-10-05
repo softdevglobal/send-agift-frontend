@@ -107,9 +107,9 @@ export function SellerOrderItemList({
                   <td className="px-4 py-3 align-middle font-medium">
                     {order.orderNumber}
                   </td>
-                  <td className="px-4 py-3 align-middle">{order.shopName || '—'}</td>
+                  <td className="px-4 py-3 align-middle">{order.shopName || '-'}</td>
                   <td className="px-4 py-3 align-middle text-muted-foreground">
-                    {order.recipientName || '—'}
+                    {order.recipientName || '-'}
                   </td>
                   <td className="px-4 py-3 align-middle">
                     <span className="font-medium">{formatPriceAmount(total, 'USD')}</span>

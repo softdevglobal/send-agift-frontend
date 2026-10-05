@@ -1,7 +1,7 @@
 import { api } from '@/lib/api'
 
 /**
- * A player as an admin sees them — full name and email, not the public
+ * A player as an admin sees them. Full name and email, not the public
  * "Sarah M.".
  *
  * Guests appear too, tagged by device rather than named. `kind` is what keeps

@@ -3,7 +3,7 @@
 # SendAGift web app image: the Vite build served by nginx.
 #
 # By default the app calls the API on its own origin (/api/v1), and nginx
-# forwards /api, /health and /version to API_UPSTREAM — so one image works
+# forwards /api, /health and /version to API_UPSTREAM, so one image works
 # for any environment, with only the upstream changing at run time.
 #
 # To bake in an API on another domain instead, build with:

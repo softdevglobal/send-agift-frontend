@@ -122,7 +122,7 @@ export function AdminCompetitionsPage() {
         <AdminEmptyState
           icon={Trophy}
           title={filter === 'all' ? 'No competitions yet' : 'Nothing here'}
-          description="Create a competition, fund its prize reserve and publish its rules — then schedule it for players in the countries it runs in."
+          description="Create a competition, fund its prize reserve and publish its rules. Then schedule it for players in the countries it runs in."
           action={
             <Button type="button" className="h-10" onClick={() => setCreating(true)}>
               <Plus className="size-4" />

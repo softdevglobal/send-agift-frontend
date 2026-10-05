@@ -1,5 +1,6 @@
 import {
   Coins,
+  Gift,
   Heart,
   History,
   MapPin,
@@ -41,6 +42,12 @@ export const accountNavGroups: AccountNavGroup[] = [
         label: 'Order history',
         icon: History,
         hint: 'Delivered and past gifts',
+      },
+      {
+        to: '/account/gifts',
+        label: 'Gifts received',
+        icon: Gift,
+        hint: 'Gifts sent to you. Review them here',
       },
       {
         to: '/account/saved-gifts',

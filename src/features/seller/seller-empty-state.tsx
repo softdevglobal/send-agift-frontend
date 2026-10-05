@@ -35,7 +35,7 @@ export function SellerEmptyState({
       />
 
       <div className="relative mx-auto mb-6 grid size-14 place-items-center">
-        {/* Concentric halo — the icon reads as a focal point, not a lone chip. */}
+        {/* Concentric halo. The icon reads as a focal point, not a lone chip. */}
         <span
           aria-hidden
           className="absolute size-14 rounded-2xl bg-accent/40 ring-1 ring-primary/10"

@@ -18,7 +18,7 @@ import { confirmPassword, getErrorMessage, setReauthPrompt } from '@/lib/api'
 type Confirmation = Awaited<ReturnType<typeof confirmPassword>>
 
 /**
- * Asks the admin to confirm their password before a high-risk action —
+ * Asks the admin to confirm their password before a high-risk action.
  * moving prize money or points, voiding, settling, cancelling, drawing. The
  * confirmation lasts a few minutes, so a run of actions asks only once.
  */
@@ -73,7 +73,7 @@ export function ReauthDialog() {
               Confirm it is you
             </DialogTitle>
             <DialogDescription>
-              This action moves money or points. Enter your password to continue — you will not be asked again for a
+              This action moves money or points. Enter your password to continue. You will not be asked again for a
               few minutes.
             </DialogDescription>
           </DialogHeader>

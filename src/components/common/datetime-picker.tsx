@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
-/** `yyyy-mm-ddTHH:mm`, built from local fields — never a UTC instant. */
+/** `yyyy-mm-ddTHH:mm`, built from local fields. Never a UTC instant. */
 function toValue(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
@@ -41,7 +41,7 @@ function monthGrid(month: Date): (Date | null)[] {
   return cells
 }
 
-/** "Fri, 3 Oct · 2:30 PM" — a datetime a person can read. */
+/** "Fri, 3 Oct · 2:30 PM". A datetime a person can read. */
 function friendlyDateTime(value: string): string {
   const date = parseValue(value)
   if (!date) return value
@@ -69,7 +69,7 @@ type DateTimePickerProps = {
 }
 
 /**
- * A calendar month plus an hour/minute spinner, in one popover — the pairing
+ * A calendar month plus an hour/minute spinner, in one popover. The pairing
  * every `datetime-local` field on this form needs, drawn the same way
  * instead of however each browser happens to render that input.
  */
@@ -146,8 +146,8 @@ export function DateTimePicker({
       setOpen(false)
     }
     function onKeyDown(event: KeyboardEvent) {
-      // Stopped on `window`'s capture phase — strictly before `document`'s,
-      // regardless of add order — or a Sheet/Dialog this opens inside
+      // Stopped on `window`'s capture phase. Strictly before `document`'s,
+      // regardless of add order. Or a Sheet/Dialog this opens inside
       // closes itself too: Radix's own Escape handling listens there.
       if (event.key === 'Escape') {
         event.stopPropagation()
@@ -231,8 +231,8 @@ export function DateTimePicker({
                 className={cn(
                   // Radix's modal Sheet sets pointer-events: none on <body>
                   // while it is open and only re-enables its own content, so
-                  // this — rendered as a body sibling, not inside that
-                  // content — needs it back explicitly or every click on it
+                  // this. Rendered as a body sibling, not inside that
+                  // content. Needs it back explicitly or every click on it
                   // falls through to whatever is behind.
                   'pointer-events-auto fixed z-[100] w-[19rem] max-w-[calc(100vw-2rem)]',
                   'rounded-2xl border border-border bg-surface p-3 shadow-2xl',

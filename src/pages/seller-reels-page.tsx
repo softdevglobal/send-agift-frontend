@@ -63,7 +63,7 @@ const statusMeta: Record<string, { label: string; className: string; dot: string
  * Reels in the seller dashboard: post a clip, tag the product it shows, and
  * publish it to the customer feed.
  *
- * The product tag is the point of the page — a reel with a product tagged is
+ * The product tag is the point of the page. A reel with a product tagged is
  * what lets a customer watch it and then send it as a gift.
  */
 export function SellerReelsPage() {
@@ -106,7 +106,7 @@ export function SellerReelsPage() {
    *
    * They were one `Promise.all` and that was wrong: a failing reel list threw
    * away the products too, which left the tag dropdown empty with no hint why
-   * — the picker is the whole point of the page, so it has to survive the
+   *. The picker is the whole point of the page, so it has to survive the
    * other request failing.
    */
   const loadProducts = useCallback(async (shopId: string) => {
@@ -175,7 +175,7 @@ export function SellerReelsPage() {
    * Swaps the updated reel into the list in place.
    *
    * Both edits below used to `refresh()`, which dropped the whole grid to a
-   * spinner — and now that a preview panel can be open over that grid, a
+   * spinner. And now that a preview panel can be open over that grid, a
    * refetch would blank the page behind it for one field's worth of change.
    */
   function replaceReel(updated: ReelDetails) {
@@ -522,7 +522,7 @@ function ReelPreviewPanel({
               </div>
             ) : (
               <p className="rounded-xl border border-dashed border-border/70 p-4 text-sm text-muted-foreground">
-                No gift tagged — this reel promotes the shop only. Tag a gift on the
+                No gift tagged. This reel promotes the shop only. Tag a gift on the
                 card to let customers send it straight from the feed.
               </p>
             )}
@@ -684,7 +684,7 @@ function ReelRow({
           onChange={(event) => onRetag(event.target.value)}
           className={cn(selectClassName, 'h-8 text-[11px]')}
         >
-          <option value="">No gift — shop promo</option>
+          <option value="">No gift. Shop promo</option>
           {products.map((product) => (
             <option key={product.id} value={product.id}>
               {product.name}

@@ -148,7 +148,7 @@ function WalletSheet({
   async function submit() {
     const n = Math.trunc(Number(amount))
     if (!(n > 0)) return setError('Enter a whole number of points above zero.')
-    if (!reason.trim()) return setError('A reason is required — it is kept with the entry.')
+    if (!reason.trim()) return setError('A reason is required. It is kept with the entry.')
     setBusy(true)
     setError(null)
     setNotice(null)

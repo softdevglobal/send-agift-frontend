@@ -25,7 +25,7 @@ export function QuizEditor({
         <p className="font-semibold text-sky-900">Questions</p>
         <p className="text-sky-900/80">
           Everyone answers the same questions. A right answer scores 100, plus up to 50 for answering fast. Mark the
-          right option with the circle — players never receive it.
+          right option with the circle. Players never receive it.
         </p>
       </div>
       {questions.map((q, i) => (

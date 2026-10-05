@@ -14,7 +14,7 @@ const INTENT_KEY = 'sag.delivery-intent'
 export type DeliveryIntent = {
   /**
    * What to show the shopper, e.g. "12 Galle Road, Colombo". Left out when
-   * only a date was given — a date alone is still worth remembering.
+   * only a date was given. A date alone is still worth remembering.
    */
   address?: string
   /** Street line copied onto the checkout recipient form. */
@@ -116,7 +116,7 @@ export function useDeliveryIntent() {
   return value
 }
 
-/** "Colombo, Sri Lanka · arrives 5 Oct" — the one-line summary. */
+/** "Colombo, Sri Lanka · arrives 5 Oct". The one-line summary. */
 export function describeIntent(intent: DeliveryIntent): string {
   const where = intent.city
     ? [intent.city, intent.countryName].filter(Boolean).join(', ')
@@ -128,7 +128,7 @@ export function describeIntent(intent: DeliveryIntent): string {
     day: 'numeric',
     month: 'short',
   })
-  // No address was given yet — the date is all there is to show.
+  // No address was given yet. The date is all there is to show.
   if (!where) return `Arrives ${when}`
   return `${where} · arrives ${when}`
 }

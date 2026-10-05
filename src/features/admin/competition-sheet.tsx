@@ -50,8 +50,8 @@ type CompetitionSheetProps = {
 
 /**
  * A competition's details in a drawer from the right, so the list stays in
- * view. It covers what is needed to get a draft out the door — the details,
- * the prize reserve, what is still blocking it, edit and publish — and links
+ * view. It covers what is needed to get a draft out the door. The details,
+ * the prize reserve, what is still blocking it, edit and publish. And links
  * to the full page for the ledger, plays, winners and payouts.
  */
 export function CompetitionSheet({ id, onClose, onChanged, games, countries }: CompetitionSheetProps) {
@@ -110,7 +110,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
     if (!comp) return
     await updateCompetition(comp.id, input)
     setEditing(false)
-    setNotice('Saved. It is back in draft — publish it again when ready.')
+    setNotice('Saved. It is back in draft. Publish it again when ready.')
     await load(comp.id)
     onChanged()
   }
