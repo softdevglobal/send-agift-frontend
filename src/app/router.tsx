@@ -54,7 +54,6 @@ import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
-import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -218,14 +217,6 @@ export function AppRouter() {
         element={
           <GuestRoute forRole="seller">
             <SellerRegisterPage />
-          </GuestRoute>
-        }
-      />
-      <Route
-        path="/seller/verify-email"
-        element={
-          <GuestRoute forRole="seller">
-            <SellerVerifyEmailPage />
           </GuestRoute>
         }
       />

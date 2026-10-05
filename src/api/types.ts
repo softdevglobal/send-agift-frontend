@@ -151,131 +151,11 @@ export type Seller = {
   trading_name?: string
   email: string
   phone?: string
-  /** unverified (email not confirmed) → pending (admin review) → verified | rejected */
   verification_status: string
   status: string
   created_at: string
   updated_at: string
   image_url?: string
-  email_verified_at?: string
-  /** What the admin told the seller when approving or rejecting them. */
-  verification_note?: string
-  verification_reviewed_at?: string
-}
-
-/** A seller row in the admin review queue. */
-/** An address on a seller application, in any country (ISO code, or ZZ). */
-export type ApplicationAddress = {
-  country: string
-  country_other?: string | null
-  line1: string
-  line2?: string | null
-  city: string
-  region?: string | null
-  postal_code?: string | null
-  latitude?: number | null
-  longitude?: number | null
-}
-
-/** Everything a seller tells us when they apply, for admin review. */
-export type SellerApplication = {
-  business: {
-    country: string
-    entity_type: string
-    entity_type_other?: string | null
-    legal_name: string
-    local_name?: string | null
-    trading_name?: string | null
-    registration_status: 'registered' | 'pending' | 'no_number'
-    registration_note?: string | null
-    identifiers: {
-      type: string
-      type_label?: string | null
-      value: string
-      authority?: string | null
-      jurisdiction?: string | null
-    }[]
-    tax_status: 'registered' | 'not_registered' | 'unsure'
-    tax_registrations: {
-      country: string
-      jurisdiction?: string | null
-      scheme: string
-      number: string
-    }[]
-  }
-  representative: {
-    full_name: string
-    role: string
-    job_title?: string | null
-    language: string
-    language_other?: string | null
-    authority_confirmed: boolean
-  }
-  addresses: {
-    registered: ApplicationAddress
-    pickup: ApplicationAddress
-    return: ApplicationAddress
-    pickup_same_as_registered: boolean
-    return_same_as_pickup: boolean
-  }
-  shop: {
-    display_name: string
-    slug: string
-    description: string
-    categories: string[]
-    website?: string | null
-    currency: string
-    time_zone: string
-    support_email?: string | null
-    public_location: string
-    gift_options: string[]
-  }
-  fulfilment: {
-    delivery_enabled: boolean
-    pickup_enabled: boolean
-    bands: { up_to_km: number; fee: number; days: number }[]
-    order_cutoff?: string | null
-    delivery_notes?: string | null
-    working_days: string[]
-    pickup_instructions?: string | null
-    returns_policy: string
-    cross_border_interest: boolean
-  }
-  payout: {
-    bank_country: string
-    bank_country_other?: string | null
-    currency: string
-  }
-  consents: {
-    details_confirmed: boolean
-    terms_accepted: boolean
-    marketing_opt_in: boolean
-  }
-}
-
-/** A stored application, as an admin sees it. */
-export type SellerApplicationRecord = SellerApplication & {
-  seller_id: string
-  review_reasons: string[]
-  document: { name: string; content_type: string; uploaded_at: string } | null
-  submitted_at: string
-  updated_at: string
-}
-
-export type AdminSellerDetails = SellerDetails & {
-  application: SellerApplicationRecord | null
-}
-
-export type AdminSellerSummary = Seller & {
-  country_name: string
-  shop_count: number
-  city?: string
-}
-
-export type AdminSellerList = {
-  sellers: AdminSellerSummary[]
-  total: number
-  counts: Record<'unverified' | 'pending' | 'verified' | 'rejected', number>
 }
 
 /** A delivered gift someone sent to the signed-in customer. No prices. */
@@ -518,7 +398,6 @@ export type RecipientInput = {
 
 export const MEDIA_FOLDERS = [
   'customer-profile',
-  'seller-document',
   'seller-profile',
   'shop-image',
   'product-image',

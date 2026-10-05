@@ -5,7 +5,6 @@ import type {
   AddressInput,
   MessageResponse,
   Seller,
-  SellerApplication,
   SellerDetails,
   Shop,
   ShopInput,
@@ -39,8 +38,6 @@ export type SellerRegisterRequest = {
   image_url?: string
   addresses?: SellerAddressInput[]
   shop?: ShopInput
-  /** The full application for admin review. */
-  application?: SellerApplication
 }
 
 export type SellerUpdateRequest = {
@@ -65,38 +62,6 @@ export function registerSeller(body: SellerRegisterRequest) {
     method: 'POST',
     body,
     auth: false,
-  })
-}
-
-export type VerifySellerEmailResponse = {
-  token: string
-  role: 'seller'
-  verification_status: string
-}
-
-/** Confirms the seller's email with the 6-digit code; signs them in. */
-export function verifySellerEmail(email: string, code: string) {
-  return api<VerifySellerEmailResponse>('/sellers/verify-email', {
-    method: 'POST',
-    body: { email, code },
-    auth: false,
-  })
-}
-
-/** Emails a fresh code. Answers the same for unknown emails. */
-export function resendSellerEmailCode(email: string) {
-  return api<MessageResponse>('/sellers/verify-email/resend', {
-    method: 'POST',
-    body: { email },
-    auth: false,
-  })
-}
-
-/** Saves the uploaded business registration document on the application. */
-export function attachSellerDocument(body: { key: string; name: string; content_type: string }) {
-  return api<MessageResponse>('/sellers/me/application/document', {
-    method: 'PUT',
-    body,
   })
 }
 
