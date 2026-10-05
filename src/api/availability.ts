@@ -9,6 +9,7 @@ export type ShopGiftAvailability = {
   currency?: string
   is_free: boolean
   estimated_days: number
+  cutoff_time?: string
   estimated_delivery_date?: string
   product_ids: string[]
   products: AvailabilityProduct[]

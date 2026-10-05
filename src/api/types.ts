@@ -311,12 +311,16 @@ export type ShopDeliveryZone = {
   is_free?: boolean
   /** 0 means same day. */
   estimated_days: number
+  /** HH:MM. Required when estimated_days is 0. Orders after this arrive the next day. */
+  cutoff_time?: string
 }
 
 export type Shop = {
   id: string
   seller_id: string
   country_id: string
+  /** IANA zone used for same-day delivery cutoffs. */
+  timezone?: string
   name: string
   slug: string
   description?: string
@@ -336,6 +340,8 @@ export type SellerDetails = Seller & { addresses: Address[]; shops: Shop[] }
 export type ShopInput = {
   name: string
   country_id: string
+  /** IANA zone. Empty lets the API use the country's default timezone. */
+  timezone?: string
   slug?: string
   description?: string
   customer_visible_location?: string
@@ -924,6 +930,8 @@ export type SellerDeliveryQuote = {
   currency: string
   is_free?: boolean
   estimated_days?: number
+  /** HH:MM when the matched zone is same-day. */
+  cutoff_time?: string
   estimated_delivery_date?: string
   /** Set when available is false (outside zones, or coordinates missing). */
   reason?: string

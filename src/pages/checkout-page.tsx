@@ -1216,9 +1216,11 @@ export function CheckoutPage() {
                                   {shop.seller_delivery.max_km != null
                                     ? ` · up to ${shop.seller_delivery.max_km} km`
                                     : ''}
-                                  {shop.seller_delivery.estimated_days != null
-                                    ? ` · ${shop.seller_delivery.estimated_days} day${shop.seller_delivery.estimated_days === 1 ? '' : 's'}`
-                                    : ''}
+                                  {shop.seller_delivery.estimated_days === 0
+                                    ? ` · same day${shop.seller_delivery.cutoff_time ? ` if ordered by ${shop.seller_delivery.cutoff_time}` : ''}`
+                                    : shop.seller_delivery.estimated_days != null
+                                      ? ` · ${shop.seller_delivery.estimated_days} day${shop.seller_delivery.estimated_days === 1 ? '' : 's'}`
+                                      : ''}
                                 </p>
                               </div>
                               <p className="shrink-0 font-medium">
