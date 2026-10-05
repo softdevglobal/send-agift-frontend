@@ -1,15 +1,12 @@
 import { api, ApiError } from '@/lib/api'
 import type {
   Admin,
-  AdminSellerList,
   Country,
   CountryCapability,
   CountryCapabilityEntry,
   CountryCapabilityInput,
   CountryInput,
   MessageResponse,
-  Seller,
-  SellerDetails,
 } from '@/api/types'
 
 export type { Admin } from '@/api/types'
@@ -48,7 +45,7 @@ export async function deleteCountry(id: string) {
   try {
     await deleteCountryCapabilities(id)
   } catch (err) {
-    // No capability row is fine. The country can still be removed.
+    // No capability row is fine — the country can still be removed.
     if (!(err instanceof ApiError && err.status === 404)) throw err
   }
 
@@ -78,32 +75,5 @@ export function updateCountryCapabilities(countryId: string, body: CountryCapabi
 export function deleteCountryCapabilities(countryId: string) {
   return api<MessageResponse>(`/admin/countries/${countryId}/capabilities`, {
     method: 'DELETE',
-  })
-}
-
-export type SellerVerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected'
-
-export function listAdminSellers(
-  params: { status?: SellerVerificationStatus | ''; q?: string; limit?: number; offset?: number },
-  signal?: AbortSignal,
-) {
-  const search = new URLSearchParams()
-  if (params.status) search.set('status', params.status)
-  if (params.q) search.set('q', params.q)
-  if (params.limit) search.set('limit', String(params.limit))
-  if (params.offset) search.set('offset', String(params.offset))
-  const qs = search.toString()
-  return api<AdminSellerList>(`/admin/sellers${qs ? `?${qs}` : ''}`, { signal })
-}
-
-export function getAdminSeller(id: string) {
-  return api<SellerDetails>(`/admin/sellers/${id}`)
-}
-
-/** Approves or rejects a seller; the seller is emailed the outcome. */
-export function reviewSeller(id: string, body: { status: 'verified' | 'rejected'; note?: string }) {
-  return api<Seller>(`/admin/sellers/${id}/verification`, {
-    method: 'PATCH',
-    body,
   })
 }
