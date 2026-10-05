@@ -55,18 +55,7 @@ function loginOrder(preferred: AuthRole): AuthRole[] {
   return ['admin', preferred, ...rest]
 }
 
-/** A seller who has not confirmed their email yet: they go to the code screen. */
-function isEmailNotVerified(error: unknown): boolean {
-  return (
-    error instanceof ApiError &&
-    typeof error.body === 'object' &&
-    error.body !== null &&
-    (error.body as { code?: unknown }).code === 'email_not_verified'
-  )
-}
-
 function isRetryableLoginError(error: unknown): boolean {
-  if (isEmailNotVerified(error)) return false
   return error instanceof ApiError && [400, 401, 403, 404].includes(error.status)
 }
 
@@ -153,10 +142,6 @@ export function LoginForm({ role }: LoginFormProps) {
       const result = await loginWithCredentials(role, trimmedEmail, password)
       login(result.token, result.role, remember)
     } catch (err) {
-      if (isEmailNotVerified(err)) {
-        navigate(`/seller/verify-email?email=${encodeURIComponent(trimmedEmail)}&resend=1`)
-        return
-      }
       setError(getErrorMessage(err, 'Sign in failed.'))
       setIsSubmitting(false)
     }

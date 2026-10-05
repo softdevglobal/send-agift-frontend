@@ -151,29 +151,11 @@ export type Seller = {
   trading_name?: string
   email: string
   phone?: string
-  /** unverified (email not confirmed) → pending (admin review) → verified | rejected */
   verification_status: string
   status: string
   created_at: string
   updated_at: string
   image_url?: string
-  email_verified_at?: string
-  /** What the admin told the seller when approving or rejecting them. */
-  verification_note?: string
-  verification_reviewed_at?: string
-}
-
-/** A seller row in the admin review queue. */
-export type AdminSellerSummary = Seller & {
-  country_name: string
-  shop_count: number
-  city?: string
-}
-
-export type AdminSellerList = {
-  sellers: AdminSellerSummary[]
-  total: number
-  counts: Record<'unverified' | 'pending' | 'verified' | 'rejected', number>
 }
 
 /** A delivered gift someone sent to the signed-in customer. No prices. */

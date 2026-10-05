@@ -28,7 +28,6 @@ const AUTH_PAGES = [
   '/register',
   '/seller/login',
   '/seller/register',
-  '/seller/verify-email',
   '/admin/login',
   '/admin/register',
 ]
