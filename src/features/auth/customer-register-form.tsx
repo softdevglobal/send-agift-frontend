@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
 import { CountrySelectField } from '@/features/auth/country-select-field'
+import { PasswordStrengthMeter } from '@/features/auth/password-strength'
 import { PhoneField } from '@/features/auth/phone-field'
 import type { CustomerTypeValue } from '@/features/auth/customer-register-options'
 import { getErrorMessage, ApiError } from '@/lib/api'
@@ -44,25 +45,6 @@ const perks: { icon: LucideIcon; label: string }[] = [
   { icon: Truck, label: 'Live tracking' },
   { icon: Star, label: 'Earn points' },
   { icon: Sparkles, label: 'Win prizes' },
-]
-
-/** 0–4: length, mixed case, digits, symbols. */
-function passwordScore(password: string): number {
-  if (!password) return 0
-  let score = password.length >= 8 ? 1 : 0
-  if (password.length >= 12) score += 1
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 1
-  if (/\d/.test(password) && /[^A-Za-z0-9]/.test(password)) score += 1
-  else if (/\d/.test(password) || /[^A-Za-z0-9]/.test(password)) score += 0.5
-  return Math.min(4, Math.floor(score))
-}
-
-const strength = [
-  { label: 'Too short', bar: 'bg-destructive' },
-  { label: 'Okay', bar: 'bg-amber-500' },
-  { label: 'Good', bar: 'bg-lime-500' },
-  { label: 'Strong', bar: 'bg-emerald-500' },
-  { label: 'Excellent', bar: 'bg-emerald-600' },
 ]
 
 /**
@@ -87,7 +69,6 @@ export function CustomerRegisterForm() {
   const [blockedByCountry, setBlockedByCountry] = useState<Record<string, string>>({})
 
   const registrationBlocked = Boolean(countryId && blockedByCountry[countryId])
-  const score = password.length < 8 ? 0 : passwordScore(password)
   const matches = confirmPassword.length > 0 && confirmPassword === password
 
   function handleCountryChange(id: string) {
@@ -284,30 +265,7 @@ export function CustomerRegisterForm() {
               {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
-          {password ? (
-            <div className="flex items-center gap-3 pt-1" aria-live="polite">
-              <div className="flex flex-1 gap-1">
-                {[1, 2, 3, 4].map((step) => (
-                  <span
-                    key={step}
-                    className={cn(
-                      'h-1.5 flex-1 rounded-full transition-colors duration-300',
-                      password.length < 8
-                        ? step === 1
-                          ? strength[0].bar
-                          : 'bg-muted'
-                        : step <= score
-                          ? strength[score].bar
-                          : 'bg-muted',
-                    )}
-                  />
-                ))}
-              </div>
-              <span className="w-16 text-right text-xs font-medium text-muted-foreground">
-                {strength[score].label}
-              </span>
-            </div>
-          ) : null}
+          <PasswordStrengthMeter password={password} />
         </Field>
 
         <Field id="customer-confirm-password" label="Confirm password">
