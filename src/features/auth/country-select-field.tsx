@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
 import { selectClassName } from '@/lib/form-styles'
-import { cn } from '@/lib/utils'
 
 type CountrySelectFieldProps = {
   id: string
@@ -14,8 +13,6 @@ type CountrySelectFieldProps = {
   /** Receives the full selected country. Used for its ISO code. */
   onCountrySelected?: (country: Country | null) => void
   disabled?: boolean
-  label?: string
-  className?: string
 }
 
 export function CountrySelectField({
@@ -24,8 +21,6 @@ export function CountrySelectField({
   onChange,
   onCountrySelected,
   disabled,
-  label = 'Country',
-  className,
 }: CountrySelectFieldProps) {
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +57,7 @@ export function CountrySelectField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
+      <Label htmlFor={id}>Country</Label>
       <select
         id={id}
         value={value}
@@ -72,7 +67,7 @@ export function CountrySelectField({
             countries.find((country) => country.id === event.target.value) ?? null,
           )
         }}
-        className={cn(selectClassName, className)}
+        className={selectClassName}
         required
         disabled={disabled || loading || Boolean(error) || countries.length === 0}
       >

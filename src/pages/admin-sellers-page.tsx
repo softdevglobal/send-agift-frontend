@@ -18,7 +18,7 @@ import {
   reviewSeller,
   type SellerVerificationStatus,
 } from '@/api/admin'
-import type { AdminSellerDetails, AdminSellerList, AdminSellerSummary } from '@/api/types'
+import type { AdminSellerList, AdminSellerSummary, SellerDetails } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,7 +32,6 @@ import {
 } from '@/components/ui/sheet'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
-import { SellerApplicationReview } from '@/features/admin/seller-application-review'
 import { sellerTypes } from '@/features/auth/seller-register-options'
 import { getErrorMessage } from '@/lib/api'
 import { textareaClassName } from '@/lib/form-styles'
@@ -246,7 +245,7 @@ export function AdminSellersPage() {
       )}
 
       <Sheet open={selectedId !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           {selectedId ? (
             <SellerReviewSheet key={selectedId} sellerId={selectedId} onReviewed={handleReviewed} />
           ) : null}
@@ -296,7 +295,7 @@ function SellerReviewSheet({
   sellerId: string
   onReviewed: (seller: { id: string; verification_status: string }, previous: string) => void
 }) {
-  const [seller, setSeller] = useState<AdminSellerDetails | null>(null)
+  const [seller, setSeller] = useState<SellerDetails | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [note, setNote] = useState('')
@@ -392,16 +391,8 @@ function SellerReviewSheet({
           </Fact>
         </dl>
 
-        {seller.application ? (
-          <SellerApplicationReview sellerId={seller.id} application={seller.application} />
-        ) : (
-          <p className="rounded-xl bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground ring-1 ring-border/50">
-            This seller signed up before applications, so there are no application details.
-          </p>
-        )}
-
         <section>
-          <p className="mb-2 text-sm font-semibold">Account addresses</p>
+          <p className="mb-2 text-sm font-semibold">Addresses</p>
           {seller.addresses.length === 0 ? (
             <p className="text-sm text-muted-foreground">No address given.</p>
           ) : (

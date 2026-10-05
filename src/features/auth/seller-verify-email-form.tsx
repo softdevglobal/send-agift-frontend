@@ -13,7 +13,6 @@ import { resendSellerEmailCode, verifySellerEmail } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
-import { uploadHeldSellerDocument } from '@/features/auth/seller-application/held-document'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -104,7 +103,6 @@ export function SellerVerifyEmailForm() {
     try {
       const result = await verifySellerEmail(email, code)
       login(result.token, 'seller', true)
-      void uploadHeldSellerDocument(email)
     } catch (err) {
       const code = errorCode(err)
       if (code === 'already_verified') {

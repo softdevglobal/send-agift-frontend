@@ -5,7 +5,6 @@ import type {
   AddressInput,
   MessageResponse,
   Seller,
-  SellerApplication,
   SellerDetails,
   Shop,
   ShopInput,
@@ -39,8 +38,6 @@ export type SellerRegisterRequest = {
   image_url?: string
   addresses?: SellerAddressInput[]
   shop?: ShopInput
-  /** The full application for admin review. */
-  application?: SellerApplication
 }
 
 export type SellerUpdateRequest = {
@@ -89,14 +86,6 @@ export function resendSellerEmailCode(email: string) {
     method: 'POST',
     body: { email },
     auth: false,
-  })
-}
-
-/** Saves the uploaded business registration document on the application. */
-export function attachSellerDocument(body: { key: string; name: string; content_type: string }) {
-  return api<MessageResponse>('/sellers/me/application/document', {
-    method: 'PUT',
-    body,
   })
 }
 
