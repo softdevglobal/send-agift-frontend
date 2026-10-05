@@ -5,7 +5,6 @@ import {
   Check,
   Eye,
   EyeOff,
-  Gift,
   Heart,
   LoaderCircle,
   Mail,
@@ -146,10 +145,6 @@ export function CustomerRegisterForm() {
       noValidate
     >
       <div className="space-y-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground ring-1 ring-primary/15">
-          <Gift className="size-3.5" />
-          Free forever · takes 30 seconds
-        </span>
         <h2 className="font-display text-3xl leading-[1.05] sm:text-4xl tracking-tight text-foreground">
           Start sending{' '}
           <span className="bg-gradient-to-r from-primary via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">

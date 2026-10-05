@@ -1,5 +1,16 @@
 import { useState, type FormEvent } from 'react'
-import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  Lock,
+  Mail,
+  Sparkles,
+  Star,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin } from '@/api/auth'
@@ -16,6 +27,12 @@ import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { isAdminRole, isUserRole, type UserRole } from '@/lib/auth'
+
+const perks: { icon: LucideIcon; label: string }[] = [
+  { icon: Truck, label: 'Live tracking' },
+  { icon: Star, label: 'Earn points' },
+  { icon: Sparkles, label: 'Win prizes' },
+]
 
 type LoginFormProps = {
   role: AuthRole
@@ -147,35 +164,51 @@ export function LoginForm({ role }: LoginFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="animate-fade-up mx-auto w-full max-w-[24rem] space-y-6"
+      className="animate-fade-up mx-auto w-full max-w-[26rem] min-w-0 space-y-6"
       style={{ animationDelay: '120ms' }}
       noValidate
     >
-      <div className="space-y-2">
-        <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
-          {copy.roleLabel} access
-        </p>
-        <h2 className="font-display text-3xl tracking-tight text-foreground">
-          Welcome back
+      <div className="space-y-3">
+        <h2 className="font-display text-3xl leading-[1.05] tracking-tight text-foreground sm:text-4xl">
+          Welcome{' '}
+          <span className="bg-gradient-to-r from-primary via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
+            back
+          </span>
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           {copy.supporting}
         </p>
+        {role === 'customer' ? (
+          <ul className="grid grid-cols-3 gap-2 pt-1">
+            {perks.map((perk) => (
+              <li
+                key={perk.label}
+                className="flex min-w-0 items-center justify-center gap-1.5 rounded-full bg-card px-2 py-1.5 text-xs whitespace-nowrap text-muted-foreground ring-1 ring-border/60"
+              >
+                <perk.icon className="size-3.5 shrink-0 text-primary" />
+                {perk.label}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor={`${role}-email`}>Email</Label>
-          <Input
-            id={`${role}-email`}
-            type="email"
-            autoComplete="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="h-11 bg-surface px-3"
-            required
-          />
+          <div className="relative">
+            <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id={`${role}-email`}
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="h-12 bg-surface pl-10"
+              required
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -195,6 +228,7 @@ export function LoginForm({ role }: LoginFormProps) {
             </button>
           </div>
           <div className="relative">
+            <Lock className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id={`${role}-password`}
               type={showPassword ? 'text' : 'password'}
@@ -202,7 +236,7 @@ export function LoginForm({ role }: LoginFormProps) {
               placeholder="Enter your password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="h-11 bg-surface px-3 pr-11"
+              className="h-12 bg-surface pr-11 pl-10"
               required
               minLength={8}
             />
@@ -252,7 +286,7 @@ export function LoginForm({ role }: LoginFormProps) {
         type="submit"
         size="lg"
         disabled={isSubmitting}
-        className="h-11 w-full text-sm"
+        className="group h-12 w-full rounded-full text-sm font-semibold"
       >
         {isSubmitting ? (
           <>
@@ -260,7 +294,10 @@ export function LoginForm({ role }: LoginFormProps) {
             Signing in…
           </>
         ) : (
-          copy.submitLabel
+          <>
+            {copy.submitLabel}
+            <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+          </>
         )}
       </Button>
 
@@ -276,7 +313,7 @@ export function LoginForm({ role }: LoginFormProps) {
             asChild
             variant="outline"
             size="lg"
-            className="h-11 w-full text-sm"
+            className="h-12 w-full rounded-full text-sm"
           >
             <Link to="/become-a-seller">Become a seller</Link>
           </Button>

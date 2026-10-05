@@ -25,7 +25,7 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
 
       <section
         className={cn(
-          'relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-grain',
+          'relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-grain',
           isSeller || isAdmin ? 'bg-cream/60' : 'bg-background',
         )}
       >
@@ -55,7 +55,7 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
           </div>
         </header>
 
-        <div className="my-auto w-full px-6 py-8 sm:px-10">
+        <div className="my-auto w-full min-w-0 px-5 py-6 sm:px-10 sm:py-8">
           <LoginForm role={role} />
         </div>
 
