@@ -33,22 +33,19 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
           <BrandLogo className="lg:invisible" imgClassName="h-12" />
 
           <div className="flex items-center gap-4">
-            <Link
-              to={copy.registerTo}
-              className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
-            >
-              {isSeller ? 'Register' : isAdmin ? 'Bootstrap' : 'Create account'}
-            </Link>
-            {isSeller || isAdmin ? (
-              <Link
-                to={copy.switchTo}
-                state={location.state}
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {copy.switchLabel}
+            <Button asChild size="sm" className="h-9 rounded-full px-4 font-medium">
+              <Link to={copy.registerTo}>
+                {isSeller ? 'Register' : isAdmin ? 'Bootstrap' : 'Create account'}
               </Link>
+            </Button>
+            {isSeller || isAdmin ? (
+              <Button asChild size="sm" variant="outline" className="h-9 rounded-full bg-background/70 px-4 font-medium">
+                <Link to={copy.switchTo} state={location.state}>
+                  {copy.switchLabel}
+                </Link>
+              </Button>
             ) : (
-              <Button asChild size="sm" variant="outline" className="h-9 px-3">
+              <Button asChild size="sm" variant="outline" className="hidden h-9 rounded-full bg-background/70 px-4 font-medium sm:inline-flex">
                 <Link to="/become-a-seller">Become a seller</Link>
               </Button>
             )}
