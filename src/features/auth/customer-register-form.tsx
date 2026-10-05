@@ -15,8 +15,9 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
+import { completeSocialSignup, type SocialSignInResult } from '@/api/auth'
 import { loginCustomer, registerCustomer } from '@/api/customers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { CountrySelectField } from '@/features/auth/country-select-field'
 import { PasswordStrengthMeter } from '@/features/auth/password-strength'
 import { PhoneField } from '@/features/auth/phone-field'
+import { SocialDivider, SocialSignInButtons } from '@/features/auth/social-sign-in'
 import type { CustomerTypeValue } from '@/features/auth/customer-register-options'
 import { getErrorMessage, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -50,12 +52,24 @@ const perks: { icon: LucideIcon; label: string }[] = [
 /**
  * Customer sign-up: just enough to start gifting. A photo and delivery
  * addresses are added later from the account pages. On success the customer
- * is signed straight in — their welcome email is already on its way.
+ * is signed straight in. Their welcome email is already on its way.
  */
+type SocialSignup = Extract<SocialSignInResult, { status: 'needs_profile' }>
+
+/** A social sign-up handed over from the sign-in page, if any. */
+function socialFromState(state: unknown): SocialSignup | null {
+  const social = (state as { social?: SocialSignInResult } | null)?.social
+  return social?.status === 'needs_profile' ? social : null
+}
+
 export function CustomerRegisterForm() {
   const { login } = useAuth()
+  const location = useLocation()
+  // Someone who chose Google or Facebook: the provider vouched for their
+  // email, so only a country and phone are still needed.
+  const [social, setSocial] = useState<SocialSignup | null>(() => socialFromState(location.state))
   const [customerType, setCustomerType] = useState<CustomerTypeValue>('individual')
-  const [displayName, setDisplayName] = useState('')
+  const [displayName, setDisplayName] = useState(() => socialFromState(location.state)?.name ?? '')
   const [email, setEmail] = useState('')
   const [countryId, setCountryId] = useState('')
   const [phone, setPhone] = useState('')
@@ -76,10 +90,52 @@ export function CustomerRegisterForm() {
     setError(blockedByCountry[id] ?? null)
   }
 
+  function handleSocialResult(result: SocialSignInResult) {
+    setError(null)
+    if (result.status === 'signed_in') {
+      login(result.token, 'customer', true)
+      return
+    }
+    setSocial(result)
+    if (!displayName.trim() && result.name) setDisplayName(result.name)
+    // The buttons sit under the form; bring the "Almost there" card into view.
+    window.setTimeout(() => {
+      document.getElementById('social-signup-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 50)
+  }
+
+  async function finishSocialSignup(signup: SocialSignup) {
+    if (!displayName.trim()) return setError('Tell us your name.')
+    if (phone.replace(/\D/g, '').length < 7) return setError('Enter your phone number.')
+    if (!countryId) return setError('Choose the country you’re gifting from.')
+    if (registrationBlocked) return setError(blockedByCountry[countryId])
+
+    setIsSubmitting(true)
+    try {
+      const result = await completeSocialSignup({
+        signup_token: signup.signup_token,
+        country_id: countryId,
+        phone: phone.trim(),
+        customer_type: customerType,
+        display_name: displayName.trim(),
+      })
+      login(result.token, 'customer', true)
+    } catch (err) {
+      const message = getErrorMessage(err, 'Registration failed.')
+      if (err instanceof ApiError && err.status === 401) setSocial(null) // the session expired
+      if (err instanceof ApiError && err.status === 403 && countryId) {
+        setBlockedByCountry((current) => ({ ...current, [countryId]: message }))
+      }
+      setError(message)
+      setIsSubmitting(false)
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
     setEmailTaken(false)
+    if (social) return finishSocialSignup(social)
 
     const trimmedEmail = email.trim()
     if (!displayName.trim()) return setError('Tell us your name.')
@@ -103,7 +159,7 @@ export function CustomerRegisterForm() {
       const session = await loginCustomer({ email: trimmedEmail, password })
       login(session.token, 'customer', true)
     } catch (err) {
-      // 409: this email already has an account — offer sign-in, not an error.
+      // 409: this email already has an account. Offer sign-in, not an error.
       if (err instanceof ApiError && err.status === 409) {
         setEmailTaken(true)
         setIsSubmitting(false)
@@ -147,6 +203,35 @@ export function CustomerRegisterForm() {
           ))}
         </ul>
       </div>
+
+      {social ? (
+        <div
+          id="social-signup-card"
+          className="animate-fade-up flex items-center gap-3.5 rounded-2xl bg-gradient-to-br from-accent to-pink-50 p-4 ring-1 ring-primary/20"
+        >
+          {social.image_url ? (
+            <img src={social.image_url} alt="" className="size-12 shrink-0 rounded-full object-cover ring-2 ring-background" />
+          ) : (
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
+              {(social.name || social.email).charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground">Almost there{social.name ? `, ${social.name.split(' ')[0]}` : ''}!</p>
+            <p className="truncate text-sm text-muted-foreground">
+              Signing up as <span className="font-medium text-foreground">{social.email}</span>. Just add your
+              country and phone.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSocial(null)}
+            className="shrink-0 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Use email instead
+          </button>
+        </div>
+      ) : null}
 
       <fieldset className="space-y-2.5" disabled={isSubmitting}>
         <legend className="mb-2.5 text-sm font-medium">I’m gifting as</legend>
@@ -206,24 +291,26 @@ export function CustomerRegisterForm() {
           </IconInput>
         </Field>
 
-        <Field id="customer-register-email" label="Email">
-          <IconInput icon={Mail}>
-            <Input
-              id="customer-register-email"
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
-              value={email}
-              ref={emailInput}
-              onChange={(event) => {
-                setEmail(event.target.value)
-                setEmailTaken(false)
-              }}
-              className={cn('h-12 bg-surface pl-10', emailTaken && 'ring-2 ring-amber-400')}
-              disabled={isSubmitting}
-            />
-          </IconInput>
-        </Field>
+        {social ? null : (
+          <Field id="customer-register-email" label="Email">
+            <IconInput icon={Mail}>
+              <Input
+                id="customer-register-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                ref={emailInput}
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  setEmailTaken(false)
+                }}
+                className={cn('h-12 bg-surface pl-10', emailTaken && 'ring-2 ring-amber-400')}
+                disabled={isSubmitting}
+              />
+            </IconInput>
+          </Field>
+        )}
 
         <CountrySelectField
           id="customer-country"
@@ -244,52 +331,56 @@ export function CustomerRegisterForm() {
           </Field>
         </div>
 
-        <Field id="customer-create-password" label="Create a password">
-          <div className="relative">
-            <Input
-              id="customer-create-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className="h-12 bg-surface px-3 pr-11"
-              disabled={isSubmitting}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              className="absolute top-1/2 right-2.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            </button>
-          </div>
-          <PasswordStrengthMeter password={password} />
-        </Field>
+        {social ? null : (
+          <>
+            <Field id="customer-create-password" label="Create a password">
+              <div className="relative">
+                <Input
+                  id="customer-create-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="h-12 bg-surface px-3 pr-11"
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute top-1/2 right-2.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <PasswordStrengthMeter password={password} />
+            </Field>
 
-        <Field id="customer-confirm-password" label="Confirm password">
-          <div className="relative">
-            <Input
-              id="customer-confirm-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              placeholder="Type it once more"
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              className={cn(
-                'h-12 bg-surface px-3 pr-11',
-                confirmPassword && !matches && 'ring-1 ring-destructive/40',
-              )}
-              disabled={isSubmitting}
-            />
-            {matches ? (
-              <span className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-500 text-white">
-                <Check className="size-3.5" />
-              </span>
-            ) : null}
-          </div>
-        </Field>
+            <Field id="customer-confirm-password" label="Confirm password">
+              <div className="relative">
+                <Input
+                  id="customer-confirm-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Type it once more"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className={cn(
+                    'h-12 bg-surface px-3 pr-11',
+                    confirmPassword && !matches && 'ring-1 ring-destructive/40',
+                  )}
+                  disabled={isSubmitting}
+                />
+                {matches ? (
+                  <span className="absolute top-1/2 right-3 flex size-6 -translate-y-1/2 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <Check className="size-3.5" />
+                  </span>
+                ) : null}
+              </div>
+            </Field>
+          </>
+        )}
       </div>
 
       {emailTaken ? (
@@ -303,7 +394,7 @@ export function CustomerRegisterForm() {
             </span>
             <div className="min-w-0">
               <p className="font-display text-xl leading-tight text-foreground">
-                Welcome back — you’re already in!
+                Welcome back, you’re already in!
               </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 <span className="font-medium break-all text-foreground">{email.trim()}</span> already
@@ -354,6 +445,13 @@ export function CustomerRegisterForm() {
           </>
         )}
       </Button>
+
+      {social ? null : (
+        <div className="space-y-5">
+          <SocialDivider label="or sign up with" />
+          <SocialSignInButtons verb="Sign up" onResult={handleSocialResult} />
+        </div>
+      )}
 
       <div className="space-y-3 text-center text-sm text-muted-foreground">
         <p>

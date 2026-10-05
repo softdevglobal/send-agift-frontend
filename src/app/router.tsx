@@ -85,7 +85,7 @@ function RedirectOrder() {
 export function AppRouter() {
   return (
     <Routes>
-      {/* Storefront — the same pages for guests and signed-in customers. */}
+      {/* Storefront. The same pages for guests and signed-in customers. */}
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/products/:productId" element={<ProductViewPage />} />
@@ -254,7 +254,7 @@ export function AppRouter() {
         {/*
           One route, optional param: `/seller/orders/:orderItemId` opens the
           detail panel over the list. Two separate routes would remount the
-          page — and refetch the whole list — every time a row is opened.
+          page and refetch the whole list every time a row is opened.
         */}
         <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
         {/* The detail used to be its own page; keep those links working. */}

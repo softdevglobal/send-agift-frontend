@@ -148,7 +148,7 @@ export function ProductViewPage() {
 
   const sellerStats = sellerId ? getSellerReviewStats(sellerId) : null
 
-  // "More from this shop" — sibling gifts in the same shop, not everything the
+  // "More from this shop". Sibling gifts in the same shop, not everything the
   // seller sells across all their shops.
   const moreFromShop = useMemo(() => {
     if (!sellerId || !product) return []

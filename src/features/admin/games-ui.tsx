@@ -158,7 +158,7 @@ export function ReasonDialog({
 
   async function submit() {
     if (!reason.trim()) {
-      setError('Please give a reason — it is recorded in the audit log.')
+      setError('Please give a reason. It is recorded in the audit log.')
       return
     }
     setBusy(true)

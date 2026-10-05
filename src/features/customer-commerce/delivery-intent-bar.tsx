@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 /**
  * A reminder, while browsing, of where the gift is going and when it is
- * wanted — so the answers given on the home page are visibly still in hand
+ * wanted. So the answers given on the home page are visibly still in hand
  * rather than quietly forgotten before checkout.
  */
 export function DeliveryIntentBar({ className }: { className?: string }) {

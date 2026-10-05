@@ -24,7 +24,7 @@ type PendingFile = {
   previewUrl: string | null
 }
 
-/** Text dropped into the input from outside — a suggested question, say. */
+/** Text dropped into the input from outside. A suggested question, say. */
 export type ComposerPrefill = { text: string; key: number }
 
 type ChatComposerProps = {
@@ -65,7 +65,7 @@ export function ChatComposer({
     [],
   )
 
-  // A picked suggestion lands in the input, ready to edit — not sent for them.
+  // A picked suggestion lands in the input, ready to edit. Not sent for them.
   useEffect(() => {
     if (!prefill) return
     setText(prefill.text)

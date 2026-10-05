@@ -214,7 +214,7 @@ export function SellerProductsPage() {
 
   /**
    * Loads a gift (and its inventory) into the wizard and opens it. Same dialog
-   * as "Add product" — the seller lands on step one with every field filled.
+   * as "Add product". The seller lands on step one with every field filled.
    */
   async function handleEdit(id: string) {
     setError(null)

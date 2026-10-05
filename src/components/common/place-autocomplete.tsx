@@ -37,7 +37,7 @@ type AddressAutocompleteProps = {
   onSelect?: (place: PlaceDetails) => void
   /**
    * Called with the raw prediction as soon as it is picked. Pair it with
-   * resolveDetails={false} when the label alone is enough — that skips the
+   * resolveDetails={false} when the label alone is enough. That skips the
    * billed Place Details call.
    */
   onSelectSuggestion?: (suggestion: PlaceSuggestion) => void
@@ -230,7 +230,7 @@ export function AddressAutocomplete({
       setQuery(details.formatted_address || suggestion.description)
       setSuggestions([])
       onSelect?.(details)
-      // The session ended with this pick — the next search starts a new one.
+      // The session ended with this pick. The next search starts a new one.
       sessionToken.current = newPlacesSessionToken()
     } catch (err: unknown) {
       setError(placesErrorMessage(err, 'Could not load that address. Try another result.'))

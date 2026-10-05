@@ -42,7 +42,7 @@ type SupportDialogProps = {
 
 /**
  * Seller → SendAGift support (`type: "support"` with a subject and the first
- * message; no counterpart — the API assigns an admin). If the seller already
+ * message; no counterpart. The API assigns an admin). If the seller already
  * has an open ticket, the message lands in that one.
  */
 export function SellerSupportDialog({ open, onOpenChange, onCreated }: SupportDialogProps) {

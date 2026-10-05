@@ -2,7 +2,7 @@ export const sellerPanelClass =
   'rounded-2xl bg-card shadow-[0_10px_36px_rgba(40,50,30,0.05)] ring-1 ring-border/50'
 
 /**
- * A panel you can open. The lift on hover is the affordance — without it a
+ * A panel you can open. The lift on hover is the affordance. Without it a
  * clickable gift card looked exactly like the static ones around it.
  */
 export const sellerCardClass =

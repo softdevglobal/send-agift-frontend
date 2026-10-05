@@ -48,7 +48,7 @@ export async function deleteCountry(id: string) {
   try {
     await deleteCountryCapabilities(id)
   } catch (err) {
-    // No capability row is fine — the country can still be removed.
+    // No capability row is fine. The country can still be removed.
     if (!(err instanceof ApiError && err.status === 404)) throw err
   }
 

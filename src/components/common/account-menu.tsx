@@ -40,7 +40,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
         if (!cancelled) setProfile(data)
       })
       .catch(() => {
-        // The greeting is decorative — a failure here must not break the header.
+        // The greeting is decorative. A failure here must not break the header.
       })
     return () => {
       cancelled = true

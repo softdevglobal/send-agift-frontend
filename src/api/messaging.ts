@@ -45,7 +45,7 @@ export type FirstMessage = {
 
 /**
  * How recent a thread's last message must be to count as the one we just
- * sent. Kept short so a genuinely reused thread is never mistaken for new —
+ * sent. Kept short so a genuinely reused thread is never mistaken for new.
  * clock skew beyond this only risks a duplicate, never a lost message.
  */
 const JUST_SENT_SLACK_MS = 30_000
@@ -58,7 +58,7 @@ const JUST_SENT_SLACK_MS = 30_000
  *
  * Order chats and admin-opened support always store that message. A product
  * question or seller ticket that's already open is handed back as-is without
- * it — so when the thread's last message predates this request, the message
+ * it. So when the thread's last message predates this request, the message
  * is posted to the thread separately instead of being dropped.
  */
 export async function startConversationWithMessage(

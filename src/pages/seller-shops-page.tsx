@@ -891,13 +891,13 @@ export function SellerShopsPage() {
                         <option value="">No linked address</option>
                         {addresses.map((address) => (
                           <option key={address.id} value={address.id}>
-                            {address.label ? `${address.label} — ${address.line1}` : address.line1}
+                            {address.label ? `${address.label}. ${address.line1}` : address.line1}
                           </option>
                         ))}
                       </select>
                       {addresses.length === 0 ? (
                         <p className="text-xs text-muted-foreground">
-                          No addresses yet —{' '}
+                          No addresses yet , {' '}
                           <Link to="/seller/profile" className="text-primary hover:underline">
                             add one on your profile
                           </Link>
@@ -936,13 +936,13 @@ export function SellerShopsPage() {
                       <option value="">No linked address</option>
                       {addresses.map((address) => (
                         <option key={address.id} value={address.id}>
-                          {address.label ? `${address.label} — ${address.line1}` : address.line1}
+                          {address.label ? `${address.label}. ${address.line1}` : address.line1}
                         </option>
                       ))}
                     </select>
                     {addresses.length === 0 ? (
                       <p className="text-xs text-muted-foreground">
-                        No addresses yet —{' '}
+                        No addresses yet , {' '}
                         <Link to="/seller/profile" className="text-primary hover:underline">
                           add one on your profile
                         </Link>
@@ -962,7 +962,7 @@ export function SellerShopsPage() {
                         .filter((km) => Number.isFinite(km) && km > 0)
                       const label = selected
                         ? selected.label
-                          ? `${selected.label} — ${selected.line1}`
+                          ? `${selected.label}. ${selected.line1}`
                           : selected.line1
                         : undefined
                       if (!selected || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
@@ -1040,7 +1040,7 @@ export function SellerShopsPage() {
                             </div>
                             <div className="min-w-[7rem] flex-1 space-y-1">
                               <Label htmlFor={`zone-price-${index}`}>
-                                Price ({zoneCurrency || '—'})
+                                Price ({zoneCurrency || '-'})
                               </Label>
                               <Input
                                 id={`zone-price-${index}`}
@@ -1224,7 +1224,7 @@ export function SellerShopsPage() {
             <SellerSheetSection icon={Link2} title="Storefront">
               <SellerSheetFacts>
                 <SellerSheetRow label="Handle">
-                  <span className="font-mono text-xs">/{previewShop.slug || '—'}</span>
+                  <span className="font-mono text-xs">/{previewShop.slug || '-'}</span>
                 </SellerSheetRow>
                 <SellerSheetRow label="Status">
                   {previewShop.status === 'active' ? 'Active' : 'Inactive'}

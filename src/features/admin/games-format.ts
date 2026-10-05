@@ -51,7 +51,7 @@ export function gameGradient(slug: string): string {
 }
 
 export function formatScore(value: number | undefined): string {
-  return value === undefined ? '—' : value.toLocaleString()
+  return value === undefined ? '-' : value.toLocaleString()
 }
 
 /** Server-measured play time, e.g. "42.6s" or "3:05". */

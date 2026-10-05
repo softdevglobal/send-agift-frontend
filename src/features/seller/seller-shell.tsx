@@ -117,7 +117,7 @@ function SellerShellLayout() {
         setProfile(data)
       })
       .catch(() => {
-        // Sidebar identity is decorative — pages surface their own load errors.
+        // Sidebar identity is decorative. Pages surface their own load errors.
       })
     return () => {
       cancelled = true
@@ -306,7 +306,7 @@ function SellerApprovalBanner({ seller }: { seller: SellerDetails }) {
         <div className="min-w-0 flex-1">
           <p className="font-display text-lg text-amber-950">Your account is under review</p>
           <p className="mt-0.5 text-sm leading-relaxed text-amber-900/80">
-            Our team is checking your details — usually within 1–2 business days. We&apos;ll email
+            Our team is checking your details. Usually within 1–2 business days. We&apos;ll email
             you the moment it&apos;s active, and then you can open shops and list gifts.
           </p>
         </div>
@@ -333,7 +333,7 @@ function SellerApprovalBanner({ seller }: { seller: SellerDetails }) {
             </p>
           ) : null}
           <p className="mt-1.5 text-sm text-red-900/80">
-            Update your details and reply to our email — we&apos;ll take another look.
+            Update your details and reply to our email. We&apos;ll take another look.
           </p>
         </div>
         <Link

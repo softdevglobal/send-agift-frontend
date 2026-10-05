@@ -24,7 +24,7 @@ function parseDay(value: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/** "Today", "Tomorrow", or "Fri, 3 Oct" — a date a person can read. */
+/** "Today", "Tomorrow", or "Fri, 3 Oct". A date a person can read. */
 export function friendlyDate(value: string) {
   const date = parseDay(value);
   if (!date) return value;
@@ -178,8 +178,8 @@ export function DatePicker({
       setOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
-      // Stopped on `window`'s capture phase — strictly before `document`'s,
-      // regardless of add order — or a Sheet/Dialog this opens inside
+      // Stopped on `window`'s capture phase. Strictly before `document`'s,
+      // regardless of add order. Or a Sheet/Dialog this opens inside
       // closes itself too: Radix's own Escape handling listens there.
       if (event.key === "Escape") {
         event.stopPropagation();

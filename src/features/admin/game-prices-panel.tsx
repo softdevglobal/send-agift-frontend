@@ -111,7 +111,7 @@ type GamePricesPanelProps = {
 /**
  * What one play of each game costs, in points. The server takes it from the
  * player's balance when a game starts, so a price set here applies to the
- * very next play. Only games customers can play on their own are listed —
+ * very next play. Only games customers can play on their own are listed.
  * chance games and quizzes run inside competitions, priced there.
  */
 export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelProps) {

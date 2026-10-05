@@ -269,7 +269,7 @@ export type Product = {
   prep_minutes: number
   created_at: string
   updated_at: string
-  /** Cover image — usually the first gallery image's CDN URL. */
+  /** Cover image. Usually the first gallery image's CDN URL. */
   image_url?: string | null
   /** Optional shipping dimensions used for checkout quotes and seller rates. */
   parcel?: ParcelInput | null
@@ -344,7 +344,7 @@ export type ProductInput = {
   /** Points a customer earns per unit bought (0–1,000,000). */
   reward_points?: number
   prep_minutes?: number
-  /** Optional — API sets this from the first image in `media` when omitted. */
+  /** Optional. API sets this from the first image in `media` when omitted. */
   image_url?: string | null
   inventory?: InventoryInput
   /** Shipping parcel for checkout quotes and seller labels. */
@@ -404,7 +404,7 @@ export type RecipientInput = {
   image_url?: string | null
   default_address_id?: string | null
   preferences?: Record<string, unknown>
-  /** Create only. Ignored on PUT — use recipient address endpoints. */
+  /** Create only. Ignored on PUT. Use recipient address endpoints. */
   addresses?: AddressInput[]
 }
 
@@ -479,7 +479,7 @@ export type Order = {
   recipient_id?: string | null
   country_id: string
   customer_type: string
-  /** RFC3339 timestamp — the date part is the delivery day. */
+  /** RFC3339 timestamp. The date part is the delivery day. */
   delivery_date: string
   status: OrderStatus
   /** Minor units of `currency`. */
@@ -656,7 +656,7 @@ export type ShippingRatesResult = {
   /** Rate the customer chose at checkout for this line's shop, when still known. */
   checkout_selected?: CheckoutSelectedRate | null
   /**
-   * Fresh Shippo rate to buy — always use this for BuyLabel when present.
+   * Fresh Shippo rate to buy. Always use this for BuyLabel when present.
    * Never reuse `checkout_selected.rate_object_id` (it expires).
    */
   recommended_rate_object_id?: string | null
@@ -687,7 +687,7 @@ export type CheckoutSelectedRate = {
   amount_major?: string
   currency: string
   /**
-   * Checkout-time Shippo rate id when returned — history only; do not BuyLabel with it.
+   * Checkout-time Shippo rate id when returned. History only; do not BuyLabel with it.
    * Matching for buy uses provider + service_name → recommended_rate_object_id.
    */
   rate_object_id?: string
@@ -768,7 +768,7 @@ export type ShippingLabelLink = {
 /**
  * Body for recording a shipment the seller arranged themselves, bypassing
  * Shippo entirely. The fallback for a lane no connected carrier account
- * quotes — for example none of Shippo's test carriers serve a domestic Sri
+ * quotes. For example none of Shippo's test carriers serve a domestic Sri
  * Lanka shipment, so GetRates can return zero rates for a perfectly valid
  * order with nothing wrong to fix.
  */
@@ -786,12 +786,12 @@ export type DeliveryQuoteLine = {
 
 export type DeliveryQuoteInput = {
   recipient_id: string
-  /** The date it should arrive — picks the cheapest service that makes it. */
+  /** The date it should arrive. Picks the cheapest service that makes it. */
   delivery_date?: string
   items: DeliveryQuoteLine[]
 }
 
-/** One courier option for a shop — AliExpress-style delivery picker. */
+/** One courier option for a shop. AliExpress-style delivery picker. */
 export type DeliveryQuoteOption = {
   provider: string
   service_name: string
@@ -866,13 +866,13 @@ export type DeliveryQuote = {
   shipments: QuotedShipment[]
   amount: number
   currency: string
-  /** False when at least one shop could not be priced — see `unquoted`. */
+  /** False when at least one shop could not be priced. See `unquoted`. */
   complete: boolean
   unquoted?: string[]
 }
 
 /**
- * Body for a seller delivering an item personally — no courier, no tracking.
+ * Body for a seller delivering an item personally. No courier, no tracking.
  * The note is optional and only for the seller's own record.
  */
 export type LocalDeliveryInput = {
@@ -915,7 +915,7 @@ export type CreateOrderInput = {
   media_greeting_id?: string
   /** Minor units. Line prices come from the product, not the client. */
   delivery_amount?: number
-  /** Quoted rates from POST /shipping/quote — optional but preferred when present. */
+  /** Quoted rates from POST /shipping/quote. Optional but preferred when present. */
   shipping_quotes?: OrderShippingQuote[]
   items: OrderItemInput[]
   /**
@@ -990,7 +990,7 @@ export type ReelMediaItem = {
   asset_type: 'image' | 'video'
   bucket: string
   object_path: string
-  /** Only filled for objects under `public/` — a private object has no playable URL. */
+  /** Only filled for objects under `public/`. A private object has no playable URL. */
   cdn_url?: string | null
   mime_type: string
   size_bytes: number
@@ -1033,7 +1033,7 @@ export type ReelDetails = {
   like_count?: number
   comment_count?: number
   /**
-   * Never computed on the public feed routes — they read no identity — so it
+   * Never computed on the public feed routes. They read no identity. So it
    * is always false there. `GET /reels/{id}/likes` answers it per viewer.
    */
   liked_by_me?: boolean
@@ -1143,7 +1143,7 @@ export type Conversation = {
   last_message_at?: string | null
   created_at: string
   updated_at: string
-  /** What the thread is about — empty for support threads. */
+  /** What the thread is about. Empty for support threads. */
   product_name?: string | null
   product_image_url?: string | null
   shop_name?: string | null

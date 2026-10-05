@@ -25,13 +25,13 @@ type ReelsFeedProps = {
 }
 
 /**
- * The vertical feed: one reel per viewport, snapping as the viewer scrolls —
+ * The vertical feed: one reel per viewport, snapping as the viewer scrolls.
  * the Shorts pattern, including the up/down buttons and arrow-key control that
  * make it usable with a mouse and keyboard rather than only a touchscreen.
  *
  * Which reel is "active" comes from an IntersectionObserver rather than scroll
  * maths, so it stays correct through wheel, trackpad, keyboard and touch
- * scrolling alike — and only that reel plays.
+ * scrolling alike. And only that reel plays.
  */
 export function ReelsFeed({
   reels,
@@ -76,7 +76,7 @@ export function ReelsFeed({
           if (Number.isNaN(index)) continue
           setActiveIndex(index)
           // The API counts a view when the reel is fetched by id, so that
-          // call is made when a reel actually reaches the screen — not when
+          // call is made when a reel actually reaches the screen. Not when
           // the page of results was loaded.
           const reel = reels[index]
           if (reel) onView(reel.id)
@@ -97,7 +97,7 @@ export function ReelsFeed({
     if (!keyboardEnabled) return
 
     function onKeyDown(event: KeyboardEvent) {
-      // Leave typing alone — the header's search box lives on the same page.
+      // Leave typing alone. The header's search box lives on the same page.
       const target = event.target as HTMLElement | null
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
 

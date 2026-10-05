@@ -12,7 +12,7 @@ export function currenciesFromCountries(
   return [...codes].sort()
 }
 
-/** "Sri Lanka (LK) · LKR" — the country and the currency stored on it. */
+/** "Sri Lanka (LK) · LKR". The country and the currency stored on it. */
 export function countryOptionLabel(
   country: Pick<Country, 'name' | 'iso_code' | 'default_currency'>,
 ): string {

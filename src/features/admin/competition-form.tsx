@@ -201,8 +201,8 @@ type CompetitionFormProps = {
 
 /**
  * Creates or edits a competition, one step at a time in the same wizard the
- * seller uses to add a gift. Editing is only possible until it starts —
- * after that the rules are locked (§13.8) — and saving an edit returns it to
+ * seller uses to add a gift. Editing is only possible until it starts.
+ * after that the rules are locked (§13.8). And saving an edit returns it to
  * draft so every publishing check runs again.
  */
 export function CompetitionForm({
@@ -374,10 +374,10 @@ export function CompetitionForm({
     form.prize_type === 'points'
       ? form.prize_points
         ? `${Number(form.prize_points).toLocaleString()} points each`
-        : '—'
+        : '-'
       : form.prize_value && currency.length === 3
         ? formatPriceAmount(majorToMinor(Number(form.prize_value), currency), currency)
-        : '—'
+        : '-'
 
   function rulesTemplate(): string {
     const where = chosenCountries.map((c) => c.name).join(', ') || '[countries]'
@@ -388,13 +388,13 @@ export function CompetitionForm({
         ? 'Every play is one entry. When the competition closes, winners are drawn at random by the server.'
         : 'The highest verified score wins. Ties are broken by the shortest play time.'
     return [
-      `${form.title.trim() || '[Competition name]'} — Official rules`,
+      `${form.title.trim() || '[Competition name]'}. Official rules`,
       '',
       `1. Who can enter: players living in ${where}.`,
       `2. When: opens ${fmt(startsAt)} and closes ${fmt(endsAt)} (${form.timezone || 'time zone'}).`,
       `3. How to enter: each play costs ${game ? game.play_cost_points : '[points]'} points.`,
       `4. How the winner is chosen: ${how}`,
-      `5. The prize: ${form.prize_description.trim() || '[prize]'}${prizeLabel !== '—' ? ` (${prizeLabel})` : ''}.`,
+      `5. The prize: ${form.prize_description.trim() || '[prize]'}${prizeLabel !== '-' ? ` (${prizeLabel})` : ''}.`,
       '6. Claiming: winners are contacted in the app and must claim within 14 days, or the prize passes to the next eligible player.',
     ].join('\n')
   }
@@ -451,7 +451,7 @@ export function CompetitionForm({
                   {game.practice ? (
                     <>
                       {' '}
-                      — change it on the{' '}
+                      change it on the{' '}
                       <Link to="/admin/games" className="font-medium underline">
                         Games
                       </Link>{' '}
@@ -592,7 +592,7 @@ export function CompetitionForm({
       aside: (
         <PrizePreview
           type={form.prize_type}
-          amount={prizeLabel === '—' ? 'Set a value' : prizeLabel}
+          amount={prizeLabel === '-' ? 'Set a value' : prizeLabel}
           description={form.prize_description}
           winners={instantWinner ? '1' : form.number_of_winners || '1'}
           grows={form.prize_growth_enabled && form.prize_type !== 'points'}
@@ -763,7 +763,7 @@ export function CompetitionForm({
             </div>
           </div>
           <dl className="grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2">
-            <ReviewRow label="Name" value={form.title.trim() || '—'} />
+            <ReviewRow label="Name" value={form.title.trim() || '-'} />
             <ReviewRow
               label="Game"
               value={
@@ -773,19 +773,19 @@ export function CompetitionForm({
                         ? 'free to play'
                         : `${game.play_cost_points.toLocaleString()} points a play`
                     }`
-                  : '—'
+                  : '-'
               }
             />
             <ReviewRow
               label="Countries"
-              value={chosenCountries.map((c) => c.name).join(', ') || '—'}
+              value={chosenCountries.map((c) => c.name).join(', ') || '-'}
               full
             />
-            <ReviewRow label="Starts" value={startsAt ? startsAt.toLocaleString() : '—'} />
-            <ReviewRow label="Ends" value={endsAt ? endsAt.toLocaleString() : '—'} />
+            <ReviewRow label="Starts" value={startsAt ? startsAt.toLocaleString() : '-'} />
+            <ReviewRow label="Ends" value={endsAt ? endsAt.toLocaleString() : '-'} />
             <ReviewRow
               label="Prize"
-              value={`${form.prize_description.trim() || '—'} · ${prizeLabel}${
+              value={`${form.prize_description.trim() || '-'} · ${prizeLabel}${
                 form.prize_growth_enabled && form.prize_type !== 'points' ? ' (grows)' : ''
               }`}
               full
@@ -796,7 +796,7 @@ export function CompetitionForm({
             />
             <ReviewRow
               label="Rules"
-              value={form.official_rules.trim() ? 'Written' : 'Not yet — needed to publish'}
+              value={form.official_rules.trim() ? 'Written' : 'Not yet. Needed to publish'}
             />
           </dl>
         </WizardPreviewFrame>

@@ -19,4 +19,4 @@ export function cartShops(lines: { product: CatalogProduct }[]): CartShop[] {
 }
 
 export const MIXED_SHOPS_MESSAGE =
-  'Your cart has gifts from more than one shop. Keep gifts from a single shop to check out — remove the others and order them separately.'
+  'Your cart has gifts from more than one shop. Keep gifts from a single shop to check out. Remove the others and order them separately.'

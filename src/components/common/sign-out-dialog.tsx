@@ -19,7 +19,7 @@ type SignOutDialogProps = {
   description?: string
 }
 
-/** Confirmation before actually clearing the session — matches the seller/admin portals. */
+/** Confirmation before actually clearing the session. Matches the seller/admin portals. */
 export function SignOutDialog({
   open,
   onOpenChange,

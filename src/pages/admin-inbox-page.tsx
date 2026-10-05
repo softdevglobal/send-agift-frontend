@@ -104,7 +104,7 @@ export function AdminInboxPage() {
     <div>
       <AdminPageHeader
         title="Inbox"
-        description="Support conversations with sellers. Requests sellers send to support are assigned to an admin automatically — the ones assigned to you appear here."
+        description="Support conversations with sellers. Requests sellers send to support are assigned to an admin automatically. The ones assigned to you appear here."
         action={
           <Button type="button" className="h-10 rounded-full px-4" onClick={() => setComposeOpen(true)}>
             <SquarePen className="size-4" />

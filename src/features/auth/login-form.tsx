@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/auth-context'
 import { loginCopy } from '@/features/auth/copy'
+import { SocialDivider, SocialSignInButtons } from '@/features/auth/social-sign-in'
 import type { AuthRole } from '@/features/auth/types'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { isAdminRole, isUserRole, type UserRole } from '@/lib/auth'
@@ -300,6 +301,20 @@ export function LoginForm({ role }: LoginFormProps) {
           </>
         )}
       </Button>
+
+      {role === 'customer' ? (
+        <div className="space-y-5">
+          <SocialDivider label="or continue with" />
+          <SocialSignInButtons
+            verb=""
+            onResult={(result) => {
+              if (result.status === 'signed_in') login(result.token, 'customer', remember)
+              // A new customer finishes signing up (country and phone) first.
+              else navigate('/register', { state: { social: result } })
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         <div className="flex items-center gap-3">

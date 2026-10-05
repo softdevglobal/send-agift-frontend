@@ -433,7 +433,7 @@ export function AdminCountriesPage() {
               <DialogDescription>
                 {editingId
                   ? 'Update this market. Changes apply to registration forms immediately.'
-                  : 'A quick two-step setup — fill in the details, then confirm before it goes live.'}
+                  : 'A quick two-step setup. Fill in the details, then confirm before it goes live.'}
               </DialogDescription>
             </DialogHeader>
 
@@ -613,11 +613,11 @@ export function AdminCountriesPage() {
                     <div className="relative mt-5 flex flex-wrap gap-2">
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-medium">
                         <Coins className="size-3.5" />
-                        {form.default_currency.trim().toUpperCase() || '—'}
+                        {form.default_currency.trim().toUpperCase() || '-'}
                       </span>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-medium">
                         <Clock className="size-3.5" />
-                        {form.default_timezone.trim() || '—'}
+                        {form.default_timezone.trim() || '-'}
                       </span>
                     </div>
                   </div>

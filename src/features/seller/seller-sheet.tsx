@@ -26,13 +26,13 @@ const sizeClass: Record<SellerSheetSize, string> = {
 type SellerSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Small tracking-wide line above the title — the record type, usually. */
+  /** Small tracking-wide line above the title. The record type, usually. */
   eyebrow?: string
   title: ReactNode
   description?: ReactNode
   /** Status pill or badge, shown on the header's right. */
   badge?: ReactNode
-  /** Edge-to-edge visual above the header — a cover image or video. */
+  /** Edge-to-edge visual above the header. A cover image or video. */
   media?: ReactNode
   /** Pinned to the bottom, outside the scroll area, so actions stay reachable. */
   footer?: ReactNode
@@ -41,8 +41,8 @@ type SellerSheetProps = {
 }
 
 /**
- * The seller portal's one detail surface: everything you open — a gift, a
- * reel, a shop, an order item — slides in from the right over the list you
+ * The seller portal's one detail surface: everything you open. A gift, a
+ * reel, a shop, an order item. Slides in from the right over the list you
  * opened it from.
  *
  * Keeping the list behind the panel is the point. Sellers work down a list,
@@ -71,7 +71,7 @@ export function SellerSheet({
           'w-[calc(100%-2.75rem)] overflow-hidden rounded-l-2xl sm:w-full sm:rounded-l-none',
           sizeClass[size],
           // The close button floats over the scroll area, so it needs to sit
-          // above whatever passes under it — a dark cover photo on open, body
+          // above whatever passes under it. A dark cover photo on open, body
           // content once scrolled. A backdrop chip keeps it legible on both.
           '[&>[data-slot=sheet-close]]:z-20 [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:bg-background/85 [&>[data-slot=sheet-close]]:p-1.5 [&>[data-slot=sheet-close]]:text-foreground [&>[data-slot=sheet-close]]:opacity-100 [&>[data-slot=sheet-close]]:shadow-sm [&>[data-slot=sheet-close]]:backdrop-blur-sm',
         )}
@@ -116,7 +116,7 @@ export function SellerSheet({
 
         {/*
           The action bar stays pinned. It is the one part that must not scroll
-          away — Accept and Buy label sit here, at the end of a long form.
+          away. Accept and Buy label sit here, at the end of a long form.
         */}
         {footer ? (
           <div className="shrink-0 border-t border-border/50 bg-surface/60 px-6 py-4">

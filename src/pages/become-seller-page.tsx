@@ -167,7 +167,7 @@ export function BecomeSellerPage() {
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Seller onboarding respects approval boundaries, country
-                activation, and auditability — so you can focus on products and
+                activation, and auditability. So you can focus on products and
                 fulfilment quality.
               </p>
               <Button asChild className="mt-6 h-11 px-5">

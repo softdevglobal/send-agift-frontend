@@ -21,7 +21,7 @@ import { formatInboxTime } from './messaging-utils'
 type MessageShopButtonProps = {
   /**
    * The gifts a question can be about. The API ties every customer ↔ shop chat
-   * to a product (or an order item) — there is no shop-wide thread — so the
+   * to a product (or an order item). There is no shop-wide thread. So the
    * customer picks which gift they mean.
    */
   products: CatalogProduct[]

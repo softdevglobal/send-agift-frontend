@@ -58,7 +58,7 @@ export function CustomerReviewsPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Review rows carry product ids, not names — the catalog fills in the rest.
+  // Review rows carry product ids, not names. The catalog fills in the rest.
   useEffect(() => {
     void loadMarketplaceIntoCatalog()
   }, [])
@@ -100,7 +100,7 @@ export function CustomerReviewsPage() {
         <CustomerEmptyState
           icon={Star}
           title="No reviews yet"
-          description="Once a gift is delivered you can review it from the order — your rating helps the next person choose."
+          description="Once a gift is delivered you can review it from the order. Your rating helps the next person choose."
           action={
             <Button asChild className="rounded-full">
               <Link to="/orders/history">View delivered orders</Link>

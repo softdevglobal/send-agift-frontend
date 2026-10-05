@@ -22,7 +22,7 @@ import { majorToMinor, minorToMajor } from '@/lib/money'
  * API payloads.
  *
  * These live outside the page so the step-by-step create wizard and the
- * inline edit form build exactly the same product — one place decides what a
+ * inline edit form build exactly the same product. One place decides what a
  * valid product is.
  */
 export type ProductFormMedia = {
@@ -62,7 +62,7 @@ export type ProductFormState = {
   reserved_qty: string
   low_stock_threshold: string
   unavailable_dates: string
-  /** Shipping parcel — required for quotes and labels. */
+  /** Shipping parcel. Required for quotes and labels. */
   parcel_length: string
   parcel_width: string
   parcel_height: string
@@ -229,7 +229,7 @@ export function isProductImageMedia(item: {
 }): boolean {
   if (isProductVideoMime(item.mime_type)) return false
   if (item.mime_type.startsWith('image/')) return true
-  // Missing mime — treat as image so covers still resolve.
+  // Missing mime. Treat as image so covers still resolve.
   return !item.mime_type.trim()
 }
 
@@ -240,7 +240,7 @@ export function coverImageUrl(form: ProductFormState): string {
   return firstImage?.preview_url.trim() || form.image_url.trim() || ''
 }
 
-/** Cover for list/preview cards — `image_url` or first gallery image. */
+/** Cover for list/preview cards. `image_url` or first gallery image. */
 export function productCoverUrl(
   product: Pick<Product, 'image_url' | 'media'>,
 ): string | null {
@@ -391,7 +391,7 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
 
 /**
  * The reward a new gift starts with: 10% of its price back as points, at the
- * $0.10-a-point rate sellers buy them at — so one point per whole unit of
+ * $0.10-a-point rate sellers buy them at. So one point per whole unit of
  * price ($25 → 25 points). Only a starting value; the seller can change it.
  */
 export function suggestedRewardPoints(priceMajor: number): number {

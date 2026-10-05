@@ -35,7 +35,7 @@ type ApiOptions = {
   headers?: Record<string, string>
   /** When false, skip the Authorization header (login/register). Default true. */
   auth?: boolean
-  /** Aborts the request — used to drop stale as-you-type lookups. */
+  /** Aborts the request. Used to drop stale as-you-type lookups. */
   signal?: AbortSignal
 }
 

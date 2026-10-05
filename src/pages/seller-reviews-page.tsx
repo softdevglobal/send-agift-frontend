@@ -240,7 +240,7 @@ export function SellerReviewsPage() {
             maxLength={REPLY_MAX}
             onChange={(event) => setReplyText(event.target.value)}
             className={cn(textareaClassName, 'min-h-32')}
-            placeholder="Thank you for the feedback — we have passed the delay on to our courier."
+            placeholder="Thank you for the feedback. We have passed the delay on to our courier."
           />
           <DialogFooter>
             <Button variant="ghost" onClick={() => setReplying(null)} disabled={busy}>

@@ -22,7 +22,7 @@ const NO_CONVERSATIONS: ConversationSummary[] = []
 
 export type InboxState = {
   conversations: ConversationSummary[]
-  /** False until the first response lands — distinguishes "empty" from "loading". */
+  /** False until the first response lands. Distinguishes "empty" from "loading". */
   loaded: boolean
   error: string | null
   unreadTotal: number
@@ -104,7 +104,7 @@ export function useSharedInbox(): InboxState {
 
 /**
  * The selected conversation: from the inbox list when it's there, otherwise
- * fetched directly — a deep link or a just-created thread may not be in the
+ * fetched directly. A deep link or a just-created thread may not be in the
  * list until the next poll.
  */
 export function useResolvedConversation(

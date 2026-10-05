@@ -335,7 +335,7 @@ export function SellerRegisterForm() {
         </Field>
       </Section>
 
-      <Section n={3} title="Your address" note="Optional — you can add it later">
+      <Section n={3} title="Your address" note="Optional. You can add it later">
         <AddressAutocomplete
           id="seller-address-search"
           countryCode={countryCode}

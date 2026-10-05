@@ -135,13 +135,13 @@ export function AdminDashboardPage() {
         <Metric
           icon={<Store className="size-4.5" />}
           label="Sellers"
-          value="—"
+          value="-"
           hint="Endpoint not wired yet"
         />
         <Metric
           icon={<Users className="size-4.5" />}
           label="Customers"
-          value="—"
+          value="-"
           hint="Endpoint not wired yet"
         />
       </section>

@@ -112,7 +112,7 @@ function winnerTone(status: CompetitionWinner['status']) {
   return 'bad' as const
 }
 
-/** Superadmin: one competition end to end — setup, operations, review, winners. */
+/** Superadmin: one competition end to end. Setup, operations, review, winners. */
 export function AdminCompetitionDetailPage() {
   const { id = '' } = useParams()
   const [comp, setComp] = useState<AdminCompetition | null>(null)
@@ -208,7 +208,7 @@ export function AdminCompetitionDetailPage() {
   async function saveEdit(input: CompetitionInput) {
     await updateCompetition(comp!.id, input)
     setEditing(false)
-    setNotice('Saved. The competition is back in draft — schedule it again when ready.')
+    setNotice('Saved. The competition is back in draft. Schedule it again when ready.')
     await load()
   }
 
@@ -227,7 +227,7 @@ export function AdminCompetitionDetailPage() {
 
       {status === 'cancelled' ? (
         <div className="mb-5 rounded-2xl bg-red-50 px-5 py-4 text-sm text-red-800 ring-1 ring-red-200">
-          Cancelled {formatDate(comp.cancelled_at)} —{' '}
+          Cancelled {formatDate(comp.cancelled_at)} , {' '}
           {CANCEL_REASONS.find((r) => r.value === comp.cancel_reason)?.label ?? comp.cancel_reason}.
           {comp.cancel_note ? ` ${comp.cancel_note}` : ''} Every attempt was voided and no winner will be declared.
         </div>
@@ -288,7 +288,7 @@ export function AdminCompetitionDetailPage() {
               <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{comp.official_rules}</p>
             </details>
           ) : (
-            <p className="mt-5 text-sm text-amber-700">No official rules yet — they must be published before scheduling.</p>
+            <p className="mt-5 text-sm text-amber-700">No official rules yet. They must be published before scheduling.</p>
           )}
         </Panel>
 
@@ -468,7 +468,7 @@ export function AdminCompetitionDetailPage() {
                 : undefined
             }
             onReconcile={() =>
-              run('reconcile', () => reconcilePrize(comp.id), 'Reconciliation finished — see the ledger for the result.')
+              run('reconcile', () => reconcilePrize(comp.id), 'Reconciliation finished. See the ledger for the result.')
             }
           />
         ) : null}
@@ -778,7 +778,7 @@ export function AdminCompetitionDetailPage() {
           if (!open) setDisqualifying(null)
         }}
         title="Disqualify this winner?"
-        description="The prize passes to the next eligible player on the final leaderboard — never a random pick."
+        description="The prize passes to the next eligible player on the final leaderboard. Never a random pick."
         confirmLabel="Disqualify"
         onConfirm={async (reason) => {
           const target = disqualifying

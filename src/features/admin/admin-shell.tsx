@@ -120,7 +120,7 @@ function AdminShellLayout() {
         if (!cancelled) setAdmin(data)
       })
       .catch(() => {
-        // Sidebar identity is decorative — pages surface their own load errors.
+        // Sidebar identity is decorative. Pages surface their own load errors.
       })
     return () => {
       cancelled = true
@@ -188,7 +188,7 @@ function AdminShellLayout() {
           />
         </div>
 
-        {/* One row — who is signed in, and sign out — so the menu above
+        {/* One row. Who is signed in, and sign out. So the menu above
             keeps the height. */}
         <div className="relative mt-3 border-t border-white/10 pt-3">
           <div className="flex items-center gap-3 px-2">

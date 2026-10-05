@@ -10,7 +10,7 @@ type CountrySelectFieldProps = {
   id: string
   value: string
   onChange: (value: string) => void
-  /** Receives the full selected country — used for its ISO code. */
+  /** Receives the full selected country. Used for its ISO code. */
   onCountrySelected?: (country: Country | null) => void
   disabled?: boolean
 }

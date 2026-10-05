@@ -62,7 +62,7 @@ export type ReelMediaInput = {
  * The POST/PUT body for a seller reel.
  *
  * `reel_type` is derived server-side (any video item makes it a video), so it
- * is not sent. On update, omitting `media` keeps the current files — sending
+ * is not sent. On update, omitting `media` keeps the current files. Sending
  * an empty array is rejected.
  */
 export type ReelInput = {
@@ -87,7 +87,7 @@ export function listShopReels(shopId: string) {
 }
 
 /**
- * Posts a reel to a shop. Tagging a product is optional here — pass
+ * Posts a reel to a shop. Tagging a product is optional here. Pass
  * `product_id` to connect the reel to something customers can buy.
  */
 export function createShopReel(shopId: string, body: ReelInput) {

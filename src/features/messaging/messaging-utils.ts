@@ -16,7 +16,7 @@ export const MAX_CHAT_ATTACHMENTS = 5
 /** Client-side cap so a huge upload fails fast instead of timing out. */
 export const MAX_CHAT_FILE_BYTES = 15 * 1024 * 1024
 
-/** Photos and PDFs — what the chat-image / chat-document folders are for. */
+/** Photos and PDFs. What the chat-image / chat-document folders are for. */
 export const CHAT_FILE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,application/pdf'
 
 /** Messages returned per page; a full page means older ones may exist. */
@@ -24,7 +24,7 @@ export const CHAT_PAGE_SIZE = 50
 
 export type ChatViewerRole = ParticipantRole
 
-/** Superadmins chat as admins — the API treats them the same way. */
+/** Superadmins chat as admins. The API treats them the same way. */
 export function chatViewerRole(role: UserRole | null): ChatViewerRole | null {
   if (role === 'customer' || role === 'seller') return role
   if (role === 'admin' || role === 'superadmin') return 'admin'
@@ -52,7 +52,7 @@ export const SUPPORT_STATUS_LABEL: Record<SupportCaseStatus, string> = {
   closed: 'Closed',
 }
 
-/** Whoever you're talking to — the first participant who isn't you. */
+/** Whoever you're talking to. The first participant who isn't you. */
 export function counterpartOf(
   participants: ConversationParticipant[] | undefined,
   userId: string | null,

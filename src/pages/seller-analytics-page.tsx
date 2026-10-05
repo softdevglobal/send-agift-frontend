@@ -37,7 +37,7 @@ export function SellerAnalyticsPage() {
             key={item.label}
             icon={item.icon}
             label={item.label}
-            value="—"
+            value="-"
             hint={item.hint}
             tone={item.tone}
           />

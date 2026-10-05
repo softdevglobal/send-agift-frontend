@@ -26,8 +26,8 @@ type CartContextValue = {
   subtotal: number
   /**
    * What the order will actually cost today. Delivery is not quoted before
-   * checkout — the API has no customer-facing rate endpoint and records
-   * delivery_amount as 0 — so the total is the subtotal rather than the
+   * checkout. The API has no customer-facing rate endpoint and records
+   * delivery_amount as 0. So the total is the subtotal rather than the
    * subtotal plus a made-up fee.
    */
   total: number

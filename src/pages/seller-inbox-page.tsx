@@ -54,7 +54,7 @@ export function SellerInboxPage() {
     return totals
   }, [conversations])
 
-  // "Message the customer" on an order item lands here with ?orderItem= —
+  // "Message the customer" on an order item lands here with ?orderItem=.
   // open that item's thread, or draft one if nobody has written yet.
   const existingOrderThreadId = orderItemId
     ? conversations.find(
@@ -152,7 +152,7 @@ export function SellerInboxPage() {
         selectedId={selectedId}
         onSelect={select}
         draft={draft}
-        draftHint="Send the first message about this order — the customer sees it in their messages."
+        draftHint="Send the first message about this order. The customer sees it in their messages."
         draftSuggestions={[
           'Your gift is being prepared and will ship soon.',
           'Could you confirm the delivery address?',

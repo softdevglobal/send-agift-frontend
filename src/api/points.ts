@@ -31,7 +31,7 @@ export type PointsCategory =
   | 'REFUND'
   | 'ADMIN_ADJUSTMENT'
 
-/** One row of the points ledger — every change to anyone's points. */
+/** One row of the points ledger. Every change to anyone's points. */
 export type PointsEntry = {
   id: string
   customer_id?: string

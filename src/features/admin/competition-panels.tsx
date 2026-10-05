@@ -100,14 +100,14 @@ export function ReserveCard({
         {liability !== undefined && currency ? (
           <>
             {' '}
-            — <span className="font-medium text-foreground">{formatPriceAmount(liability, currency)}</span>
+            <span className="font-medium text-foreground">{formatPriceAmount(liability, currency)}</span>
           </>
         ) : null}
         . Record where it is held to fund the reserve.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="r-amount">Amount held ({currency || '—'})</Label>
+          <Label htmlFor="r-amount">Amount held ({currency || '-'})</Label>
           <Input
             id="r-amount"
             inputMode="decimal"

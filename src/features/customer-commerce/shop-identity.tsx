@@ -6,11 +6,11 @@ import { cn } from '@/lib/utils'
 
 type ShopIdentityProps = {
   shopName?: string
-  /** Shown as the secondary line — who runs the shop. */
+  /** Shown as the secondary line. Who runs the shop. */
   sellerName?: string
   location?: string
   href?: string
-  /** The seller's profile picture — their brand mark across the marketplace. */
+  /** The seller's profile picture. Their brand mark across the marketplace. */
   imageUrl?: string
   rating?: number
   reviewCount?: number
@@ -36,7 +36,7 @@ export function ShopIdentity({
 }: ShopIdentityProps) {
   const primary = shopName?.trim() || 'Shop'
   const seller = sellerName?.trim()
-  // A one-shop seller usually names the shop after themselves — no point
+  // A one-shop seller usually names the shop after themselves. No point
   // printing "PD Gifts / by PD Gifts".
   const showSeller = Boolean(seller && seller !== primary)
   const place = location?.trim()

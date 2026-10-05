@@ -14,7 +14,7 @@ export type AuthLocationState = {
 const TOKEN_KEY = 'sag.token'
 const ROLE_KEY = 'sag.role'
 
-/** Areas that belong to a single role — never send another role into them. */
+/** Areas that belong to a single role. Never send another role into them. */
 const ROLE_AREAS: Record<string, UserRole[]> = {
   '/admin': ['admin', 'superadmin'],
   '/seller': ['seller'],
@@ -50,7 +50,7 @@ export function getToken(): string | null {
 }
 
 /**
- * The `sub` claim of the stored JWT — the signed-in customer, seller, or admin
+ * The `sub` claim of the stored JWT. The signed-in customer, seller, or admin
  * id. Chat compares it against `sender_user_id` to tell your messages apart.
  */
 export function getTokenSubject(): string | null {
@@ -92,7 +92,7 @@ export function clearSession(): void {
 /**
  * Only a superadmin may change prize economics or pay out (Progressive Prize
  * spec §2); other admins see the same pages read-only. The server enforces
- * this — the check here only hides buttons that would be refused.
+ * this. The check here only hides buttons that would be refused.
  */
 export function isSuperAdmin(): boolean {
   return getRole() === 'superadmin'

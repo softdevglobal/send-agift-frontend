@@ -130,7 +130,7 @@ export function SellerPointsPage() {
       const updated = await run()
       await refresh()
       setToast({
-        message: updated.status === 'failed' ? 'Payment declined — no points added.' : done,
+        message: updated.status === 'failed' ? 'Payment declined. No points added.' : done,
         variant: updated.status === 'failed' ? 'error' : 'success',
       })
     } catch (error) {
@@ -156,7 +156,7 @@ export function SellerPointsPage() {
         icon={Coins}
         tone="amber"
         title="Points"
-        description="Buy points and set a reward on your products — customers earn them when they order, paid from your balance."
+        description="Buy points and set a reward on your products. Customers earn them when they order, paid from your balance."
         action={
           <Button
             onClick={() => setBuying(true)}
@@ -341,7 +341,7 @@ export function SellerPointsPage() {
               message:
                 purchase.status === 'completed'
                   ? `${formatPoints(purchase.points_credited ?? purchase.points)} points added.`
-                  : 'Purchase started — points are added once payment is confirmed.',
+                  : 'Purchase started. Points are added once payment is confirmed.',
               variant: 'success',
             })
           }}

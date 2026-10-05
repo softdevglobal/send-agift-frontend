@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 
 export type WizardStep = {
   id: string
-  /** Rail label — two or three words. */
+  /** Rail label. Two or three words. */
   title: string
   /** One line under the heading, saying what this step is for. */
   description: string
@@ -35,7 +35,7 @@ type WizardDialogProps = {
   onComplete: () => void | Promise<void>
   completeLabel: string
   completing?: boolean
-  /** Shown above the footer — upload failures, API errors. */
+  /** Shown above the footer. Upload failures, API errors. */
   error?: ReactNode
 }
 
@@ -44,7 +44,7 @@ type WizardDialogProps = {
  * rail, one panel at a time, and a preview as the last step before anything is
  * written.
  *
- * Sharing it is the point — posting a gift and posting a reel should feel like
+ * Sharing it is the point. Posting a gift and posting a reel should feel like
  * the same act of publishing, not two unrelated forms.
  */
 export function WizardDialog({
@@ -97,7 +97,7 @@ export function WizardDialog({
          * Fixed height, not `max-h`: the dialog is the same size on every step.
          * A short step (just a dropdown) and a tall one (the photo upload, the
          * preview) used to make the popup jump between sizes as you clicked
-         * Next — now only the body below scrolls.
+         * Next. Now only the body below scrolls.
          */
         className="h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden p-0 sm:max-w-4xl"
         onInteractOutside={(event) => {

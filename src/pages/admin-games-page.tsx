@@ -54,7 +54,7 @@ function GameCard({ game }: { game: AdminGameSummary }) {
           <div className="min-w-0 flex-1">
             <p className="truncate font-display text-lg tracking-tight">{game.name}</p>
             <p className="text-xs text-muted-foreground capitalize">
-              {game.game_type} · v{game.version || '—'}
+              {game.game_type} · v{game.version || '-'}
             </p>
           </div>
           {!game.playable ? (

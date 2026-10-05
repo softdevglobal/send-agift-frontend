@@ -23,7 +23,7 @@ type SellerStatProps = {
 /**
  * One figure from the portal, as a tone-washed tile.
  *
- * Shared so Earnings, Analytics and the dashboard read as one system — four
+ * Shared so Earnings, Analytics and the dashboard read as one system. Four
  * identical white boxes made a stat row look like decoration.
  */
 export function SellerStat({ icon: Icon, label, value, hint, tone, to }: SellerStatProps) {

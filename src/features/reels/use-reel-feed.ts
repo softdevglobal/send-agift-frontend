@@ -9,7 +9,7 @@ import { isPlayable, toReelView, type ReelView } from '@/features/reels/reel-vie
  *
  * Module scope rather than a ref: React remounts this hook (StrictMode in
  * development, and any navigation away and back), and a per-instance set
- * would count the same reel again on every remount — inflating the number
+ * would count the same reel again on every remount. Inflating the number
  * the API stores.
  */
 const countedReels = new Set<string>()
@@ -129,7 +129,7 @@ export function useReelFeed(params: ReelFeedParams = {}) {
   }, [])
 
   /**
-   * Merges fresh fields into one reel — a like, a new comment count — without
+   * Merges fresh fields into one reel. A like, a new comment count. Without
    * refetching the page it sits on.
    */
   const patchReel = useCallback((reelId: string, patch: ReelPatch) => {

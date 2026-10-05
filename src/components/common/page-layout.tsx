@@ -5,8 +5,8 @@ import { storefrontFrameClass } from '@/components/common/site-styles'
 import { cn } from '@/lib/utils'
 
 /**
- * Storefront layout for pages that render their own content directly —
- * cart and checkout — without the account side nav.
+ * Storefront layout for pages that render their own content directly.
+ * cart and checkout. Without the account side nav.
  */
 export function PageLayout() {
   return (

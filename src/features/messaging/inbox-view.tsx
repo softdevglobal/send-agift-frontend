@@ -97,7 +97,7 @@ export function InboxView({
       </aside>
 
       {/*
-        Below `lg` an open thread takes the whole screen — a chat squeezed into
+        Below `lg` an open thread takes the whole screen. A chat squeezed into
         this panel's own scroll area, under the portal's header, reads as
         broken on a phone. `fixed inset-0` lifts it out of that layout
         entirely; `lg:` reverts it to an ordinary grid cell alongside the list.

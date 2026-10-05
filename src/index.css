@@ -69,7 +69,7 @@
 }
 
 :root {
-    /* Ribbon violet #6D28D9, with the navy and teal from the logo —
+    /* Ribbon violet #6D28D9, with the navy and teal from the logo.
        the same palette the mobile app uses. */
     --background: oklch(0.995 0.004 95);
     --foreground: oklch(0.24 0.02 120);
@@ -238,7 +238,7 @@
 }
 
 @layer components {
-  /* Customer storefront column — modest side gutters, wide content. */
+  /* Customer storefront column. Modest side gutters, wide content. */
   .storefront-frame {
     width: 100%;
     max-width: 90rem;

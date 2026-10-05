@@ -154,7 +154,7 @@ export function AdminAccountPage() {
                     Status
                   </dt>
                   <dd className="mt-1 text-sm font-medium capitalize">
-                    {admin.status || '—'}
+                    {admin.status || '-'}
                   </dd>
                 </div>
                 <div className={cn(adminPanelClass, 'p-4')}>

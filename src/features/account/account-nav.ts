@@ -47,7 +47,7 @@ export const accountNavGroups: AccountNavGroup[] = [
         to: '/account/gifts',
         label: 'Gifts received',
         icon: Gift,
-        hint: 'Gifts sent to you — review them here',
+        hint: 'Gifts sent to you. Review them here',
       },
       {
         to: '/account/saved-gifts',

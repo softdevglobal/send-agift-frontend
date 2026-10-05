@@ -75,7 +75,7 @@ export function SellerVerifyEmailForm() {
     setError(null)
     try {
       await resendSellerEmailCode(email)
-      setNotice(silent ? 'We sent a fresh code to your inbox.' : 'New code sent — check your inbox.')
+      setNotice(silent ? 'We sent a fresh code to your inbox.' : 'New code sent. Check your inbox.')
       setDigits(Array(CODE_LENGTH).fill(''))
       setCooldown(RESEND_SECONDS)
       inputs.current[0]?.focus()

@@ -33,7 +33,7 @@ export function getSellerProduct(id: string) {
   return api<ProductDetails>(`/sellers/me/products/${id}`)
 }
 
-/** Public product detail — includes `media[]` and nested `shop`. */
+/** Public product detail. Includes `media[]` and nested `shop`. */
 export function getPublicProduct(
   productId: string,
   customerType: 'personal' | 'corporate' = 'personal',

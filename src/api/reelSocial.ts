@@ -13,14 +13,14 @@ export type { ReelComment, ReelCommentList, ReelLikeResult, ReelLiker, ReelLikes
 /**
  * Reel likes and comments.
  *
- * Reads are public. Writes take the signed-in customer's bearer token — the
+ * Reads are public. Writes take the signed-in customer's bearer token. The
  * API also accepts an `X-Guest-Token`, but the storefront only lets signed-in
  * customers like and comment.
  */
 
 /**
- * Like count, the newest likers, and — when `asViewer` sends the customer's
- * token — whether this viewer already liked the reel. The public feed never
+ * Like count, the newest likers, and. When `asViewer` sends the customer's
+ * token. Whether this viewer already liked the reel. The public feed never
  * fills `liked_by_me`, so this is where the heart's state comes from.
  */
 export function getReelLikes(reelId: string, asViewer: boolean) {
@@ -63,7 +63,7 @@ export function createReelComment(reelId: string, body: ReelCommentInput) {
   return api<ReelComment>(`/reels/${reelId}/comments`, { method: 'POST', body })
 }
 
-/** Author only — the API matches the token against the stored author. */
+/** Author only. The API matches the token against the stored author. */
 export function updateReelComment(reelId: string, commentId: string, body: string) {
   return api<ReelComment>(`/reels/${reelId}/comments/${commentId}`, {
     method: 'PUT',

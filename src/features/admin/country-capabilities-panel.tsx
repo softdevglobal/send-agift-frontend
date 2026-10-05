@@ -60,7 +60,7 @@ const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: string }> 
   },
   chance_games_enabled: {
     label: 'Games of chance',
-    hint: 'Spin, scratch, treasure, instant win and prize draws. Often regulated as gambling or lotteries — legal sign-off first.',
+    hint: 'Spin, scratch, treasure, instant win and prize draws. Often regulated as gambling or lotteries. Legal sign-off first.',
   },
   app_store_available: {
     label: 'App store',
@@ -78,7 +78,7 @@ function flagsFromCapability(capability: CountryCapability): CountryCapabilityIn
 
 type CountryCapabilitiesPanelProps = {
   countryId: string
-  /** From GET /admin/country-capabilities — skip GET-one when this is missing. */
+  /** From GET /admin/country-capabilities. Skip GET-one when this is missing. */
   existing?: CountryCapability | null
   onChanged?: (capability: CountryCapability) => void
 }
@@ -152,7 +152,7 @@ export function CountryCapabilitiesPanel({
             'shrink-0 px-3 py-1.5 text-xs font-medium text-muted-foreground',
           )}
         >
-          Rule v{capability?.rule_version ?? '—'}
+          Rule v{capability?.rule_version ?? '-'}
         </span>
       </div>
 

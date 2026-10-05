@@ -13,7 +13,7 @@ import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 /**
- * Gifts other people sent you, once they've arrived — each one can be
+ * Gifts other people sent you, once they've arrived. Each one can be
  * reviewed from here. Prices are never shown: it's a gift.
  */
 export function CustomerReceivedGiftsPage() {
@@ -73,7 +73,7 @@ export function CustomerReceivedGiftsPage() {
                     <p className="font-display text-lg leading-relaxed whitespace-pre-line text-orange-950 italic">
                       {gift.gift_message}
                     </p>
-                    <footer className="mt-2 text-sm font-semibold text-pink-700">— {gift.sender_name}</footer>
+                    <footer className="mt-2 text-sm font-semibold text-pink-700">From {gift.sender_name}</footer>
                   </blockquote>
                 ) : null}
 

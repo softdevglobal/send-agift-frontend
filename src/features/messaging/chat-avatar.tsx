@@ -15,7 +15,7 @@ const ICONS: Record<ConversationAvatarKind, LucideIcon> = {
 type ChatAvatarProps = {
   kind: ConversationAvatarKind
   imageUrl?: string | null
-  /** A person's name — shown as initials when there's no photo. */
+  /** A person's name. Shown as initials when there's no photo. */
   name?: string | null
   size?: 'xs' | 'sm' | 'md'
   className?: string

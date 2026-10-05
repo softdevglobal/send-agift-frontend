@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 /**
  * How customers earn points, per country: points per whole unit spent on a
  * delivered order (taken back if it is refunded) and a welcome bonus for new
- * customers. Changes apply from now on — switching a rule on never pays out
+ * customers. Changes apply from now on. Switching a rule on never pays out
  * past orders or sign-ups.
  */
 export function EarningRulesPanel({ editable }: { editable: boolean }) {

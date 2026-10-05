@@ -313,7 +313,7 @@ function SellerReviewSheet({
   async function decide(decision: 'verified' | 'rejected') {
     if (!seller) return
     if (decision === 'rejected' && !note.trim()) {
-      setError('Add a note telling the seller what to fix — it goes in their email.')
+      setError('Add a note telling the seller what to fix. It goes in their email.')
       return
     }
     setBusy(decision)
@@ -328,8 +328,8 @@ function SellerReviewSheet({
       setSeller({ ...seller, ...updated })
       setNotice(
         decision === 'verified'
-          ? 'Approved — the seller has been emailed that their account is active.'
-          : 'Rejected — the seller has been emailed your note.',
+          ? 'Approved. The seller has been emailed that their account is active.'
+          : 'Rejected. The seller has been emailed your note.',
       )
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save the decision.'))
@@ -415,7 +415,7 @@ function SellerReviewSheet({
         <section>
           <p className="mb-2 text-sm font-semibold">Shops</p>
           {seller.shops.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No shops yet — sellers open shops once approved.</p>
+            <p className="text-sm text-muted-foreground">No shops yet. Sellers open shops once approved.</p>
           ) : (
             <ul className="space-y-2">
               {seller.shops.map((shop) => (
@@ -444,7 +444,7 @@ function SellerReviewSheet({
                   className={textareaClassName}
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Optional when approving. Required when rejecting — say what needs fixing."
+                  placeholder="Optional when approving. Required when rejecting. Say what needs fixing."
                 />
               </div>
               <FormAlert error={error} notice={notice} />

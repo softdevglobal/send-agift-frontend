@@ -85,7 +85,7 @@ function writeStore(store: Store) {
   window.dispatchEvent(new Event(CHANGE_EVENT))
 }
 
-/** In-memory overlay from GET /shops — not persisted, so it never goes stale. */
+/** In-memory overlay from GET /shops. Not persisted, so it never goes stale. */
 let marketplaceOverlay: Store = emptyStore()
 
 function mergeStores(overlay: Store, local: Store): Store {
@@ -209,7 +209,7 @@ export function getPublicSeller(id: string): PublicSeller | null {
   return readMerged().sellers[id] ?? null
 }
 
-/** Every seller with a public shop, by name — for pickers like admin → seller messaging. */
+/** Every seller with a public shop, by name. For pickers like admin → seller messaging. */
 export function listPublicSellers(): PublicSeller[] {
   return Object.values(readMerged().sellers).sort((a, b) =>
     publicSellerName(a).localeCompare(publicSellerName(b)),

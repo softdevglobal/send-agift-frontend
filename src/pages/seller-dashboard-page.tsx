@@ -35,7 +35,7 @@ import { cn } from '@/lib/utils'
  * Every seller page as a tile, in one card near the top of the dashboard.
  *
  * The sidebar already links these, but the dashboard is the landing page and a
- * seller lands here to _go somewhere_ — this makes the whole portal reachable
+ * seller lands here to _go somewhere_. This makes the whole portal reachable
  * in one glance without hunting the rail.
  */
 const quickNav = [
@@ -70,7 +70,7 @@ function QuickNav() {
   )
 }
 
-/** Circular percentage dial for the setup card — reads at a glance from across the screen. */
+/** Circular percentage dial for the setup card. Reads at a glance from across the screen. */
 function ProgressRing({ percent }: { percent: number }) {
   const radius = 26
   const circumference = 2 * Math.PI * radius
@@ -151,7 +151,7 @@ export function SellerDashboardPage() {
       <FormAlert error={error} />
 
       {/*
-        The hero carries the brand gradient rather than the plain card wash —
+        The hero carries the brand gradient rather than the plain card wash.
         it is the one place in the portal that should feel like the storefront
         the seller is building, not the admin tooling around it.
       */}

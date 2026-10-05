@@ -5,7 +5,7 @@ import { formatPriceAmount } from '@/lib/money'
 
 /** Money in the round's currency, or plain cents when it has none yet. */
 export function prizeMoney(cents: number | undefined | null, currency: string | undefined): string {
-  if (cents === undefined || cents === null) return '—'
+  if (cents === undefined || cents === null) return '-'
   return currency ? formatPriceAmount(cents, currency) : `${cents}¢`
 }
 

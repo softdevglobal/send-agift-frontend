@@ -30,7 +30,7 @@ export type CompetitionCountry = {
   default_currency: string
 }
 
-/** "New Zealand, Australia" — the countries a competition runs in. */
+/** "New Zealand, Australia". The countries a competition runs in. */
 export function countryNames(c: Pick<AdminCompetition, 'countries'>): string {
   return (c.countries ?? []).map((co) => co.name).join(', ')
 }
