@@ -7,6 +7,7 @@ import type {
   OrderDetails,
   OrderShippingQuote,
   QuotedShipment,
+  ReceivedGift,
   SellerDeliveryQuote,
 } from '@/api/types'
 
@@ -158,6 +159,11 @@ export function quoteDelivery(body: DeliveryQuoteInput) {
 
 export function listOrders() {
   return api<Order[]>('/customers/me/orders')
+}
+
+/** Delivered gifts other customers sent to the signed-in customer. */
+export function listReceivedGifts() {
+  return api<ReceivedGift[]>('/customers/me/received-gifts')
 }
 
 export function getOrder(id: string) {

@@ -65,6 +65,30 @@ export function registerSeller(body: SellerRegisterRequest) {
   })
 }
 
+export type VerifySellerEmailResponse = {
+  token: string
+  role: 'seller'
+  verification_status: string
+}
+
+/** Confirms the seller's email with the 6-digit code; signs them in. */
+export function verifySellerEmail(email: string, code: string) {
+  return api<VerifySellerEmailResponse>('/sellers/verify-email', {
+    method: 'POST',
+    body: { email, code },
+    auth: false,
+  })
+}
+
+/** Emails a fresh code. Answers the same for unknown emails. */
+export function resendSellerEmailCode(email: string) {
+  return api<MessageResponse>('/sellers/verify-email/resend', {
+    method: 'POST',
+    body: { email },
+    auth: false,
+  })
+}
+
 export function getSellerMe() {
   return api<SellerDetails>('/sellers/me')
 }

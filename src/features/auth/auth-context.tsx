@@ -43,10 +43,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSession(nextToken, nextRole, persist)
       setToken(nextToken)
       setRole(nextRole)
-      const from = (location.state as AuthLocationState | null)?.from
+      // A page that sent you to sign in, or a ?next= link from an email.
+      const from =
+        (location.state as AuthLocationState | null)?.from ??
+        new URLSearchParams(location.search).get('next') ??
+        undefined
       navigate(postLoginPath(from, nextRole), { replace: true })
     },
-    [location.state, navigate],
+    [location.search, location.state, navigate],
   )
 
   const logout = useCallback(() => {

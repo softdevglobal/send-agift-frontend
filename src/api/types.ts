@@ -137,6 +137,8 @@ export type Customer = {
   updated_at: string
   deleted_at?: string
   image_url?: string
+  /** True for an account made for a gift recipient still on its temporary password. */
+  password_change_required?: boolean
 }
 
 export type CustomerDetails = Customer & { addresses: Address[] }
@@ -149,11 +151,53 @@ export type Seller = {
   trading_name?: string
   email: string
   phone?: string
+  /** unverified (email not confirmed) → pending (admin review) → verified | rejected */
   verification_status: string
   status: string
   created_at: string
   updated_at: string
   image_url?: string
+  email_verified_at?: string
+  /** What the admin told the seller when approving or rejecting them. */
+  verification_note?: string
+  verification_reviewed_at?: string
+}
+
+/** A seller row in the admin review queue. */
+export type AdminSellerSummary = Seller & {
+  country_name: string
+  shop_count: number
+  city?: string
+}
+
+export type AdminSellerList = {
+  sellers: AdminSellerSummary[]
+  total: number
+  counts: Record<'unverified' | 'pending' | 'verified' | 'rejected', number>
+}
+
+/** A delivered gift someone sent to the signed-in customer. No prices. */
+export type ReceivedGift = {
+  order_id: string
+  order_number: string
+  sender_name: string
+  gift_message?: string
+  gift_points: number
+  delivered_at: string
+  items: ReceivedGiftItem[]
+}
+
+export type ReceivedGiftItem = {
+  id: string
+  product_id: string
+  product_name: string
+  product_slug: string
+  product_image_url?: string
+  shop_name: string
+  quantity: number
+  fulfilment_status: string
+  /** Set once the line has a review, by the recipient or the sender. */
+  review_id?: string
 }
 
 /** One shop-delivery band. The smallest `max_km` that covers the recipient wins. */
@@ -365,6 +409,7 @@ export type RecipientInput = {
 }
 
 export const MEDIA_FOLDERS = [
+  'customer-profile',
   'seller-profile',
   'shop-image',
   'product-image',

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { LogOut, Menu, Search, X } from 'lucide-react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Hourglass, LogOut, Menu, Search, ShieldAlert, X } from 'lucide-react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { BrandLogo } from '@/components/common/brand-logo'
@@ -283,10 +283,67 @@ function SellerShellLayout() {
             className="pointer-events-none absolute top-40 -right-20 size-[18rem] rounded-full bg-[oklch(0.93_0.03_80/0.22)]"
           />
           <div className="relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
+            {profile ? <SellerApprovalBanner seller={profile} /> : null}
             <Outlet />
           </div>
         </main>
       </div>
     </div>
   )
+}
+
+/**
+ * Until an admin approves the account, shops, gifts and orders are locked;
+ * this says why, and what happens next.
+ */
+function SellerApprovalBanner({ seller }: { seller: SellerDetails }) {
+  if (seller.verification_status === 'pending' || seller.verification_status === 'unverified') {
+    return (
+      <div className="mb-8 flex flex-col gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 via-amber-50 to-violet-50 p-5 ring-1 ring-amber-200 sm:flex-row sm:items-center">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+          <Hourglass className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg text-amber-950">Your account is under review</p>
+          <p className="mt-0.5 text-sm leading-relaxed text-amber-900/80">
+            Our team is checking your details — usually within 1–2 business days. We&apos;ll email
+            you the moment it&apos;s active, and then you can open shops and list gifts.
+          </p>
+        </div>
+        <Link
+          to="/seller/profile"
+          className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-amber-900 ring-1 ring-amber-200 transition-colors hover:bg-amber-100"
+        >
+          Review my details
+        </Link>
+      </div>
+    )
+  }
+  if (seller.verification_status === 'rejected') {
+    return (
+      <div className="mb-8 flex flex-col gap-4 rounded-2xl bg-red-50 p-5 ring-1 ring-red-200 sm:flex-row sm:items-start">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700 ring-1 ring-red-200">
+          <ShieldAlert className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-lg text-red-950">We couldn&apos;t activate your account yet</p>
+          {seller.verification_note ? (
+            <p className="mt-1.5 rounded-xl bg-white/70 px-3 py-2 text-sm whitespace-pre-line text-red-900 ring-1 ring-red-100">
+              {seller.verification_note}
+            </p>
+          ) : null}
+          <p className="mt-1.5 text-sm text-red-900/80">
+            Update your details and reply to our email — we&apos;ll take another look.
+          </p>
+        </div>
+        <Link
+          to="/seller/profile"
+          className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-medium text-red-900 ring-1 ring-red-200 transition-colors hover:bg-red-100"
+        >
+          Update details
+        </Link>
+      </div>
+    )
+  }
+  return null
 }

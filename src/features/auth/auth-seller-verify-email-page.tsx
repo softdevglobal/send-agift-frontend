@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 
 import { BrandLogo } from '@/components/common/brand-logo'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
-import { SellerRegisterForm } from '@/features/auth/seller-register-form'
+import { SellerVerifyEmailForm } from '@/features/auth/seller-verify-email-form'
 
-export function AuthSellerRegisterPage() {
+export function AuthSellerVerifyEmailPage() {
   return (
     <main className="flex h-svh overflow-hidden bg-background">
       <LoginBrandPanel role="seller" variant="signup" />
@@ -14,7 +14,7 @@ export function AuthSellerRegisterPage() {
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <div className="flex items-center gap-4">
             <Link
-              to="/become-a-seller"
+              to="/seller/register"
               className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="size-4" />
@@ -33,12 +33,8 @@ export function AuthSellerRegisterPage() {
         </header>
 
         <div className="flex min-w-0 flex-1 items-start px-6 py-8 sm:items-center sm:px-10">
-          <SellerRegisterForm />
+          <SellerVerifyEmailForm />
         </div>
-
-        <footer className="px-6 pb-6 text-center text-xs text-muted-foreground sm:px-10 sm:text-left">
-          By continuing you agree to SendAgift country terms and privacy notices.
-        </footer>
       </section>
     </main>
   )

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
-import { Link, useLocation, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
@@ -37,7 +37,18 @@ function loginOrder(preferred: AuthRole): AuthRole[] {
   return ['admin', preferred, ...rest]
 }
 
+/** A seller who has not confirmed their email yet: they go to the code screen. */
+function isEmailNotVerified(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    typeof error.body === 'object' &&
+    error.body !== null &&
+    (error.body as { code?: unknown }).code === 'email_not_verified'
+  )
+}
+
 function isRetryableLoginError(error: unknown): boolean {
+  if (isEmailNotVerified(error)) return false
   return error instanceof ApiError && [400, 401, 403, 404].includes(error.status)
 }
 
@@ -75,8 +86,10 @@ export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
   const { login, isAuthenticated, role: sessionRole } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [email, setEmail] = useState('')
+  // Emails link here with the address filled in (e.g. a gift recipient's).
+  const [email, setEmail] = useState(() => searchParams.get('email') ?? '')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
@@ -122,6 +135,10 @@ export function LoginForm({ role }: LoginFormProps) {
       const result = await loginWithCredentials(role, trimmedEmail, password)
       login(result.token, result.role, remember)
     } catch (err) {
+      if (isEmailNotVerified(err)) {
+        navigate(`/seller/verify-email?email=${encodeURIComponent(trimmedEmail)}&resend=1`)
+        return
+      }
       setError(getErrorMessage(err, 'Sign in failed.'))
       setIsSubmitting(false)
     }

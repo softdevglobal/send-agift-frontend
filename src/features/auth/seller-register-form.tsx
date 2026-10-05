@@ -144,7 +144,7 @@ export function SellerRegisterForm() {
           : undefined,
       })
       setVerificationStatus(asVerificationStatus(created.verification_status))
-      navigate('/seller/login?registered=1', { replace: true })
+      navigate(`/seller/verify-email?email=${encodeURIComponent(created.email)}`, { replace: true })
     } catch (err) {
       const message = getErrorMessage(err, 'Registration failed.')
       setError(message)

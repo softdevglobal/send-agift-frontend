@@ -32,6 +32,7 @@ import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
 import { CustomerPointsPage } from '@/pages/customer-points-page'
+import { CustomerReceivedGiftsPage } from '@/pages/customer-received-gifts-page'
 import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
 import { CustomerSellerPage } from '@/pages/customer-seller-page'
@@ -53,6 +54,7 @@ import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
+import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -158,6 +160,7 @@ export function AppRouter() {
         <Route path="orders" element={<Navigate to="/orders" replace />} />
         <Route path="orders/history" element={<Navigate to="/orders/history" replace />} />
         <Route path="orders/:orderId" element={<RedirectOrder />} />
+        <Route path="gifts" element={<CustomerReceivedGiftsPage />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="points" element={<CustomerPointsPage />} />
@@ -215,6 +218,14 @@ export function AppRouter() {
         element={
           <GuestRoute forRole="seller">
             <SellerRegisterPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/seller/verify-email"
+        element={
+          <GuestRoute forRole="seller">
+            <SellerVerifyEmailPage />
           </GuestRoute>
         }
       />

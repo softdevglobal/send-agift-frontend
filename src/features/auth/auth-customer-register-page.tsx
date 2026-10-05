@@ -11,7 +11,7 @@ export function AuthCustomerRegisterPage() {
     <main className="flex h-svh overflow-hidden bg-background">
       <LoginBrandPanel role="customer" variant="signup" />
 
-      <section className="relative flex flex-1 flex-col overflow-y-auto bg-grain bg-background">
+      <section className="relative flex min-w-0 flex-1 flex-col overflow-y-auto bg-grain bg-background">
         <header className="flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
           <div className="flex items-center gap-4">
             <Link
@@ -28,17 +28,17 @@ export function AuthCustomerRegisterPage() {
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              className="text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
             >
-              Customer login
+              Sign in
             </Link>
-            <Button asChild size="sm" variant="outline" className="h-9 px-3">
+            <Button asChild size="sm" variant="outline" className="hidden h-9 px-3 sm:inline-flex">
               <Link to="/seller/register">Create seller account</Link>
             </Button>
           </div>
         </header>
 
-        <div className="flex flex-1 items-start px-6 py-8 sm:items-center sm:px-10">
+        <div className="flex min-w-0 flex-1 items-start px-5 py-4 sm:items-center sm:px-10 sm:py-8">
           <CustomerRegisterForm />
         </div>
 
