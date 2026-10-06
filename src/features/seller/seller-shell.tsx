@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { LogOut, Menu, Search, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { LogOut, X } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
@@ -16,10 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/auth-context'
 import { InboxProvider, useSharedInbox } from '@/features/messaging'
 import { sellerNavGroups } from '@/features/seller/seller-nav'
+import { SellerTopBar } from '@/features/seller/seller-top-bar'
 import {
   sellerDisplayName,
   sellerInitials,
@@ -110,7 +110,6 @@ function SellerShellLayout() {
   const { unreadTotal } = useSharedInbox()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  const [query, setQuery] = useState('')
   const [profile, setProfile] = useState<SellerDetails | null>(null)
   const [signOutOpen, setSignOutOpen] = useState(false)
 
@@ -133,10 +132,6 @@ function SellerShellLayout() {
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
-
-  function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-  }
 
   const statusLabel = profile
     ? sellerVerificationLabel(profile.verification_status)
@@ -240,48 +235,14 @@ function SellerShellLayout() {
       </Dialog>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-brand-ink/10 bg-background">
-          <div className="flex h-16 items-center gap-3 px-3 sm:px-5 lg:px-6">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              aria-label="Open menu"
-              onClick={() => setMenuOpen(true)}
-            >
-              <Menu className="size-5" />
-            </Button>
-
-            <form
-              onSubmit={handleSearch}
-              className="relative min-w-0 flex-1 md:max-w-sm"
-            >
-              <label className="sr-only" htmlFor="seller-search">
-                Search the portal
-              </label>
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                id="seller-search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search gifts, shops…"
-                className="h-10 rounded-lg border-brand-ink/15 bg-card pr-4 pl-10 shadow-none focus-visible:border-brand-violet focus-visible:ring-0"
-              />
-            </form>
-
-            <div className="ml-auto flex items-center gap-2">
-              {statusLabel ? (
-                <span className="hidden rounded-md bg-brand-teal px-2.5 py-1 text-[11px] font-bold tracking-[0.08em] text-brand-ink uppercase sm:inline">
-                  {statusLabel}
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </header>
+        <SellerTopBar
+          onOpenMenu={() => setMenuOpen(true)}
+          statusLabel={statusLabel}
+          unreadMessages={unreadTotal}
+        />
 
         <main className="relative min-w-0 flex-1 overflow-hidden">
-          <div className="account-box relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
+          <div className="account-box relative mx-auto w-full max-w-6xl px-3 pt-4 pb-8 sm:px-4 lg:px-6 lg:pt-5 lg:pb-10">
             <Outlet />
           </div>
         </main>

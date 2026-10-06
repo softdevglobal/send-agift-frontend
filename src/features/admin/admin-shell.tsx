@@ -282,7 +282,7 @@ function AdminShellLayout() {
             aria-hidden
             className="pointer-events-none absolute top-40 -right-20 size-[18rem] rounded-full bg-[oklch(0.93_0.03_80/0.22)]"
           />
-          <div className="relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
+          <div className="relative mx-auto w-full max-w-6xl px-3 pt-4 pb-8 sm:px-4 lg:px-6 lg:pt-5 lg:pb-10">
             {/* The role in this sign-in was fixed when it was issued; after a
                 role change, the new one only applies once you sign in again. */}
             {admin?.role && role && admin.role !== role ? (
