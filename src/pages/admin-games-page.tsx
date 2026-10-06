@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  ArrowRight,
   Crown,
+  Eye,
   Gamepad2,
   ShieldAlert,
   Trophy,
@@ -12,7 +12,13 @@ import { Link } from 'react-router-dom'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { AdminPageHeader, formatDate } from '@/features/admin'
+import {
+  AdminPreviewSheet,
+  PreviewCounts,
+  PreviewFacts,
+  PreviewHeading,
+} from '@/features/admin/admin-preview-sheet'
 import { GamePricesPanel, PriceTag } from '@/features/admin/game-prices-panel'
 import { formatScore, gameColor } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
@@ -22,37 +28,36 @@ import { cn } from '@/lib/utils'
 
 function Metric({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone?: 'warn' }) {
   return (
-    <div className={cn(adminPanelClass, 'p-4 sm:p-5')}>
+    <div className="rounded-xl border-2 border-brand-ink/10 bg-card p-4 sm:p-5">
       <div
         className={cn(
-          'mb-4 flex size-10 items-center justify-center rounded-xl',
-          tone === 'warn' ? 'bg-amber-100 text-amber-700' : 'bg-accent text-primary',
+          'mb-4 flex size-10 items-center justify-center rounded-lg',
+          tone === 'warn' ? 'bg-amber-300 text-amber-950' : 'bg-brand-violet text-white',
         )}
       >
         {icon}
       </div>
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
-      <p className="mt-1 truncate text-xl font-medium tracking-tight">{value}</p>
+      <p className="font-poster text-3xl">{value}</p>
+      <p className="mt-1 text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">{label}</p>
     </div>
   )
 }
 
-function GameCard({ game }: { game: AdminGameSummary }) {
+/** One game as a card; it opens the preview panel. */
+function GameCard({ game, onOpen }: { game: AdminGameSummary; onOpen: () => void }) {
   const top = game.top_player
   return (
-    <Link
-      to={`/admin/games/${game.slug}`}
-      className={cn(
-        adminPanelClass,
-        'group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:',
-      )}
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group flex flex-col overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card text-left transition-colors hover:border-brand-ink"
     >
-      <div className="relative h-2" style={{ background: gameColor(game.slug) }} />
-      <div className="flex flex-1 flex-col p-5">
+      <div className="relative h-2.5 w-full" style={{ background: gameColor(game.slug) }} />
+      <div className="flex w-full flex-1 flex-col p-5">
         <div className="flex items-start gap-3">
           <GameBadge slug={game.slug} />
           <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-lg tracking-tight">{game.name}</p>
+            <p className="truncate font-poster text-lg">{game.name}</p>
             <p className="text-xs text-muted-foreground capitalize">
               {game.game_type} · v{game.version || '-'}
             </p>
@@ -64,38 +69,24 @@ function GameCard({ game }: { game: AdminGameSummary }) {
           ) : null}
         </div>
 
-        <div className="mt-5 flex-1 rounded-xl bg-muted/40 p-4">
+        <div className="mt-5 flex-1 rounded-lg bg-brand-ink p-4 text-white">
           {top && game.top_score !== undefined ? (
             <>
-              <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                <Crown className="size-3.5 text-amber-500" />
+              <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] text-white/60 uppercase">
+                <Crown className="size-3.5 text-amber-300" />
                 Best scorer
               </p>
-              <p className="mt-1 font-poster text-3xl">{formatScore(game.top_score)}</p>
-              <p className="mt-1 truncate text-sm font-medium">{top.name}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {top.kind === 'guest'
-                  ? 'Playing as a guest'
-                  : [top.email, top.country_name].filter(Boolean).join(' · ')}
-              </p>
+              <p className="mt-1 font-poster text-3xl text-amber-300">{formatScore(game.top_score)}</p>
+              <p className="mt-1 truncate text-sm font-bold">{top.name}</p>
             </>
           ) : (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              No verified score yet
-            </p>
+            <p className="py-4 text-center text-sm text-white/60">No verified score yet</p>
           )}
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>{game.plays.toLocaleString()} plays</span>
-          <span aria-hidden>·</span>
-          <span>{game.players.toLocaleString()} players</span>
-          {game.competitions > 0 ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{game.competitions} competitions</span>
-            </>
-          ) : null}
+        <div className="mt-4 flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+          <span className="rounded-md bg-accent px-2 py-1 text-brand-ink">{game.plays.toLocaleString()} plays</span>
+          <span className="rounded-md bg-accent px-2 py-1 text-brand-ink">{game.players.toLocaleString()} players</span>
           {game.under_review > 0 ? (
             <StatusPill tone="warn" className="ml-auto">
               <ShieldAlert className="size-3" />
@@ -103,12 +94,82 @@ function GameCard({ game }: { game: AdminGameSummary }) {
             </StatusPill>
           ) : null}
         </div>
-        <p className="mt-3 flex items-center gap-1 text-sm font-medium text-primary">
-          View leaderboard
-          <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+        <p className="mt-4 flex items-center gap-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-violet uppercase">
+          <Eye className="size-4" />
+          Preview
         </p>
       </div>
-    </Link>
+    </button>
+  )
+}
+
+/** A quick look at one game; its leaderboard is its own page. */
+function GamePreview({ game, onClose }: { game: AdminGameSummary | null; onClose: () => void }) {
+  const top = game?.top_player
+  return (
+    <AdminPreviewSheet
+      open={game !== null}
+      onClose={onClose}
+      eyebrow="Game"
+      title={game?.name ?? 'Game'}
+      description={game ? `${game.game_type} · version ${game.version || '-'}` : undefined}
+      badges={
+        game ? (
+          <>
+            {!game.playable ? (
+              <StatusPill tone="neutral">No engine</StatusPill>
+            ) : game.practice ? (
+              <PriceTag points={game.play_cost_points} />
+            ) : null}
+            <StatusPill tone={game.status === 'active' ? 'good' : 'neutral'}>{game.status}</StatusPill>
+          </>
+        ) : null
+      }
+      fullDetailsTo={game ? `/admin/games/${game.slug}` : undefined}
+      fullDetailsLabel="View leaderboard"
+    >
+      {game ? (
+        <>
+          <PreviewCounts
+            items={[
+              { label: 'Plays', value: game.plays.toLocaleString(), tone: 'violet' },
+              { label: 'Players', value: game.players.toLocaleString(), tone: 'teal' },
+              { label: 'Contests', value: game.competitions, tone: 'ink' },
+              { label: 'To review', value: game.under_review, tone: 'amber' },
+            ]}
+          />
+          <div className="rounded-lg bg-brand-ink p-4 text-white">
+            <PreviewHeading>
+              <span className="flex items-center gap-1.5 text-white/70">
+                <Crown className="size-3.5 text-amber-300" />
+                Best scorer
+              </span>
+            </PreviewHeading>
+            {top && game.top_score !== undefined ? (
+              <>
+                <p className="mt-2 font-poster text-4xl text-amber-300">{formatScore(game.top_score)}</p>
+                <p className="mt-1 font-bold">{top.name}</p>
+                <p className="text-xs text-white/60">
+                  {top.kind === 'guest'
+                    ? 'Playing as a guest'
+                    : [top.email, top.country_name].filter(Boolean).join(' · ')}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-white/60">No verified score yet.</p>
+            )}
+          </div>
+          <PreviewFacts
+            items={[
+              { label: 'Verified scores', value: game.scores.toLocaleString() },
+              { label: 'Rejected', value: game.rejected.toLocaleString() },
+              { label: 'Play cost', value: game.practice ? `${game.play_cost_points} pts` : 'Competitions only' },
+              { label: 'Last played', value: game.last_played_at ? formatDate(game.last_played_at) : 'Never' },
+            ]}
+          />
+        </>
+      ) : null}
+    </AdminPreviewSheet>
   )
 }
 
@@ -120,6 +181,7 @@ export function AdminGamesPage() {
   const games = useMemo(() => allGames.filter((g) => g.practice), [allGames])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [viewing, setViewing] = useState<AdminGameSummary | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -164,7 +226,7 @@ export function AdminGamesPage() {
         title="Games & leaderboards"
         description="Every skill game, what it costs to play, who is playing and who holds the best verified score. Guests are shown too, tagged by device. Scores count once the server has replayed them."
         action={
-          <Button asChild variant="outline" className="h-10">
+          <Button asChild className="h-10 px-4">
             <Link to="/admin/competitions">
               <Trophy className="size-4" />
               Competitions
@@ -207,11 +269,12 @@ export function AdminGamesPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {games.map((game) => (
-              <GameCard key={game.slug} game={game} />
+              <GameCard key={game.slug} game={game} onOpen={() => setViewing(game)} />
             ))}
           </div>
         </>
       )}
+      <GamePreview game={viewing} onClose={() => setViewing(null)} />
     </>
   )
 }

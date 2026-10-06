@@ -24,6 +24,7 @@ export function AdminPreviewSheet({
   description,
   badges,
   fullDetailsTo,
+  fullDetailsLabel = 'View full details',
   actions,
   children,
 }: {
@@ -35,6 +36,8 @@ export function AdminPreviewSheet({
   badges?: ReactNode
   /** The record's own page. */
   fullDetailsTo?: string
+  /** Label for that link; "View full details" by default. */
+  fullDetailsLabel?: string
   /** Extra buttons in the footer, before "View full details". */
   actions?: ReactNode
   children: ReactNode
@@ -61,7 +64,7 @@ export function AdminPreviewSheet({
             {fullDetailsTo ? (
               <Button asChild className="h-10 flex-1 px-4">
                 <Link to={fullDetailsTo}>
-                  View full details
+                  {fullDetailsLabel}
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>

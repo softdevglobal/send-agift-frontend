@@ -23,7 +23,6 @@ import {
   PreviewFacts,
   PreviewHeading,
 } from '@/features/admin/admin-preview-sheet'
-import { EarningRulesPanel } from '@/features/admin/earning-rules-panel'
 import { OrderStatusBadge } from '@/features/customer-commerce/order-tracking'
 import { formatPriceAmount } from '@/lib/money'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
@@ -72,17 +71,20 @@ export function AdminCustomersPage() {
         description="Open a customer to see their account, addresses, recipients, saved gifts, and orders. Points stay on this list."
       />
 
-      <EarningRulesPanel editable={isSuperAdmin()} />
-
-      <div className="relative mb-5 max-w-md">
-        <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by email or name"
-          aria-label="Search customers"
-          className="h-11 pl-9"
-        />
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+          {loading ? 'Searching…' : `${results.length} ${results.length === 1 ? 'customer' : 'customers'}`}
+        </p>
+        <div className="relative w-full sm:max-w-xs">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by email or name"
+            aria-label="Search customers"
+            className="h-10 border-2 border-brand-ink/15 pl-9 focus-visible:border-brand-ink focus-visible:ring-0"
+          />
+        </div>
       </div>
 
       <FormAlert error={error} className="mb-4" />
