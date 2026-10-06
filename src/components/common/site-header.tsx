@@ -39,6 +39,16 @@ export function SiteHeader() {
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
   const isGuest = !isAuthenticated
+  const activeCategory = new URLSearchParams(location.search).get('category')
+  const path = location.pathname
+
+  /** Which row of the phone menu is the page you are on. */
+  function isCurrent(to: string) {
+    if (to === '/orders') {
+      return path === '/orders' || (path.startsWith('/orders/') && !path.startsWith('/orders/history'))
+    }
+    return path === to || path.startsWith(`${to}/`)
+  }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -223,7 +233,8 @@ export function SiteHeader() {
             <Link
               to="/products"
               onClick={closeMenu}
-              className="flex items-center gap-2.5 rounded-md bg-brand-ink px-3 py-2.5 text-sm font-bold tracking-wide text-white uppercase"
+              aria-current={path === '/products' && !activeCategory ? 'page' : undefined}
+              className={menuRowClass(path === '/products' && !activeCategory)}
             >
               <Gift className="size-4" />
               Browse gifts
@@ -232,7 +243,8 @@ export function SiteHeader() {
             <Link
               to="/reels"
               onClick={closeMenu}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold"
+              aria-current={isCurrent('/reels') ? 'page' : undefined}
+              className={menuRowClass(isCurrent('/reels'))}
             >
               <Clapperboard className="size-4" />
               Reels
@@ -261,7 +273,8 @@ export function SiteHeader() {
                 key={item.id}
                 to={`/products?category=${item.id}`}
                 onClick={closeMenu}
-                className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-current={path === '/products' && activeCategory === item.id ? 'page' : undefined}
+                className={menuRowClass(path === '/products' && activeCategory === item.id, 'font-medium')}
               >
                 {item.name}
               </Link>
@@ -278,9 +291,9 @@ export function SiteHeader() {
                     closeMenu()
                     openMessages()
                   }}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted"
+                  className={cn(menuRowClass(false), 'text-left')}
                 >
-                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <MessageSquare className="size-4" />
                   <span className="flex-1">Messages</span>
                   {unreadCount > 0 ? (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-teal px-1.5 text-[10px] font-semibold text-white">
@@ -293,9 +306,10 @@ export function SiteHeader() {
                     key={item.to}
                     to={item.to}
                     onClick={closeMenu}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+                    aria-current={isCurrent(item.to) ? 'page' : undefined}
+                    className={menuRowClass(isCurrent(item.to))}
                   >
-                    <item.icon className="size-4 text-muted-foreground" />
+                    <item.icon className="size-4" />
                     {item.label}
                   </Link>
                 ))}
@@ -338,5 +352,14 @@ export function SiteHeader() {
         }}
       />
     </header>
+  )
+}
+
+/** One row of the phone menu: the current page is a solid ink box. */
+function menuRowClass(active: boolean, extra?: string) {
+  return cn(
+    'flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors',
+    active ? 'bg-brand-ink text-white' : 'text-brand-ink hover:bg-accent',
+    extra,
   )
 }
