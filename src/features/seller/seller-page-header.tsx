@@ -1,6 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { Dot, Sparkle } from '@/components/common/storefront-decor'
+
 import { type SellerTone } from '@/features/seller/seller-styles'
 
 type SellerPageHeaderProps = {
@@ -34,20 +36,22 @@ export function SellerPageHeader({
   children,
 }: SellerPageHeaderProps) {
   return (
-    <div className="relative mb-6 overflow-hidden rounded-2xl bg-brand-ink text-white ">
+    <div className="relative mb-6 overflow-hidden rounded-xl bg-brand-ink text-white">
+      <Sparkle className="absolute top-5 right-[30%] hidden size-6 text-brand-teal sm:block" />
+      <Dot className="absolute right-[18%] bottom-6 hidden size-2.5 bg-white/40 sm:block" />
 
       <div className="relative flex flex-wrap items-start justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex items-start gap-4">
           {Icon ? (
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/12 text-white shadow-sm ring-1 ring-white/15 backdrop-blur-sm">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-brand-teal text-brand-ink">
               <Icon className="size-5.5" />
             </span>
           ) : null}
           <div className="space-y-1.5">
-            <p className="text-[11px] font-semibold tracking-[0.18em] text-white/45 uppercase">
+            <p className="w-fit rounded-md bg-white px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
               Seller portal
             </p>
-            <h1 className="font-display text-2xl tracking-tight sm:text-3xl">
+            <h1 className="font-poster text-3xl sm:text-4xl">
               {title}
             </h1>
             {description ? (
@@ -61,7 +65,7 @@ export function SellerPageHeader({
       </div>
 
       {children ? (
-        <div className="relative border-t border-white/10 bg-white/5 px-5 py-3.5 backdrop-blur-sm sm:px-7">
+        <div className="relative border-t border-white/10 bg-white/5 px-5 py-3.5 sm:px-7">
           {children}
         </div>
       ) : null}

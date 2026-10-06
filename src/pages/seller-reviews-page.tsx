@@ -45,7 +45,7 @@ function ReviewStats({ reviews }: { reviews: ProductReview[] }) {
   return (
     <div className={cn(sellerPanelClass, 'grid gap-5 p-5 sm:grid-cols-[auto_minmax(0,1fr)_auto]')}>
       <div>
-        <p className="font-display text-4xl leading-none tracking-tight">
+        <p className="font-poster text-4xl leading-none tracking-tight">
           {average.toFixed(1)}
         </p>
         <StarMeter value={average} size="md" className="mt-2" />
@@ -55,7 +55,7 @@ function ReviewStats({ reviews }: { reviews: ProductReview[] }) {
       </div>
       <RatingBars breakdown={breakdown} total={total} className="self-center" />
       <div className="self-center rounded-xl bg-muted/50 px-4 py-3 text-center">
-        <p className="font-display text-2xl">{awaiting}</p>
+        <p className="font-poster text-2xl">{awaiting}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">awaiting a reply</p>
       </div>
     </div>

@@ -59,8 +59,8 @@ export function sellerSetupProgress(profile: SellerDetails) {
 }
 
 export function sellerVerificationTone(status: string) {
-  if (status === 'verified') return 'bg-accent text-primary'
-  if (status === 'pending') return 'bg-[oklch(0.96_0.04_85)] text-[oklch(0.48_0.1_80)]'
-  if (status === 'rejected') return 'bg-destructive/10 text-destructive'
+  if (status === 'verified') return 'bg-brand-teal text-brand-ink'
+  if (status === 'pending') return 'bg-amber-300 text-amber-950'
+  if (status === 'rejected') return 'bg-destructive text-white'
   return 'bg-muted text-muted-foreground'
 }

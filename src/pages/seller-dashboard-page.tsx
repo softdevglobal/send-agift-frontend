@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom'
 
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { Dot, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import {
   sellerAccountNav,
@@ -56,7 +57,7 @@ function QuickNav() {
           <Link
             key={item.to}
             to={item.to}
-            className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-center transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:shadow-[0_12px_30px_rgba(40,50,30,0.12)]"
+            className="group flex flex-col items-center gap-2 rounded-xl border border-border/40 bg-surface/60 p-3 text-center transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-card hover:"
           >
             <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               <item.icon className="size-4" />
@@ -150,32 +151,34 @@ export function SellerDashboardPage() {
       <FormAlert error={error} />
 
       {/*
-        The hero sits on solid brand navy rather than the plain card wash.
+        The hero sits on solid brand violet rather than the plain card wash.
         it is the one place in the portal that should feel like the storefront
         the seller is building, not the admin tooling around it.
       */}
-      <section className="relative overflow-hidden rounded-2xl bg-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
+      <section className="relative overflow-hidden rounded-xl bg-brand-violet px-5 py-7 text-white sm:px-8 sm:py-9">
+        <Sparkle className="absolute top-6 right-[34%] hidden size-7 text-brand-teal sm:block" />
+        <Dot className="absolute right-[22%] bottom-6 size-3 bg-white/60" />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             {profile.image_url ? (
               <img
                 src={profile.image_url}
                 alt=""
-                className="size-16 rounded-full object-cover shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20"
+                className="size-16 rounded-xl object-cover ring-4 ring-white"
               />
             ) : (
-              <div className="flex size-16 items-center justify-center rounded-full bg-white/15 text-lg font-semibold text-white shadow-[0_8px_24px_rgba(0,0,0,0.3)] ring-4 ring-white/20 backdrop-blur-sm">
+              <div className="flex size-16 items-center justify-center rounded-xl bg-white font-poster text-xl text-brand-ink">
                 {sellerInitials(profile)}
               </div>
             )}
             <div>
-              <p className="text-sm text-white/60">Welcome back</p>
-              <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
+              <p className="text-xs font-bold tracking-[0.16em] text-white/70 uppercase">Welcome back</p>
+              <h1 className="font-poster text-3xl sm:text-4xl">
                 {name}
               </h1>
               {/* On the dark hero the status reads by icon + label; the light
                   tone classes are for the pill on the profile page. */}
-              <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/20 backdrop-blur-sm">
+              <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-brand-teal px-2.5 py-1 text-[11px] font-bold text-brand-ink">
                 {profile.verification_status === 'verified' ? <BadgeCheck className="size-3.5" /> : null}
                 {profile.verification_status === 'verified' ? 'Verified seller' : 'Not verified'}
               </span>
@@ -185,7 +188,7 @@ export function SellerDashboardPage() {
             <Button
               asChild
               variant="ghost"
-              className="h-11 rounded-full px-5 text-white hover:bg-white/15 hover:text-white"
+              className="h-11 border-2 border-white px-5 text-white hover:bg-white hover:text-brand-violet"
             >
               <Link to="/seller/products">
                 <Package className="size-4" />
@@ -194,7 +197,7 @@ export function SellerDashboardPage() {
             </Button>
             <Button
               asChild
-              className="h-11 rounded-full bg-white px-5 text-brand-navy hover:bg-white/90"
+              className="h-11 bg-white px-5 text-brand-ink hover:bg-brand-teal"
             >
               <Link to="/seller/shops">
                 <Plus className="size-4" />
@@ -260,7 +263,7 @@ export function SellerDashboardPage() {
             </Link>
           </div>
           <div className="relative flex flex-col items-center px-6 py-16 text-center">
-            <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15 shadow-[0_10px_28px_rgba(40,50,30,0.10)]">
+            <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15">
               <ShoppingBag className="size-6" />
             </div>
             <p className="relative text-sm font-medium">No active orders yet</p>
@@ -369,7 +372,7 @@ export function SellerDashboardPage() {
             )}
           </section>
 
-          <section className="relative overflow-hidden rounded-2xl bg-primary px-5 py-5 text-primary-foreground shadow-[0_12px_32px_rgba(40,55,25,0.18)]">
+          <section className="relative overflow-hidden rounded-2xl bg-primary px-5 py-5 text-primary-foreground">
             <div
               aria-hidden
               className="pointer-events-none absolute -right-6 -bottom-8 size-28 rounded-full bg-white/10"
@@ -378,7 +381,7 @@ export function SellerDashboardPage() {
               <Wallet className="size-4" />
               Earnings snapshot
             </div>
-            <p className="relative font-display text-3xl tracking-tight">$0.00</p>
+            <p className="relative font-poster text-3xl">$0.00</p>
             <p className="relative mt-1 text-sm text-primary-foreground/75">
               Available balance after completed orders.
             </p>

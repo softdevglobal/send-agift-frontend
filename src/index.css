@@ -338,10 +338,11 @@
   }
 
   /*
-   * The signed-in customer area (AccountLayout) is boxes all the way down:
+   * The signed-in customer area (AccountLayout), the cart and checkout, and
+   * the seller portal are boxes all the way down:
    * pill chips, tabs and badges become rounded boxes, soft round icon chips
    * become rounded squares, and the faint rings round cards gain a visible
-   * ink outline. Scoped here so seller and admin screens are untouched.
+   * ink outline. Scoped here so the admin screens are untouched.
    */
   .account-box [class*='rounded-full'][class*='px-']:not([data-slot='button']) {
     border-radius: 0.375rem;

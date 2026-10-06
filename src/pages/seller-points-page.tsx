@@ -54,17 +54,17 @@ const statusStyle: Record<
 > = {
   pending: {
     label: 'Pending',
-    className: 'bg-[oklch(0.95_0.06_85)] text-[oklch(0.45_0.12_75)]',
+    className: 'bg-amber-300 text-amber-950',
     icon: Clock,
   },
   completed: {
     label: 'Completed',
-    className: 'bg-[oklch(0.94_0.06_155)] text-[oklch(0.42_0.12_155)]',
+    className: 'bg-brand-teal text-brand-ink',
     icon: CheckCircle2,
   },
   failed: {
     label: 'Failed',
-    className: 'bg-[oklch(0.95_0.05_25)] text-[oklch(0.5_0.18_25)]',
+    className: 'bg-destructive text-white',
     icon: XCircle,
   },
   cancelled: {
@@ -469,9 +469,9 @@ function BuyPointsDialog({
           </p>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-[oklch(0.975_0.03_85)] px-4 py-3 ring-1 ring-border/50">
+        <div className="flex items-center justify-between rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3">
           <span className="text-sm text-muted-foreground">You get</span>
-          <span className="font-display text-2xl tracking-tight">
+          <span className="font-poster text-2xl">
             {formatPoints(points)} <span className="text-sm text-muted-foreground">points</span>
           </span>
         </div>

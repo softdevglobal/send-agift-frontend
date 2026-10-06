@@ -99,7 +99,7 @@ export function WizardDialog({
          * preview) used to make the popup jump between sizes as you clicked
          * Next. Now only the body below scrolls.
          */
-        className="h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden p-0 sm:max-w-4xl"
+        className="account-box h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden border-2 border-brand-ink p-0 sm:max-w-4xl"
         onInteractOutside={(event) => {
           // Half-filled steps are easy to lose by a stray click; closing is
           // deliberate here (the X, Cancel, or Escape).
@@ -121,7 +121,7 @@ export function WizardDialog({
               <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                 Step {safeIndex + 1} of {steps.length}
               </p>
-              <DialogTitle className="mt-1 font-display text-xl tracking-tight">
+              <DialogTitle className="mt-1 font-poster text-xl">
                 {step.title}
               </DialogTitle>
               <DialogDescription className="mt-0.5 text-sm">
@@ -207,9 +207,9 @@ function StepRail({
   const progress = ((index + 1) / steps.length) * 100
 
   return (
-    <aside className="hidden flex-col gap-6 bg-brand-navy p-6 text-white md:flex">
+    <aside className="hidden flex-col gap-6 bg-brand-ink p-6 text-white md:flex">
       <div>
-        <h2 className="font-display text-xl tracking-tight">{title}</h2>
+        <h2 className="font-poster text-xl">{title}</h2>
         <p className="mt-1 text-xs leading-relaxed text-white/70">{description}</p>
       </div>
 
@@ -227,17 +227,17 @@ function StepRail({
                 disabled={!reachable}
                 onClick={() => onJump(itemIndex)}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
-                  current && 'bg-white/15',
+                  'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors',
+                  current && 'bg-brand-teal text-brand-ink',
                   !current && reachable && 'hover:bg-white/10',
                   !reachable && 'cursor-not-allowed opacity-45',
                 )}
               >
                 <span
                   className={cn(
-                    'grid size-7 shrink-0 place-items-center rounded-full text-[11px] font-bold transition-colors',
-                    done && 'bg-brand-teal text-white',
-                    current && 'bg-white text-brand-navy',
+                    'grid size-7 shrink-0 place-items-center rounded-md text-[11px] font-bold transition-colors',
+                    done && 'bg-brand-violet text-white',
+                    current && 'bg-brand-ink text-white',
                     !done && !current && 'bg-white/15 text-white/80',
                   )}
                 >
@@ -255,9 +255,9 @@ function StepRail({
       </ol>
 
       <div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-white/20">
+        <div className="h-2 overflow-hidden rounded-sm bg-white/20">
           <div
-            className="h-full rounded-full bg-brand-teal transition-[width] duration-300 ease-out"
+            className="h-full bg-brand-teal transition-[width] duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>

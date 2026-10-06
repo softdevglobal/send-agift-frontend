@@ -4,6 +4,8 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { BrandLogo } from '@/components/common/brand-logo'
+import { Sparkle } from '@/components/common/storefront-decor'
+import { useStorefrontTheme } from '@/components/common/use-storefront-theme'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,7 +39,7 @@ function SellerNavLinks({
     <nav className="flex flex-1 flex-col gap-6">
       {sellerNavGroups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-2 text-[10px] font-medium tracking-[0.18em] text-white/40 uppercase">
+          <p className="px-3 pb-2 text-[10px] font-bold tracking-[0.18em] text-white/45 uppercase">
             {group.label}
           </p>
           <div className="space-y-0.5">
@@ -50,10 +52,10 @@ function SellerNavLinks({
                 className={({ isActive }) => {
                   const active = isActive
                   return cn(
-                    'group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-medium transition-all',
+                    'group flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors',
                     active
-                      ? 'bg-white/10 text-white'
-                      : 'text-white/60 hover:bg-white/6 hover:text-white',
+                      ? 'bg-brand-teal text-brand-ink'
+                      : 'text-white/65 hover:bg-white/10 hover:text-white',
                   )
                 }}
               >
@@ -63,17 +65,15 @@ function SellerNavLinks({
                     <>
                       <span
                         className={cn(
-                          'flex size-8 items-center justify-center rounded-lg ring-1 transition-colors',
-                          active
-                            ? 'bg-white/10 text-white ring-white/15'
-                            : 'bg-white/5 text-current ring-white/10',
+                          'flex size-8 items-center justify-center rounded-md transition-colors',
+                          active ? 'bg-brand-ink text-white' : 'bg-white/8 text-current',
                         )}
                       >
                         <item.icon className="size-4" />
                       </span>
                       <span className="flex-1 truncate">{item.label}</span>
                       {item.showsUnread && unreadMessages > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1.5 text-[10px] font-semibold text-[oklch(0.24_0.02_120)]">
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-brand-violet px-1.5 text-[10px] font-bold text-white">
                           <span className="sr-only">Unread messages: </span>
                           {unreadMessages > 99 ? '99+' : unreadMessages}
                         </span>
@@ -100,6 +100,7 @@ export function SellerShell() {
 }
 
 function SellerShellLayout() {
+  useStorefrontTheme()
   const { logout } = useAuth()
   const { unreadTotal } = useSharedInbox()
   const location = useLocation()
@@ -137,7 +138,7 @@ function SellerShellLayout() {
     : null
 
   return (
-    <div className="flex min-h-svh bg-cream">
+    <div className="flex min-h-svh bg-background">
       {menuOpen ? (
         <button
           type="button"
@@ -149,15 +150,18 @@ function SellerShellLayout() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-[oklch(0.24_0.02_120)] px-3 py-5 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-hidden bg-brand-ink px-3 py-5 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
           menuOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
 
+        <Sparkle className="absolute top-6 right-6 size-5 text-brand-teal" />
         <div className="relative mb-7 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">
-            <BrandLogo to="/seller" onDark className="max-w-full" imgClassName="h-12" />
-            <p className="mt-1.5 text-[10px] font-medium tracking-[0.18em] text-white/45 uppercase">
+            <span className="inline-flex rounded-lg bg-white p-1">
+              <BrandLogo to="/seller" className="max-w-full" imgClassName="h-11" />
+            </span>
+            <p className="mt-2.5 w-fit rounded-md bg-brand-violet px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
               Seller portal
             </p>
           </div>
@@ -182,11 +186,11 @@ function SellerShellLayout() {
 
         <div className="relative mt-6 border-t border-white/10 pt-4">
           <div className="flex items-center gap-3 px-2">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white ring-1 ring-white/15">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-violet text-xs font-extrabold text-white">
               {profile ? sellerInitials(profile) : 'S'}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
+              <p className="truncate text-sm font-bold text-white">
                 {profile ? sellerDisplayName(profile) : 'Signed in'}
               </p>
               <p className="truncate text-[11px] text-white/45">
@@ -197,7 +201,7 @@ function SellerShellLayout() {
           <Button
             type="button"
             variant="ghost"
-            className="mt-3 h-9 w-full justify-start rounded-lg px-2.5 text-sm text-white/60 hover:bg-white/10 hover:text-white"
+            className="mt-3 h-9 w-full justify-start px-2.5 text-white/65 hover:bg-white/10 hover:text-white"
             onClick={() => setSignOutOpen(true)}
           >
             <LogOut className="size-4" />
@@ -229,7 +233,7 @@ function SellerShellLayout() {
       </Dialog>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-xl">
+        <header className="sticky top-0 z-30 border-b border-brand-ink/10 bg-background">
           <div className="flex h-16 items-center gap-3 px-3 sm:px-5 lg:px-6">
             <Button
               type="button"
@@ -255,13 +259,13 @@ function SellerShellLayout() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search gifts, shops…"
-                className="h-10 rounded-full border-border/60 bg-muted/40 pr-4 pl-10 shadow-none"
+                className="h-10 rounded-lg border-brand-ink/15 bg-card pr-4 pl-10 shadow-none focus-visible:border-brand-violet focus-visible:ring-0"
               />
             </form>
 
             <div className="ml-auto flex items-center gap-2">
               {statusLabel ? (
-                <span className="hidden rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground sm:inline">
+                <span className="hidden rounded-md bg-brand-teal px-2.5 py-1 text-[11px] font-bold tracking-[0.08em] text-brand-ink uppercase sm:inline">
                   {statusLabel}
                 </span>
               ) : null}
@@ -270,15 +274,7 @@ function SellerShellLayout() {
         </header>
 
         <main className="relative min-w-0 flex-1 overflow-hidden">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -left-16 size-[22rem] rounded-full bg-[oklch(0.92_0.03_125/0.28)]"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute top-40 -right-20 size-[18rem] rounded-full bg-[oklch(0.93_0.03_80/0.22)]"
-          />
-          <div className="relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
+          <div className="account-box relative mx-auto w-full max-w-6xl px-3 py-8 sm:px-4 lg:px-6 lg:py-10">
             <Outlet />
           </div>
         </main>

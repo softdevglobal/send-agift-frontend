@@ -65,19 +65,19 @@ const statusMeta: Record<
   },
   published: {
     label: 'Published',
-    tone: 'bg-primary/90 text-primary-foreground',
+    tone: 'bg-brand-violet text-white',
     dot: 'bg-primary',
     hint: 'Visible in the customer catalog',
   },
   paused: {
     label: 'Paused',
-    tone: 'bg-[oklch(0.96_0.04_85)] text-[oklch(0.48_0.1_80)]',
-    dot: 'bg-[oklch(0.72_0.16_75)]',
+    tone: 'bg-amber-300 text-amber-950',
+    dot: 'bg-amber-500',
     hint: 'Temporarily hidden from customers',
   },
   rejected: {
     label: 'Rejected',
-    tone: 'bg-destructive/10 text-destructive',
+    tone: 'bg-destructive text-white',
     dot: 'bg-destructive',
     hint: 'Not shown to customers',
   },
@@ -609,7 +609,7 @@ function ProductPreviewPanel({
       {product ? (
         <>
           <div>
-            <p className="font-display text-3xl tracking-tight">
+            <p className="font-poster text-3xl">
               {formatPriceAmount(product.price_amount, product.currency)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{meta.hint}</p>

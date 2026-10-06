@@ -816,7 +816,7 @@ export function SellerShopsPage() {
               <div className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10">
                 <Store className="size-6" />
               </div>
-              <h2 className="relative font-display text-xl tracking-tight">
+              <h2 className="relative font-poster text-xl">
                 No shops yet
               </h2>
               <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -848,7 +848,7 @@ export function SellerShopsPage() {
                     <Store className="size-4" />
                   </span>
                   <div>
-                    <h2 className="font-display text-xl tracking-tight">
+                    <h2 className="font-poster text-xl">
                       {editingId ? 'Edit shop' : 'New shop'}
                     </h2>
                     <p className="mt-0.5 text-sm text-muted-foreground">
