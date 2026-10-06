@@ -63,8 +63,8 @@ export function GiftCard({ product, href }: GiftCardProps) {
     sellerId && shopId ? `/sellers/${sellerId}/shops/${shopId}` : undefined
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60 transition-transform duration-300 hover:-translate-y-1">
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+    <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-3 transition-colors hover:border-brand-ink dark:border-border">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
         <Link to={to} className="block size-full">
           <img
             src={product.image}
@@ -74,7 +74,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
           />
         </Link>
         {category ? (
-          <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">
+          <span className="absolute bottom-3 left-3 rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-white uppercase">
             {category}
           </span>
         ) : null}
@@ -84,7 +84,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-3 px-1 pt-4 pb-1">
         {isCatalogProduct(product) ? (
           <ShopIdentity
             shopName={shopName}
@@ -100,7 +100,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
         <div className="space-y-1.5">
           <Link to={to} className="hover:text-primary">
-            <h3 className="line-clamp-2 text-sm font-semibold text-foreground">{product.name}</h3>
+            <h3 className="line-clamp-2 text-[15px] leading-snug font-bold text-foreground">{product.name}</h3>
           </Link>
           {description ? (
             <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -108,7 +108,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
             </p>
           ) : null}
           <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="text-base font-semibold">{priceLabel(product)}</span>
+            <span className="text-lg font-extrabold tracking-tight">{priceLabel(product)}</span>
             {product.compareAt ? (
               <span className="text-sm text-muted-foreground line-through">
                 {formatMoney(product.compareAt)}
@@ -124,7 +124,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
         <Button
           type="button"
-          className="mt-auto h-10 w-full gap-2"
+          className="mt-auto h-11 w-full gap-2"
           onClick={() => addItem(product.id)}
         >
           <ShoppingCart className="size-4" />

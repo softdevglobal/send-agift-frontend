@@ -627,7 +627,7 @@ function ReelRow({
         )}
 
         {/* Caption over a scrim, so the body below can stay to one tight line. */}
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent p-2 pt-6 text-left text-[11px] leading-snug font-medium text-white">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 p-2 text-left text-[11px] leading-snug font-medium text-white">
           <span className="line-clamp-2">{reel.caption?.trim() || 'No caption'}</span>
         </span>
 

@@ -96,7 +96,7 @@ export function ForgotPasswordForm({ role }: { role: ForgotRole }) {
   if (done) {
     return (
       <div className="mx-auto w-full max-w-[26rem] space-y-6">
-        <h2 className="font-display text-3xl tracking-tight">Password updated</h2>
+        <h2 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">Password updated</h2>
         <FormAlert notice={notice} />
         <Button asChild className="h-11 w-full">
           <Link to={loginTo}>Sign in</Link>
@@ -111,7 +111,7 @@ export function ForgotPasswordForm({ role }: { role: ForgotRole }) {
         <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
           {role === 'seller' ? 'Seller account' : 'Your account'}
         </p>
-        <h2 className="font-display text-3xl tracking-tight">Reset your password</h2>
+        <h2 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">Reset your password</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           We’ll email a 6-digit code. It expires in 15 minutes. The code is the only way to set a
           new password from here.

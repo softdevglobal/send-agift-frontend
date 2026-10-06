@@ -290,9 +290,9 @@ export function ReelCard({
           </>
         ) : null}
 
-        {/* Scrims top and bottom: the clip keeps its colour in the middle, and
-            the text on either end stays readable whatever it sits on. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand-navy/55 via-transparent to-brand-navy/90" />
+        {/* One flat scrim, so the text on either end stays readable whatever
+            it sits on. */}
+        <div className="pointer-events-none absolute inset-0 bg-brand-ink/35" />
 
         <div className="pointer-events-none absolute inset-x-3 top-3 h-[3px] overflow-hidden rounded-full bg-white/25">
           <div
@@ -318,7 +318,7 @@ export function ReelCard({
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 pr-[4.5rem] text-white sm:p-5 sm:pr-5">
           <div className="pointer-events-auto flex items-center gap-2.5">
-            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-brand-navy to-brand-violet ring-2 ring-white/25">
+            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-violet ring-2 ring-white/25">
               {reel.shopImageUrl ? (
                 <img
                   src={reel.shopImageUrl}
@@ -373,7 +373,7 @@ export function ReelCard({
               <span className="text-lg font-bold">{product.priceLabel}</span>
               <Button
                 asChild
-                className="h-11 flex-1 rounded-full bg-gradient-to-r from-brand-navy to-brand-violet text-white shadow-lg shadow-brand-violet/30 hover:opacity-95"
+                className="h-11 flex-1 bg-brand-violet text-white hover:bg-brand-teal hover:text-brand-ink"
               >
                 <Link to={`/products/${product.id}`}>
                   <Gift className="size-4" />

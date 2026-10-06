@@ -27,10 +27,6 @@ export function AdminEmptyState({
         'relative overflow-hidden px-6 py-16 text-center sm:py-20',
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.45),transparent_70%)]"
-      />
       {soon ? (
         <span className="relative mb-4 inline-flex rounded-full bg-accent px-3 py-1 text-[11px] font-medium tracking-[0.12em] text-accent-foreground uppercase">
           Coming soon

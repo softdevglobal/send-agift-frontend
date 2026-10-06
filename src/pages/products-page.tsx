@@ -10,6 +10,7 @@ import {
 import type { Product, Shop } from '@/api/types'
 import { PageNav } from '@/components/common/page-nav'
 import { SiteLayout } from '@/components/common/site-layout'
+import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { GiftCard } from '@/features/customer-commerce'
@@ -106,6 +107,7 @@ export function ProductsPage() {
   const { intent } = useDeliveryIntent()
   const query = searchParams.get('q') ?? ''
   const category = searchParams.get('category') ?? 'all'
+  const activeCategoryName = giftCategories.find((item) => item.id === category)?.name
   const [catalog, setCatalog] = useState<CatalogProduct[]>([])
   const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [buttonFinding, setButtonFinding] = useState(false)
@@ -222,9 +224,25 @@ export function ProductsPage() {
   return (
     <SiteLayout>
       <main className={cn(storefrontFrameClass, 'py-10 lg:py-14')}>
-        <div className="mb-8 space-y-3">
-          <h1 className="font-display text-3xl tracking-tight sm:text-4xl">All gifts</h1>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+        <div className="relative mb-8 overflow-hidden rounded-[1.75rem] bg-accent px-6 py-10 sm:px-10 lg:px-12 lg:py-12">
+          <Sparkle className="absolute top-8 right-[12%] size-8 text-brand-violet" />
+          <Sparkle className="absolute right-[26%] bottom-8 hidden size-5 text-brand-teal sm:block" />
+          <Dot className="absolute top-1/2 right-[6%] size-3 bg-brand-teal" />
+          <p className="mb-4 w-fit rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            {query ? 'Search results' : 'The gift shop'}
+          </p>
+          <h1 className="font-poster text-[8vw] text-brand-ink sm:text-5xl lg:text-6xl dark:text-foreground">
+            {activeCategoryName ? (
+              <>
+                <Marker tone="violet">{activeCategoryName}</Marker> gifts
+              </>
+            ) : (
+              <>
+                All <Marker tone="violet">gifts</Marker>
+              </>
+            )}
+          </h1>
+          <p className="mt-4 max-w-xl text-sm leading-relaxed text-brand-ink/70 sm:text-base dark:text-muted-foreground">
             Every published gift from our sellers. Filter by occasion or search by name,
             seller, or tag.
           </p>
@@ -255,7 +273,7 @@ export function ProductsPage() {
               type="button"
               size="sm"
               variant={category === 'all' ? 'default' : 'outline'}
-              className="h-9 shrink-0 rounded-full px-3.5"
+              className="h-9 shrink-0 border-2 px-4 data-[variant=outline]:border-brand-ink/15"
               onClick={() => updateParam('category', 'all')}
             >
               All gifts
@@ -266,7 +284,7 @@ export function ProductsPage() {
                 type="button"
                 size="sm"
                 variant={category === item.id ? 'default' : 'outline'}
-                className="h-9 shrink-0 rounded-full px-3.5"
+                className="h-9 shrink-0 border-2 px-4 data-[variant=outline]:border-brand-ink/15"
                 onClick={() => updateParam('category', item.id)}
               >
                 {item.name}
@@ -275,7 +293,7 @@ export function ProductsPage() {
           </div>
         </div>
 
-        <p className="mb-5 text-sm text-muted-foreground">
+        <p className="mb-6 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
           {giftsLoading
             ? 'Checking which gifts can be delivered there…'
             : products.length === 0
@@ -292,7 +310,7 @@ export function ProductsPage() {
         {giftsLoading ? (
           <div
             aria-busy="true"
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-card py-20 text-sm text-muted-foreground shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60"
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-muted/60 py-20 text-sm text-muted-foreground"
           >
             <LoaderCircle className="size-7 animate-spin text-primary" />
             Finding gifts…
@@ -307,15 +325,15 @@ export function ProductsPage() {
             <PageNav page={page} pageCount={pageCount} onPage={goToPage} label="Gift pages" />
           </>
         ) : (
-          <div className="rounded-2xl bg-card px-6 py-16 text-center shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-primary">
+          <div className="rounded-2xl bg-muted/60 px-6 py-16 text-center">
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-brand-violet text-white">
               {query || category !== 'all' ? (
                 <Search className="size-5" />
               ) : (
                 <Gift className="size-5" />
               )}
             </div>
-            <p className="font-medium">
+            <p className="font-poster text-xl">
               {filteredByDelivery
                 ? availabilityError
                   ? 'Delivery zones could not be checked'
@@ -336,7 +354,7 @@ export function ProductsPage() {
             {query || category !== 'all' ? (
               <Button
                 type="button"
-                className="mt-5 h-10 rounded-full px-4"
+                className="mt-5 h-11 px-5"
                 onClick={() => setSearchParams({})}
               >
                 Show all gifts

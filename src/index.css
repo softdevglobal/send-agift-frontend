@@ -91,6 +91,11 @@
     --ring: #6d28d9;
     --brand: #6d28d9;
     --brand-foreground: #ffffff;
+    /* Solid fill of the default button. The storefront swaps it for ink. */
+    --button-solid: var(--primary);
+    --button-solid-hover: color-mix(in oklch, var(--primary), black 14%);
+    /* Buttons are boxes everywhere, never pills. */
+    --button-radius: 0.375rem;
     /* Sampled from the logo, matching the mobile app's app_colors.dart: the
        navy gift box, the violet ribbon bow, the teal paper plane. */
     --brand-navy: #0f1b45;
@@ -238,6 +243,59 @@
 }
 
 @layer components {
+  /*
+   * Customer storefront look: heavy geometric display type, solid ink
+   * buttons, flat brand-colour blocks. Set on the storefront layout and on
+   * <body> while it is mounted, so dialogs and sheets portalled out of the
+   * layout pick it up too. Seller and admin screens keep their own look.
+   */
+  .storefront {
+    --font-display: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    --button-solid: var(--brand-ink);
+    --button-solid-hover: var(--brand-violet);
+  }
+
+  .storefront .font-display {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  /* Poster headline: the uppercase, ultra-heavy line used for page and
+     section titles on the storefront. */
+  .font-poster {
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+    text-transform: uppercase;
+  }
+
+  /* A word set on a solid block of colour, like a highlighter swipe. */
+  .marker-block {
+    display: inline-block;
+    padding: 0.04em 0.18em 0.02em;
+    margin-inline: -0.04em;
+    box-decoration-break: clone;
+  }
+
+  /* A thick solid bar behind the lower half of a heading. */
+  .marker-underline {
+    position: relative;
+    isolation: isolate;
+    display: inline-block;
+  }
+
+  .marker-underline::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: -0.12em;
+    right: -0.12em;
+    bottom: 0.02em;
+    height: 0.42em;
+    background: var(--marker, var(--brand-teal));
+  }
+
   /* Customer storefront column. Modest side gutters, wide content. */
   .storefront-frame {
     width: 100%;
@@ -260,16 +318,33 @@
 }
 
 @layer utilities {
+  /* Storefront buttons read as small, heavy, uppercase labels. Kept in the
+     utilities layer so it outranks the button's own weight and size. */
+  .storefront [data-slot='button']:not([data-size^='icon']) {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  /* Pill-shaped text buttons predate the box look; square them off so every
+     action reads as the same solid block. Icon buttons stay round. */
+  [data-slot='button'].rounded-full:not([data-size^='icon']) {
+    border-radius: var(--button-radius);
+  }
+
+  .storefront [data-slot='input'] {
+    border-radius: 0.375rem;
+  }
+
   .font-display {
     font-family: var(--font-display);
   }
 
+  /* A faint grain only. No colour washes: whatever sits under it stays a
+     solid brand colour. */
   .bg-grain {
-    background-image:
-      radial-gradient(circle at 18% 18%, oklch(0.93 0.07 296 / 0.38), transparent 42%),
-      radial-gradient(circle at 82% 12%, oklch(0.92 0.05 296 / 0.22), transparent 38%),
-      radial-gradient(circle at 70% 82%, oklch(0.88 0.07 296 / 0.30), transparent 45%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
   .animate-fade-up {

@@ -119,7 +119,7 @@ export function MessageShopButton({
           onCloseAutoFocus={(event) => event.preventDefault()}
         >
           <DialogHeader className="border-b border-border/60 px-6 pt-6 pb-5">
-            <span className="mb-2 flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-violet to-brand-navy text-white shadow-[0_10px_24px_rgba(76,29,149,0.3)]">
+            <span className="mb-2 flex size-11 items-center justify-center rounded-xl bg-brand-violet text-white">
               <MessageSquare className="size-5" />
             </span>
             <DialogTitle>Message {shopName}</DialogTitle>
@@ -159,7 +159,7 @@ export function MessageShopButton({
                             </span>
                           </span>
                           {conversation.unread_count > 0 ? (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br from-brand-violet to-brand-navy px-1.5 text-[10px] font-semibold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-violet px-1.5 text-[10px] font-semibold text-white">
                               {conversation.unread_count}
                             </span>
                           ) : (

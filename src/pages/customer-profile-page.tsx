@@ -195,7 +195,7 @@ export function CustomerProfilePage() {
                 type="button"
                 onClick={() => photoInput.current?.click()}
                 disabled={uploadingPhoto}
-                className="group relative size-20 shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-primary/15 to-pink-200 ring-2 ring-background shadow-md"
+                className="group relative size-20 shrink-0 overflow-hidden rounded-full bg-accent ring-2 ring-background shadow-md"
                 aria-label={imageUrl ? 'Change photo' : 'Add a photo'}
               >
                 {imageUrl ? (

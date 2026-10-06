@@ -92,7 +92,7 @@ export function SellerSheet({
               // there is one and over the header when there is not.
               !media && 'pr-14',
               !media &&
-                'bg-[linear-gradient(180deg,var(--accent)_0%,transparent_100%)]',
+                'bg-accent/50',
             )}
           >
             <div className="flex items-start justify-between gap-3">

@@ -11,7 +11,7 @@ function StatusCard({ icon, title, children }: { icon: ReactNode; title: string;
           {icon}
           {title}
         </h3>
-        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground ring-1 ring-border/60">
+        <span className="rounded-md bg-accent px-2 py-0.5 text-xs font-bold text-brand-ink">
           Not connected yet
         </span>
       </div>

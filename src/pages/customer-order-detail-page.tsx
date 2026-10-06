@@ -164,7 +164,7 @@ export function CustomerOrderDetailPage() {
 
   return (
     <div>
-      <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-ink to-[oklch(0.32_0.14_296)] px-6 py-6 text-white shadow-[0_18px_48px_rgba(20,20,55,0.28)] ring-1 ring-white/10 sm:px-8 sm:py-7">
+      <section className="relative mb-6 overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-6 text-white ring-1 ring-white/10 sm:px-8 sm:py-7">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[var(--brand-violet)]/45 blur-3xl"
@@ -220,13 +220,13 @@ export function CustomerOrderDetailPage() {
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
 
       {rewardPoints > 0 || (order.gift_points && order.gift_points_status !== "none") ? (
-        <section className="relative mb-6 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,oklch(0.97_0.05_88),oklch(0.93_0.09_80))] p-5 ring-1 ring-[oklch(0.85_0.1_80)] sm:p-6">
+        <section className="relative mb-6 overflow-hidden rounded-2xl bg-amber-100 p-5 sm:p-6">
           <Sparkles
             aria-hidden
             className="pointer-events-none absolute -right-3 -bottom-4 size-28 text-[oklch(0.8_0.13_78)]/40"
           />
           <div className="relative flex flex-wrap items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.86_0.14_85),oklch(0.76_0.15_65))] text-white shadow-md">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-amber-950">
               <Coins className="size-6" />
             </span>
             <div className="min-w-[12rem] flex-1">

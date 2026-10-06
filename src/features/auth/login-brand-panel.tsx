@@ -1,4 +1,6 @@
 import { BrandLogo } from '@/components/common/brand-logo'
+import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
+import { useStorefrontTheme } from '@/components/common/use-storefront-theme'
 import type { AuthRole } from '@/features/auth/types'
 import { loginCopy } from '@/features/auth/copy'
 import { cn } from '@/lib/utils'
@@ -24,59 +26,67 @@ const panelImages: Record<
   },
 }
 
+/** Splits a headline so its last word can sit on a marker block. */
+function splitHeadline(headline: string) {
+  const words = headline.trim().split(/\s+/)
+  const last = words.pop() ?? ''
+  return { lead: words.join(' '), last }
+}
+
+/**
+ * Left half of every sign-in and sign-up screen: a flat block of brand colour
+ * with a poster headline and the photo framed inside it. Also switches the
+ * auth screens onto the storefront look (heavy type, ink box buttons).
+ */
 export function LoginBrandPanel({
   role,
   variant = 'signin',
 }: LoginBrandPanelProps) {
+  useStorefrontTheme()
   const copy = loginCopy[role]
   const image = panelImages[variant]
+  const { lead, last } = splitHeadline(copy.headline)
+  const onViolet = variant === 'signin'
 
   return (
-    <aside className="relative hidden h-full overflow-hidden lg:flex lg:w-[48%] xl:w-[52%]">
-      <img
-        src={image.src}
-        alt=""
-        className={cn(
-          'absolute inset-0 size-full object-cover',
-          image.position,
-        )}
-        draggable={false}
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[linear-gradient(180deg,oklch(0.18_0.10_307/0.62)_0%,oklch(0.16_0.10_307/0.28)_36%,oklch(0.14_0.12_307/0.55)_68%,oklch(0.12_0.10_307/0.82)_100%)]"
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[linear-gradient(90deg,oklch(0.14_0.10_307/0.38)_0%,transparent_58%)]"
-      />
-      <div
-        aria-hidden
-        className="animate-drift pointer-events-none absolute inset-[-8%] bg-grain opacity-40"
-      />
+    <aside
+      className={cn(
+        'relative hidden h-full overflow-hidden lg:flex lg:w-[46%] xl:w-[50%]',
+        onViolet ? 'bg-brand-violet' : 'bg-brand-ink',
+      )}
+    >
+      <Sparkle className="absolute top-10 right-[14%] size-8 text-brand-teal" />
+      <Sparkle className="absolute bottom-[42%] left-[8%] size-5 text-white/80" />
+      <Dot className="absolute top-[30%] right-[8%] size-3 bg-white/60" />
 
-      <div className="relative z-10 flex w-full flex-col justify-between p-10 xl:p-14">
-        <div className="animate-fade-in">
-          <BrandLogo onDark imgClassName="h-16" />
-          <p className="mt-2 text-xs tracking-[0.18em] text-white/70 uppercase">
+      <div className="relative z-10 flex w-full flex-col gap-8 p-10 xl:p-14">
+        <div className="animate-fade-in flex items-center gap-4">
+          <span className="inline-flex rounded-xl bg-white p-1.5">
+            <BrandLogo imgClassName="h-12" />
+          </span>
+          <span className="rounded-md bg-brand-teal px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
             {copy.panelAccent}
+          </span>
+        </div>
+
+        <div className="animate-soft-rise space-y-5 text-white">
+          <h1 className="font-poster text-5xl xl:text-6xl">
+            {lead}{' '}
+            <Marker tone={onViolet ? 'ink' : 'violet'}>{last}</Marker>
+          </h1>
+          <p className="max-w-md text-base leading-relaxed text-white/75 xl:text-lg">
+            {copy.panelNote}
           </p>
         </div>
 
-        <div className="animate-soft-rise my-10 flex flex-1 flex-col justify-end gap-5">
-          <div className="max-w-lg space-y-5 text-white">
-            <h1 className="font-display text-4xl leading-[1.08] tracking-tight xl:text-5xl">
-              {copy.headline}
-            </h1>
-            <p className="max-w-md text-base leading-relaxed text-white/80 xl:text-lg">
-              {copy.panelNote}
-            </p>
-          </div>
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-[1.75rem] bg-white/10">
+          <img
+            src={image.src}
+            alt=""
+            className={cn('absolute inset-0 size-full object-cover', image.position)}
+            draggable={false}
+          />
         </div>
-
-        <p className="animate-fade-in text-xs text-white/55">
-          Built for country activation, compliance, and trustworthy delivery.
-        </p>
       </div>
     </aside>
   )

@@ -381,7 +381,7 @@ function PanelList({
 
   return (
     <>
-      <header className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy px-5 pt-5 pb-4 text-white">
+      <header className="relative overflow-hidden bg-brand-ink px-5 pt-5 pb-4 text-white">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-12 size-56 rounded-full bg-brand-violet/45 blur-3xl"
@@ -553,7 +553,7 @@ function ChatScene() {
         <span className="mt-1.5 block h-2 w-16 rounded-full bg-muted-foreground/15" />
       </div>
 
-      <div className="absolute right-0 bottom-3 w-32 rounded-2xl rounded-br-md bg-gradient-to-br from-brand-violet to-brand-navy px-3 py-2.5 shadow-[0_14px_30px_rgba(76,29,149,0.35)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-3 motion-safe:fill-mode-both motion-safe:duration-700 motion-safe:delay-150">
+      <div className="absolute right-0 bottom-3 w-32 rounded-2xl rounded-br-md bg-brand-violet px-3 py-2.5 shadow-[0_14px_30px_rgba(76,29,149,0.35)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-3 motion-safe:fill-mode-both motion-safe:duration-700 motion-safe:delay-150">
         <span className="block h-2 w-20 rounded-full bg-white/55" />
         <span className="mt-1.5 block h-2 w-12 rounded-full bg-white/35" />
       </div>
@@ -624,7 +624,7 @@ function NewMessageNotice({
       aria-live="polite"
       className="fixed right-4 bottom-4 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl bg-card shadow-[0_18px_48px_rgba(20,20,55,0.22)] ring-1 ring-border/60 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-300"
     >
-      <div aria-hidden className="h-1 bg-gradient-to-r from-brand-violet via-brand-teal to-brand-navy" />
+      <div aria-hidden className="grid h-1 grid-cols-3"><span className="bg-brand-violet" /><span className="bg-brand-teal" /><span className="bg-brand-navy" /></div>
       <div className="flex items-start gap-3 p-4">
         <span className="relative shrink-0">
           <ChatAvatar kind={label.kind} imageUrl={label.imageUrl} />

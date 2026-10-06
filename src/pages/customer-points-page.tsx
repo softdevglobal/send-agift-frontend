@@ -93,7 +93,7 @@ export function CustomerPointsPage() {
         <FormAlert error={error} />
       ) : wallet ? (
         <div className="space-y-5">
-          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy px-6 py-7 text-white shadow-[0_16px_44px_rgba(20,20,55,0.28)] ring-1 ring-white/10 sm:px-8">
+          <section className="relative overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-7 text-white sm:px-8">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.8_0.14_75)]/35 blur-3xl"

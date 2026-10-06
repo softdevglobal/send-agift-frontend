@@ -324,7 +324,7 @@ function ShopPreviewCard({ form }: { form: ShopInput }) {
         {form.image_url ? (
           <img src={form.image_url} alt="" className="size-full object-cover" />
         ) : (
-          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+          <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
             <Store className="size-8" />
           </div>
         )}
@@ -705,7 +705,7 @@ export function SellerShopsPage() {
                           className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                         />
                       ) : (
-                        <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                        <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                           <Store className="size-8" />
                         </div>
                       )}
@@ -813,10 +813,6 @@ export function SellerShopsPage() {
                 'relative overflow-hidden px-6 py-16 text-center sm:py-20',
               )}
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.45),transparent_70%)]"
-              />
               <div className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10">
                 <Store className="size-6" />
               </div>
@@ -1380,7 +1376,7 @@ export function SellerShopsPage() {
                   className="size-full object-cover"
                 />
               ) : (
-                <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                   <Store className="size-8" />
                 </div>
               )}

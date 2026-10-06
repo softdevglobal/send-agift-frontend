@@ -193,7 +193,7 @@ function FeedMessage({
   return (
     <div className="m-3 grid min-h-[60svh] place-items-center rounded-2xl border border-border bg-card px-6 py-16 text-center sm:m-0">
       <div className="flex max-w-sm flex-col items-center gap-3">
-        <span className="grid size-14 place-items-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-violet text-white">
+        <span className="grid size-14 place-items-center rounded-xl bg-brand-violet text-white">
           {icon}
         </span>
         <h2 className="font-display text-xl tracking-tight">{title}</h2>

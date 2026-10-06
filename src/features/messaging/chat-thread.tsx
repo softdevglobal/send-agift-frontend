@@ -65,7 +65,7 @@ type ChatThreadProps = {
   emptyHint?: string
   /** Starter questions offered while the thread is still empty. */
   suggestions?: string[]
-  /** `brand` puts the header on the dark brand gradient (the storefront panel). */
+  /** `brand` puts the header on solid brand ink (the storefront panel). */
   tone?: 'default' | 'brand'
   className?: string
 }
@@ -252,7 +252,7 @@ export function ChatThread({
         className={cn(
           'relative overflow-hidden px-3 py-3 sm:px-4',
           onDark
-            ? 'bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy text-white'
+            ? 'bg-brand-ink text-white'
             : 'border-b border-border/60 bg-card',
         )}
       >
@@ -500,7 +500,7 @@ function ThreadWelcome({
       {label.context ? (
         <ContextCard context={label.context} />
       ) : (
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-violet to-brand-navy text-white shadow-[0_12px_28px_rgba(76,29,149,0.3)]">
+        <span className="flex size-14 items-center justify-center rounded-xl bg-brand-violet text-white">
           <MessageSquare className="size-6" />
         </span>
       )}
@@ -541,7 +541,7 @@ function ContextCard({ context }: { context: ConversationContext }) {
           <img src={context.imageUrl} alt="" className="aspect-[16/10] w-full object-cover" />
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent"
+            className="absolute inset-0 bg-black/15"
           />
           <span className="absolute top-2.5 left-2.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur">
             {context.caption}

@@ -167,7 +167,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
 
   return (
     <section className={cn(adminPanelClass, 'mb-8 overflow-hidden')}>
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/50 bg-[linear-gradient(135deg,oklch(0.97_0.05_88),var(--card)_70%)] px-5 py-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/50 bg-[oklch(0.975_0.03_88)] px-5 py-4">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-500 text-white shadow-sm">
             <Coins className="size-5" />

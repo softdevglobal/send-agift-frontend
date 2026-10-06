@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 
 import type { AdminCompetition, CompetitionLeaderRow, CompetitionStatus } from '@/api/competitions'
 import { Button } from '@/components/ui/button'
-import { competitionStatusLabel, formatPlayTime, formatScore, gameGradient, gameLook } from '@/features/admin/games-format'
+import { competitionStatusLabel, formatPlayTime, formatScore, gameColor, gameLook } from '@/features/admin/games-format'
 import { prizeMoney } from '@/features/admin/prize-live'
 import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
@@ -75,7 +75,7 @@ export function CompetitionHero({
   return (
     <section
       className="relative mb-5 overflow-hidden rounded-3xl p-6 text-white shadow-[0_20px_60px_-20px_rgba(40,20,90,0.45)] sm:p-8"
-      style={{ background: gameGradient(comp.game_slug) }}
+      style={{ background: gameColor(comp.game_slug) }}
     >
       <Icon aria-hidden className="pointer-events-none absolute -right-8 -bottom-10 size-64 text-white/10" />
       <div aria-hidden className="pointer-events-none absolute -top-24 -left-16 size-72 rounded-full bg-white/10 blur-2xl" />
@@ -240,28 +240,28 @@ export function CompetitionStats({ comp, livePlays }: { comp: AdminCompetition; 
         label="Plays"
         value={(livePlays ?? comp.eligible_play_count).toLocaleString()}
         hint={comp.points_per_attempt ? `${comp.points_per_attempt} pts each` : 'Free to play'}
-        tone="bg-gradient-to-br from-violet-500 to-indigo-600"
+        tone="bg-violet-600"
       />
       <StatTile
         icon={Users}
         label="Players"
         value={comp.unique_player_count.toLocaleString()}
         hint={comp.max_attempts_per_customer ? `up to ${comp.max_attempts_per_customer} plays each` : 'no play limit'}
-        tone="bg-gradient-to-br from-sky-500 to-cyan-500"
+        tone="bg-sky-500"
       />
       <StatTile
         icon={Trophy}
         label="Scores"
         value={comp.submissions.toLocaleString()}
         hint={`${comp.number_of_winners} ${comp.number_of_winners === 1 ? 'winner' : 'winners'}`}
-        tone="bg-gradient-to-br from-amber-400 to-orange-500"
+        tone="bg-amber-500"
       />
       <StatTile
         icon={ShieldAlert}
         label="To review"
         value={comp.under_review.toLocaleString()}
         hint={comp.under_review ? 'needs a look' : 'all clear'}
-        tone={comp.under_review ? 'bg-gradient-to-br from-rose-500 to-red-600' : 'bg-gradient-to-br from-emerald-500 to-teal-500'}
+        tone={comp.under_review ? 'bg-rose-600' : 'bg-emerald-500'}
       />
       <StatTile
         icon={BellRing}
@@ -276,16 +276,16 @@ export function CompetitionStats({ comp, livePlays }: { comp: AdminCompetition; 
                 .filter(Boolean)
                 .join(' · ') || 'all reached'
         }
-        tone="bg-gradient-to-br from-fuchsia-500 to-pink-500"
+        tone="bg-fuchsia-500"
       />
     </div>
   )
 }
 
 const podium = [
-  { place: 2, height: 'h-20', ring: 'ring-slate-300', medal: 'from-slate-200 to-slate-400' },
-  { place: 1, height: 'h-28', ring: 'ring-amber-300', medal: 'from-amber-200 to-amber-500' },
-  { place: 3, height: 'h-16', ring: 'ring-orange-300', medal: 'from-orange-200 to-orange-500' },
+  { place: 2, height: 'h-20', ring: 'ring-slate-300', medal: 'bg-slate-400' },
+  { place: 1, height: 'h-28', ring: 'ring-amber-300', medal: 'bg-amber-500' },
+  { place: 3, height: 'h-16', ring: 'ring-orange-300', medal: 'bg-orange-500' },
 ]
 
 /** The top three on a podium, first in the middle. */
@@ -300,7 +300,7 @@ export function LeaderPodium({ rows }: { rows: CompetitionLeaderRow[] }) {
           <div key={place} className="flex flex-col items-center text-center">
             <span
               className={cn(
-                'grid size-12 place-items-center rounded-full bg-gradient-to-br font-display text-lg text-white shadow-md ring-4',
+                'grid size-12 place-items-center rounded-full font-display text-lg text-white shadow-md ring-4',
                 medal,
                 ring,
               )}
@@ -314,7 +314,7 @@ export function LeaderPodium({ rows }: { rows: CompetitionLeaderRow[] }) {
             </p>
             <p className="mt-1 font-display text-xl tabular-nums">{formatScore(row.score)}</p>
             <p className="text-[11px] text-muted-foreground tabular-nums">{formatPlayTime(row.duration_ms)}</p>
-            <div className={cn('mt-2 w-full rounded-t-xl bg-gradient-to-b', height, medal, 'opacity-80')} />
+            <div className={cn('mt-2 w-full rounded-t-xl', height, medal, 'opacity-80')} />
           </div>
         )
       })}

@@ -24,14 +24,10 @@ export function SellerEmptyState({
         'relative overflow-hidden px-6 py-16 text-center sm:py-20',
       )}
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.55),transparent_72%)]"
-      />
       {/* Faint dot grid so the panel isn't a blank field of white. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.5] [background-image:radial-gradient(oklch(0.7_0.02_120/0.35)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]"
+        className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:radial-gradient(oklch(0.7_0.02_120/0.35)_1px,transparent_1px)] [background-size:22px_22px]"
       />
 
       <div className="relative mx-auto mb-6 grid size-14 place-items-center">

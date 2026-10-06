@@ -20,7 +20,7 @@ import { ReserveCard } from '@/features/admin/competition-panels'
 import {
   competitionStatusLabel,
   competitionStatusTone,
-  gameGradient,
+  gameColor,
   gameLook,
 } from '@/features/admin/games-format'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
@@ -148,7 +148,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
             <>
               <header
                 className="relative shrink-0 px-6 pt-6 pb-5 text-white"
-                style={{ background: gameGradient(comp.game_slug) }}
+                style={{ background: gameColor(comp.game_slug) }}
               >
                 <SheetClose
                   className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-white/20 text-white transition hover:bg-white/30 focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none"
@@ -188,7 +188,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
                 <FormAlert error={error} notice={notice} />
 
-                <div className="rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-5 text-white shadow-md">
+                <div className="rounded-2xl bg-orange-500 p-5 text-white shadow-md">
                   <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] text-white/80 uppercase">
                     <Trophy className="size-3.5" />
                     Prize

@@ -207,7 +207,7 @@ function StepRail({
   const progress = ((index + 1) / steps.length) * 100
 
   return (
-    <aside className="hidden flex-col gap-6 bg-gradient-to-b from-brand-navy to-brand-violet p-6 text-white md:flex">
+    <aside className="hidden flex-col gap-6 bg-brand-navy p-6 text-white md:flex">
       <div>
         <h2 className="font-display text-xl tracking-tight">{title}</h2>
         <p className="mt-1 text-xs leading-relaxed text-white/70">{description}</p>

@@ -52,8 +52,8 @@ function Field({
     >
       <span
         className={cn(
-          'grid size-12 shrink-0 place-items-center rounded-2xl text-white shadow-md',
-          'bg-gradient-to-br from-primary to-fuchsia-500 shadow-primary/25',
+          'grid size-12 shrink-0 place-items-center rounded-xl text-white',
+          'bg-brand-violet',
           'transition-transform group-hover:scale-105 group-focus-within:scale-105',
         )}
       >
@@ -238,9 +238,9 @@ export function GiftSearchBar({
 
   return (
     <form onSubmit={handleSubmit} className={cn('relative', className)}>
-      {/* A thin brand edge, enough to mark the bar out without it glowing. */}
-      <div className="relative rounded-[32px] bg-gradient-to-r from-primary/45 via-fuchsia-400/35 to-amber-300/45 p-[1.5px] shadow-lg shadow-black/5">
-        <div className="rounded-[30px] bg-surface/98 backdrop-blur">
+      {/* A solid ink edge with a hard offset shadow: a flat block, no glow. */}
+      <div className="relative rounded-[22px] border-2 border-brand-ink bg-surface shadow-[6px_6px_0_0_var(--brand-ink)]">
+        <div className="rounded-[20px]">
           <div className="grid divide-y divide-border/70 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.85fr)_auto] lg:divide-x lg:divide-y-0">
             <Field
               icon={<MapPin className="size-5" />}
@@ -335,10 +335,8 @@ export function GiftSearchBar({
                 disabled={busy}
                 aria-busy={busy}
                 className={cn(
-                  'h-14 w-full gap-2 rounded-2xl px-8 text-base font-semibold lg:w-auto',
-                  'bg-gradient-to-br from-primary to-fuchsia-500',
-                  'shadow-lg shadow-primary/30 transition hover:scale-[1.03] hover:shadow-xl',
-                  'disabled:hover:scale-100',
+                  'h-14 w-full gap-2 rounded-xl px-8 lg:w-auto',
+                  'transition hover:scale-[1.03] disabled:hover:scale-100',
                 )}
               >
                 {busy ? (

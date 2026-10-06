@@ -14,7 +14,7 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { GamePricesPanel, PriceTag } from '@/features/admin/game-prices-panel'
-import { formatScore, gameGradient } from '@/features/admin/games-format'
+import { formatScore, gameColor } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { getRole, isAdminRole } from '@/lib/auth'
@@ -47,7 +47,7 @@ function GameCard({ game }: { game: AdminGameSummary }) {
         'group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(40,50,30,0.12)]',
       )}
     >
-      <div className="relative h-2" style={{ background: gameGradient(game.slug) }} />
+      <div className="relative h-2" style={{ background: gameColor(game.slug) }} />
       <div className="flex flex-1 flex-col p-5">
         <div className="flex items-start gap-3">
           <GameBadge slug={game.slug} />

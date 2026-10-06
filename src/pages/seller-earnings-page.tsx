@@ -78,10 +78,6 @@ export function SellerEarningsPage() {
           <h2 className="font-medium">Payout activity</h2>
         </div>
         <div className="relative overflow-hidden px-6 py-16 text-center">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_at_top,oklch(0.96_0.05_85/0.6),transparent_70%)]"
-          />
           <div className="relative mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15 shadow-[0_10px_28px_rgba(40,50,30,0.10)]">
             <ArrowDownToLine className="size-5" />
           </div>

@@ -985,7 +985,7 @@ export function CheckoutPage() {
                       (country) => country.id === address.country_id,
                     )?.name
                     return (
-                      <div className="animate-fade-in flex items-start gap-3 rounded-xl border border-border/60 bg-gradient-to-br from-accent/40 to-transparent p-3.5 text-sm">
+                      <div className="animate-fade-in flex items-start gap-3 rounded-xl border border-border/60 bg-accent/40 p-3.5 text-sm">
                         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                           {initials(recipientDetails.name)}
                         </span>

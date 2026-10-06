@@ -150,11 +150,11 @@ export function SellerDashboardPage() {
       <FormAlert error={error} />
 
       {/*
-        The hero carries the brand gradient rather than the plain card wash.
+        The hero sits on solid brand navy rather than the plain card wash.
         it is the one place in the portal that should feel like the storefront
         the seller is building, not the admin tooling around it.
       */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy via-brand-violet to-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
+      <section className="relative overflow-hidden rounded-2xl bg-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[color:var(--brand-teal)]/20 blur-3xl"
@@ -268,10 +268,6 @@ export function SellerDashboardPage() {
             </Link>
           </div>
           <div className="relative flex flex-col items-center px-6 py-16 text-center">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.5),transparent_70%)]"
-            />
             <div className="relative mb-4 flex size-14 items-center justify-center rounded-2xl bg-card text-primary ring-1 ring-primary/15 shadow-[0_10px_28px_rgba(40,50,30,0.10)]">
               <ShoppingBag className="size-6" />
             </div>

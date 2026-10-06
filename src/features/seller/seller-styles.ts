@@ -18,19 +18,19 @@ export const sellerListRowClass =
  */
 export const sellerToneClass = {
   violet: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.96_0.04_296)_0%,var(--card)_62%)]',
+    tile: 'bg-[oklch(0.97_0.025_296)]',
     icon: 'bg-[oklch(0.93_0.06_296)] text-[oklch(0.42_0.2_296)]',
   },
   teal: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.95_0.05_195)_0%,var(--card)_62%)]',
+    tile: 'bg-[oklch(0.965_0.03_195)]',
     icon: 'bg-[oklch(0.92_0.07_195)] text-[oklch(0.42_0.11_205)]',
   },
   amber: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.96_0.05_85)_0%,var(--card)_62%)]',
+    tile: 'bg-[oklch(0.975_0.03_85)]',
     icon: 'bg-[oklch(0.93_0.08_85)] text-[oklch(0.48_0.12_75)]',
   },
   navy: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.94_0.03_265)_0%,var(--card)_62%)]',
+    tile: 'bg-[oklch(0.965_0.018_265)]',
     icon: 'bg-[oklch(0.91_0.05_265)] text-[oklch(0.38_0.13_270)]',
   },
 } as const

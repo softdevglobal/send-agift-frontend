@@ -469,7 +469,7 @@ function BuyPointsDialog({
           </p>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-[linear-gradient(140deg,oklch(0.96_0.05_85)_0%,var(--card)_70%)] px-4 py-3 ring-1 ring-border/50">
+        <div className="flex items-center justify-between rounded-xl bg-[oklch(0.975_0.03_85)] px-4 py-3 ring-1 ring-border/50">
           <span className="text-sm text-muted-foreground">You get</span>
           <span className="font-display text-2xl tracking-tight">
             {formatPoints(points)} <span className="text-sm text-muted-foreground">points</span>

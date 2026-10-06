@@ -14,6 +14,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { getCustomerMe, type CustomerDetails } from '@/api/customers'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, usePagedList } from '@/components/common/page-nav'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -262,26 +263,27 @@ export function CustomerSellerPage() {
         }
       />
 
-      <section className={cn(customerPanelClass, 'p-5 sm:p-6')}>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+      <section className="relative overflow-hidden rounded-[1.75rem] bg-accent p-6 sm:p-8">
+        <Sparkle className="absolute top-6 right-[30%] hidden size-6 text-brand-violet sm:block" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
           {seller.image_url ? (
             <img
               src={seller.image_url}
               alt=""
-              className="size-20 rounded-2xl object-cover ring-1 ring-border"
+              className="size-24 rounded-2xl object-cover ring-4 ring-white"
             />
           ) : (
-            <div className="flex size-20 items-center justify-center rounded-2xl bg-accent text-lg font-semibold text-primary">
+            <div className="flex size-24 items-center justify-center rounded-2xl bg-brand-violet font-poster text-2xl text-white">
               {publicSellerInitials(seller)}
             </div>
           )}
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-2xl tracking-tight">
+              <h2 className="font-poster text-3xl text-brand-ink dark:text-foreground">
                 {seller.trading_name?.trim() || seller.name}
               </h2>
               {seller.verification_status === 'verified' ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-primary">
+                <span className="inline-flex items-center gap-1 rounded-md bg-brand-teal px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-brand-ink uppercase">
                   <BadgeCheck className="size-3.5" />
                   Verified seller
                 </span>
@@ -324,7 +326,7 @@ export function CustomerSellerPage() {
           {seller.email ? (
             <a
               href={`mailto:${seller.email}`}
-              className="flex items-start gap-3 rounded-xl bg-muted/50 px-3.5 py-3 text-sm ring-1 ring-border/40 hover:bg-muted"
+              className="flex items-start gap-3 rounded-xl bg-white px-3.5 py-3 text-sm text-brand-ink hover:bg-white/80"
             >
               <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
               <span className="min-w-0">
@@ -338,7 +340,7 @@ export function CustomerSellerPage() {
           {seller.phone ? (
             <a
               href={`tel:${seller.phone}`}
-              className="flex items-start gap-3 rounded-xl bg-muted/50 px-3.5 py-3 text-sm ring-1 ring-border/40 hover:bg-muted"
+              className="flex items-start gap-3 rounded-xl bg-white px-3.5 py-3 text-sm text-brand-ink hover:bg-white/80"
             >
               <Phone className="mt-0.5 size-4 shrink-0 text-primary" />
               <span className="min-w-0">
@@ -350,7 +352,7 @@ export function CustomerSellerPage() {
             </a>
           ) : null}
           {locations.length ? (
-            <div className="flex items-start gap-3 rounded-xl bg-muted/50 px-3.5 py-3 text-sm ring-1 ring-border/40">
+            <div className="flex items-start gap-3 rounded-xl bg-white px-3.5 py-3 text-sm text-brand-ink">
               <MapPin className="mt-0.5 size-4 shrink-0 text-primary" />
               <div className="min-w-0">
                 <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
@@ -371,7 +373,7 @@ export function CustomerSellerPage() {
 
       <section className="mt-10">
         <div className="mb-5">
-          <h2 className="font-display text-xl tracking-tight">Shops</h2>
+          <h2 className="font-poster text-2xl text-brand-ink sm:text-3xl dark:text-foreground"><span className="marker-underline">Shops</span></h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {shopSections.length} shop{shopSections.length === 1 ? '' : 's'} · {products.length}{' '}
             published gift{products.length === 1 ? '' : 's'}. Open a shop to see its gifts.
@@ -385,12 +387,9 @@ export function CustomerSellerPage() {
               <Link
                 key={section.shop.id}
                 to={`/sellers/${seller.id}/shops/${section.shop.id}`}
-                className={cn(
-                  customerPanelClass,
-                  'group overflow-hidden transition-transform duration-300 hover:-translate-y-1',
-                )}
+                className="group block"
               >
-                <div className="aspect-[16/9] overflow-hidden bg-muted">
+                <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-accent">
                   {section.shop.image_url ? (
                     <img
                       src={section.shop.image_url}
@@ -398,13 +397,13 @@ export function CustomerSellerPage() {
                       className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                     />
                   ) : (
-                    <div className="flex size-full min-h-28 items-center justify-center text-muted-foreground">
-                      <Store className="size-8" />
+                    <div className="flex size-full min-h-28 items-center justify-center text-brand-violet">
+                      <Store className="size-10" />
                     </div>
                   )}
                 </div>
-                <div className="p-5">
-                  <h3 className="font-display text-xl tracking-tight">{section.shop.name}</h3>
+                <div className="pt-4">
+                  <h3 className="text-lg font-extrabold text-brand-ink dark:text-foreground">{section.shop.name}</h3>
                   {section.shop.customer_visible_location ? (
                     <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
                       <MapPin className="size-3.5 shrink-0" />
@@ -421,7 +420,7 @@ export function CustomerSellerPage() {
                       {section.products.length} gift
                       {section.products.length === 1 ? '' : 's'}
                     </span>
-                    <span className="inline-flex items-center gap-0.5 font-medium text-primary">
+                    <span className="inline-flex items-center gap-0.5 text-xs font-bold tracking-[0.1em] text-brand-ink uppercase dark:text-foreground">
                       View gifts
                       <ChevronRight className="size-4" />
                     </span>
@@ -451,7 +450,7 @@ export function CustomerSellerPage() {
           onSubmit={handleReview}
           className={cn(customerPanelClass, 'h-fit space-y-4 p-5 sm:p-6')}
         >
-          <h2 className="font-display text-xl tracking-tight">
+          <h2 className="font-poster text-xl">
             {existingReview ? 'Update your review' : 'Leave a review'}
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -489,7 +488,7 @@ export function CustomerSellerPage() {
         </form>
 
         <div className={cn(customerPanelClass, 'p-5 sm:p-6')}>
-          <h2 className="font-display text-xl tracking-tight">Customer reviews</h2>
+          <h2 className="font-poster text-xl">Customer reviews</h2>
           {reviews.length ? (
             <ul className="mt-4 divide-y divide-border/50">
               {reviews.map((review) => (

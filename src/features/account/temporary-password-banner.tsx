@@ -33,7 +33,7 @@ export function TemporaryPasswordBanner() {
   if (!temporary) return null
 
   return (
-    <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-gradient-to-r from-amber-50 to-pink-50 p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center">
+    <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center">
       <ShieldAlert className="size-5 shrink-0 text-amber-700" />
       <p className="flex-1 text-sm text-amber-950">
         <strong>You’re using a temporary password.</strong> Set your own so only you can get into

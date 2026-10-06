@@ -423,7 +423,7 @@ export function AdminCountriesPage() {
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
-          <div className="relative overflow-hidden bg-gradient-to-br from-accent/60 via-cream to-cream px-6 pt-6 pb-5">
+          <div className="relative overflow-hidden bg-cream px-6 pt-6 pb-5">
             <div
               aria-hidden
               className="pointer-events-none absolute -top-20 -right-14 size-48 rounded-full bg-[oklch(0.92_0.04_125/0.6)]"

@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { adminPanelClass } from '@/features/admin/admin-styles'
-import { formatScore, gameGradient, gameLook, type Tone } from '@/features/admin/games-format'
+import { formatScore, gameColor, gameLook, type Tone } from '@/features/admin/games-format'
 import { getErrorMessage } from '@/lib/api'
 import { textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
@@ -27,7 +27,7 @@ export function GameBadge({ slug, className }: { slug: string; className?: strin
         'flex size-11 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_6px_16px_rgba(0,0,0,0.18)]',
         className,
       )}
-      style={{ background: gameGradient(slug) }}
+      style={{ background: gameColor(slug) }}
     >
       <Icon className="size-5" />
     </span>
@@ -122,7 +122,7 @@ export function Podium({ entries, slug }: { entries: AdminLeaderboardRow[]; slug
                   'mt-2 flex w-full items-start justify-center rounded-t-xl pt-2 text-lg font-semibold text-white',
                   style.height,
                 )}
-                style={{ background: i === 0 ? gameGradient(slug) : style.medal }}
+                style={{ background: i === 0 ? gameColor(slug) : style.medal }}
               >
                 {style.label}
               </div>

@@ -416,7 +416,7 @@ export function SellerProductsPage() {
                             className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                           />
                         ) : (
-                          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                          <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                             <Package className="size-7" />
                           </div>
                         )}
@@ -566,7 +566,7 @@ function ProductPreviewPanel({
             {coverUrl ? (
               <img src={coverUrl} alt="" className="size-full object-cover" />
             ) : (
-              <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+              <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                 <Package className="size-10" />
               </div>
             )}

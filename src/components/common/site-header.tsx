@@ -76,7 +76,7 @@ export function SiteHeader() {
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="h-11 appearance-none rounded-l-lg border border-r-0 border-input bg-muted/40 py-2 pr-8 pl-3 text-sm text-foreground outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="h-11 appearance-none rounded-l-md border border-r-0 border-input bg-muted/40 py-2 pr-8 pl-3 text-sm text-foreground outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
               aria-label="Search category"
             >
               <option value="all">All gifts</option>
@@ -136,7 +136,7 @@ export function SiteHeader() {
                   Sign in
                 </Link>
               </Button>
-              <Button asChild className="h-9 rounded-full px-3.5 sm:px-4">
+              <Button asChild className="h-9 px-3.5 sm:px-4">
                 <Link to="/register">Sign up</Link>
               </Button>
             </>
@@ -196,7 +196,7 @@ export function SiteHeader() {
             <Button
               asChild
               variant="outline"
-              className="ml-1 hidden h-9 px-3 md:inline-flex"
+              className="ml-1 hidden h-9 border-2 border-brand-ink px-3 md:inline-flex"
             >
               <Link to="/become-a-seller">Become a seller</Link>
             </Button>
@@ -232,7 +232,7 @@ export function SiteHeader() {
             <Link
               to="/products"
               onClick={closeMenu}
-              className="flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-accent-foreground"
+              className="flex items-center gap-2.5 rounded-md bg-brand-ink px-3 py-2.5 text-sm font-bold tracking-wide text-white uppercase"
             >
               <Gift className="size-4" />
               Browse gifts

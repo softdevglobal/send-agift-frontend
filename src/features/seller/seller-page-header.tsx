@@ -44,7 +44,7 @@ export function SellerPageHeader({
   children,
 }: SellerPageHeaderProps) {
   return (
-    <div className="relative mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy text-white shadow-[0_16px_44px_rgba(20,20,55,0.28)] ring-1 ring-white/10">
+    <div className="relative mb-6 overflow-hidden rounded-2xl bg-brand-ink text-white shadow-[0_16px_44px_rgba(20,20,55,0.28)] ring-1 ring-white/10">
       <div
         aria-hidden
         className={cn(

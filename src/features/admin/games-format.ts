@@ -45,9 +45,9 @@ export function gameLook(slug: string): GameLook {
   return LOOKS[slug] ?? { icon: Gamepad2, from: '#6D28D9', to: '#14B8B8' }
 }
 
-export function gameGradient(slug: string): string {
-  const look = gameLook(slug)
-  return `linear-gradient(135deg, ${look.from}, ${look.to})`
+/** The game's solid colour, used for its tiles and banners. */
+export function gameColor(slug: string): string {
+  return gameLook(slug).from
 }
 
 export function formatScore(value: number | undefined): string {

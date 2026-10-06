@@ -90,7 +90,7 @@ export function AuthAdminRegisterPage() {
               <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
                 Admin bootstrap
               </p>
-              <h2 className="font-display text-3xl tracking-tight">
+              <h2 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">
                 Create an admin account
               </h2>
               <p className="text-sm leading-relaxed text-muted-foreground">

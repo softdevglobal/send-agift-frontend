@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import { SiteFooter } from '@/components/common/site-footer'
 import { SiteHeader } from '@/components/common/site-header'
+import { useStorefrontTheme } from '@/components/common/use-storefront-theme'
 
 type SiteLayoutProps = {
   children: ReactNode
@@ -10,8 +11,10 @@ type SiteLayoutProps = {
 }
 
 export function SiteLayout({ children, hideFooter = false }: SiteLayoutProps) {
+  useStorefrontTheme()
+
   return (
-    <div className="flex min-h-svh flex-col bg-background">
+    <div className="storefront flex min-h-svh flex-col overflow-x-clip bg-background">
       <SiteHeader />
       <div className="flex-1">{children}</div>
       {hideFooter ? null : <SiteFooter />}

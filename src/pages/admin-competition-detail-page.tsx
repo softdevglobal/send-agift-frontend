@@ -654,7 +654,7 @@ export function AdminCompetitionDetailPage() {
         >
           {board.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-md">
+              <span className="grid size-14 place-items-center rounded-2xl bg-orange-500 text-white shadow-md">
                 <Trophy className="size-7" />
               </span>
               <p className="font-medium">No scores yet</p>
