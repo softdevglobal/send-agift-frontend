@@ -62,8 +62,20 @@ export function GiftCard({ product, href }: GiftCardProps) {
   const shopHref =
     sellerId && shopId ? `/sellers/${sellerId}/shops/${shopId}` : undefined
 
+  const shopProps = {
+    shopName,
+    sellerName,
+    href: shopHref,
+    imageUrl: sellerImageUrl,
+    rating: sellerStats?.average ?? 0,
+    reviewCount: sellerStats?.count ?? 0,
+    verificationStatus: isCatalogProduct(product)
+      ? product.sellerVerificationStatus
+      : undefined,
+  }
+
   return (
-    <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-3 transition-colors hover:border-brand-ink dark:border-border">
+    <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-2 transition-colors sm:p-3 hover:border-brand-ink dark:border-border">
       <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
         <Link to={to} className="block size-full">
           <img
@@ -84,31 +96,25 @@ export function GiftCard({ product, href }: GiftCardProps) {
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 px-1 pt-4 pb-1">
+      <div className="flex flex-1 flex-col gap-2 px-0.5 pt-3 pb-0.5 sm:gap-3 sm:px-1 sm:pt-4 sm:pb-1">
         {isCatalogProduct(product) ? (
-          <ShopIdentity
-            shopName={shopName}
-            sellerName={sellerName}
-            href={shopHref}
-            imageUrl={sellerImageUrl}
-            rating={sellerStats?.average ?? 0}
-            reviewCount={sellerStats?.count ?? 0}
-            verificationStatus={product.sellerVerificationStatus}
-            size="md"
-          />
+          <>
+            <ShopIdentity {...shopProps} size="sm" className="sm:hidden" />
+            <ShopIdentity {...shopProps} size="md" className="hidden sm:flex" />
+          </>
         ) : null}
 
         <div className="space-y-1.5">
           <Link to={to} className="hover:text-primary">
-            <h3 className="line-clamp-2 text-[15px] leading-snug font-bold text-foreground">{product.name}</h3>
+            <h3 className="line-clamp-2 text-sm leading-snug font-bold text-foreground sm:text-[15px]">{product.name}</h3>
           </Link>
           {description ? (
-            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="hidden line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:block">
               {description}
             </p>
           ) : null}
           <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="text-lg font-extrabold tracking-tight">{priceLabel(product)}</span>
+            <span className="text-base font-extrabold tracking-tight sm:text-lg">{priceLabel(product)}</span>
             {product.compareAt ? (
               <span className="text-sm text-muted-foreground line-through">
                 {formatMoney(product.compareAt)}
@@ -124,7 +130,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
         <Button
           type="button"
-          className="mt-auto h-11 w-full gap-2"
+          className="mt-auto h-10 w-full gap-1.5 sm:h-11 sm:gap-2"
           onClick={() => addItem(product.id)}
         >
           <ShoppingCart className="size-4" />

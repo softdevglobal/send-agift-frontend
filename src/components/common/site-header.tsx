@@ -67,7 +67,7 @@ export function SiteHeader() {
 
         <form
           onSubmit={handleSearch}
-          className="hidden min-w-0 flex-1 items-stretch md:flex"
+          className="hidden min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border-2 border-brand-ink bg-background transition-shadow focus-within:ring-4 focus-within:ring-brand-violet/25 md:flex"
         >
           <label className="sr-only" htmlFor="site-search">
             Search gifts
@@ -76,7 +76,7 @@ export function SiteHeader() {
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="h-11 appearance-none rounded-l-md border border-r-0 border-input bg-muted/40 py-2 pr-8 pl-3 text-sm text-foreground outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+              className="h-11 appearance-none border-0 border-r-2 border-brand-ink/15 bg-accent py-2 pr-8 pl-3 text-sm font-semibold text-brand-ink outline-none"
               aria-label="Search category"
             >
               <option value="all">All gifts</option>
@@ -86,34 +86,22 @@ export function SiteHeader() {
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-brand-ink" />
           </div>
           <Input
             id="site-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search for gifts, sellers, occasions…"
-            className="h-11 flex-1 rounded-none border-x-0 bg-background px-3"
+            className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
           />
-          <Button type="submit" className="h-11 rounded-l-none px-5">
+          <Button type="submit" className="h-11 rounded-none px-5">
             <Search className="size-4" />
             Search
           </Button>
         </form>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label="Search gifts"
-            asChild
-          >
-            <Link to="/products">
-              <Search className="size-4.5" />
-            </Link>
-          </Button>
-
           <Button
             asChild
             variant="ghost"
@@ -214,20 +202,26 @@ export function SiteHeader() {
         </div>
       </div>
 
+      <form onSubmit={handleSearch} className={cn(storefrontFrameClass, 'pb-3 md:hidden')}>
+        <label className="sr-only" htmlFor="site-search-mobile">
+          Search gifts
+        </label>
+        <div className="flex overflow-hidden rounded-lg border-2 border-brand-ink bg-background focus-within:ring-4 focus-within:ring-brand-violet/25">
+          <Input
+            id="site-search-mobile"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search gifts, sellers…"
+            className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
+          />
+          <Button type="submit" aria-label="Search" className="h-11 rounded-none px-4">
+            <Search className="size-4" />
+          </Button>
+        </div>
+      </form>
+
       {open ? (
-        <div className="border-t border-border bg-background px-4 py-4 md:hidden">
-          <form onSubmit={handleSearch} className="mb-4 space-y-2">
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search gifts, sellers…"
-              className="h-10 bg-background"
-            />
-            <Button type="submit" className="h-10 w-full">
-              <Search className="size-4" />
-              Search gifts
-            </Button>
-          </form>
+        <div className="border-t border-border bg-background px-5 py-4 md:hidden">
           <nav className="flex flex-col gap-1">
             <Link
               to="/products"

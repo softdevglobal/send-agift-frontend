@@ -20,7 +20,7 @@ type AccountMenuProps = {
 
 /** One row of the dropdown: a box that fills with ink under the pointer. */
 const menuItemClass =
-  'mx-1.5 flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-ink hover:text-white focus-visible:bg-brand-ink focus-visible:text-white focus-visible:outline-none dark:text-foreground'
+  'mx-2 flex items-center gap-3 rounded-md px-3 py-2 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-ink hover:text-white focus-visible:bg-brand-ink focus-visible:text-white focus-visible:outline-none dark:text-foreground'
 
 export function AccountMenu({ compact = false, className }: AccountMenuProps) {
   const { isAuthenticated, role, logout } = useAuth()
@@ -146,7 +146,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 </div>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-1">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-2">
                 <button
                   type="button"
                   role="menuitem"
@@ -154,7 +154,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                     setOpen(false)
                     openMessages()
                   }}
-                  className={cn(menuItemClass, 'w-[calc(100%-0.75rem)] text-left')}
+                  className={cn(menuItemClass, 'w-[calc(100%-1rem)] text-left')}
                 >
                   <MessageSquare className="size-4 shrink-0" />
                   <span className="flex-1">Messages</span>
@@ -166,7 +166,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                 </button>
                 {accountNavGroups.map((group) => (
                   <div key={group.label} className="pt-1">
-                    <p className="px-4 pt-2 pb-1 text-[10px] font-bold tracking-[0.18em] text-brand-ink/50 uppercase dark:text-muted-foreground">
+                    <p className="px-5 pt-2 pb-1 text-[10px] font-bold tracking-[0.18em] text-brand-ink/50 uppercase dark:text-muted-foreground">
                       {group.label}
                     </p>
                     {group.items.map((item) => (
@@ -201,7 +201,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                     setOpen(false)
                     setSignOutOpen(true)
                   }}
-                  className={cn(menuItemClass, 'w-[calc(100%-0.75rem)] text-left')}
+                  className={cn(menuItemClass, 'w-[calc(100%-1rem)] text-left')}
                 >
                   <LogOut className="size-4 shrink-0" />
                   Sign out
@@ -225,7 +225,7 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
                   setOpen(false)
                   setSignOutOpen(true)
                 }}
-                className={cn(menuItemClass, 'w-[calc(100%-0.75rem)] text-left')}
+                className={cn(menuItemClass, 'w-[calc(100%-1rem)] text-left')}
               >
                 <LogOut className="size-4 shrink-0" />
                 Sign out
