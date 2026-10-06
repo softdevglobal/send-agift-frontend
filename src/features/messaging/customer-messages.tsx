@@ -15,7 +15,6 @@ import {
   MessagesSquare,
   Package,
   Paperclip,
-  Search,
   Store,
   X,
   type LucideIcon,
@@ -40,7 +39,7 @@ import { cn } from '@/lib/utils'
 
 import { ChatAvatar } from './chat-avatar'
 import { ChatThread, type ChatDraft } from './chat-thread'
-import { customerConversationText, useConversationLabel } from './conversation-label'
+import { useConversationLabel } from './conversation-label'
 import { CustomerConversationList } from './customer-conversation-list'
 import { useInbox, useResolvedConversation } from './use-inbox'
 
@@ -368,15 +367,10 @@ function PanelList({
     return totals
   }, [conversations])
 
-  const [query, setQuery] = useState('')
-
   // Support only appears as a tab if the customer actually has a support thread.
   const tabs = PANEL_FILTERS.filter((tab) => tab.id !== 'support' || counts.support > 0)
-  const needle = query.trim().toLowerCase()
   const visible = conversations.filter(
-    (item) =>
-      (filter === 'all' || item.type === filter) &&
-      (!needle || customerConversationText(item).includes(needle)),
+    (item) => filter === 'all' || item.type === filter,
   )
 
   return (
@@ -402,21 +396,7 @@ function PanelList({
         </div>
 
         {conversations.length > 0 ? (
-          <div className="relative mt-4">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/50" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search shops or gifts"
-              aria-label="Search conversations"
-              className="h-10 w-full rounded-full bg-white/10 pr-4 pl-10 text-sm text-white ring-1 ring-white/15 outline-none placeholder:text-white/50 focus-visible:bg-white/15 focus-visible:ring-white/35"
-            />
-          </div>
-        ) : null}
-
-        {conversations.length > 0 ? (
-          <div className="relative mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter conversations">
+          <div className="relative mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter conversations">
             {tabs.map((tab) => {
               const active = filter === tab.id
               return (
@@ -455,7 +435,7 @@ function PanelList({
           <MessagesWelcome />
         ) : visible.length === 0 ? (
           <p className="px-6 py-16 text-center text-sm text-muted-foreground">
-            {needle ? `No chats match “${query.trim()}”.` : 'Nothing here yet.'}
+            Nothing here yet.
           </p>
         ) : (
           <CustomerConversationList

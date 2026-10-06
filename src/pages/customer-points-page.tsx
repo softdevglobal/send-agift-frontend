@@ -102,9 +102,9 @@ export function CustomerPointsPage() {
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
                   Current balance
                 </p>
-                <p className="mt-2 flex items-baseline gap-2 font-poster text-6xl">
+                <p className="mt-2 flex items-baseline gap-3 font-poster text-6xl">
                   {formatPoints(wallet.balance)}
-                  <span className="text-base text-white/60">points</span>
+                  <span className="ml-1 font-sans text-sm font-bold tracking-[0.16em] text-white/60 uppercase">points</span>
                 </p>
                 <p className="mt-2 text-sm text-white/60">
                   {formatPoints(wallet.lifetime_earned)} earned · {formatPoints(wallet.lifetime_spent)}{' '}
