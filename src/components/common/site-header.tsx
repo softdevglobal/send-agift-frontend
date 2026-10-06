@@ -58,10 +58,10 @@ export function SiteHeader() {
       <div
         className={cn(
           storefrontFrameClass,
-          'flex items-center gap-3 py-3 lg:gap-5',
+          'flex items-center gap-3 py-1 sm:py-3 lg:gap-5',
         )}
       >
-        <BrandLogo imgClassName="h-14 sm:h-16" />
+        <BrandLogo imgClassName="h-11 sm:h-16" />
 
         <form
           onSubmit={handleSearch}
@@ -184,24 +184,6 @@ export function SiteHeader() {
         </div>
       </div>
 
-      <form onSubmit={handleSearch} className={cn(storefrontFrameClass, 'pb-3 md:hidden')}>
-        <label className="sr-only" htmlFor="site-search-mobile">
-          Search gifts
-        </label>
-        <div className="flex overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet">
-          <Input
-            id="site-search-mobile"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search gifts, sellers…"
-            className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
-          />
-          <Button type="submit" aria-label="Search" className="h-11 rounded-none px-4">
-            <Search className="size-4" />
-          </Button>
-        </div>
-      </form>
-
       {/* Phone menu: a panel that slides in from the right and leaves a strip
           of the page showing on the left. */}
       <Sheet open={open} onOpenChange={setOpen}>
@@ -220,6 +202,23 @@ export function SiteHeader() {
             </SheetClose>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <form onSubmit={handleSearch} className="mb-4">
+            <label className="sr-only" htmlFor="site-search-mobile">
+              Search gifts
+            </label>
+            <div className="flex overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet">
+              <Input
+                id="site-search-mobile"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search gifts, sellers…"
+                className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
+              />
+              <Button type="submit" aria-label="Search" className="h-11 rounded-none px-4">
+                <Search className="size-4" />
+              </Button>
+            </div>
+          </form>
           <nav className="flex flex-col gap-1">
             <Link
               to="/products"
