@@ -255,6 +255,13 @@
     --button-solid-hover: var(--brand-violet);
   }
 
+  /* In the seller portal the main action buttons are violet, turning ink on
+     hover, so "Add product" and friends stand out on the ink banners. */
+  .seller-portal {
+    --button-solid: var(--brand-violet);
+    --button-solid-hover: var(--brand-ink);
+  }
+
   .storefront .font-display {
     font-weight: 800;
     letter-spacing: -0.03em;

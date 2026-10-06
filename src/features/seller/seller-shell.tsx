@@ -101,6 +101,11 @@ export function SellerShell() {
 
 function SellerShellLayout() {
   useStorefrontTheme()
+  // On <body> too, so dialogs and sheets portalled out of the shell match.
+  useEffect(() => {
+    document.body.classList.add('seller-portal')
+    return () => document.body.classList.remove('seller-portal')
+  }, [])
   const { logout } = useAuth()
   const { unreadTotal } = useSharedInbox()
   const location = useLocation()
@@ -177,7 +182,9 @@ function SellerShellLayout() {
           </Button>
         </div>
 
-        <div className="relative flex-1 overflow-y-auto">
+        {/* Scrolls when the list is taller than the screen, but without a grey
+            scrollbar breaking up the ink sidebar. */}
+        <div className="relative flex-1 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <SellerNavLinks
             onNavigate={() => setMenuOpen(false)}
             unreadMessages={unreadTotal}
