@@ -188,6 +188,76 @@ export function AdminSellersPage() {
         />
       ) : (
         <div className={cn(adminPanelClass, 'overflow-x-auto')}>
+          <ul className="divide-y divide-border/50 md:hidden">
+            {items.map((seller) => (
+              <li key={seller.id} className="space-y-3 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-extrabold">{sellerName(seller)}</span>
+                      <VerifiedSellerBadge status={seller.verification_status} />
+                    </div>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {seller.trading_name ? `${seller.legal_name} · ` : ''}
+                      {seller.seller_type}
+                    </p>
+                  </div>
+                  <StatusPill tone={accountTone[seller.status] ?? 'neutral'}>
+                    {accountLabel(seller.status)}
+                  </StatusPill>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                  <div>
+                    <dt className="text-muted-foreground">Country</dt>
+                    <dd className="font-medium">{seller.country_name}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Shops</dt>
+                    <dd className="font-medium">{seller.shop_count}</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-muted-foreground">Email</dt>
+                    <dd className="truncate font-medium">
+                      {seller.email}
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        · {seller.email_verified_at ? 'confirmed' : 'not confirmed'}
+                      </span>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">Joined</dt>
+                    <dd className="font-medium">{formatDate(seller.created_at)}</dd>
+                  </div>
+                </dl>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild variant="outline" size="sm" className="h-9 flex-1">
+                    <Link to={`/admin/sellers/${seller.id}`}>Details</Link>
+                  </Button>
+                  {seller.status !== 'deleted' ? (
+                    <Button
+                      type="button"
+                      variant={seller.verification_status === 'verified' ? 'outline' : 'default'}
+                      size="sm"
+                      className="h-9 flex-1"
+                      onClick={() => setVerifying(seller)}
+                    >
+                      {seller.verification_status === 'verified' ? 'Unverify' : 'Verify'}
+                    </Button>
+                  ) : null}
+                  {seller.status === 'active' ? (
+                    <Button type="button" variant="destructive" size="sm" className="h-9 flex-1" onClick={() => setPending(seller)}>
+                      Suspend
+                    </Button>
+                  ) : seller.status === 'suspended' ? (
+                    <Button type="button" variant="outline" size="sm" className="h-9 flex-1" onClick={() => setPending(seller)}>
+                      Activate
+                    </Button>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <table className="w-full min-w-[52rem] text-sm">
             <thead>
               <tr className="border-b border-border/60 text-left text-xs tracking-wide text-muted-foreground uppercase">
@@ -259,6 +329,7 @@ export function AdminSellersPage() {
               ))}
             </tbody>
           </table>
+          </div>
           <p className="px-4 py-3 text-xs text-muted-foreground">
             {total} {total === 1 ? 'seller' : 'sellers'}
           </p>

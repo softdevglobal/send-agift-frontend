@@ -169,7 +169,7 @@ function SellerShellLayout() {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-10 shrink-0 bg-white text-brand-ink hover:bg-brand-teal hover:text-brand-ink lg:hidden"
+            className="size-10 shrink-0 text-white/80 hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           >

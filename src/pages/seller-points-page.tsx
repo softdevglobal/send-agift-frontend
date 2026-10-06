@@ -240,7 +240,74 @@ export function SellerPointsPage() {
           </p>
         ) : (
           <>
-          <div className="overflow-x-auto">
+          <ul className="divide-y divide-brand-ink/10 md:hidden">
+            {purchasePages.visible.map((p) => {
+              const busy = busyId === p.id
+              return (
+                <li key={p.id} className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-poster text-xl">
+                        {formatPoints(p.points_credited ?? p.points)}
+                        <span className="ml-1 font-sans text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                          points
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{shortDate(p.created_at)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold tabular-nums">
+                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                      </p>
+                      <div className="mt-1">
+                        <StatusPill status={p.status} />
+                      </div>
+                    </div>
+                  </div>
+                  {p.failure_reason ? (
+                    <p className="text-xs text-muted-foreground">{p.failure_reason}</p>
+                  ) : null}
+                  {p.status === 'pending' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {wallet?.test_payments ? (
+                        <Button
+                          size="sm"
+                          className="h-9 flex-1"
+                          disabled={busy}
+                          onClick={() =>
+                            void act(
+                              p.id,
+                              () => completeTestPayment(p.id, 'success'),
+                              `${formatPoints(p.points)} points added.`,
+                            )
+                          }
+                        >
+                          {busy ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+                          {wallet.payment_provider === 'instant' ? 'Add points' : 'Pay (test)'}
+                        </Button>
+                      ) : p.checkout_url ? (
+                        <Button asChild size="sm" className="h-9 flex-1">
+                          <a href={p.checkout_url}>Pay now</a>
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 border-2 border-brand-ink/15"
+                        disabled={busy}
+                        onClick={() =>
+                          void act(p.id, () => cancelPointsPurchase(p.id), 'Purchase cancelled.')
+                        }
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[40rem] text-sm">
               <thead>
                 <tr className="text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -254,23 +321,9 @@ export function SellerPointsPage() {
               <tbody className="divide-y divide-border/50">
                 {purchasePages.visible.map((p) => {
                   const busy = busyId === p.id
-                  return (
-                    <tr key={p.id}>
-                      <td className="px-5 py-3.5 whitespace-nowrap">{shortDate(p.created_at)}</td>
-                      <td className="px-3 py-3.5 tabular-nums">
-                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
-                      </td>
-                      <td className="px-3 py-3.5 font-medium tabular-nums">
-                        {formatPoints(p.points_credited ?? p.points)}
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <StatusPill status={p.status} />
-                        {p.failure_reason ? (
-                          <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
-                        ) : null}
-                      </td>
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                        {p.status === 'pending' ? (
+                  const actions = (
+                    <>
+                      {p.status === 'pending' ? (
                           <div className="inline-flex gap-1.5">
                             {wallet?.test_payments ? (
                               <Button
@@ -306,6 +359,25 @@ export function SellerPointsPage() {
                             </Button>
                           </div>
                         ) : null}
+                    </>
+                  )
+                  return (
+                    <tr key={p.id}>
+                      <td className="px-5 py-3.5 whitespace-nowrap">{shortDate(p.created_at)}</td>
+                      <td className="px-3 py-3.5 tabular-nums">
+                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                      </td>
+                      <td className="px-3 py-3.5 font-medium tabular-nums">
+                        {formatPoints(p.points_credited ?? p.points)}
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <StatusPill status={p.status} />
+                        {p.failure_reason ? (
+                          <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        {actions}
                       </td>
                     </tr>
                   )

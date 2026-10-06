@@ -119,6 +119,57 @@ export function AdminPointsPage() {
         />
       ) : (
         <div className={cn(adminPanelClass, 'overflow-x-auto')}>
+          <ul className="divide-y divide-border/40 md:hidden">
+            {pages.visible.map((p) => (
+              <li key={p.id} className="space-y-3 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-extrabold">{p.seller_name ?? 'Seller'}</p>
+                    <p className="truncate text-xs text-muted-foreground">{p.seller_email}</p>
+                  </div>
+                  <StatusPill tone={statusTone[p.status]}>{p.status}</StatusPill>
+                </div>
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="font-poster text-xl tabular-nums">
+                      {(p.points_credited ?? p.points).toLocaleString()}
+                      <span className="ml-1 font-sans text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                        points
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatDate(p.created_at)}</p>
+                  </div>
+                  <div className="text-right text-sm font-bold tabular-nums">
+                    {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                    {p.paid_amount_cents != null && p.paid_amount_cents !== p.amount_cents ? (
+                      <p className="text-xs font-normal text-muted-foreground">
+                        asked {formatCents(p.amount_cents, p.currency)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                {p.confirmed_by ? (
+                  <p className="text-xs text-muted-foreground">Confirmed by {p.confirmed_by}</p>
+                ) : null}
+                {p.failure_reason ? (
+                  <p className="text-xs text-muted-foreground">{p.failure_reason}</p>
+                ) : null}
+                {canAct && p.status === 'pending' ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-9 flex-1" onClick={() => setConfirming(p)}>
+                      <CheckCircle2 className="size-3.5" />
+                      Confirm paid
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-9 flex-1" onClick={() => setFailing(p)}>
+                      <XCircle className="size-3.5" />
+                      Fail
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
           <table className="w-full min-w-[48rem] text-sm">
             <thead>
               <tr className="text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -181,6 +232,7 @@ export function AdminPointsPage() {
               ))}
             </tbody>
           </table>
+          </div>
           <div className="px-4 pb-4">
             <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Purchase pages" />
           </div>
