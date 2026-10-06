@@ -754,7 +754,7 @@ export function CompetitionForm({
           >
             {game ? <GameBadge slug={game.slug} className="size-12 bg-white/20 shadow-none" /> : null}
             <div className="min-w-0">
-              <p className="font-display text-xl leading-tight tracking-tight">
+              <p className="font-poster text-xl leading-tight tracking-tight">
                 {form.title.trim() || 'Untitled competition'}
               </p>
               <p className="text-sm text-white/85">

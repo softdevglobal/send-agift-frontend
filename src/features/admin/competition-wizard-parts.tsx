@@ -328,7 +328,7 @@ export function PrizePreview({
       <p className="text-[11px] font-semibold tracking-[0.14em] text-white/80 uppercase">
         Prize preview
       </p>
-      <p className="mt-1 font-display text-3xl tracking-tight">{amount}</p>
+      <p className="mt-1 font-poster text-3xl">{amount}</p>
       <p className="mt-1 max-w-[80%] text-sm text-white/90">
         {description.trim() || 'Describe what the winner gets'}
       </p>

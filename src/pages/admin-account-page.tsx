@@ -94,14 +94,6 @@ export function AdminAccountPage() {
                   'relative overflow-hidden px-6 py-7 sm:px-8',
                 )}
               >
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.92_0.04_125/0.45)]"
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute -bottom-20 left-10 size-48 rounded-full bg-[oklch(0.93_0.04_80/0.35)]"
-                />
                 <div className="relative flex flex-wrap items-center gap-4">
                   {imageUrl ? (
                     <img
@@ -110,12 +102,12 @@ export function AdminAccountPage() {
                       className="size-14 shrink-0 rounded-full object-cover ring-4 ring-background"
                     />
                   ) : (
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] ring-4 ring-background">
+                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground ring-4 ring-background">
                       {adminInitials(admin)}
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <h1 className="font-display text-2xl tracking-tight">
+                    <h1 className="font-poster text-2xl">
                       {adminDisplayName(admin)}
                     </h1>
                     <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
@@ -173,7 +165,7 @@ export function AdminAccountPage() {
                 className={cn(adminPanelClass, 'space-y-4 p-6 sm:p-8')}
               >
                 <div className="space-y-1">
-                  <h2 className="font-display text-xl tracking-tight">Profile</h2>
+                  <h2 className="font-poster text-xl">Profile</h2>
                   <p className="text-sm text-muted-foreground">
                     Update your display name and avatar.
                   </p>

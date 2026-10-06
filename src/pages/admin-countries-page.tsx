@@ -285,7 +285,7 @@ export function AdminCountriesPage() {
                   key={country.id}
                   className={cn(
                     adminPanelClass,
-                    'group flex flex-col gap-3 p-4 transition-shadow hover:shadow-[0_14px_44px_rgba(40,50,30,0.1)]',
+                    'group flex flex-col gap-3 p-4 transition-shadow hover:',
                   )}
                 >
                   <button
@@ -424,14 +424,6 @@ export function AdminCountriesPage() {
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
           <div className="relative overflow-hidden bg-cream px-6 pt-6 pb-5">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-20 -right-14 size-48 rounded-full bg-[oklch(0.92_0.04_125/0.6)]"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-10 -left-16 size-40 rounded-full bg-[oklch(0.93_0.04_80/0.5)]"
-            />
 
             <DialogHeader className="relative">
               <div className="mb-1 flex items-center gap-2">
@@ -597,7 +589,7 @@ export function AdminCountriesPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-6 text-primary-foreground shadow-[0_12px_32px_rgba(40,55,25,0.18)]">
+                  <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-6 text-primary-foreground">
                     <div
                       aria-hidden
                       className="pointer-events-none absolute -top-10 -right-6 size-32 rounded-full bg-white/10"
@@ -611,7 +603,7 @@ export function AdminCountriesPage() {
                         {flagEmoji(form.iso_code)}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-display text-2xl tracking-tight">
+                        <p className="truncate font-poster text-2xl">
                           {form.name.trim() || 'Unnamed market'}
                         </p>
                         <p className="text-sm text-primary-foreground/75">
@@ -702,8 +694,8 @@ export function AdminCountriesPage() {
                 />
                 <SheetHeader className="relative">
                   <div className="flex items-center gap-4">
-                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/25">
-                      <span className="font-display text-2xl tracking-tight">
+                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+                      <span className="font-poster text-2xl">
                         {viewCountry.iso_code}
                       </span>
                     </div>

@@ -182,7 +182,7 @@ export function AdminGameDetailPage() {
       <section className="mt-10">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 font-display text-xl tracking-tight">
+            <h2 className="flex items-center gap-2 font-poster text-xl">
               <ShieldAlert className="size-5 text-amber-600" />
               Score review
             </h2>

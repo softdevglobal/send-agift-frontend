@@ -5,6 +5,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { getSellerMe, type SellerDetails } from '@/api/sellers'
 import { BrandLogo } from '@/components/common/brand-logo'
 import { Sparkle } from '@/components/common/storefront-decor'
+import { PortalTopBar } from '@/components/common/portal-top-bar'
 import { useStorefrontTheme } from '@/components/common/use-storefront-theme'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +20,6 @@ import {
 import { useAuth } from '@/features/auth/auth-context'
 import { InboxProvider, useSharedInbox } from '@/features/messaging'
 import { sellerNavGroups } from '@/features/seller/seller-nav'
-import { SellerTopBar } from '@/features/seller/seller-top-bar'
 import {
   sellerDisplayName,
   sellerInitials,
@@ -235,7 +235,11 @@ function SellerShellLayout() {
       </Dialog>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <SellerTopBar
+        <PortalTopBar
+          pages={sellerNavGroups.flatMap((group) => group.items)}
+          portalLabel="Seller portal"
+          inboxTo="/seller/inbox"
+          action={{ to: '/seller/products', label: 'Add gift' }}
           onOpenMenu={() => setMenuOpen(true)}
           statusLabel={statusLabel}
           unreadMessages={unreadTotal}

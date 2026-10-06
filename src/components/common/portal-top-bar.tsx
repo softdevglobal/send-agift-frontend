@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { CalendarDays, CornerDownLeft, Menu, MessageSquare, Plus, Search } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
-import { sellerNavGroups, type SellerNavItem } from '@/features/seller/seller-nav'
 import { cn } from '@/lib/utils'
 
-const allItems: SellerNavItem[] = sellerNavGroups.flatMap((group) => group.items)
+export type PortalPage = {
+  to: string
+  label: string
+  icon: LucideIcon
+  end?: boolean
+}
 
 /** The nav entry for the page you are on: the longest path that matches. */
-function currentItem(pathname: string) {
+function currentItem(allItems: PortalPage[], pathname: string) {
   return (
     [...allItems]
       .sort((a, b) => b.to.length - a.to.length)
@@ -26,15 +31,24 @@ const today = new Intl.DateTimeFormat(undefined, {
 })
 
 /**
- * The bar across the top of every seller page: where you are, a jump-to box
- * that finds any page of the portal (press /), today's date, the inbox, and
- * the one action sellers take most.
+ * The bar across the top of every seller and admin page: where you are, a
+ * jump-to box that finds any page of the portal (press /), today's date, the
+ * inbox, and the one action people take most.
  */
-export function SellerTopBar({
+export function PortalTopBar({
+  pages: allItems,
+  portalLabel,
+  inboxTo,
+  action,
   onOpenMenu,
   statusLabel,
   unreadMessages,
 }: {
+  /** Every page the person can open, in menu order. */
+  pages: PortalPage[]
+  portalLabel: string
+  inboxTo: string
+  action?: { to: string; label: string }
   onOpenMenu: () => void
   statusLabel: string | null
   unreadMessages: number
@@ -46,11 +60,11 @@ export function SellerTopBar({
   const [open, setOpen] = useState(false)
   const [highlight, setHighlight] = useState(0)
 
-  const here = currentItem(location.pathname)
+  const here = currentItem(allItems, location.pathname)
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase()
     return needle ? allItems.filter((item) => item.label.toLowerCase().includes(needle)) : allItems
-  }, [query])
+  }, [allItems, query])
 
   // "/" anywhere outside a field focuses the jump box.
   useEffect(() => {
@@ -65,7 +79,7 @@ export function SellerTopBar({
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  function go(item: SellerNavItem | undefined) {
+  function go(item: PortalPage | undefined) {
     if (!item) return
     navigate(item.to)
     setQuery('')
@@ -111,7 +125,7 @@ export function SellerTopBar({
           </span>
           <div className="min-w-0 leading-none">
             <p className="text-[9px] font-bold tracking-[0.18em] text-muted-foreground uppercase">
-              Seller portal
+              {portalLabel}
             </p>
             <p className="mt-1 truncate font-poster text-lg text-brand-ink dark:text-foreground">
               {here.label}
@@ -121,16 +135,16 @@ export function SellerTopBar({
 
         {/* Jump to any page. */}
         <div className="relative min-w-0 flex-1 md:mx-4 md:max-w-md">
-          <label className="sr-only" htmlFor="seller-jump">
+          <label className="sr-only" htmlFor="portal-jump">
             Jump to a page
           </label>
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-brand-ink/50" />
           <input
             ref={inputRef}
-            id="seller-jump"
+            id="portal-jump"
             role="combobox"
             aria-expanded={open}
-            aria-controls="seller-jump-list"
+            aria-controls="portal-jump-list"
             autoComplete="off"
             value={query}
             onChange={(event) => {
@@ -142,7 +156,7 @@ export function SellerTopBar({
             // Let a click on a result land before the list closes.
             onBlur={() => window.setTimeout(() => setOpen(false), 120)}
             onKeyDown={onKeyDown}
-            placeholder="Jump to orders, products, reels…"
+            placeholder="Jump to a page…"
             className="h-10 w-full rounded-lg border-2 border-brand-ink/15 bg-card pr-10 pl-9 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-brand-ink"
           />
           <kbd className="pointer-events-none absolute top-1/2 right-2.5 hidden -translate-y-1/2 rounded border border-brand-ink/20 bg-accent px-1.5 text-[11px] font-bold text-brand-ink sm:block">
@@ -151,7 +165,7 @@ export function SellerTopBar({
 
           {open && matches.length ? (
             <ul
-              id="seller-jump-list"
+              id="portal-jump-list"
               role="listbox"
               className="absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-lg border-2 border-brand-ink bg-popover p-1.5 shadow-lg"
             >
@@ -194,7 +208,7 @@ export function SellerTopBar({
             className="relative size-10 border-2 border-brand-ink/15"
           >
             <Link
-              to="/seller/inbox"
+              to={inboxTo}
               aria-label={unreadMessages ? `Inbox, ${unreadMessages} unread` : 'Inbox'}
             >
               <MessageSquare className="size-4.5" />
@@ -205,12 +219,14 @@ export function SellerTopBar({
               ) : null}
             </Link>
           </Button>
-          <Button asChild className="hidden h-10 px-4 sm:inline-flex">
-            <Link to="/seller/products">
-              <Plus className="size-4" />
-              Add gift
-            </Link>
-          </Button>
+          {action ? (
+            <Button asChild className="hidden h-10 px-4 sm:inline-flex">
+              <Link to={action.to}>
+                <Plus className="size-4" />
+                {action.label}
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </div>
     </header>

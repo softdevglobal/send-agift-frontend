@@ -74,7 +74,7 @@ export function CompetitionHero({
 
   return (
     <section
-      className="relative mb-5 overflow-hidden rounded-3xl p-6 text-white shadow-[0_20px_60px_-20px_rgba(40,20,90,0.45)] sm:p-8"
+      className="relative mb-5 overflow-hidden rounded-3xl p-6 text-white sm:p-8"
       style={{ background: gameColor(comp.game_slug) }}
     >
       <Icon aria-hidden className="pointer-events-none absolute -right-8 -bottom-10 size-64 text-white/10" />
@@ -119,7 +119,7 @@ export function CompetitionHero({
                 {comp.game_name} · Round {comp.round_no}
               </span>
             </div>
-            <h1 className="mt-1.5 font-display text-3xl leading-tight tracking-tight sm:text-4xl">{comp.title}</h1>
+            <h1 className="mt-1.5 font-poster text-3xl leading-tight tracking-tight sm:text-4xl">{comp.title}</h1>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {comp.countries.map((c) => (
                 <span
@@ -139,7 +139,7 @@ export function CompetitionHero({
             <p className="text-[11px] font-semibold tracking-[0.14em] text-white/75 uppercase">
               {comp.prize_growth_enabled && open ? 'Prize now' : 'Prize'}
             </p>
-            <p className="font-display text-3xl tracking-tight">{prize}</p>
+            <p className="font-poster text-3xl">{prize}</p>
             {comp.prize_growth_enabled ? (
               <p className="text-xs text-white/75">
                 +{prizeMoney(comp.increment_per_play_cents, comp.prize_currency)} a play · max{' '}
@@ -153,7 +153,7 @@ export function CompetitionHero({
           </div>
           <div className="rounded-2xl bg-black/15 px-5 py-3 backdrop-blur">
             <p className="text-[11px] font-semibold tracking-[0.14em] text-white/75 uppercase">{clock.label}</p>
-            <p className="font-display text-3xl tracking-tight">{clock.value}</p>
+            <p className="font-poster text-3xl">{clock.value}</p>
             <p className="text-xs text-white/75">{comp.timezone}</p>
           </div>
         </div>
@@ -223,7 +223,7 @@ function StatTile({
         <Icon className="size-4.5" />
       </span>
       <p className="mt-3 text-[11px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">{label}</p>
-      <p className="font-display text-2xl tracking-tight">{value}</p>
+      <p className="font-poster text-2xl">{value}</p>
       {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   )
@@ -311,7 +311,7 @@ export function LeaderPodium({ rows }: { rows: CompetitionLeaderRow[] }) {
               {row.country_code ? `${flagOf(row.country_code)} ` : ''}
               {row.country_name}
             </p>
-            <p className="mt-1 font-display text-xl tabular-nums">{formatScore(row.score)}</p>
+            <p className="mt-1 font-poster text-xl tabular-nums">{formatScore(row.score)}</p>
             <p className="text-[11px] text-muted-foreground tabular-nums">{formatPlayTime(row.duration_ms)}</p>
             <div className={cn('mt-2 w-full rounded-t-xl', height, medal, 'opacity-80')} />
           </div>

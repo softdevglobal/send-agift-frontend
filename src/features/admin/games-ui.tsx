@@ -24,7 +24,7 @@ export function GameBadge({ slug, className }: { slug: string; className?: strin
   return (
     <span
       className={cn(
-        'flex size-11 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_6px_16px_rgba(0,0,0,0.18)]',
+        'flex size-11 shrink-0 items-center justify-center rounded-xl text-white',
         className,
       )}
       style={{ background: gameColor(slug) }}
@@ -35,11 +35,11 @@ export function GameBadge({ slug, className }: { slug: string; className?: strin
 }
 
 const toneClass: Record<Tone, string> = {
-  neutral: 'bg-muted text-muted-foreground',
-  good: 'bg-emerald-100 text-emerald-800',
-  warn: 'bg-amber-100 text-amber-800',
-  bad: 'bg-red-100 text-red-700',
-  info: 'bg-sky-100 text-sky-800',
+  neutral: 'bg-accent text-brand-ink',
+  good: 'bg-brand-teal text-brand-ink',
+  warn: 'bg-amber-300 text-amber-950',
+  bad: 'bg-destructive text-white',
+  info: 'bg-brand-violet text-white',
 }
 
 export function StatusPill({
@@ -54,7 +54,7 @@ export function StatusPill({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold whitespace-nowrap',
+        'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] whitespace-nowrap uppercase',
         toneClass[tone],
         className,
       )}
@@ -116,7 +116,7 @@ export function Podium({ entries, slug }: { entries: AdminLeaderboardRow[]; slug
                 {row.player.name.charAt(0).toUpperCase()}
               </span>
               <p className="max-w-full truncate text-center text-sm font-medium">{row.player.name}</p>
-              <p className="font-display text-xl tracking-tight">{formatScore(row.best_score)}</p>
+              <p className="font-poster text-xl">{formatScore(row.best_score)}</p>
               <div
                 className={cn(
                   'mt-2 flex w-full items-start justify-center rounded-t-xl pt-2 text-lg font-semibold text-white',

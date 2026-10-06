@@ -202,7 +202,7 @@ function WalletSheet({
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-muted/40 px-4 py-3 ring-1 ring-border/50">
                   <p className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">{label}</p>
-                  <p className="mt-1 font-display text-xl tabular-nums">{Number(value).toLocaleString()}</p>
+                  <p className="mt-1 font-poster text-xl tabular-nums">{Number(value).toLocaleString()}</p>
                 </div>
               ))}
             </div>

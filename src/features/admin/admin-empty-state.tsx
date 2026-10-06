@@ -1,8 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { adminPanelClass } from '@/features/admin/admin-styles'
-import { cn } from '@/lib/utils'
+import { Dot, Sparkle } from '@/components/common/storefront-decor'
 
 type AdminEmptyStateProps = {
   icon: LucideIcon
@@ -21,25 +20,23 @@ export function AdminEmptyState({
   soon = false,
 }: AdminEmptyStateProps) {
   return (
-    <div
-      className={cn(
-        adminPanelClass,
-        'relative overflow-hidden px-6 py-16 text-center sm:py-20',
-      )}
-    >
+    <div className="relative overflow-hidden rounded-xl bg-accent px-6 py-16 text-center sm:py-20">
+      <Sparkle className="absolute top-8 left-[14%] size-6 text-brand-violet" />
+      <Sparkle className="absolute right-[12%] bottom-10 size-4 text-brand-teal" />
+      <Dot className="absolute top-12 right-[22%] size-2.5 bg-brand-teal" />
       {soon ? (
-        <span className="relative mb-4 inline-flex rounded-full bg-accent px-3 py-1 text-[11px] font-medium tracking-[0.12em] text-accent-foreground uppercase">
+        <span className="relative mb-4 inline-flex rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-white uppercase">
           Coming soon
         </span>
       ) : null}
-      <div className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10">
+      <div className="relative mx-auto mb-5 flex size-14 rotate-[-6deg] items-center justify-center rounded-xl bg-brand-violet text-white">
         <Icon className="size-6" />
       </div>
-      <h2 className="relative font-display text-xl tracking-tight">{title}</h2>
-      <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+      <h2 className="relative font-poster text-2xl text-brand-ink dark:text-foreground">{title}</h2>
+      <p className="relative mx-auto mt-3 max-w-md text-sm leading-relaxed text-brand-ink/70 dark:text-muted-foreground">
         {description}
       </p>
-      {action ? <div className="relative mt-6">{action}</div> : null}
+      {action ? <div className="relative mt-7">{action}</div> : null}
     </div>
   )
 }

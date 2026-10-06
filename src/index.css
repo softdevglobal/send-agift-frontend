@@ -255,9 +255,10 @@
     --button-solid-hover: var(--brand-violet);
   }
 
-  /* In the seller portal the main action buttons are violet, turning ink on
-     hover, so "Add product" and friends stand out on the ink banners. */
-  .seller-portal {
+  /* In the seller and admin portals the main action buttons are violet,
+     turning ink on hover, so they stand out on the ink page banners. */
+  .seller-portal,
+  .admin-portal {
     --button-solid: var(--brand-violet);
     --button-solid-hover: var(--brand-ink);
   }
@@ -346,10 +347,10 @@
 
   /*
    * The signed-in customer area (AccountLayout), the cart and checkout, and
-   * the seller portal are boxes all the way down:
+   * the seller and admin portals are boxes all the way down:
    * pill chips, tabs and badges become rounded boxes, soft round icon chips
    * become rounded squares, and the faint rings round cards gain a visible
-   * ink outline. Scoped here so the admin screens are untouched.
+   * ink outline. Scoped to those areas only.
    */
   .account-box [class*='rounded-full'][class*='px-']:not([data-slot='button']) {
     border-radius: 0.375rem;

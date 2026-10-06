@@ -44,7 +44,7 @@ function GameCard({ game }: { game: AdminGameSummary }) {
       to={`/admin/games/${game.slug}`}
       className={cn(
         adminPanelClass,
-        'group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(40,50,30,0.12)]',
+        'group flex flex-col overflow-hidden transition-all hover:-translate-y-0.5 hover:',
       )}
     >
       <div className="relative h-2" style={{ background: gameColor(game.slug) }} />
@@ -71,7 +71,7 @@ function GameCard({ game }: { game: AdminGameSummary }) {
                 <Crown className="size-3.5 text-amber-500" />
                 Best scorer
               </p>
-              <p className="mt-1 font-display text-3xl tracking-tight">{formatScore(game.top_score)}</p>
+              <p className="mt-1 font-poster text-3xl">{formatScore(game.top_score)}</p>
               <p className="mt-1 truncate text-sm font-medium">{top.name}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {top.kind === 'guest'
@@ -200,7 +200,7 @@ export function AdminGamesPage() {
           />
 
           <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
-            <h2 className="font-display text-xl tracking-tight">Best scorers</h2>
+            <h2 className="font-poster text-xl">Best scorers</h2>
             {lastPlayed ? (
               <p className="text-xs text-muted-foreground">Last played {formatDate(lastPlayed)}</p>
             ) : null}

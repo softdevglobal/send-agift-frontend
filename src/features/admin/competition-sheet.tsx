@@ -193,7 +193,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                     <Trophy className="size-3.5" />
                     Prize
                   </p>
-                  <p className="mt-1 font-display text-3xl tracking-tight">{prize}</p>
+                  <p className="mt-1 font-poster text-3xl">{prize}</p>
                   <p className="mt-1 text-sm text-white/90">{comp.prize_description}</p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
                     <span className="rounded-full bg-white/20 px-2.5 py-1">
