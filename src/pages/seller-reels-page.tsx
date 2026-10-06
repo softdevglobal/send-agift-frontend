@@ -4,9 +4,11 @@ import {
   EyeOff,
   Film,
   Hash,
+  Images,
   LoaderCircle,
   Package,
   Pencil,
+  Play,
   Plus,
   Send,
   Trash2,
@@ -16,6 +18,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 
 import { FormAlert } from '@/components/common/form-alert'
 import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { listShopProducts, type Product } from '@/api/products'
@@ -35,7 +38,6 @@ import {
   SellerSheetFacts,
   SellerSheetRow,
   SellerSheetSection,
-  sellerCardClass,
 } from '@/features/seller'
 import { ReelWizard } from '@/features/seller/reel-wizard'
 import { getErrorMessage } from '@/lib/api'
@@ -45,18 +47,18 @@ import { cn } from '@/lib/utils'
 const statusMeta: Record<string, { label: string; className: string; dot: string }> = {
   published: {
     label: 'Published',
-    className: 'bg-brand-teal/15 text-[color:var(--brand-teal)]',
-    dot: 'bg-[color:var(--brand-teal)]',
+    className: 'bg-brand-teal text-brand-ink',
+    dot: 'bg-brand-ink',
   },
   draft: {
     label: 'Draft',
-    className: 'bg-muted text-muted-foreground',
-    dot: 'bg-muted-foreground/40',
+    className: 'bg-white text-brand-ink',
+    dot: 'bg-brand-ink/40',
   },
   archived: {
     label: 'Archived',
-    className: 'bg-muted text-muted-foreground',
-    dot: 'bg-muted-foreground/40',
+    className: 'bg-brand-ink text-white',
+    dot: 'bg-white/50',
   },
 }
 
@@ -598,20 +600,24 @@ function ReelRow({
   return (
     <li
       className={cn(
-        sellerCardClass,
-        'group relative flex flex-col overflow-hidden rounded-xl',
-        editing && 'ring-2 ring-primary/40',
+        'group relative flex flex-col rounded-xl border-2 border-brand-ink/15 bg-card p-2 transition-colors hover:border-brand-ink',
+        editing && 'border-brand-violet',
       )}
     >
-      {/* The clip opens the preview; publish + delete float over it on hover. */}
+      {/* The clip opens the preview. */}
       <button
         type="button"
         onClick={onPreview}
         aria-label="Preview reel"
-        className="relative aspect-[9/16] max-h-64 w-full bg-brand-navy focus-visible:outline-none"
+        className="relative aspect-[9/16] max-h-72 w-full overflow-hidden rounded-lg bg-brand-ink focus-visible:outline-none"
       >
         {poster && !isVideo ? (
-          <img src={poster} alt="" className="size-full object-cover" loading="lazy" />
+          <img
+            src={poster}
+            alt=""
+            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
         ) : poster && isVideo ? (
           <video
             src={reel.media?.[0]?.cdn_url ?? undefined}
@@ -621,74 +627,57 @@ function ReelRow({
             playsInline
           />
         ) : (
-          <div className="grid size-full place-items-center text-white/40">
-            <Film className="size-7" />
+          <div className="relative grid size-full place-items-center bg-brand-violet text-white">
+            <Sparkle className="absolute top-6 left-[18%] size-5 text-brand-teal" />
+            <Sparkle className="absolute right-[18%] bottom-16 size-3.5 text-white/70" />
+            <Film className="size-8" />
           </div>
         )}
 
-        {/* Caption over a scrim, so the body below can stay to one tight line. */}
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-black/60 p-2 text-left text-[11px] leading-snug font-medium text-white">
-          <span className="line-clamp-2">{reel.caption?.trim() || 'No caption'}</span>
-        </span>
-
         <span
           className={cn(
-            'absolute top-2 left-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm',
+            'absolute top-2 left-2 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-[0.08em] uppercase',
             meta.className,
           )}
         >
-          <span className={cn('size-1.5 rounded-full', meta.dot)} />
+          <span className={cn('size-1.5 rounded-sm', meta.dot)} />
           {meta.label}
         </span>
-        {reel.view_count > 0 ? (
-          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
-            <Eye className="size-3" />
-            {reel.view_count}
+        <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-brand-ink/80 px-1.5 py-0.5 text-[10px] font-bold text-white">
+          {isVideo ? <Clapperboard className="size-3" /> : <Images className="size-3" />}
+          {isVideo ? 'Video' : `${reel.media?.length || 1} photo${(reel.media?.length ?? 1) === 1 ? '' : 's'}`}
+        </span>
+
+        {/* A big play mark, so a video reel reads as one at a glance. */}
+        {isVideo ? (
+          <span className="absolute top-1/2 left-1/2 grid size-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-lg bg-brand-violet text-white transition-transform group-hover:scale-110">
+            <Play className="size-5 fill-current" />
           </span>
         ) : null}
+
+        {/* Caption and views on a flat ink strip. */}
+        <span className="pointer-events-none absolute inset-x-1.5 bottom-1.5 rounded-md bg-brand-ink/85 p-2 text-left text-white">
+          <span className="line-clamp-2 text-[11px] leading-snug font-medium">
+            {reel.caption?.trim() || 'No caption'}
+          </span>
+          <span className="mt-1 flex items-center gap-1 text-[10px] font-bold text-brand-teal">
+            <Eye className="size-3" />
+            {reel.view_count} {reel.view_count === 1 ? 'view' : 'views'}
+          </span>
+        </span>
       </button>
 
-      <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
-        <button
-          type="button"
-          className="flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background disabled:opacity-50"
-          disabled={busy}
-          onClick={onToggleStatus}
-          aria-label={reel.status === 'published' ? 'Unpublish reel' : 'Publish reel'}
-          title={reel.status === 'published' ? 'Unpublish' : 'Publish'}
-        >
-          {reel.status === 'published' ? (
-            <EyeOff className="size-3.5" />
-          ) : (
-            <Send className="size-3.5" />
-          )}
-        </button>
-        <button
-          type="button"
-          className="flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background disabled:opacity-50"
-          disabled={busy}
-          onClick={onEdit}
-          aria-label="Edit reel"
-          title="Edit"
-        >
-          <Pencil className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className="flex size-7 items-center justify-center rounded-full bg-background/90 text-destructive shadow-sm backdrop-blur-sm transition-colors hover:bg-background disabled:opacity-50"
-          disabled={busy}
-          onClick={onDelete}
-          aria-label="Delete reel"
-        >
-          <Trash2 className="size-3.5" />
-        </button>
-      </div>
-
       {/* Tagging the gift is the point of the page, so it keeps an inline row. */}
-      <div className="p-2">
+      <div className="px-1 pt-3">
+        <label
+          htmlFor={`tag-${reel.id}`}
+          className="mb-1 flex items-center gap-1 text-[10px] font-bold tracking-[0.12em] text-brand-ink/60 uppercase dark:text-muted-foreground"
+        >
+          <Package className="size-3" />
+          Tagged gift
+        </label>
         <select
           id={`tag-${reel.id}`}
-          aria-label="Tagged gift"
           value={reel.product?.id ?? ''}
           disabled={busy}
           onChange={(event) => onRetag(event.target.value)}
@@ -701,6 +690,41 @@ function ReelRow({
             </option>
           ))}
         </select>
+      </div>
+
+      <div className="mt-2.5 flex gap-1.5 px-1 pb-1">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onToggleStatus}
+          className={cn(
+            'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md text-[11px] font-bold tracking-[0.08em] uppercase transition-colors disabled:opacity-50',
+            reel.status === 'published'
+              ? 'border-2 border-brand-ink/15 text-brand-ink hover:border-brand-ink dark:text-foreground'
+              : 'bg-brand-violet text-white hover:bg-brand-ink',
+          )}
+        >
+          {reel.status === 'published' ? <EyeOff className="size-3.5" /> : <Send className="size-3.5" />}
+          {reel.status === 'published' ? 'Unpublish' : 'Publish'}
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onEdit}
+          aria-label="Edit reel"
+          className="flex size-8 items-center justify-center rounded-md border-2 border-brand-ink/15 text-brand-ink transition-colors hover:border-brand-ink hover:bg-brand-ink hover:text-white disabled:opacity-50 dark:text-foreground"
+        >
+          <Pencil className="size-3.5" />
+        </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onDelete}
+          aria-label="Delete reel"
+          className="flex size-8 items-center justify-center rounded-md border-2 border-brand-ink/15 text-destructive transition-colors hover:border-destructive hover:bg-destructive hover:text-white disabled:opacity-50"
+        >
+          <Trash2 className="size-3.5" />
+        </button>
       </div>
     </li>
   )

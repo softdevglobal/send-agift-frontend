@@ -155,7 +155,7 @@ function SellerShellLayout() {
         )}
       >
 
-        <Sparkle className="absolute top-6 right-6 size-5 text-brand-teal" />
+        <Sparkle className="absolute top-6 right-6 hidden size-5 text-brand-teal lg:block" />
         <div className="relative mb-7 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">
             <span className="inline-flex rounded-lg bg-white p-1">
@@ -169,7 +169,7 @@ function SellerShellLayout() {
             type="button"
             variant="ghost"
             size="icon"
-            className="shrink-0 text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+            className="size-10 shrink-0 bg-white text-brand-ink hover:bg-brand-teal hover:text-brand-ink lg:hidden"
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
           >

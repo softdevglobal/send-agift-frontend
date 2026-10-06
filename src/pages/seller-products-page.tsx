@@ -436,8 +436,8 @@ export function SellerProductsPage() {
                             <Coins className="size-3" />+{product.reward_points}
                           </span>
                         ) : null}
-                        {/* The price as a tag stuck to the corner of the photo. */}
-                        <span className="absolute -right-1 -bottom-1 rotate-[-4deg] rounded-md bg-brand-ink px-2.5 py-1 font-poster text-base text-white">
+                        {/* The price as a tag in the corner of the photo. */}
+                        <span className="absolute right-2 bottom-2 rounded-md bg-brand-ink px-2.5 py-1 font-poster text-base text-white">
                           {formatPriceAmount(product.price_amount, product.currency)}
                         </span>
                       </div>
