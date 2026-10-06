@@ -101,7 +101,7 @@ export function MessageShopButton({
         disabled={empty}
         title={empty ? 'This shop has no gifts to ask about yet' : undefined}
         onClick={handleClick}
-        className={cn('relative h-10 rounded-full px-4', className)}
+        className={cn('relative h-10 rounded-md px-4', className)}
       >
         <MessageSquare className="size-4" />
         {label}

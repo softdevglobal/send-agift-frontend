@@ -154,10 +154,6 @@ function AdminShellLayout() {
           menuOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 -left-10 size-56 rounded-full bg-[oklch(0.72_0.09_125/0.14)] blur-2xl"
-        />
 
         <div className="relative mb-3 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">

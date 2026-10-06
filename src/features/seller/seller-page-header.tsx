@@ -2,7 +2,6 @@ import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { type SellerTone } from '@/features/seller/seller-styles'
-import { cn } from '@/lib/utils'
 
 type SellerPageHeaderProps = {
   title: string
@@ -16,14 +15,6 @@ type SellerPageHeaderProps = {
    * a tab bar. Sits under a hairline, inside the same panel.
    */
   children?: ReactNode
-}
-
-/** A tone-coloured glow behind each dark header, so the pages still read apart. */
-const toneGlow: Record<SellerTone, string> = {
-  violet: 'bg-[var(--brand-violet)]/40',
-  teal: 'bg-[var(--brand-teal)]/35',
-  amber: 'bg-[oklch(0.8_0.14_75)]/35',
-  navy: 'bg-[oklch(0.55_0.16_265)]/40',
 }
 
 /**
@@ -40,22 +31,10 @@ export function SellerPageHeader({
   description,
   action,
   icon: Icon,
-  tone = 'violet',
   children,
 }: SellerPageHeaderProps) {
   return (
-    <div className="relative mb-6 overflow-hidden rounded-2xl bg-brand-ink text-white shadow-[0_16px_44px_rgba(20,20,55,0.28)] ring-1 ring-white/10">
-      <div
-        aria-hidden
-        className={cn(
-          'pointer-events-none absolute -top-20 -right-16 size-64 rounded-full blur-3xl',
-          toneGlow[tone],
-        )}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 left-8 size-48 rounded-full bg-white/5 blur-2xl"
-      />
+    <div className="relative mb-6 overflow-hidden rounded-2xl bg-brand-ink text-white ">
 
       <div className="relative flex flex-wrap items-start justify-between gap-4 px-5 py-5 sm:px-7 sm:py-6">
         <div className="flex items-start gap-4">

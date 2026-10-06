@@ -165,14 +165,6 @@ export function CustomerOrderDetailPage() {
   return (
     <div>
       <section className="relative mb-6 overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-6 text-white ring-1 ring-white/10 sm:px-8 sm:py-7">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[var(--brand-violet)]/45 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 left-10 size-56 rounded-full bg-[var(--brand-teal)]/25 blur-3xl"
-        />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
             <Link

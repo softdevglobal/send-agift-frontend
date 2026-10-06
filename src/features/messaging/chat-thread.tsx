@@ -256,18 +256,6 @@ export function ChatThread({
             : 'border-b border-border/60 bg-card',
         )}
       >
-        {onDark ? (
-          <>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-16 -right-12 size-44 rounded-full bg-brand-violet/45 blur-3xl"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -bottom-20 left-10 size-36 rounded-full bg-brand-teal/20 blur-3xl"
-            />
-          </>
-        ) : null}
         <div className="relative flex items-center gap-3">
           {onBack ? (
             <Button
@@ -304,7 +292,7 @@ export function ChatThread({
               <>
                 <span
                   className={cn(
-                    'hidden rounded-full px-2 py-0.5 text-[11px] font-medium sm:inline',
+                    'hidden rounded-md px-2 py-0.5 text-[11px] font-medium sm:inline',
                     supportCase.priority === 'urgent' || supportCase.priority === 'high'
                       ? 'bg-destructive/10 text-destructive'
                       : 'bg-muted text-muted-foreground',
@@ -319,7 +307,7 @@ export function ChatThread({
             ) : status === 'closed' ? (
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                  'rounded-md px-2 py-0.5 text-[11px] font-medium',
                   onDark ? 'bg-white/12 text-white/80' : 'bg-muted text-muted-foreground',
                 )}
               >
@@ -435,7 +423,7 @@ export function ChatThread({
             <Button
               type="button"
               variant="outline"
-              className="h-9 rounded-full px-4"
+              className="h-9 rounded-md px-4"
               disabled={reopening}
               onClick={handleReopen}
             >

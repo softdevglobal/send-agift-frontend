@@ -78,7 +78,6 @@ export function CompetitionHero({
       style={{ background: gameColor(comp.game_slug) }}
     >
       <Icon aria-hidden className="pointer-events-none absolute -right-8 -bottom-10 size-64 text-white/10" />
-      <div aria-hidden className="pointer-events-none absolute -top-24 -left-16 size-72 rounded-full bg-white/10 blur-2xl" />
 
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <Link

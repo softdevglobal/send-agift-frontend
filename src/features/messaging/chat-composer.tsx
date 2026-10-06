@@ -163,7 +163,7 @@ export function ChatComposer({
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-t border-border/50 bg-card/95 px-3 pt-2.5 pb-3 backdrop-blur"
+      className="border-t-2 border-brand-ink/10 bg-card px-3 pt-2.5 pb-3"
     >
       {error ? (
         <p role="alert" className="mb-2 rounded-xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
@@ -208,7 +208,7 @@ export function ChatComposer({
         </ul>
       ) : null}
 
-      <div className="flex items-end gap-1 rounded-[1.4rem] bg-surface p-1.5 shadow-[inset_0_1px_2px_rgba(20,20,55,0.04)] ring-1 ring-border/70 transition-shadow focus-within:ring-2 focus-within:ring-primary/35">
+      <div className="flex items-end gap-1 rounded-lg border-2 border-brand-ink/20 bg-surface p-1.5 transition-colors focus-within:border-brand-ink">
         <input
           ref={fileRef}
           type="file"
@@ -227,7 +227,7 @@ export function ChatComposer({
           title="Attach a photo or PDF"
           disabled={sending || pending.length >= MAX_CHAT_ATTACHMENTS}
           onClick={() => fileRef.current?.click()}
-          className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-40"
+          className="flex size-9 shrink-0 items-center justify-center rounded-md text-brand-ink transition-colors hover:bg-accent disabled:opacity-40"
         >
           <Paperclip className="size-4.5" />
         </button>
@@ -249,9 +249,9 @@ export function ChatComposer({
           disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-full text-white transition-all duration-200',
+            'flex size-9 shrink-0 items-center justify-center rounded-md text-white transition-colors duration-200',
             canSend
-              ? 'bg-primary shadow-[0_6px_16px_rgba(109,40,217,0.35)] hover:scale-105 active:scale-95'
+              ? 'bg-brand-ink hover:bg-brand-violet'
               : 'bg-muted-foreground/25',
           )}
         >

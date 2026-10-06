@@ -12,12 +12,12 @@ const TYPE_META: Record<ConversationType, { label: string; icon: LucideIcon; cla
   product_inquiry: {
     label: 'Gift question',
     icon: Gift,
-    className: 'bg-accent text-accent-foreground',
+    className: 'bg-brand-violet text-white',
   },
   order: {
     label: 'Order',
     icon: Package,
-    className: 'bg-brand-teal/12 text-[oklch(0.45_0.09_195)]',
+    className: 'bg-brand-teal text-brand-ink',
   },
   support: {
     label: 'Support',
@@ -131,27 +131,25 @@ function ConversationCard({
         type="button"
         onClick={() => onSelect(conversation)}
         className={cn(
-          'group relative flex w-full items-center gap-3.5 overflow-hidden rounded-2xl bg-card p-3 pl-3.5 text-left ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(20,20,55,0.10)]',
-          unread
-            ? 'shadow-[0_10px_28px_rgba(109,40,217,0.12)] ring-primary/30'
-            : 'shadow-sm ring-border/60',
+          'group relative flex w-full items-center gap-3.5 overflow-hidden rounded-lg border-2 bg-card p-3 pl-3.5 text-left transition-colors duration-200 hover:border-brand-ink',
+          unread ? 'border-brand-violet bg-accent/40' : 'border-brand-ink/15',
         )}
       >
         {unread ? (
-          <span aria-hidden className="absolute inset-y-3 left-0 w-1 rounded-r-full bg-primary" />
+          <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-brand-violet" />
         ) : null}
 
         <span className="relative shrink-0">
           {isSupport ? (
-            <ChatAvatar kind="support" className="size-14 rounded-2xl" />
+            <ChatAvatar kind="support" className="size-14 rounded-lg" />
           ) : giftImage ? (
             <img
               src={giftImage}
               alt=""
-              className="size-14 rounded-2xl object-cover ring-1 ring-border/60 transition-transform duration-300 group-hover:scale-[1.03]"
+              className="size-14 rounded-lg object-cover ring-1 ring-brand-ink/20"
             />
           ) : (
-            <span className="flex size-14 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+            <span className="flex size-14 items-center justify-center rounded-lg bg-brand-violet text-white">
               <Gift className="size-6" />
             </span>
           )}
@@ -190,7 +188,7 @@ function ConversationCard({
           <span className="mt-2 flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold',
                 type.className,
               )}
             >

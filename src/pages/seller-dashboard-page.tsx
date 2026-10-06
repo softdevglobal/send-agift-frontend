@@ -155,14 +155,6 @@ export function SellerDashboardPage() {
         the seller is building, not the admin tooling around it.
       */}
       <section className="relative overflow-hidden rounded-2xl bg-brand-navy px-5 py-7 text-white shadow-[0_18px_50px_rgba(30,25,70,0.28)] sm:px-8 sm:py-9">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[color:var(--brand-teal)]/20 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 left-4 size-56 rounded-full bg-white/10 blur-2xl"
-        />
         <div className="relative flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
             {profile.image_url ? (

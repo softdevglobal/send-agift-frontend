@@ -259,7 +259,7 @@ export function CustomerMessagesProvider({ children }: { children: ReactNode }) 
           <SheetContent
             showCloseButton={false}
             aria-describedby={undefined}
-            className="gap-0 overflow-hidden p-0 sm:max-w-lg"
+            className="account-box gap-0 overflow-hidden border-l-2 border-brand-ink p-0 shadow-none sm:max-w-lg"
           >
             <SheetTitle className="sr-only">Messages</SheetTitle>
             {view.kind === 'loading' ? (
@@ -382,21 +382,13 @@ function PanelList({
   return (
     <>
       <header className="relative overflow-hidden bg-brand-ink px-5 pt-5 pb-4 text-white">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-12 size-56 rounded-full bg-brand-violet/45 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 -left-8 size-44 rounded-full bg-brand-teal/25 blur-3xl"
-        />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-white/12 shadow-sm ring-1 ring-white/15 backdrop-blur-sm">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-brand-teal text-brand-ink">
               <MessagesSquare className="size-5" />
             </span>
             <div>
-              <p className="font-display text-2xl tracking-tight">Messages</p>
+              <p className="font-poster text-2xl">Messages</p>
               <p className="text-xs text-white/60">
                 {unreadTotal > 0
                   ? `${unreadTotal} unread ${unreadTotal === 1 ? 'message' : 'messages'}`
@@ -435,7 +427,7 @@ function PanelList({
                   aria-selected={active}
                   onClick={() => onFilterChange(tab.id)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors',
                     active ? 'bg-white text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
                   )}
                 >
@@ -525,7 +517,7 @@ function MessagesWelcome() {
       </ol>
 
       <SheetClose asChild>
-        <Button asChild className="mt-7 h-11 rounded-full px-6">
+        <Button asChild className="mt-7 h-11 rounded-md px-6">
           <Link to="/products">
             Browse gifts
             <ArrowRight className="size-4" />
@@ -540,7 +532,6 @@ function MessagesWelcome() {
 function ChatScene() {
   return (
     <div aria-hidden className="relative h-36 w-52">
-      <div className="absolute inset-4 rounded-full bg-brand-violet/15 blur-2xl" />
 
       <div className="absolute top-3 left-0 w-36 rounded-2xl rounded-bl-md bg-card px-3 py-2.5 shadow-[0_12px_30px_rgba(20,20,55,0.12)] ring-1 ring-border/60 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-3 motion-safe:duration-700">
         <div className="flex items-center gap-2">
@@ -640,13 +631,13 @@ function NewMessageNotice({
           <p className="mt-0.5 truncate text-sm font-semibold">{label.title}</p>
           <p className="truncate text-xs text-muted-foreground">{label.subtitle}</p>
           <div className="mt-3 flex gap-2">
-            <Button type="button" className="h-8 rounded-full px-3.5 text-xs" onClick={onOpen}>
+            <Button type="button" className="h-8 rounded-md px-3.5 text-xs" onClick={onOpen}>
               View message
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="h-8 rounded-full px-3 text-xs"
+              className="h-8 rounded-md px-3 text-xs"
               onClick={onDismiss}
             >
               Later
