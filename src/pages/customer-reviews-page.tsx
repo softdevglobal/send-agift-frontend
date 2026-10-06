@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
@@ -57,6 +58,7 @@ export function CustomerReviewsPage() {
   const [deleting, setDeleting] = useState<ProductReview | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const reviewPages = usePagedList(reviews, TABLE_PAGE_SIZE)
 
   // Review rows carry product ids, not names. The catalog fills in the rest.
   useEffect(() => {
@@ -109,7 +111,7 @@ export function CustomerReviewsPage() {
         />
       ) : (
         <div className="space-y-3">
-          {reviews.map((review) => (
+          {reviewPages.visible.map((review) => (
             <ReviewCard
               key={review.id}
               review={review}
@@ -137,6 +139,12 @@ export function CustomerReviewsPage() {
               }
             />
           ))}
+          <PageNav
+            page={reviewPages.page}
+            pageCount={reviewPages.pageCount}
+            onPage={reviewPages.setPage}
+            label="Review pages"
+          />
         </div>
       )}
 

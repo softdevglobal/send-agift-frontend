@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { FormAlert } from '@/components/common/form-alert'
+import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { listShopProducts, type Product } from '@/api/products'
@@ -84,6 +85,7 @@ export function SellerReelsPage() {
   const [editingReelId, setEditingReelId] = useState<string | null>(null)
 
   const selectedShopId = searchParams.get('shop') ?? shops[0]?.id ?? ''
+  const reelPages = usePagedList(reels, GRID_PAGE_SIZE, selectedShopId)
 
   useEffect(() => {
     getSellerMe()
@@ -346,8 +348,9 @@ export function SellerReelsPage() {
             }
           />
         ) : (
+          <>
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {reels.map((reel) => (
+            {reelPages.visible.map((reel) => (
               <ReelRow
                 key={reel.id}
                 reel={reel}
@@ -362,6 +365,13 @@ export function SellerReelsPage() {
               />
             ))}
           </ul>
+          <PageNav
+            page={reelPages.page}
+            pageCount={reelPages.pageCount}
+            onPage={reelPages.setPage}
+            label="Reel pages"
+          />
+          </>
         )}
       </div>
 

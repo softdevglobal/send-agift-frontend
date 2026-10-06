@@ -5,6 +5,7 @@ import { Gift, Quote, Star } from 'lucide-react'
 import { listReceivedGifts } from '@/api/orders'
 import type { ReceivedGift } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { useMyReviews } from '@/features/reviews/my-reviews'
@@ -20,6 +21,7 @@ export function CustomerReceivedGiftsPage() {
   const [gifts, setGifts] = useState<ReceivedGift[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { byOrderItem, apply } = useMyReviews()
+  const pages = usePagedList(gifts ?? [], TABLE_PAGE_SIZE)
 
   useEffect(() => {
     listReceivedGifts()
@@ -50,7 +52,7 @@ export function CustomerReceivedGiftsPage() {
         />
       ) : (
         <div className="space-y-5">
-          {gifts?.map((gift) => (
+          {pages.visible.map((gift) => (
             <article key={gift.order_id} className={cn(customerPanelClass, 'overflow-hidden')}>
               <header className="relative bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400 px-5 py-5 text-white sm:px-6">
                 <Gift aria-hidden className="absolute -top-3 -right-3 size-24 rotate-12 opacity-15" />
@@ -126,6 +128,7 @@ export function CustomerReceivedGiftsPage() {
               </div>
             </article>
           ))}
+          <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Gift pages" />
         </div>
       )}
     </>

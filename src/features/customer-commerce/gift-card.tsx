@@ -93,6 +93,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
             imageUrl={sellerImageUrl}
             rating={sellerStats?.average ?? 0}
             reviewCount={sellerStats?.count ?? 0}
+            verificationStatus={product.sellerVerificationStatus}
             size="md"
           />
         ) : null}

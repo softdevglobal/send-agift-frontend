@@ -3,6 +3,7 @@ import { api } from '@/lib/api'
 export type ShopGiftAvailability = {
   shop_id: string
   shop_name: string
+  seller_verification_status?: string
   distance_km?: number
   max_km: number
   price_amount: number

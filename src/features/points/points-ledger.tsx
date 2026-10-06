@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 
 import { POINTS_CATEGORY_LABEL, type PointsCategory, type PointsEntry } from '@/api/points'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { formatPoints } from '@/features/points/format'
 import { cn } from '@/lib/utils'
 
@@ -57,9 +58,11 @@ type PointsLedgerProps = {
  * seller portal, the customer account and the admin tools.
  */
 export function PointsLedger({ entries, className }: PointsLedgerProps) {
+  const pages = usePagedList(entries, TABLE_PAGE_SIZE)
   return (
+    <div>
     <ul className={cn('divide-y divide-border/50', className)}>
-      {entries.map((entry) => {
+      {pages.visible.map((entry) => {
         const Icon = categoryIcon[entry.category] ?? Coins
         const credit = entry.direction === 'credit'
         return (
@@ -96,5 +99,13 @@ export function PointsLedger({ entries, className }: PointsLedgerProps) {
         )
       })}
     </ul>
+    <PageNav
+      page={pages.page}
+      pageCount={pages.pageCount}
+      onPage={pages.setPage}
+      label="Points pages"
+      scroll={false}
+    />
+    </div>
   )
 }

@@ -59,6 +59,7 @@ import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -139,6 +140,9 @@ export function AdminCompetitionDetailPage() {
   const [settleOpen, setSettleOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
   const superadmin = isSuperAdmin()
+  const queuePages = usePagedList(queue, TABLE_PAGE_SIZE, id)
+  const winnerPages = usePagedList(winners, TABLE_PAGE_SIZE, id)
+  const boardPages = usePagedList(board.slice(3), TABLE_PAGE_SIZE, id)
 
   const load = useCallback(async () => {
     const c = await getAdminCompetition(id)
@@ -480,7 +484,7 @@ export function AdminCompetitionDetailPage() {
         {queue.length > 0 ? (
           <Panel title={`Review queue (${queue.length})`} icon={<ShieldAlert className="size-5 text-amber-600" />}>
             <div className="space-y-2">
-              {queue.map((s) => (
+              {queuePages.visible.map((s) => (
                 <div key={s.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-muted/40 px-4 py-3">
                   <div className="min-w-0 flex-1 basis-48">
                     <p className="truncate font-medium">{s.display_name || s.customer_id}</p>
@@ -516,13 +520,20 @@ export function AdminCompetitionDetailPage() {
                 </div>
               ))}
             </div>
+            <PageNav
+              page={queuePages.page}
+              pageCount={queuePages.pageCount}
+              onPage={queuePages.setPage}
+              label="Review queue pages"
+              scroll={false}
+            />
           </Panel>
         ) : null}
 
         {winners.length > 0 ? (
           <Panel title="Winners" icon={<Crown className="size-5 text-amber-500" />}>
             <div className="space-y-2">
-              {winners.map((w) => {
+              {winnerPages.visible.map((w) => {
                 const claim = w.claim
                 const expired = claim?.status === 'pending' && new Date(claim.claim_deadline_at) < new Date()
                 return (
@@ -625,6 +636,13 @@ export function AdminCompetitionDetailPage() {
                 )
               })}
             </div>
+            <PageNav
+              page={winnerPages.page}
+              pageCount={winnerPages.pageCount}
+              onPage={winnerPages.setPage}
+              label="Winner pages"
+              scroll={false}
+            />
           </Panel>
         ) : null}
 
@@ -659,7 +677,7 @@ export function AdminCompetitionDetailPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {board.slice(3).map((row) => (
+                  {boardPages.visible.map((row) => (
                     <tr key={`${row.rank}-${row.customer_id}`} className="border-b border-border/30 last:border-0">
                       <td className="py-2.5 pr-4 font-semibold">{row.rank}</td>
                       <td className="py-2.5 pr-4">
@@ -682,6 +700,13 @@ export function AdminCompetitionDetailPage() {
               </table>
             </div>
             ) : null}
+            <PageNav
+              page={boardPages.page}
+              pageCount={boardPages.pageCount}
+              onPage={boardPages.setPage}
+              label="Leaderboard pages"
+              scroll={false}
+            />
             </>
           )}
         </Panel>

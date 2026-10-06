@@ -12,6 +12,7 @@ import {
   type PointsRate,
 } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -59,6 +60,7 @@ export function AdminPointsPage() {
   const [confirming, setConfirming] = useState<PointsPurchase | null>(null)
   const [failing, setFailing] = useState<PointsPurchase | null>(null)
   const canAct = isSuperAdmin()
+  const pages = usePagedList(items, TABLE_PAGE_SIZE, tab)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -129,7 +131,7 @@ export function AdminPointsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
-              {items.map((p) => (
+              {pages.visible.map((p) => (
                 <tr key={p.id}>
                   <td className="px-5 py-3">
                     <p className="font-medium">{p.seller_name ?? 'Seller'}</p>
@@ -179,6 +181,9 @@ export function AdminPointsPage() {
               ))}
             </tbody>
           </table>
+          <div className="px-4 pb-4">
+            <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Purchase pages" />
+          </div>
         </div>
       )}
 

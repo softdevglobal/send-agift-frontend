@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Coins, LoaderCircle, Search, Users } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import {
   POINTS_ENTRY_LABEL,
@@ -10,6 +11,7 @@ import {
   type PointsWallet,
 } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +31,7 @@ export function AdminCustomersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<CustomerPointsSummary | null>(null)
+  const customers = usePagedList(results, TABLE_PAGE_SIZE, query)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -56,7 +59,7 @@ export function AdminCustomersPage() {
     <>
       <AdminPageHeader
         title="Customers"
-        description="Find a customer to see their points and history. Every grant or deduction is a ledger entry with its reason."
+        description="Open a customer to see their account, addresses, recipients, saved gifts, and orders. Points stay on this list."
       />
 
       <EarningRulesPanel editable={isSuperAdmin()} />
@@ -80,26 +83,33 @@ export function AdminCustomersPage() {
         <AdminEmptyState icon={Users} title="No customers found" description="Try another email or name." />
       ) : (
         <div className={cn(adminPanelClass, 'divide-y divide-border/40')}>
-          {results.map((c) => (
-            <button
-              key={c.customer_id}
-              type="button"
-              onClick={() => setSelected(c)}
-              className="flex w-full items-center gap-4 px-5 py-3 text-left hover:bg-muted/40"
-            >
-              <div className="min-w-0 flex-1">
+          {customers.visible.map((c) => (
+            <div key={c.customer_id} className="flex items-center gap-4 px-5 py-3">
+              <Link to={`/admin/customers/${c.customer_id}`} className="min-w-0 flex-1 hover:text-primary">
                 <p className="truncate font-medium">{c.display_name || c.email}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {c.email} · {c.country_name}
                 </p>
-              </div>
+              </Link>
               {c.status !== 'active' ? <StatusPill tone="warn">{c.status}</StatusPill> : null}
-              <p className="flex items-center gap-1.5 font-semibold tabular-nums">
+              <button
+                type="button"
+                onClick={() => setSelected(c)}
+                className="flex items-center gap-1.5 font-semibold tabular-nums hover:text-primary"
+              >
                 <Coins className="size-4 text-amber-500" />
                 {c.balance.toLocaleString()}
-              </p>
-            </button>
+              </button>
+            </div>
           ))}
+          <div className="px-4 pb-4">
+            <PageNav
+              page={customers.page}
+              pageCount={customers.pageCount}
+              onPage={customers.setPage}
+              label="Customer pages"
+            />
+          </div>
         </div>
       )}
 

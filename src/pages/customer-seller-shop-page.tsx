@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, MapPin, Store } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
+import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   CustomerEmptyState,
@@ -12,6 +13,7 @@ import {
 } from '@/features/customer-commerce'
 import { publicSellerInitials, subscribePublicSellers, type PublicSeller, type PublicShop } from '@/lib/public-sellers'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
+import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-seller-badge'
 import { MessageShopButton } from '@/features/messaging'
 import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
@@ -82,6 +84,7 @@ export function CustomerSellerShopPage() {
     () => (seller && shopId ? shopFromCatalog(seller, shopId, products) : null),
     [seller, shopId, products],
   )
+  const giftPages = usePagedList(section?.products ?? [], GRID_PAGE_SIZE, shopId)
 
   if (!sellerId) {
     return <Navigate to="/products" replace />
@@ -194,7 +197,10 @@ export function CustomerSellerShopPage() {
         {/* Padded past the avatar so the name never sits under it. */}
         <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-12 pb-5 sm:px-7 sm:pt-14">
           <div className="min-w-0">
-            <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
+              <VerifiedSellerBadge status={seller.verification_status} />
+            </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
               Sold by <span className="font-medium text-foreground">{sellerName}</span>
             </p>
@@ -215,11 +221,19 @@ export function CustomerSellerShopPage() {
       </section>
 
       {shopProducts.length ? (
+        <>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {shopProducts.map((product) => (
+          {giftPages.visible.map((product) => (
             <GiftCard key={product.id} product={product} />
           ))}
         </div>
+        <PageNav
+          page={giftPages.page}
+          pageCount={giftPages.pageCount}
+          onPage={giftPages.setPage}
+          label="Gift pages"
+        />
+        </>
       ) : (
         <CustomerEmptyState
           icon={Store}

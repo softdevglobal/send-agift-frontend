@@ -83,6 +83,30 @@ export function changeCustomerPassword(body: { current_password: string; new_pas
   })
 }
 
+export function requestCustomerPasswordCode() {
+  return api<MessageResponse>('/customers/me/password/code', { method: 'POST' })
+}
+
+export function resetCustomerPasswordWithCode(body: { code: string; new_password: string }) {
+  return api<MessageResponse>('/customers/me/password/reset', { method: 'POST', body })
+}
+
+export function forgotCustomerPassword(email: string) {
+  return api<MessageResponse>('/customers/forgot-password', {
+    method: 'POST',
+    body: { email },
+    auth: false,
+  })
+}
+
+export function resetForgottenCustomerPassword(body: { email: string; code: string; password: string }) {
+  return api<MessageResponse>('/customers/reset-password', {
+    method: 'POST',
+    body,
+    auth: false,
+  })
+}
+
 export function deleteCustomerMe() {
   return api<MessageResponse>('/customers/me', {
     method: 'DELETE',

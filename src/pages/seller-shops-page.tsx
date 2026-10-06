@@ -8,6 +8,8 @@ import {
 } from 'react'
 import {
   Camera,
+  ChevronLeft,
+  ChevronRight,
   Eye,
   ImagePlus,
   Link2,
@@ -27,6 +29,7 @@ import { Link } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import { uploadPublicImage } from '@/api/media'
+import { listShopProducts, type Product } from '@/api/products'
 import {
   createSellerShop,
   deleteSellerShop,
@@ -37,6 +40,7 @@ import {
   type ShopInput,
 } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { TimezoneSelect } from '@/components/common/timezone-select'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
@@ -165,6 +169,112 @@ function formatZoneSummary(zones?: ShopDeliveryZone[]): string {
     .join(' · ')
 }
 
+const GIFTS_PAGE_SIZE = 4
+
+function productStatusLabel(status: string) {
+  if (status === 'published') return 'Published'
+  if (status === 'paused') return 'Paused'
+  if (status === 'rejected') return 'Rejected'
+  return 'Draft'
+}
+
+function ShopGifts({ shopId }: { shopId: string }) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [page, setPage] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    setFailed(false)
+    listShopProducts(shopId)
+      .then((list) => {
+        if (!cancelled) setProducts(Array.isArray(list) ? list : [])
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProducts([])
+          setFailed(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [shopId])
+
+  const pageCount = Math.max(1, Math.ceil(products.length / GIFTS_PAGE_SIZE))
+  const safePage = Math.min(page, pageCount - 1)
+  const visible = products.slice(
+    safePage * GIFTS_PAGE_SIZE,
+    safePage * GIFTS_PAGE_SIZE + GIFTS_PAGE_SIZE,
+  )
+
+  return (
+    <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">
+          {loading
+            ? 'Gifts'
+            : `${products.length} gift${products.length === 1 ? '' : 's'}`}
+        </p>
+        {pageCount > 1 ? (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              aria-label="Previous gifts"
+              disabled={safePage === 0}
+              onClick={() => setPage(safePage - 1)}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="text-[11px] text-muted-foreground">
+              {safePage + 1} / {pageCount}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              aria-label="Next gifts"
+              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage(safePage + 1)}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        ) : null}
+      </div>
+      {loading ? (
+        <p className="mt-2 text-xs text-muted-foreground">Loading gifts…</p>
+      ) : failed ? (
+        <p className="mt-2 text-xs text-muted-foreground">Could not load gifts.</p>
+      ) : products.length === 0 ? (
+        <p className="mt-2 text-xs text-muted-foreground">No gifts in this shop yet.</p>
+      ) : (
+        <ul className="mt-2 space-y-2">
+          {visible.map((product) => (
+            <li key={product.id} className="flex items-baseline justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate font-medium">{product.name}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {formatPriceAmount(product.price_amount, product.currency || 'USD')}
+                {' · '}
+                {productStatusLabel(product.status)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function toShopInput(shop: Shop): ShopInput {
   return {
     name: shop.name,
@@ -283,6 +393,7 @@ function formatAddress(address?: Address) {
 
 export function SellerShopsPage() {
   const [shops, setShops] = useState<Shop[]>([])
+  const shopPages = usePagedList(shops, 6)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SaveStatus>('idle')
@@ -319,7 +430,8 @@ export function SellerShopsPage() {
     ])
     publishSellerToMarketplace(me)
     setShops(me.shops ?? [])
-    setAddresses(me.addresses ?? [])
+    // The registered business address is private and never a delivery origin.
+    setAddresses((me.addresses ?? []).filter((address) => address.address_type !== 'registered'))
     setCountries(Array.isArray(countryList) ? countryList : [])
   }, [])
 
@@ -568,7 +680,7 @@ export function SellerShopsPage() {
               </p>
 
               <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                {shops.map((shop) => {
+                {shopPages.visible.map((shop) => {
                   const country = countries.find((item) => item.id === shop.country_id)
                   return (
                   <li
@@ -624,7 +736,7 @@ export function SellerShopsPage() {
                         <p className="mt-1 text-xs text-muted-foreground">
                           {[country ? countryOptionLabel(country) : '', shop.timezone]
                             .filter(Boolean)
-                            .join(' ┬╖ ')}
+                            .join(' · ')}
                         </p>
                       ) : null}
                       {shop.description ? (
@@ -648,6 +760,8 @@ export function SellerShopsPage() {
                           </span>
                         </p>
                       ) : null}
+
+                      <ShopGifts shopId={shop.id} />
 
                       <div className="mt-4 flex items-center gap-2 border-t border-border/50 pt-4">
                         <Button
@@ -685,6 +799,12 @@ export function SellerShopsPage() {
                   )
                 })}
               </ul>
+              <PageNav
+                page={shopPages.page}
+                pageCount={shopPages.pageCount}
+                onPage={shopPages.setPage}
+                label="Shop pages"
+              />
             </>
           ) : showForm ? null : (
             <div
@@ -1336,6 +1456,10 @@ export function SellerShopsPage() {
                   </SellerSheetRow>
                 ) : null}
               </SellerSheetFacts>
+            </SellerSheetSection>
+
+            <SellerSheetSection icon={Package} title="Gifts">
+              <ShopGifts shopId={previewShop.id} />
             </SellerSheetSection>
 
             <SellerSheetSection icon={Truck} title="Addresses">

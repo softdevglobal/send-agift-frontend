@@ -14,6 +14,7 @@ import {
 import { Link, useLocation, useParams } from 'react-router-dom'
 
 import { getPublicProduct } from '@/api/products'
+import { ApiError } from '@/lib/api'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
@@ -86,11 +87,12 @@ export function ProductViewPage() {
       }
     }
 
-    applyLocal()
+    let settledByApi = false
     void Promise.all([
       loadMarketplaceIntoCatalog().catch(() => undefined),
       getPublicProduct(productId, 'personal')
         .then((details) => {
+          settledByApi = true
           const mapped = catalogProductFromApi(details)
           if (details.shop) {
             mapped.shopId = details.shop.id || mapped.shopId
@@ -100,19 +102,32 @@ export function ProductViewPage() {
             mapped.shopDescription =
               details.shop.description || mapped.shopDescription
           }
+          mapped.sellerVerificationStatus = details.shop?.seller_verification_status
           registerCatalogProducts([mapped])
           if (!cancelled) {
             setProduct(mapped)
             setLoading(false)
           }
         })
-        .catch(() => undefined),
+        .catch((err) => {
+          if (err instanceof ApiError && err.status === 404) {
+            settledByApi = true
+            if (!cancelled) {
+              setProduct(null)
+              setLoading(false)
+            }
+          }
+        }),
     ]).then(() => {
-      if (!cancelled) applyLocal()
+      if (!cancelled && !settledByApi) applyLocal()
     })
 
-    const unsubCatalog = subscribePublishedCatalog(applyLocal)
-    const unsubSellers = subscribePublicSellers(applyLocal)
+    const unsubCatalog = subscribePublishedCatalog(() => {
+      if (!settledByApi) applyLocal()
+    })
+    const unsubSellers = subscribePublicSellers(() => {
+      if (!settledByApi) applyLocal()
+    })
     return () => {
       cancelled = true
       unsubCatalog()
@@ -333,6 +348,9 @@ export function ProductViewPage() {
                 imageUrl={product.sellerImageUrl || seller?.image_url}
                 rating={sellerStats?.average ?? 0}
                 reviewCount={sellerStats?.count ?? 0}
+                verificationStatus={
+                  product.sellerVerificationStatus || seller?.verification_status
+                }
                 size="md"
                 className="min-w-0 flex-1"
               />

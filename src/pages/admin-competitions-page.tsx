@@ -13,6 +13,7 @@ import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
@@ -74,6 +75,7 @@ export function AdminCompetitionsPage() {
           ),
     [competitions, filter],
   )
+  const pages = usePagedList(shown, TABLE_PAGE_SIZE, filter)
 
   async function create(input: CompetitionInput) {
     const created = await createCompetition(input)
@@ -132,7 +134,7 @@ export function AdminCompetitionsPage() {
         />
       ) : (
         <div className="space-y-3">
-          {shown.map((c) => (
+          {pages.visible.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -174,6 +176,7 @@ export function AdminCompetitionsPage() {
               <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </button>
           ))}
+          <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Competition pages" />
         </div>
       )}
 

@@ -13,18 +13,21 @@ import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
 import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
+import { AdminCustomerDetailPage } from '@/pages/admin-customer-detail-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminPointsPage } from '@/pages/admin-points-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
 import { AdminRegisterPage } from '@/pages/admin-register-page'
+import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
 import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
+import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
 import { CustomerOrderHistoryPage } from '@/pages/customer-order-history-page'
 import { CustomerOrdersPage } from '@/pages/customer-orders-page'
@@ -45,6 +48,7 @@ import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
+import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerPointsPage } from '@/pages/seller-points-page'
@@ -53,6 +57,7 @@ import { SellerReelsPage } from '@/pages/seller-reels-page'
 import { SellerReviewsPage } from '@/pages/seller-reviews-page'
 import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
+import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
 
 function RedirectProduct() {
@@ -138,6 +143,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/forgot-password"
+        element={
+          <GuestRoute forRole="customer">
+            <ForgotPasswordPage />
+          </GuestRoute>
+        }
+      />
+      <Route
         path="/register"
         element={
           <GuestRoute forRole="customer">
@@ -213,10 +226,26 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/seller/forgot-password"
+        element={
+          <GuestRoute forRole="seller">
+            <SellerForgotPasswordPage />
+          </GuestRoute>
+        }
+      />
+      <Route
         path="/seller/register"
         element={
           <GuestRoute forRole="seller">
             <SellerRegisterPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/seller/verify-email"
+        element={
+          <GuestRoute forRole="seller">
+            <SellerVerifyEmailPage />
           </GuestRoute>
         }
       />
@@ -268,7 +297,9 @@ export function AppRouter() {
         <Route index element={<AdminDashboardPage />} />
         <Route path="inbox" element={<AdminInboxPage />} />
         <Route path="sellers" element={<AdminSellersPage />} />
+        <Route path="sellers/:sellerId" element={<AdminSellerDetailPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
+        <Route path="customers/:customerId" element={<AdminCustomerDetailPage />} />
         <Route path="points" element={<AdminPointsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}

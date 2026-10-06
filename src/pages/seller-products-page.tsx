@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
+import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
+
 import {
   createShopProduct,
   deleteSellerProduct,
@@ -113,6 +115,7 @@ export function SellerProductsPage() {
     () => shops.find((shop) => shop.id === selectedShopId) ?? null,
     [shops, selectedShopId],
   )
+  const giftPages = usePagedList(products, GRID_PAGE_SIZE, selectedShopId)
 
   const loadProducts = useCallback(async (shopId: string) => {
     if (!shopId) {
@@ -381,8 +384,9 @@ export function SellerProductsPage() {
           ) : null}
 
           {products.length ? (
+            <>
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {products.map((product) => {
+              {giftPages.visible.map((product) => {
                 const meta = statusMeta[product.status] ?? statusMeta.draft
                 const cover = productCoverUrl(product)
                 return (
@@ -460,6 +464,13 @@ export function SellerProductsPage() {
                 )
               })}
             </ul>
+            <PageNav
+              page={giftPages.page}
+              pageCount={giftPages.pageCount}
+              onPage={giftPages.setPage}
+              label="Gift pages"
+            />
+            </>
           ) : (
             <SellerEmptyState
               icon={Package}

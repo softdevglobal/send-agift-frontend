@@ -142,7 +142,7 @@ export function indexMarketplaceShops(shops: Shop[]) {
         legal_name: shop.name,
         email: '',
         seller_type: '',
-        verification_status: '',
+        verification_status: shop.seller_verification_status || '',
         shops: [publicShop],
       }
     }

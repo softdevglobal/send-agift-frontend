@@ -48,8 +48,8 @@ export const adminNavGroups: AdminNavGroup[] = [
   {
     label: 'Marketplace',
     items: [
-      { to: '/admin/sellers', label: 'Sellers', icon: Store, soon: true },
-      { to: '/admin/customers', label: 'Customers', icon: Users, soon: true },
+      { to: '/admin/sellers', label: 'Sellers', icon: Store },
+      { to: '/admin/customers', label: 'Customers', icon: Users },
       { to: '/admin/points', label: 'Seller points', icon: Coins },
     ],
   },

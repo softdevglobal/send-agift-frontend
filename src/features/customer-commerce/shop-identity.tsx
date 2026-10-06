@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { StarRating } from '@/features/customer-commerce/star-rating'
+import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-seller-badge'
 import { publicSellerInitials } from '@/lib/public-sellers'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +15,8 @@ type ShopIdentityProps = {
   imageUrl?: string
   rating?: number
   reviewCount?: number
+  /** Seller business check. verified shows the badge. Any other value shows Not verified. */
+  verificationStatus?: string
   size?: 'sm' | 'md'
   className?: string
 }
@@ -31,6 +34,7 @@ export function ShopIdentity({
   imageUrl,
   rating = 0,
   reviewCount = 0,
+  verificationStatus,
   size = 'sm',
   className,
 }: ShopIdentityProps) {
@@ -80,6 +84,7 @@ export function ShopIdentity({
             by {seller}
           </span>
         ) : null}
+        <VerifiedSellerBadge status={verificationStatus} className="mt-1" />
         {place ? (
           <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
             {place}

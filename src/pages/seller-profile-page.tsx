@@ -51,6 +51,7 @@ import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangePasswordCard } from '@/features/account/change-password-card'
 import { useAuth } from '@/features/auth/auth-context'
 import { PhoneField } from '@/features/auth/phone-field'
 import { sellerTypes } from '@/features/auth/seller-register-options'
@@ -61,9 +62,8 @@ import {
   sellerPanelClass,
   sellerSetupProgress,
   sellerSetupSteps,
-  sellerVerificationLabel,
-  sellerVerificationTone,
 } from '@/features/seller'
+import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-seller-badge'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
@@ -71,7 +71,7 @@ import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
-const addressTypes: SellerAddressType[] = ['pickup', 'return', 'both']
+const addressTypes: SellerAddressType[] = ['pickup', 'return', 'both', 'registered']
 
 const addressTypeMeta: Record<
   SellerAddressType,
@@ -80,6 +80,7 @@ const addressTypeMeta: Record<
   pickup: { label: 'Pickup', hint: 'Couriers collect orders here', icon: PackageCheck },
   return: { label: 'Return', hint: 'Customers send returns here', icon: Undo2 },
   both: { label: 'Both', hint: 'Used for pickups and returns', icon: ArrowLeftRight },
+  registered: { label: 'Registered', hint: 'Private business address', icon: Building2 },
 }
 
 function metaForType(type: string) {
@@ -508,14 +509,7 @@ export function SellerProfilePage() {
                   {profile ? sellerDisplayName(profile) : 'Profile'}
                 </h1>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      'inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium',
-                      sellerVerificationTone(profile?.verification_status ?? ''),
-                    )}
-                  >
-                    {sellerVerificationLabel(profile?.verification_status ?? '')}
-                  </span>
+                  <VerifiedSellerBadge status={profile?.verification_status} />
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                     <Mail className="size-3" />
                     {profile?.email}
@@ -772,7 +766,7 @@ export function SellerProfilePage() {
                     </h3>
                     <div className="space-y-2">
                       <Label>Address type</Label>
-                      <div role="radiogroup" aria-label="Address type" className="grid gap-2 sm:grid-cols-3">
+                      <div role="radiogroup" aria-label="Address type" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         {addressTypes.map((item) => {
                           const meta = addressTypeMeta[item]
                           const active = addressType === item
@@ -960,6 +954,8 @@ export function SellerProfilePage() {
                   </ul>
                 </section>
               ) : null}
+
+              <ChangePasswordCard role="seller" />
 
               <section className={cn(sellerPanelClass, 'p-5')}>
                 <h2 className="font-medium">Account</h2>
