@@ -352,6 +352,36 @@
     border-radius: 0.625rem;
   }
 
+  /* One crisp corner for every card, row and panel in the area. */
+  .account-box [class*='rounded-xl'],
+  .account-box [class*='rounded-2xl'],
+  .account-box [class*='rounded-[1.75rem]'] {
+    border-radius: 0.625rem;
+  }
+
+  /* Form controls: a solid outline that turns ink on focus, not a faint
+     hairline. */
+  .account-box input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .account-box select,
+  .account-box textarea {
+    border-width: 2px;
+    border-color: color-mix(in oklch, var(--brand-ink) 18%, transparent);
+    border-radius: 0.5rem;
+    background-color: var(--card);
+  }
+
+  .account-box input:not([type='checkbox']):not([type='radio']):not([type='file']):focus-visible,
+  .account-box select:focus-visible,
+  .account-box textarea:focus-visible {
+    border-color: var(--brand-ink);
+    --tw-ring-color: color-mix(in oklch, var(--brand-violet) 28%, transparent);
+  }
+
+  .account-box fieldset {
+    border-width: 2px;
+    border-color: color-mix(in oklch, var(--brand-ink) 14%, transparent);
+  }
+
   .account-box [class*='ring-border'] {
     --tw-ring-color: color-mix(in oklch, var(--brand-ink) 22%, transparent);
   }

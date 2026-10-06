@@ -90,9 +90,9 @@ export function GiftCard({ product, href }: GiftCardProps) {
             {category}
           </span>
         ) : null}
-        <SaveGiftButton productId={product.id} className="absolute top-3 right-3 z-10" />
+        <SaveGiftButton productId={product.id} className="absolute top-2 right-2 z-10 size-8 sm:top-3 sm:right-3 sm:size-9" />
         {isCatalogProduct(product) ? (
-          <RewardBadge points={product.rewardPoints} className="absolute top-3 left-3" />
+          <RewardBadge points={product.rewardPoints} className="absolute top-2 left-2 sm:top-3 sm:left-3" />
         ) : null}
       </div>
 

@@ -26,7 +26,7 @@ export function RewardBadge({
       )}
     >
       <Coins className={size === 'sm' ? 'size-3' : 'size-3.5'} />
-      Earn {formatPoints(points)} pts
+      <span className="max-sm:hidden">Earn</span> {formatPoints(points)} pts
     </span>
   )
 }
