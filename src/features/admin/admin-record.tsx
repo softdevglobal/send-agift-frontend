@@ -13,11 +13,13 @@ export function AdminRecordSection({
   children: ReactNode
 }) {
   return (
-    <section className={cn(adminPanelClass, 'p-5')}>
-      <h2 className="font-display text-lg tracking-tight">
-        {title}
+    <section className={cn(adminPanelClass, 'border-2 border-brand-ink/10 p-5')}>
+      <h2 className="flex items-center gap-2 font-poster text-xl text-brand-ink dark:text-foreground">
+        <span className="marker-underline">{title}</span>
         {typeof count === 'number' ? (
-          <span className="ml-2 text-sm font-normal text-muted-foreground">{count}</span>
+          <span className="rounded-md bg-brand-ink px-1.5 py-0.5 font-sans text-[11px] font-bold tracking-normal text-white">
+            {count}
+          </span>
         ) : null}
       </h2>
       <div className="mt-4">{children}</div>
@@ -27,11 +29,15 @@ export function AdminRecordSection({
 
 export function AdminFacts({ items }: { items: { label: string; value?: ReactNode }[] }) {
   return (
-    <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-4 rounded-lg bg-accent/60 p-4 sm:grid-cols-2">
       {items.map((item) => (
         <div key={item.label} className="min-w-0">
-          <dt className="text-xs text-muted-foreground">{item.label}</dt>
-          <dd className="mt-0.5 text-sm break-words">{item.value || 'Not set'}</dd>
+          <dt className="text-[10px] font-bold tracking-[0.14em] text-brand-ink/55 uppercase">
+            {item.label}
+          </dt>
+          <dd className={cn('mt-0.5 text-sm font-semibold break-words', !item.value && 'font-normal text-muted-foreground')}>
+            {item.value || 'Not set'}
+          </dd>
         </div>
       ))}
     </dl>

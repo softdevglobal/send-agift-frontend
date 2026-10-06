@@ -50,7 +50,7 @@ export function ConfirmDialog({
         onOpenChange(next)
       }}
     >
-      <DialogContent className="border-2 border-brand-ink sm:max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div
             className={cn(
@@ -67,7 +67,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant="outline"
-            className="h-10 border-2 border-brand-ink/15 px-4"
+            className="h-10 px-4"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
@@ -77,7 +77,7 @@ export function ConfirmDialog({
             type="button"
             className={cn(
               'h-10 px-4',
-              danger && 'bg-destructive text-white hover:bg-destructive/85',
+              danger && 'bg-destructive text-white hover:bg-destructive/85 hover:text-white',
             )}
             disabled={busy}
             onClick={onConfirm}

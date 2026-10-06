@@ -386,6 +386,29 @@
     --tw-ring-color: color-mix(in oklch, var(--brand-violet) 28%, transparent);
   }
 
+  /* Every table in these areas: a solid ink header row and a light hover. */
+  .account-box thead tr {
+    background-color: var(--brand-ink);
+    color: white;
+    border: 0;
+  }
+
+  .account-box thead th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: white;
+  }
+
+  .account-box tbody tr {
+    transition: background-color 150ms;
+  }
+
+  .account-box tbody tr:hover {
+    background-color: color-mix(in oklch, var(--accent), transparent 50%);
+  }
+
   .account-box fieldset {
     border-width: 2px;
     border-color: color-mix(in oklch, var(--brand-ink) 14%, transparent);
