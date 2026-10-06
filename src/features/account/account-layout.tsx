@@ -17,7 +17,7 @@ export function AccountLayout() {
 
   return (
     <SiteLayout>
-      <main className={cn(storefrontFrameClass, 'py-8 lg:py-10')}>
+      <main className={cn(storefrontFrameClass, 'account-box py-8 lg:py-10')}>
         {/* minmax(0, 1fr) on phones too: an auto track grew to fit the
             sideways-scrolling nav strip and pushed every page off screen. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">

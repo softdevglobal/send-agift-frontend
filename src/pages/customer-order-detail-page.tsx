@@ -234,7 +234,7 @@ export function CustomerOrderDetailPage() {
                 Points from this order
               </p>
               {rewardPoints > 0 ? (
-                <p className="font-display text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
+                <p className="font-poster text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
                   {rewardEarned
                     ? `+${formatPoints(rewardPoints)} points added to your balance`
                     : rewardLine(order.items.find((i) => i.reward_points)?.reward_status, rewardPoints)}
@@ -260,7 +260,7 @@ export function CustomerOrderDetailPage() {
       <section className={cn(customerPanelClass, "mb-6 p-5 sm:p-6")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="font-medium">Track this gift</h2>
+            <h2 className="font-poster text-xl">Track this gift</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Delivery {formatDeliveryDate(order.delivery_date)}
             </p>
@@ -278,7 +278,7 @@ export function CustomerOrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)]">
         <section className={cn(customerPanelClass, "p-5 sm:p-6")}>
-          <h2 className="font-medium">Items</h2>
+          <h2 className="font-poster text-xl">Items</h2>
           <ul className="mt-4 space-y-4">
             {order.items.map((item) => {
               const product = getCatalogProduct(item.product_id);
@@ -350,7 +350,7 @@ export function CustomerOrderDetailPage() {
 
         <div className="space-y-6">
           <section className={cn(customerPanelClass, "p-5")}>
-            <h2 className="font-medium">Summary</h2>
+            <h2 className="font-poster text-xl">Summary</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Status</dt>
@@ -439,7 +439,7 @@ export function CustomerOrderDetailPage() {
           </section>
 
           <section className={cn(customerPanelClass, "p-5")}>
-            <h2 className="font-medium">Deliver to</h2>
+            <h2 className="font-poster text-xl">Deliver to</h2>
             {recipient ? (
               <>
                 <p className="mt-3 text-sm font-medium">{recipient.name}</p>

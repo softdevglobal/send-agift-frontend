@@ -187,21 +187,21 @@ export function CustomerProfilePage() {
 
           <form
             onSubmit={handleSave}
-            className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60"
+            className="space-y-4 rounded-2xl border border-brand-ink/20 bg-card p-6"
           >
-            <h2 className="font-display text-xl">Account</h2>
+            <h2 className="font-poster text-xl">Account</h2>
             <div className="flex flex-wrap items-center gap-4">
               <button
                 type="button"
                 onClick={() => photoInput.current?.click()}
                 disabled={uploadingPhoto}
-                className="group relative size-20 shrink-0 overflow-hidden rounded-full bg-accent ring-2 ring-background shadow-md"
+                className="group relative size-20 shrink-0 overflow-hidden rounded-2xl bg-brand-violet"
                 aria-label={imageUrl ? 'Change photo' : 'Add a photo'}
               >
                 {imageUrl ? (
                   <img src={imageUrl} alt="" className="size-full object-cover" />
                 ) : (
-                  <span className="flex size-full items-center justify-center font-display text-2xl text-primary">
+                  <span className="flex size-full items-center justify-center font-poster text-3xl text-white">
                     {(displayName || profile?.email || '?').trim().charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -210,7 +210,7 @@ export function CustomerProfilePage() {
                 </span>
               </button>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{displayName || 'Your profile'}</p>
+                <p className="truncate text-lg font-extrabold">{displayName || 'Your profile'}</p>
                 <p className="truncate text-sm text-muted-foreground">{profile?.email}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
@@ -251,11 +251,11 @@ export function CustomerProfilePage() {
             {profile && profile.addresses.length === 0 ? (
               <Link
                 to="/account/addresses"
-                className="flex items-center gap-3 rounded-xl bg-accent/60 px-4 py-3 text-sm text-accent-foreground ring-1 ring-primary/15 transition-colors hover:bg-accent"
+                className="flex items-center gap-3 rounded-xl bg-accent px-4 py-3 text-sm font-medium text-brand-ink transition-colors hover:bg-accent/70"
               >
                 <MapPin className="size-4 shrink-0" />
                 <span className="flex-1">Add a delivery address so checkout is one tap.</span>
-                <span className="font-medium">Add address →</span>
+                <span className="text-xs font-bold tracking-[0.1em] uppercase">Add address →</span>
               </Link>
             ) : null}
 
@@ -383,8 +383,8 @@ export function CustomerProfilePage() {
 
           <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
 
-          <section className="rounded-2xl bg-card p-6 ring-1 ring-destructive/20">
-            <h2 className="font-display text-xl">Delete account</h2>
+          <section className="rounded-2xl border border-destructive/40 bg-card p-6">
+            <h2 className="font-poster text-xl">Delete account</h2>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
               Permanently delete this customer account.
             </p>

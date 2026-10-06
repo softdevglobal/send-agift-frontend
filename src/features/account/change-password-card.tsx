@@ -109,7 +109,7 @@ export function ChangePasswordCard({
     <section
       id="password"
       className={cn(
-        'scroll-mt-24 rounded-2xl bg-card p-6 ring-1',
+        'scroll-mt-24 rounded-2xl border border-brand-ink/20 bg-card p-6',
         highlight ? 'ring-2 ring-amber-300' : 'ring-border/60',
       )}
     >
@@ -123,7 +123,7 @@ export function ChangePasswordCard({
           <KeyRound className="size-5" />
         </span>
         <div>
-          <h2 className="font-display text-xl">Password</h2>
+          <h2 className="font-poster text-xl">Password</h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {highlight
               ? 'You’re still using a temporary password. We’ll email a code so you can choose your own.'

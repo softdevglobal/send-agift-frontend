@@ -126,7 +126,7 @@ export function HomePage() {
   }, [])
 
   const hasPublished = published.length > 0
-  const shelfGifts = hasPublished ? published.slice(0, 4) : bestSellingGifts
+  const shelfGifts = hasPublished ? published.slice(0, 5) : bestSellingGifts
 
   return (
     <SiteLayout>
@@ -318,7 +318,7 @@ export function HomePage() {
             actionTo="/products"
             marker="violet"
           />
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
             {shelfGifts.map((product) => (
               <GiftCard key={product.id} product={product} />
             ))}

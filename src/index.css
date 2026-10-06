@@ -337,6 +337,30 @@
     border-radius: 0.375rem;
   }
 
+  /*
+   * The signed-in customer area (AccountLayout) is boxes all the way down:
+   * pill chips, tabs and badges become rounded boxes, soft round icon chips
+   * become rounded squares, and the faint rings round cards gain a visible
+   * ink outline. Scoped here so seller and admin screens are untouched.
+   */
+  .account-box [class*='rounded-full'][class*='px-']:not([data-slot='button']) {
+    border-radius: 0.375rem;
+  }
+
+  .account-box
+    [class*='rounded-full'][class*='size-']:not(img):not(.animate-spin):not([class*='size-1']):not([class*='size-2']):not([class*='size-3']):not([class*='size-4']):not([class*='size-5']) {
+    border-radius: 0.625rem;
+  }
+
+  .account-box [class*='ring-border'] {
+    --tw-ring-color: color-mix(in oklch, var(--brand-ink) 22%, transparent);
+  }
+
+  .account-box .bg-muted\/50,
+  .account-box .bg-muted\/60 {
+    background-color: var(--accent);
+  }
+
   .font-display {
     font-family: var(--font-display);
   }

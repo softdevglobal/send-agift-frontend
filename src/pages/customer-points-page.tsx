@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 
 import { getMyPoints, type PointsWallet } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
@@ -56,25 +57,25 @@ export function CustomerPointsPage() {
       label: 'From purchases',
       value: totals?.from_purchases ?? 0,
       icon: ShoppingBag,
-      tone: 'bg-[oklch(0.93_0.06_296)] text-[oklch(0.42_0.2_296)]',
+      tone: 'bg-brand-violet text-white',
     },
     {
       label: 'Gifts received',
       value: totals?.from_gifts ?? 0,
       icon: Gift,
-      tone: 'bg-[oklch(0.93_0.07_350)] text-[oklch(0.48_0.17_350)]',
+      tone: 'bg-brand-ink text-white',
     },
     {
       label: 'Prizes won',
       value: totals?.from_prizes ?? 0,
       icon: Trophy,
-      tone: 'bg-[oklch(0.93_0.08_85)] text-[oklch(0.48_0.12_75)]',
+      tone: 'bg-amber-300 text-amber-950',
     },
     {
       label: 'Spent on games',
       value: totals?.spent_on_games ?? 0,
       icon: Gamepad2,
-      tone: 'bg-[oklch(0.92_0.07_195)] text-[oklch(0.42_0.11_205)]',
+      tone: 'bg-brand-teal text-brand-ink',
     },
   ]
 
@@ -94,16 +95,14 @@ export function CustomerPointsPage() {
       ) : wallet ? (
         <div className="space-y-5">
           <section className="relative overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-7 text-white sm:px-8">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.8_0.14_75)]/35 blur-3xl"
-            />
+            <Sparkle className="absolute top-6 right-[22%] size-6 text-brand-teal" />
+            <Sparkle className="absolute right-8 bottom-5 size-4 text-brand-violet" />
             <div className="relative flex flex-wrap items-end justify-between gap-6">
               <div>
                 <p className="text-[11px] font-semibold tracking-[0.18em] text-white/55 uppercase">
                   Current balance
                 </p>
-                <p className="mt-2 flex items-baseline gap-2 font-display text-5xl tracking-tight">
+                <p className="mt-2 flex items-baseline gap-2 font-poster text-6xl">
                   {formatPoints(wallet.balance)}
                   <span className="text-base text-white/60">points</span>
                 </p>
@@ -112,8 +111,8 @@ export function CustomerPointsPage() {
                   spent all time
                 </p>
               </div>
-              <span className="flex size-14 items-center justify-center rounded-2xl bg-white/12 ring-1 ring-white/15">
-                <Coins className="size-6 text-[oklch(0.85_0.13_85)]" />
+              <span className="flex size-14 items-center justify-center rounded-xl bg-brand-teal">
+                <Coins className="size-6 text-brand-ink" />
               </span>
             </div>
           </section>
@@ -123,7 +122,7 @@ export function CustomerPointsPage() {
               <div key={tile.label} className={cn(customerPanelClass, 'p-4')}>
                 <span
                   className={cn(
-                    'mb-3 flex size-9 items-center justify-center rounded-xl',
+                    'mb-3 flex size-10 items-center justify-center rounded-lg',
                     tile.tone,
                   )}
                 >
@@ -132,7 +131,7 @@ export function CustomerPointsPage() {
                 <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
                   {tile.label}
                 </p>
-                <p className="mt-1 font-display text-2xl tracking-tight">
+                <p className="mt-1 font-poster text-3xl">
                   {formatPoints(tile.value)}
                 </p>
               </div>
@@ -152,26 +151,26 @@ export function CustomerPointsPage() {
               title="No points yet"
               description="Look for gifts marked “Earn points”. The points land here as soon as you order."
               action={
-                <Button asChild className="rounded-full">
+                <Button asChild>
                   <Link to="/products">Browse gifts</Link>
                 </Button>
               }
             />
           ) : (
             <section className={customerPanelClass}>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 px-5 py-3.5">
-                <h2 className="font-medium">History</h2>
-                <div className="flex gap-1 rounded-full bg-muted p-1">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-brand-ink/15 px-5 py-3.5">
+                <h2 className="font-poster text-xl">History</h2>
+                <div className="flex gap-1 rounded-lg bg-accent p-1">
                   {filters.map((f) => (
                     <button
                       key={f.id}
                       type="button"
                       onClick={() => setFilter(f.id)}
                       className={cn(
-                        'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                        'rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
                         filter === f.id
-                          ? 'bg-card text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground',
+                          ? 'bg-brand-ink text-white'
+                          : 'text-brand-ink/60 hover:text-brand-ink',
                       )}
                     >
                       {f.label}

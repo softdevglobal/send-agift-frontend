@@ -208,8 +208,8 @@ export function AccountAddressesPage() {
             />
           )}
 
-          <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="font-display text-xl">Add an address</h2>
+          <section className="space-y-4 rounded-2xl border border-brand-ink/20 bg-card p-6">
+            <h2 className="font-poster text-xl">Add an address</h2>
             <form onSubmit={handleAdd} className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="addr-country">Country</Label>

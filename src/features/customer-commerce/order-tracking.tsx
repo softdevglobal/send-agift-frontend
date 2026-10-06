@@ -9,14 +9,14 @@ import { cn } from '@/lib/utils'
 
 const STATUS_TONE_CLASS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
-  pending_payment: 'bg-muted text-muted-foreground',
-  paid: 'bg-primary/10 text-primary',
-  accepted: 'bg-primary/10 text-primary',
-  preparing: 'bg-primary/10 text-primary',
-  dispatched: 'bg-primary/10 text-primary',
-  delivered: 'bg-accent text-accent-foreground',
-  cancelled: 'bg-destructive/10 text-destructive',
-  refunded: 'bg-destructive/10 text-destructive',
+  pending_payment: 'bg-amber-200 text-amber-950',
+  paid: 'bg-brand-violet text-white',
+  accepted: 'bg-brand-violet text-white',
+  preparing: 'bg-brand-violet text-white',
+  dispatched: 'bg-brand-ink text-white',
+  delivered: 'bg-brand-teal text-brand-ink',
+  cancelled: 'bg-destructive text-white',
+  refunded: 'bg-destructive text-white',
 }
 
 export function OrderStatusBadge({
@@ -29,7 +29,7 @@ export function OrderStatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase',
+        'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase',
         STATUS_TONE_CLASS[status] ?? 'bg-muted text-muted-foreground',
         className,
       )}
@@ -66,7 +66,7 @@ export function OrderTrackingProgressBar({
         )}
       </div>
       <div
-        className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+        className="mt-2 h-2 overflow-hidden rounded-sm bg-brand-ink/10"
         role="progressbar"
         aria-valuemin={0}
         aria-valuemax={total}
@@ -75,8 +75,8 @@ export function OrderTrackingProgressBar({
       >
         <div
           className={cn(
-            'h-full rounded-full transition-[width]',
-            progress.terminal ? 'bg-destructive/70' : 'bg-primary',
+            'h-full transition-[width]',
+            progress.terminal ? 'bg-destructive/70' : 'bg-brand-violet',
           )}
           style={{ width: progress.terminal ? '100%' : `${percent}%` }}
         />
@@ -119,14 +119,11 @@ export function OrderTrackingTimeline({
               <div className="flex flex-col items-center">
                 <span
                   className={cn(
-                    'flex size-7 items-center justify-center rounded-full ring-4 ring-card',
-                    step.state === 'complete' && 'bg-primary text-primary-foreground',
-                    step.state === 'current' &&
-                      'bg-primary text-primary-foreground ring-primary/15',
-                    step.state === 'upcoming' &&
-                      'bg-muted text-muted-foreground ring-transparent',
-                    step.state === 'cancelled' &&
-                      'bg-destructive text-primary-foreground ring-destructive/15',
+                    'flex size-8 items-center justify-center rounded-lg ring-4 ring-card',
+                    step.state === 'complete' && 'bg-brand-violet text-white',
+                    step.state === 'current' && 'bg-brand-ink text-white',
+                    step.state === 'upcoming' && 'bg-accent text-brand-ink/50 ring-transparent',
+                    step.state === 'cancelled' && 'bg-destructive text-white',
                   )}
                 >
                   {step.state === 'complete' ? (
@@ -141,7 +138,7 @@ export function OrderTrackingTimeline({
                   <span
                     className={cn(
                       'mt-1 mb-1 w-px flex-1 min-h-6',
-                      step.state === 'complete' ? 'bg-primary/40' : 'bg-border',
+                      step.state === 'complete' ? 'bg-brand-violet' : 'bg-brand-ink/15',
                     )}
                   />
                 )}

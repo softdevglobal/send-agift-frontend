@@ -685,7 +685,7 @@ export function CustomerRecipientsPage() {
                 onSubmit={handleSavePerson}
                 className={cn(customerPanelClass, 'space-y-5 p-6')}
               >
-                <h2 className="font-display text-xl tracking-tight">
+                <h2 className="font-poster text-xl tracking-tight">
                   {editingId ? 'Edit recipient' : 'New recipient'}
                 </h2>
 
@@ -918,7 +918,7 @@ export function CustomerRecipientsPage() {
                 <section className={cn(customerPanelClass, 'space-y-5 p-6')}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-display text-xl tracking-tight">Addresses</h2>
+                      <h2 className="font-poster text-xl tracking-tight">Addresses</h2>
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         Shipping locations for this person.
                       </p>
@@ -999,7 +999,7 @@ export function CustomerRecipientsPage() {
 
                   {showAddressForm ? (
                     <form onSubmit={handleSubmitAddress} className="space-y-4">
-                      <h3 className="font-medium">
+                      <h3 className="font-extrabold">
                         {editingAddressId ? 'Edit address' : 'New address'}
                       </h3>
                       <AddressFields

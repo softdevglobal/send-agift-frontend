@@ -64,7 +64,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
   return (
     <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-3 transition-colors hover:border-brand-ink dark:border-border">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
         <Link to={to} className="block size-full">
           <img
             src={product.image}

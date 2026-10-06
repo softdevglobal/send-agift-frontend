@@ -27,12 +27,12 @@ const categoryIcon: Record<PointsCategory, LucideIcon> = {
 }
 
 const categoryTone: Record<PointsCategory, string> = {
-  PRODUCT_PURCHASE: 'bg-[oklch(0.93_0.06_296)] text-[oklch(0.42_0.2_296)]',
-  GIFT_REWARD: 'bg-[oklch(0.93_0.07_350)] text-[oklch(0.48_0.17_350)]',
-  GIFT_SENT: 'bg-[oklch(0.93_0.07_350)] text-[oklch(0.48_0.17_350)]',
-  GAME_ENTRY: 'bg-[oklch(0.92_0.07_195)] text-[oklch(0.42_0.11_205)]',
-  POINTS_PURCHASE: 'bg-[oklch(0.93_0.08_85)] text-[oklch(0.48_0.12_75)]',
-  REWARD_FUNDING: 'bg-[oklch(0.91_0.05_265)] text-[oklch(0.38_0.13_270)]',
+  PRODUCT_PURCHASE: 'bg-brand-violet text-white',
+  GIFT_REWARD: 'bg-brand-ink text-white',
+  GIFT_SENT: 'bg-brand-ink text-white',
+  GAME_ENTRY: 'bg-brand-teal text-brand-ink',
+  POINTS_PURCHASE: 'bg-amber-300 text-amber-950',
+  REWARD_FUNDING: 'bg-brand-ink text-white',
   REFUND: 'bg-muted text-muted-foreground',
   ADMIN_ADJUSTMENT: 'bg-muted text-muted-foreground',
 }
@@ -61,7 +61,7 @@ export function PointsLedger({ entries, className }: PointsLedgerProps) {
   const pages = usePagedList(entries, TABLE_PAGE_SIZE)
   return (
     <div>
-    <ul className={cn('divide-y divide-border/50', className)}>
+    <ul className={cn('divide-y divide-brand-ink/10', className)}>
       {pages.visible.map((entry) => {
         const Icon = categoryIcon[entry.category] ?? Coins
         const credit = entry.direction === 'credit'
@@ -69,14 +69,14 @@ export function PointsLedger({ entries, className }: PointsLedgerProps) {
           <li key={entry.id} className="flex items-center gap-3.5 px-5 py-3.5">
             <span
               className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-xl',
+                'flex size-10 shrink-0 items-center justify-center rounded-lg',
                 categoryTone[entry.category] ?? 'bg-muted text-muted-foreground',
               )}
             >
               <Icon className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{entry.description}</p>
+              <p className="truncate text-sm font-bold">{entry.description}</p>
               <p className="truncate text-xs text-muted-foreground">
                 {POINTS_CATEGORY_LABEL[entry.category] ?? entry.category} · {when(entry.created_at)}
               </p>
@@ -84,7 +84,7 @@ export function PointsLedger({ entries, className }: PointsLedgerProps) {
             <div className="shrink-0 text-right">
               <p
                 className={cn(
-                  'font-display text-base tabular-nums',
+                  'font-poster text-lg tabular-nums',
                   credit ? 'text-[oklch(0.5_0.14_155)]' : 'text-[oklch(0.55_0.19_25)]',
                 )}
               >
