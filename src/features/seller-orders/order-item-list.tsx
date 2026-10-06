@@ -1,5 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
+
 import type { SellerOrderItemSummary } from '@/api/seller-orders'
 import { formatDeliveryDate } from '@/features/customer-commerce/order-display'
 import { OrderStatusBadge } from '@/features/customer-commerce/order-tracking'
@@ -58,6 +60,7 @@ export function SellerOrderItemList({
   onOpen: (itemId: string) => void
 }) {
   const orders = groupSellerParcels(items)
+  const paged = usePagedList(orders, TABLE_PAGE_SIZE)
 
   return (
     <section className={cn(sellerPanelClass, 'overflow-hidden')}>
@@ -78,7 +81,7 @@ export function SellerOrderItemList({
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {orders.map((order) => {
+            {paged.visible.map((order) => {
               const active = order.items.some((item) => item.id === activeItemId)
               const openId =
                 order.items.find((item) => item.id === activeItemId)?.id ??
@@ -143,6 +146,14 @@ export function SellerOrderItemList({
             })}
           </tbody>
         </table>
+      </div>
+      <div className="px-4 pb-4">
+        <PageNav
+          page={paged.page}
+          pageCount={paged.pageCount}
+          onPage={paged.setPage}
+          label="Order pages"
+        />
       </div>
     </section>
   )

@@ -7,7 +7,8 @@ import {
 import type { Product, Shop } from '@/api/types'
 import {
   catalogProductFromApi,
-  registerCatalogProducts,
+  markMarketplaceLoaded,
+  replaceCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { getRole, getToken } from '@/lib/auth'
@@ -63,7 +64,8 @@ export async function loadMarketplaceIntoCatalog(
     catalogCache.customerType === type &&
     Date.now() - catalogCache.at < CACHE_TTL_MS
   ) {
-    registerCatalogProducts(catalogCache.products)
+    replaceCatalogProducts(catalogCache.products)
+    markMarketplaceLoaded()
     return catalogCache.products
   }
 
@@ -74,7 +76,8 @@ export async function loadMarketplaceIntoCatalog(
     ...catalogProductFromApi(product, shopById.get(product.shop_id)),
     catalogCustomerType: type,
   }))
-  registerCatalogProducts(mapped)
+  replaceCatalogProducts(mapped)
+  markMarketplaceLoaded()
   catalogCache = { at: Date.now(), customerType: type, products: mapped }
   return mapped
 }

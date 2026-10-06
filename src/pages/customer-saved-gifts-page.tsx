@@ -2,6 +2,7 @@ import { Heart, LoaderCircle, Trash2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { FormAlert } from '@/components/common/form-alert'
+import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   CustomerEmptyState,
@@ -17,6 +18,7 @@ import { useState } from 'react'
 export function CustomerSavedGiftsPage() {
   const { gifts, loading, toggleSave, pendingProductId } = useSavedGifts()
   const [error, setError] = useState<string | null>(null)
+  const pages = usePagedList(gifts, GRID_PAGE_SIZE)
 
   async function handleRemove(productId: string) {
     setError(null)
@@ -42,8 +44,9 @@ export function CustomerSavedGiftsPage() {
           <FormAlert error={error} />
 
           {gifts.length ? (
+            <>
             <ul className="space-y-3">
-              {gifts.map((gift) => (
+              {pages.visible.map((gift) => (
                 <li key={gift.id} className={customerListRowClass}>
                   <Link
                     to={`/products/${gift.product_id}`}
@@ -103,6 +106,8 @@ export function CustomerSavedGiftsPage() {
                 </li>
               ))}
             </ul>
+            <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Saved gift pages" />
+            </>
           ) : (
             <CustomerEmptyState
               icon={Heart}

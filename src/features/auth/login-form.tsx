@@ -142,6 +142,15 @@ export function LoginForm({ role }: LoginFormProps) {
       const result = await loginWithCredentials(role, trimmedEmail, password)
       login(result.token, result.role, remember)
     } catch (err) {
+      if (
+        role === 'seller' &&
+        err instanceof ApiError &&
+        err.status === 403 &&
+        err.message.toLowerCase().includes('confirm your email')
+      ) {
+        navigate(`/seller/verify-email?email=${encodeURIComponent(trimmedEmail)}`)
+        return
+      }
       setError(getErrorMessage(err, 'Sign in failed.'))
       setIsSubmitting(false)
     }
@@ -200,18 +209,27 @@ export function LoginForm({ role }: LoginFormProps) {
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor={`${role}-password`}>Password</Label>
-            <button
-              type="button"
-              className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
-              onClick={() => {
-                setError(null)
-                setHint(
-                  'Password reset isn’t available yet. Use the email you registered with, or contact support.',
-                )
-              }}
-            >
-              Forgot password?
-            </button>
+            {role === 'admin' ? (
+              <button
+                type="button"
+                className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
+                onClick={() => {
+                  setError(null)
+                  setHint('Password reset isn’t available for admin accounts. Contact another admin.')
+                }}
+              >
+                Forgot password?
+              </button>
+            ) : (
+              <Link
+                to={`${role === 'seller' ? '/seller/forgot-password' : '/forgot-password'}${
+                  email.trim() ? `?email=${encodeURIComponent(email.trim())}` : ''
+                }`}
+                className="text-xs font-medium text-primary transition-colors hover:text-primary/80"
+              >
+                Forgot password?
+              </Link>
+            )}
           </div>
           <div className="relative">
             <Lock className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />

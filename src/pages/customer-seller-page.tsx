@@ -13,6 +13,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 
 import { getCustomerMe, type CustomerDetails } from '@/api/customers'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -168,6 +169,7 @@ export function CustomerSellerPage() {
     () => (seller ? shopsWithProducts(seller, products) : []),
     [seller, products],
   )
+  const shopPages = usePagedList(shopSections, 6, seller?.id)
   const stats = seller ? getSellerReviewStats(seller.id) : { average: 0, count: 0 }
   const locations = seller
     ? seller.shops
@@ -377,8 +379,9 @@ export function CustomerSellerPage() {
         </div>
 
         {shopSections.length ? (
+          <>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {shopSections.map((section) => (
+            {shopPages.visible.map((section) => (
               <Link
                 key={section.shop.id}
                 to={`/sellers/${seller.id}/shops/${section.shop.id}`}
@@ -427,6 +430,13 @@ export function CustomerSellerPage() {
               </Link>
             ))}
           </div>
+          <PageNav
+            page={shopPages.page}
+            pageCount={shopPages.pageCount}
+            onPage={shopPages.setPage}
+            label="Shop pages"
+          />
+          </>
         ) : (
           <CustomerEmptyState
             icon={Store}

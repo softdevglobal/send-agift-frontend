@@ -26,6 +26,7 @@ import {
   type SellerPointsWallet,
 } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import {
@@ -99,6 +100,7 @@ function shortDate(iso: string) {
 export function SellerPointsPage() {
   const [wallet, setWallet] = useState<SellerPointsWallet | null>(null)
   const [purchases, setPurchases] = useState<PointsPurchase[]>([])
+  const purchasePages = usePagedList(purchases, TABLE_PAGE_SIZE)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [buying, setBuying] = useState(false)
@@ -237,6 +239,7 @@ export function SellerPointsPage() {
             No purchases yet. Buy points to start rewarding your customers.
           </p>
         ) : (
+          <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[40rem] text-sm">
               <thead>
@@ -249,7 +252,7 @@ export function SellerPointsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {purchases.map((p) => {
+                {purchasePages.visible.map((p) => {
                   const busy = busyId === p.id
                   return (
                     <tr key={p.id}>
@@ -310,6 +313,14 @@ export function SellerPointsPage() {
               </tbody>
             </table>
           </div>
+          <PageNav
+            page={purchasePages.page}
+            pageCount={purchasePages.pageCount}
+            onPage={purchasePages.setPage}
+            label="Purchase pages"
+            scroll={false}
+          />
+          </>
         )}
       </section>
 

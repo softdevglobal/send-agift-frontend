@@ -10,6 +10,7 @@ import {
 } from '@/api/customers'
 import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -133,6 +134,7 @@ export function AccountAddressesPage() {
   }
 
   const addresses = profile?.addresses ?? []
+  const addressPages = usePagedList(addresses, TABLE_PAGE_SIZE)
 
   return (
     <div>
@@ -150,8 +152,9 @@ export function AccountAddressesPage() {
           <FormAlert error={error} notice={notice} />
 
           {addresses.length ? (
+            <>
             <ul className="space-y-3">
-              {addresses.map((address) => (
+              {addressPages.visible.map((address) => (
                 <li
                   key={address.id}
                   className="flex items-start justify-between gap-4 rounded-xl bg-card px-4 py-3 ring-1 ring-border/60"
@@ -190,6 +193,13 @@ export function AccountAddressesPage() {
                 </li>
               ))}
             </ul>
+            <PageNav
+              page={addressPages.page}
+              pageCount={addressPages.pageCount}
+              onPage={addressPages.setPage}
+              label="Address pages"
+            />
+            </>
           ) : (
             <CustomerEmptyState
               icon={MapPin}

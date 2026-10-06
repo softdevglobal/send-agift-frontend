@@ -14,6 +14,17 @@ const PLACEHOLDER_IMAGE =
   'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=900&q=80'
 
 const liveCatalog = new Map<string, CatalogProduct>()
+let marketplaceLoaded = false
+
+/** The public catalog came from the API, so a seller's local publish cache is not shown. */
+export function markMarketplaceLoaded() {
+  marketplaceLoaded = true
+}
+
+export function replaceCatalogProducts(products: CatalogProduct[]) {
+  liveCatalog.clear()
+  for (const product of products) liveCatalog.set(product.id, product)
+}
 
 export const catalogProducts: CatalogProduct[] = [
   {
@@ -235,6 +246,7 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     sellerImageUrl: shop?.image_url || sellerImageForPublished(published),
     sellerEmail: published.seller_email,
     sellerPhone: published.seller_phone,
+    sellerVerificationStatus: shop?.seller_verification_status,
     shopId: product.shop_id || shop?.id,
     shopName: shop?.name?.trim() || shopNameForPublished(published),
     shopDescription: shop?.description || published.shop_description,
@@ -265,9 +277,11 @@ export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[]
   shopIds.add(sellerId)
 
   const byId = new Map<string, CatalogProduct>()
-  for (const product of listPublishedCatalog()) {
-    const mapped = catalogProductFromApi(product)
-    if (belongsToSeller(mapped, sellerIds, shopIds)) byId.set(mapped.id, mapped)
+  if (!marketplaceLoaded) {
+    for (const product of listPublishedCatalog()) {
+      const mapped = catalogProductFromApi(product)
+      if (belongsToSeller(mapped, sellerIds, shopIds)) byId.set(mapped.id, mapped)
+    }
   }
   for (const product of liveCatalog.values()) {
     if (belongsToSeller(product, sellerIds, shopIds)) byId.set(product.id, product)
@@ -288,6 +302,9 @@ export function registerCatalogProducts(products: CatalogProduct[]) {
 export function getCatalogProduct(id: string) {
   const live = liveCatalog.get(id)
   if (live) return live
+  if (marketplaceLoaded) {
+    return catalogProducts.find((product) => product.id === id) ?? null
+  }
   const published = getPublishedCatalogProduct(id)
   if (published) {
     const mapped = catalogProductFromApi(published)

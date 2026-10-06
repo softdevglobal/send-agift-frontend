@@ -12,6 +12,8 @@ export type CatalogProduct = GiftProduct & {
   sellerImageUrl?: string
   sellerEmail?: string
   sellerPhone?: string
+  /** verified, unverified, or rejected. Missing on sample gifts. */
+  sellerVerificationStatus?: string
   shopId?: string
   shopName?: string
   shopDescription?: string

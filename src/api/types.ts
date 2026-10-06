@@ -156,6 +156,42 @@ export type Seller = {
   created_at: string
   updated_at: string
   image_url?: string
+  local_name?: string
+  registration_status?: SellerRegistrationStatus
+  registration_note?: string
+  tax_status?: SellerTaxStatus
+  contact_name?: string
+  contact_role?: SellerContactRole
+  contact_job_title?: string
+  authority_confirmed_at?: string
+  terms_accepted_at?: string
+  marketing_opt_in?: boolean
+  /** Set once the seller enters the emailed code. Missing until then. */
+  email_verified_at?: string
+}
+
+export type SellerRegistrationStatus = 'registered' | 'pending' | 'no_number'
+export type SellerTaxStatus = 'registered' | 'not_registered' | 'unsure'
+export type SellerContactRole = 'owner' | 'director' | 'authorised'
+
+/** A business identifier such as an ABN or company number. */
+export type SellerIdentifier = {
+  id: string
+  country_id: string
+  type: string
+  value: string
+  authority?: string
+  jurisdiction?: string
+  created_at: string
+}
+
+export type SellerTaxRegistration = {
+  id: string
+  country_id: string
+  jurisdiction?: string
+  scheme: string
+  number: string
+  created_at: string
 }
 
 /** A delivered gift someone sent to the signed-in customer. No prices. */
@@ -213,9 +249,24 @@ export type Shop = {
   image_url?: string
   /** Shop-delivery price bands, nearest first. */
   delivery_zones?: ShopDeliveryZone[]
+  website?: string
+  support_email?: string
+  returns_policy?: string
+  categories?: string[]
+  gift_options?: string[]
+  /** mon..sun. Stored only; delivery dates do not use it yet. */
+  working_days?: string[]
+  pickup_enabled?: boolean
+  /** Present on public shop reads. verified when an admin has accepted the business. */
+  seller_verification_status?: string
 }
 
-export type SellerDetails = Seller & { addresses: Address[]; shops: Shop[] }
+export type SellerDetails = Seller & {
+  addresses: Address[]
+  shops: Shop[]
+  identifiers?: SellerIdentifier[]
+  tax_registrations?: SellerTaxRegistration[]
+}
 
 export type ShopInput = {
   name: string
@@ -230,6 +281,14 @@ export type ShopInput = {
   return_address_id?: string | null
   image_url?: string | null
   delivery_zones?: ShopDeliveryZone[]
+  /** Omit any of these to keep the shop's current value. */
+  website?: string
+  support_email?: string
+  returns_policy?: string
+  categories?: string[]
+  gift_options?: string[]
+  working_days?: string[]
+  pickup_enabled?: boolean
 }
 
 export type ProductStatus = 'draft' | 'published' | 'paused' | 'rejected'
@@ -307,7 +366,13 @@ export type ProductDetails = Product & {
   /** Nested shop on public product GET. */
   shop?: Pick<
     Shop,
-    'id' | 'name' | 'slug' | 'image_url' | 'customer_visible_location' | 'description'
+    | 'id'
+    | 'name'
+    | 'slug'
+    | 'image_url'
+    | 'customer_visible_location'
+    | 'description'
+    | 'seller_verification_status'
   >
 }
 

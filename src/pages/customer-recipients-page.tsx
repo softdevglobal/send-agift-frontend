@@ -36,6 +36,7 @@ import { uploadPublicImage } from '@/api/media'
 import { addressFieldsFromPlace, type PlaceDetails } from '@/api/places'
 import type { AddressInput } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
@@ -212,6 +213,7 @@ function formatAddress(address: RecipientAddress) {
 
 export function CustomerRecipientsPage() {
   const [recipients, setRecipients] = useState<Recipient[]>([])
+  const recipientPages = usePagedList(recipients, TABLE_PAGE_SIZE)
   const [details, setDetails] = useState<RecipientDetails | null>(null)
   const [countries, setCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(true)
@@ -606,8 +608,9 @@ export function CustomerRecipientsPage() {
           <FormAlert error={error} notice={notice} />
 
           {recipients.length ? (
+            <>
             <ul className="space-y-3">
-              {recipients.map((recipient) => (
+              {recipientPages.visible.map((recipient) => (
                 <li key={recipient.id} className={customerListRowClass}>
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="size-12 shrink-0 overflow-hidden rounded-full bg-muted">
@@ -655,6 +658,13 @@ export function CustomerRecipientsPage() {
                 </li>
               ))}
             </ul>
+            <PageNav
+              page={recipientPages.page}
+              pageCount={recipientPages.pageCount}
+              onPage={recipientPages.setPage}
+              label="Recipient pages"
+            />
+            </>
           ) : showForm ? null : (
             <CustomerEmptyState
               icon={Users}

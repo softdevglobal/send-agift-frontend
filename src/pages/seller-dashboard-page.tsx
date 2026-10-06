@@ -26,7 +26,6 @@ import {
   sellerSetupProgress,
   sellerSetupSteps,
   SellerStat,
-  sellerVerificationLabel,
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -185,8 +184,8 @@ export function SellerDashboardPage() {
               {/* On the dark hero the status reads by icon + label; the light
                   tone classes are for the pill on the profile page. */}
               <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white ring-1 ring-white/20 backdrop-blur-sm">
-                <BadgeCheck className="size-3.5" />
-                {sellerVerificationLabel(profile.verification_status)}
+                {profile.verification_status === 'verified' ? <BadgeCheck className="size-3.5" /> : null}
+                {profile.verification_status === 'verified' ? 'Verified seller' : 'Not verified'}
               </span>
             </div>
           </div>
@@ -221,7 +220,7 @@ export function SellerDashboardPage() {
           tone="navy"
           icon={BadgeCheck}
           label="Verification"
-          value={sellerVerificationLabel(profile.verification_status)}
+          value={profile.verification_status === 'verified' ? 'Verified seller' : 'Not verified'}
           hint={profile.status}
           to="/seller/profile"
         />

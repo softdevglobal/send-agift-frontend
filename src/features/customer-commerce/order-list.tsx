@@ -1,6 +1,8 @@
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
+
 import type { Order } from '@/api/orders'
 import {
   formatDeliveryDate,
@@ -22,10 +24,12 @@ export function CustomerOrderList({
   orders: Order[]
   variant: 'track' | 'history'
 }) {
+  const paged = usePagedList(orders, TABLE_PAGE_SIZE)
+
   return (
     <section className={customerPanelClass}>
       <ul className="divide-y divide-border/50">
-        {orders.map((order) => (
+        {paged.visible.map((order) => (
           <li key={order.id}>
             <Link
               to={`/orders/${order.id}`}
@@ -61,6 +65,14 @@ export function CustomerOrderList({
           </li>
         ))}
       </ul>
+      <div className="px-4 pb-4">
+        <PageNav
+          page={paged.page}
+          pageCount={paged.pageCount}
+          onPage={paged.setPage}
+          label="Order pages"
+        />
+      </div>
     </section>
   )
 }

@@ -8,6 +8,7 @@ import {
   type ShopGiftAvailability,
 } from '@/api/availability'
 import type { Product, Shop } from '@/api/types'
+import { PageNav } from '@/components/common/page-nav'
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,9 @@ import {
   listPublishedCatalog,
   subscribePublishedCatalog,
 } from '@/lib/published-catalog'
+
+/** Two rows of the desktop grid. */
+const GIFTS_PER_PAGE = 8
 
 function matchesFilters(
   product: CatalogProduct,
@@ -86,6 +90,7 @@ function productFromSearch(shop: ShopGiftAvailability, gift: AvailabilityProduct
     status: 'active',
     created_at: '',
     updated_at: '',
+    seller_verification_status: shop.seller_verification_status,
   }
   return catalogProductFromApi(product, shopCard)
 }
@@ -123,10 +128,8 @@ export function ProductsPage() {
     async function loadFromApi() {
       try {
         const mapped = await loadMarketplaceIntoCatalog()
-        if (!cancelled && mapped.length) {
-          fromApi = true
-          setCatalog(mapped)
-        }
+        fromApi = true
+        if (!cancelled) setCatalog(mapped)
       } catch {
         // Public shops endpoint is optional while the backend is down.
       }
@@ -192,11 +195,27 @@ export function ProductsPage() {
     [catalog, category, query],
   )
   const filteredByDelivery = hasDestination
+  const pageCount = Math.max(1, Math.ceil(products.length / GIFTS_PER_PAGE))
+  const requestedPage = Number(searchParams.get('page') || '1')
+  const page =
+    Number.isFinite(requestedPage) && requestedPage >= 1
+      ? Math.min(Math.floor(requestedPage), pageCount)
+      : 1
+  const pageStart = (page - 1) * GIFTS_PER_PAGE
+  const visibleProducts = products.slice(pageStart, pageStart + GIFTS_PER_PAGE)
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams)
     if (!value || value === 'all') params.delete(key)
     else params.set(key, value)
+    params.delete('page')
+    setSearchParams(params)
+  }
+
+  function goToPage(next: number) {
+    const params = new URLSearchParams(searchParams)
+    if (next <= 1) params.delete('page')
+    else params.set('page', String(next))
     setSearchParams(params)
   }
 
@@ -259,9 +278,15 @@ export function ProductsPage() {
         <p className="mb-5 text-sm text-muted-foreground">
           {giftsLoading
             ? 'Checking which gifts can be delivered there…'
-            : `${products.length} gift${products.length === 1 ? '' : 's'}${
-                filteredByDelivery ? ' that can be delivered there' : ''
-              }${query ? ` matching ‘${query}’` : ''}`}
+            : products.length === 0
+              ? `0 gifts${filteredByDelivery ? ' that can be delivered there' : ''}${
+                  query ? ` matching ‘${query}’` : ''
+                }`
+              : `${pageStart + 1}–${pageStart + visibleProducts.length} of ${products.length} gift${
+                  products.length === 1 ? '' : 's'
+                }${filteredByDelivery ? ' that can be delivered there' : ''}${
+                  query ? ` matching ‘${query}’` : ''
+                }`}
         </p>
 
         {giftsLoading ? (
@@ -273,11 +298,14 @@ export function ProductsPage() {
             Finding gifts…
           </div>
         ) : products.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {products.map((product) => (
-              <GiftCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visibleProducts.map((product) => (
+                <GiftCard key={product.id} product={product} />
+              ))}
+            </div>
+            <PageNav page={page} pageCount={pageCount} onPage={goToPage} label="Gift pages" />
+          </>
         ) : (
           <div className="rounded-2xl bg-card px-6 py-16 text-center shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-primary">

@@ -76,10 +76,8 @@ export function HomePage() {
     async function loadFromApi() {
       try {
         const mapped = await loadMarketplaceIntoCatalog()
-        if (!cancelled && mapped.length) {
-          fromApi = true
-          setPublished(mapped)
-        }
+        fromApi = true
+        if (!cancelled) setPublished(mapped)
       } catch {
         // Public shops endpoint is optional while the backend is down.
       }

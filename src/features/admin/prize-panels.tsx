@@ -13,6 +13,7 @@ import {
   type PrizeLedgerView,
 } from '@/api/competitions'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -281,6 +282,7 @@ export function LedgerPanel({
 }) {
   const cur = comp.prize_currency
   const entries = ledger?.entries ?? []
+  const entryPages = usePagedList([...entries].reverse(), TABLE_PAGE_SIZE, comp.id)
   const rec = ledger?.reconciliation
   function exportCsv() {
     const blob = new Blob([ledgerCsv(entries)], { type: 'text/csv' })
@@ -341,6 +343,7 @@ export function LedgerPanel({
       {entries.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">The ledger starts when the round is published.</p>
       ) : (
+        <>
         <div className="max-h-[420px] overflow-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="sticky top-0 bg-card">
@@ -354,7 +357,7 @@ export function LedgerPanel({
               </tr>
             </thead>
             <tbody>
-              {[...entries].reverse().map((e) => (
+              {entryPages.visible.map((e) => (
                 <tr key={e.id} className="border-b border-border/30 last:border-0">
                   <td className="py-2 pr-3 text-muted-foreground tabular-nums">{e.seq}</td>
                   <td className="py-2 pr-3">
@@ -379,6 +382,14 @@ export function LedgerPanel({
             </tbody>
           </table>
         </div>
+        <PageNav
+          page={entryPages.page}
+          pageCount={entryPages.pageCount}
+          onPage={entryPages.setPage}
+          label="Ledger pages"
+          scroll={false}
+        />
+        </>
       )}
     </Section>
   )
@@ -440,6 +451,7 @@ export function PlaysPanel({
   plays: AdminPlay[]
   onVoid?: (play: AdminPlay) => void
 }) {
+  const playPages = usePagedList(plays, TABLE_PAGE_SIZE, comp.id)
   if (plays.length === 0) return null
   const cur = comp.prize_currency
   const canVoid = ['live', 'paused', 'closed', 'frozen'].includes(comp.effective_status)
@@ -459,7 +471,7 @@ export function PlaysPanel({
             </tr>
           </thead>
           <tbody>
-            {plays.map((p) => (
+            {playPages.visible.map((p) => (
               <tr key={p.id} className="border-b border-border/30 last:border-0">
                 <td className="py-2 pr-3">
                   {p.display_name || p.customer_id.slice(0, 8)}
@@ -491,6 +503,13 @@ export function PlaysPanel({
           </tbody>
         </table>
       </div>
+      <PageNav
+        page={playPages.page}
+        pageCount={playPages.pageCount}
+        onPage={playPages.setPage}
+        label="Play pages"
+        scroll={false}
+      />
     </Section>
   )
 }

@@ -19,6 +19,7 @@ import { createCountry, deleteCountry, listCountryCapabilities, updateCountry } 
 import { listCountries, type Country, type CountryInput } from '@/api/countries'
 import { KNOWN_CURRENCIES, type CountryCapability } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -97,6 +98,7 @@ function statusTone(status: string): string {
 
 export function AdminCountriesPage() {
   const [countries, setCountries] = useState<Country[]>([])
+  const countryPages = usePagedList(countries, 9)
   const [capabilities, setCapabilities] = useState<Record<string, CountryCapability>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -276,8 +278,9 @@ export function AdminCountriesPage() {
           <FormAlert error={error} notice={notice} />
 
           {countries.length ? (
+            <>
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {countries.map((country) => (
+              {countryPages.visible.map((country) => (
                 <div
                   key={country.id}
                   className={cn(
@@ -382,6 +385,13 @@ export function AdminCountriesPage() {
                 </div>
               ))}
             </section>
+            <PageNav
+              page={countryPages.page}
+              pageCount={countryPages.pageCount}
+              onPage={countryPages.setPage}
+              label="Country pages"
+            />
+            </>
           ) : (
             <section
               className={cn(
