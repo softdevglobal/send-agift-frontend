@@ -67,7 +67,7 @@ export function SiteHeader() {
 
         <form
           onSubmit={handleSearch}
-          className="hidden min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border-2 border-brand-ink bg-background transition-shadow focus-within:ring-4 focus-within:ring-brand-violet/25 md:flex"
+          className="hidden min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet md:flex"
         >
           <label className="sr-only" htmlFor="site-search">
             Search gifts
@@ -76,7 +76,7 @@ export function SiteHeader() {
             <select
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="h-11 appearance-none border-0 border-r-2 border-brand-ink/15 bg-accent py-2 pr-8 pl-3 text-sm font-semibold text-brand-ink outline-none"
+              className="h-11 appearance-none border-0 border-r border-brand-ink/10 bg-accent py-2 pr-8 pl-3 text-sm font-semibold text-brand-ink outline-none"
               aria-label="Search category"
             >
               <option value="all">All gifts</option>
@@ -206,7 +206,7 @@ export function SiteHeader() {
         <label className="sr-only" htmlFor="site-search-mobile">
           Search gifts
         </label>
-        <div className="flex overflow-hidden rounded-lg border-2 border-brand-ink bg-background focus-within:ring-4 focus-within:ring-brand-violet/25">
+        <div className="flex overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet">
           <Input
             id="site-search-mobile"
             value={query}

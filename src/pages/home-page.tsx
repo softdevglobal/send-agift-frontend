@@ -228,7 +228,7 @@ export function HomePage() {
                   draggable={false}
                 />
               </div>
-              <div className="absolute bottom-6 left-10 flex items-center gap-3 rounded-xl bg-brand-ink px-4 py-3 text-white sm:left-14 lg:bottom-20 lg:-left-6">
+              <div className="absolute bottom-[4.5rem] left-9 flex items-center gap-3 rounded-xl bg-brand-ink px-4 py-3 text-white sm:left-[3.25rem] lg:bottom-20 lg:-left-6">
                 <span className="flex size-10 items-center justify-center rounded-lg bg-brand-teal text-brand-ink">
                   <Gift className="size-5" />
                 </span>
