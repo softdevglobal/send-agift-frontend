@@ -19,6 +19,7 @@ import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { accountNavItems } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
@@ -220,8 +221,24 @@ export function SiteHeader() {
         </div>
       </form>
 
-      {open ? (
-        <div className="border-t border-border bg-background px-5 py-4 md:hidden">
+      {/* Phone menu: a panel that slides in from the right and leaves a strip
+          of the page showing on the left. */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="w-[86%] max-w-sm gap-0 border-l-2 border-brand-ink bg-background p-0 shadow-none md:hidden"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-brand-ink/10 px-5 py-4">
+            <SheetTitle className="font-poster text-xl">Menu</SheetTitle>
+            <SheetClose
+              aria-label="Close menu"
+              className="flex size-9 items-center justify-center rounded-md bg-brand-ink text-white"
+            >
+              <X className="size-4" />
+            </SheetClose>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <nav className="flex flex-col gap-1">
             <Link
               to="/products"
@@ -328,8 +345,9 @@ export function SiteHeader() {
               </Button>
             ) : null}
           </nav>
-        </div>
-      ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <SignOutDialog
         open={signOutOpen}
