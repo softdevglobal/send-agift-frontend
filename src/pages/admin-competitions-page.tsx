@@ -100,17 +100,15 @@ export function AdminCompetitionsPage() {
 
       <FormAlert error={error} className="mb-6" />
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
+      <div className="mb-5 flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
         {filters.map((f) => (
           <button
             key={f.value}
             type="button"
             onClick={() => setFilter(f.value)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors',
-              filter === f.value
-                ? 'bg-foreground text-background ring-foreground'
-                : 'bg-background text-muted-foreground ring-border hover:text-foreground',
+              'rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
+              filter === f.value ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
             )}
           >
             {f.label}

@@ -2,7 +2,7 @@ export { SellerShell } from './seller-shell'
 export { SellerPageHeader } from './seller-page-header'
 export { SellerEmptyState } from './seller-empty-state'
 export { SellerStat } from './seller-stat'
-export { ConfirmDialog } from './confirm-dialog'
+export { ConfirmDialog } from '@/components/common/confirm-dialog'
 export {
   SellerSheet,
   SellerSheetFacts,

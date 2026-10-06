@@ -18,6 +18,7 @@ import {
 import { createCountry, deleteCountry, listCountryCapabilities, updateCountry } from '@/api/admin'
 import { listCountries, type Country, type CountryInput } from '@/api/countries'
 import { KNOWN_CURRENCIES, type CountryCapability } from '@/api/types'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
@@ -98,6 +99,8 @@ function statusTone(status: string): string {
 
 export function AdminCountriesPage() {
   const [countries, setCountries] = useState<Country[]>([])
+  const [countryToDelete, setCountryToDelete] = useState<Country | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const countryPages = usePagedList(countries, 9)
   const [capabilities, setCapabilities] = useState<Record<string, CountryCapability>>({})
   const [loading, setLoading] = useState(true)
@@ -241,6 +244,7 @@ export function AdminCountriesPage() {
   async function handleDelete(id: string) {
     setError(null)
     setNotice(null)
+    setDeleting(true)
     try {
       await deleteCountry(id)
       if (viewCountry?.id === id) setViewOpen(false)
@@ -253,6 +257,9 @@ export function AdminCountriesPage() {
           ? 'This country cannot be deleted while customers, sellers, or other records still use it.'
           : message,
       )
+    } finally {
+      setDeleting(false)
+      setCountryToDelete(null)
     }
   }
 
@@ -376,7 +383,7 @@ export function AdminCountriesPage() {
                         variant="ghost"
                         size="icon"
                         aria-label={`Delete ${country.name}`}
-                        onClick={() => handleDelete(country.id)}
+                        onClick={() => setCountryToDelete(country)}
                       >
                         <Trash2 className="size-4" />
                       </Button>
@@ -790,7 +797,7 @@ export function AdminCountriesPage() {
                   type="button"
                   variant="outline"
                   className="h-10 flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => handleDelete(viewCountry.id)}
+                  onClick={() => setCountryToDelete(viewCountry)}
                 >
                   <Trash2 className="size-4" />
                   Delete
@@ -800,6 +807,19 @@ export function AdminCountriesPage() {
           ) : null}
         </SheetContent>
       </Sheet>
+      <ConfirmDialog
+        open={countryToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setCountryToDelete(null)
+        }}
+        title={`Delete ${countryToDelete?.name ?? 'this country'}?`}
+        description="It disappears from the registration forms straight away. A country still used by customers, sellers or orders cannot be deleted."
+        confirmLabel="Delete country"
+        busy={deleting}
+        onConfirm={() => {
+          if (countryToDelete) void handleDelete(countryToDelete.id)
+        }}
+      />
     </>
   )
 }

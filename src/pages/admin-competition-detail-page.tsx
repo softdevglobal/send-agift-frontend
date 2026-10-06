@@ -58,6 +58,7 @@ import {
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
@@ -131,6 +132,16 @@ export function AdminCompetitionDetailPage() {
   const [cancelReason, setCancelReason] = useState<CancelReason>('technical_failure')
   const [cancelNote, setCancelNote] = useState('')
   const [rejecting, setRejecting] = useState<ScoreSubmission | null>(null)
+  /** The lifecycle step waiting on "are you sure". */
+  const [confirming, setConfirming] = useState<{
+    key: string
+    title: string
+    description: string
+    confirmLabel: string
+    tone: 'danger' | 'default'
+    action: () => Promise<unknown>
+    success: string
+  } | null>(null)
   const [disqualifying, setDisqualifying] = useState<CompetitionWinner | null>(null)
   const [analytics, setAnalytics] = useState<CompetitionAnalytics | null>(null)
   const [ledger, setLedger] = useState<PrizeLedgerView | null>(null)
@@ -310,7 +321,17 @@ export function AdminCompetitionDetailPage() {
                 variant="outline"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => run('pause', () => pauseCompetition(comp.id), 'Paused. New plays are refused; plays already started can finish.')}
+                onClick={() =>
+                  setConfirming({
+                    key: 'pause',
+                    title: 'Pause this competition?',
+                    description: 'New plays are refused until you resume it. Plays already started can finish.',
+                    confirmLabel: 'Pause',
+                    tone: 'default',
+                    action: () => pauseCompetition(comp.id),
+                    success: 'Paused. New plays are refused; plays already started can finish.',
+                  })
+                }
               >
                 {spinner('pause')}
                 <Pause className="size-4" />
@@ -335,11 +356,17 @@ export function AdminCompetitionDetailPage() {
                 variant="outline"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => {
-                  if (window.confirm('Close this round now? No new plays will be accepted.')) {
-                    void run('close', () => closeCompetition(comp.id), 'Closed. The prize is fixed at its current amount.')
-                  }
-                }}
+                onClick={() =>
+                  setConfirming({
+                    key: 'close',
+                    title: 'Close this round now?',
+                    description: 'No new plays will be accepted, and the prize is fixed at its current amount. This cannot be undone.',
+                    confirmLabel: 'Close now',
+                    tone: 'danger',
+                    action: () => closeCompetition(comp.id),
+                    success: 'Closed. The prize is fixed at its current amount.',
+                  })
+                }
               >
                 {spinner('close')}
                 <Square className="size-4" />
@@ -365,11 +392,15 @@ export function AdminCompetitionDetailPage() {
                 }
                 disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() =>
-                  run(
-                    'schedule',
-                    () => scheduleCompetition(comp.id),
-                    `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
-                  )
+                  setConfirming({
+                    key: 'schedule',
+                    title: 'Publish this competition?',
+                    description: `Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} get a push notification straight away, and it goes live at its start time.`,
+                    confirmLabel: 'Publish',
+                    tone: 'default',
+                    action: () => scheduleCompetition(comp.id),
+                    success: `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
+                  })
                 }
               >
                 {spinner('schedule')}
@@ -382,7 +413,17 @@ export function AdminCompetitionDetailPage() {
                 type="button"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => run('freeze', () => freezeCompetition(comp.id), 'Frozen. The leaderboard is locked and snapshotted.')}
+                onClick={() =>
+                  setConfirming({
+                    key: 'freeze',
+                    title: 'Freeze the leaderboard?',
+                    description: 'The leaderboard is locked and snapshotted. Scores can no longer change after this.',
+                    confirmLabel: 'Freeze',
+                    tone: 'danger',
+                    action: () => freezeCompetition(comp.id),
+                    success: 'Frozen. The leaderboard is locked and snapshotted.',
+                  })
+                }
               >
                 {spinner('freeze')}
                 <Snowflake className="size-4" />
@@ -394,11 +435,17 @@ export function AdminCompetitionDetailPage() {
                 type="button"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => {
-                  if (window.confirm('Run the draw now? Winners are picked at random from every entry, and it cannot be run again.')) {
-                    void run('draw', () => runDraw(comp.id), 'Draw complete. Validate the winners below.')
-                  }
-                }}
+                onClick={() =>
+                  setConfirming({
+                    key: 'draw',
+                    title: 'Run the draw now?',
+                    description: 'Winners are picked at random from every entry. The draw cannot be run again.',
+                    confirmLabel: 'Run the draw',
+                    tone: 'danger',
+                    action: () => runDraw(comp.id),
+                    success: 'Draw complete. Validate the winners below.',
+                  })
+                }
               >
                 {spinner('draw')}
                 <Trophy className="size-4" />
@@ -411,7 +458,15 @@ export function AdminCompetitionDetailPage() {
                 className="h-10"
                 disabled={busy !== null}
                 onClick={() =>
-                  run('finalise', () => finaliseCompetition(comp.id), 'Finalised. Validate the winners below.')
+                  setConfirming({
+                    key: 'finalise',
+                    title: 'Finalise and declare winners?',
+                    description: 'The results become final and winners are declared. You will validate each winner next.',
+                    confirmLabel: 'Finalise',
+                    tone: 'danger',
+                    action: () => finaliseCompetition(comp.id),
+                    success: 'Finalised. Validate the winners below.',
+                  })
                 }
               >
                 {spinner('finalise')}
@@ -779,6 +834,23 @@ export function AdminCompetitionDetailPage() {
       <AdjustPrizeDialog comp={comp} open={adjustOpen} onOpenChange={setAdjustOpen} onDone={done} />
       <VoidPlayDialog comp={comp} play={voiding} onOpenChange={(open) => !open && setVoiding(null)} onDone={done} />
       <SettleDialog comp={comp} open={settleOpen} onOpenChange={setSettleOpen} onDone={done} />
+
+      <ConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirming(null)
+        }}
+        title={confirming?.title ?? ''}
+        description={confirming?.description ?? ''}
+        confirmLabel={confirming?.confirmLabel ?? 'Confirm'}
+        tone={confirming?.tone}
+        busy={confirming !== null && busy === confirming.key}
+        onConfirm={() => {
+          if (!confirming) return
+          const step = confirming
+          void run(step.key, step.action, step.success).then(() => setConfirming(null))
+        }}
+      />
 
       <ReasonDialog
         open={rejecting !== null}

@@ -45,10 +45,10 @@ function AdminNavLinks({
     .filter((group) => group.items.length > 0)
 
   return (
-    <nav className="flex flex-1 flex-col gap-3">
+    <nav className="flex flex-1 flex-col gap-6">
       {groups.map((group) => (
         <div key={group.label}>
-          <p className="px-3 pb-1 text-[10px] font-bold tracking-[0.18em] text-white/45 uppercase">
+          <p className="px-3 pb-2 text-[10px] font-bold tracking-[0.18em] text-white/45 uppercase">
             {group.label}
           </p>
           <div className="space-y-0.5">
@@ -60,7 +60,7 @@ function AdminNavLinks({
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
-                    'group flex items-center gap-3 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors',
+                    'group flex items-center gap-3 rounded-md px-2.5 py-2 text-sm font-semibold transition-colors',
                     isActive
                       ? 'bg-brand-violet text-white'
                       : 'text-white/65 hover:bg-white/10 hover:text-white',
@@ -71,7 +71,7 @@ function AdminNavLinks({
                   <>
                     <span
                       className={cn(
-                        'flex size-7 items-center justify-center rounded-md transition-colors',
+                        'flex size-8 items-center justify-center rounded-md transition-colors',
                         isActive ? 'bg-brand-teal text-brand-ink' : 'bg-white/8 text-current',
                       )}
                     >
@@ -151,18 +151,18 @@ function AdminShellLayout() {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-hidden bg-brand-ink px-3 py-4 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-hidden bg-brand-ink px-3 py-5 transition-transform duration-300 lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:translate-x-0',
           menuOpen ? 'translate-x-0' : '-translate-x-full',
         )}
       >
 
         <Sparkle className="absolute top-5 right-6 hidden size-5 text-brand-violet lg:block" />
-        <div className="relative mb-4 flex items-start gap-2 px-2">
+        <div className="relative mb-7 flex items-start gap-2 px-2">
           <div className="min-w-0 flex-1">
             <span className="inline-flex rounded-lg bg-white p-1">
-              <BrandLogo to="/admin" className="max-w-full" imgClassName="h-10" />
+              <BrandLogo to="/admin" className="max-w-full" imgClassName="h-11" />
             </span>
-            <p className="mt-2 w-fit rounded-md bg-brand-teal px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
+            <p className="mt-2.5 w-fit rounded-md bg-brand-teal px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
               Admin console
             </p>
           </div>
@@ -190,7 +190,7 @@ function AdminShellLayout() {
 
         {/* One row. Who is signed in, and sign out. So the menu above
             keeps the height. */}
-        <div className="relative mt-3 border-t border-white/10 pt-3">
+        <div className="relative mt-6 border-t border-white/10 pt-4">
           <div className="flex items-center gap-3 px-2">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-teal text-xs font-extrabold text-brand-ink">
               {adminInitials(admin)}

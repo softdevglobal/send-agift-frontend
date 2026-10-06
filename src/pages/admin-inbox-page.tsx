@@ -124,14 +124,14 @@ export function AdminInboxPage() {
               aria-selected={active}
               onClick={() => setFilter(item.id)}
               className={cn(
-                'inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition-colors',
+                'inline-flex items-center gap-2 rounded-md border-2 px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
                 active
-                  ? 'bg-primary text-primary-foreground ring-primary'
-                  : 'bg-card text-muted-foreground ring-border/60 hover:text-foreground',
+                  ? 'border-brand-ink bg-brand-ink text-white'
+                  : 'border-brand-ink/15 bg-card text-brand-ink/70 hover:border-brand-ink',
               )}
             >
               {item.label}
-              <span className={cn('text-xs', active ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
+              <span className={cn('rounded-sm px-1 text-[10px]', active ? 'bg-brand-teal text-brand-ink' : 'bg-accent text-brand-ink')}>
                 {counts[item.id]}
               </span>
             </button>

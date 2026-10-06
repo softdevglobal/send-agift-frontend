@@ -89,17 +89,15 @@ export function AdminPointsPage() {
         }. A pending purchase is credited only when its payment is confirmed.`}
       />
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
+      <div className="mb-5 flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
         {tabs.map((t) => (
           <button
             key={t.label}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-              tab === t.id
-                ? 'bg-foreground text-background'
-                : 'bg-muted text-muted-foreground hover:text-foreground',
+              'rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
+              tab === t.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
             )}
           >
             {t.label}

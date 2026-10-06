@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { LoaderCircle, Search, Store } from 'lucide-react'
+import { Search, Store } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -9,17 +9,10 @@ import {
   type AdminSeller,
   type AdminSellerStatus,
 } from '@/api/admin'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
@@ -135,7 +128,7 @@ export function AdminSellersPage() {
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
           {tabs.map((item) => (
             <button
               key={item.label}
@@ -145,10 +138,10 @@ export function AdminSellersPage() {
                 setPage(1)
               }}
               className={cn(
-                'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+                'rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
                 tab === item.id
-                  ? 'bg-foreground text-background'
-                  : 'bg-muted text-muted-foreground hover:text-foreground',
+                  ? 'bg-brand-ink text-white'
+                  : 'text-brand-ink/60 hover:text-brand-ink',
               )}
             >
               {item.label}
@@ -164,7 +157,7 @@ export function AdminSellersPage() {
               setPage(1)
             }}
             placeholder="Search name or email"
-            className="h-10 rounded-full pl-9"
+            className="h-10 border-2 border-brand-ink/15 pl-9 focus-visible:border-brand-ink focus-visible:ring-0"
             aria-label="Search sellers"
           />
         </div>
@@ -344,58 +337,39 @@ export function AdminSellersPage() {
         </div>
       )}
 
-      <Dialog open={verifying !== null} onOpenChange={(open) => !open && !saving && setVerifying(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {nextVerification === 'verified' ? 'Verify this seller?' : 'Remove verification?'}
-            </DialogTitle>
-            <DialogDescription>
-              {nextVerification === 'verified'
-                ? `${verifying ? sellerName(verifying) : 'This seller'} keeps selling, and their gifts, shop, and profile show the Verified seller badge.`
-                : `${verifying ? sellerName(verifying) : 'This seller'} keeps selling. The Verified seller badge comes off their gifts, shop, and profile.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setVerifying(null)} disabled={saving}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={() => void confirmVerification()} disabled={saving}>
-              {saving ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {nextVerification === 'verified' ? 'Verify' : 'Unverify'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={verifying !== null}
+        onOpenChange={(open) => {
+          if (!open && !saving) setVerifying(null)
+        }}
+        tone={nextVerification === 'verified' ? 'default' : 'danger'}
+        title={nextVerification === 'verified' ? 'Verify this seller?' : 'Remove verification?'}
+        description={
+          nextVerification === 'verified'
+            ? `${verifying ? sellerName(verifying) : 'This seller'} keeps selling, and their gifts, shop, and profile show the Verified seller badge.`
+            : `${verifying ? sellerName(verifying) : 'This seller'} keeps selling. The Verified seller badge comes off their gifts, shop, and profile.`
+        }
+        confirmLabel={nextVerification === 'verified' ? 'Verify' : 'Unverify'}
+        busy={saving}
+        onConfirm={() => void confirmVerification()}
+      />
 
-      <Dialog open={pending !== null} onOpenChange={(open) => !open && !saving && setPending(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {nextStatus === 'suspended' ? 'Suspend this seller?' : 'Activate this seller?'}
-            </DialogTitle>
-            <DialogDescription>
-              {nextStatus === 'suspended'
-                ? `${pending ? sellerName(pending) : 'This seller'} cannot sign in or keep using the seller account. Their shops leave the public catalog until you activate them.`
-                : `${pending ? sellerName(pending) : 'This seller'} can sign in again, and their public shops come back.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setPending(null)} disabled={saving}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant={nextStatus === 'suspended' ? 'destructive' : 'default'}
-              onClick={() => void confirmStatus()}
-              disabled={saving}
-            >
-              {saving ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {nextStatus === 'suspended' ? 'Suspend' : 'Activate'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={pending !== null}
+        onOpenChange={(open) => {
+          if (!open && !saving) setPending(null)
+        }}
+        tone={nextStatus === 'suspended' ? 'danger' : 'default'}
+        title={nextStatus === 'suspended' ? 'Suspend this seller?' : 'Activate this seller?'}
+        description={
+          nextStatus === 'suspended'
+            ? `${pending ? sellerName(pending) : 'This seller'} cannot sign in or keep using the seller account. Their shops leave the public catalog until you activate them.`
+            : `${pending ? sellerName(pending) : 'This seller'} can sign in again, and their public shops come back.`
+        }
+        confirmLabel={nextStatus === 'suspended' ? 'Suspend' : 'Activate'}
+        busy={saving}
+        onConfirm={() => void confirmStatus()}
+      />
     </>
   )
 }
