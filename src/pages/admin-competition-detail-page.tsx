@@ -99,6 +99,25 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { cn } from '@/lib/utils'
 
+type DetailTab = 'leaderboard' | 'winners' | 'setup' | 'money' | 'plays'
+
+const detailTabs: { id: DetailTab; label: string }[] = [
+  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'winners', label: 'Winners & review' },
+  { id: 'setup', label: 'Setup & actions' },
+  { id: 'money', label: 'Prize & money' },
+  { id: 'plays', label: 'Plays' },
+]
+
+function EmptyTab({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-xl border-2 border-dashed border-brand-ink/20 px-6 py-12 text-center">
+      <p className="font-poster text-xl">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{text}</p>
+    </div>
+  )
+}
+
 function Fact({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
@@ -127,6 +146,7 @@ export function AdminCompetitionDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [tabChoice, setTab] = useState<DetailTab | null>(null)
   const [editing, setEditing] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState<CancelReason>('technical_failure')
@@ -227,6 +247,8 @@ export function AdminCompetitionDetailPage() {
     await load()
   }
 
+  const tab: DetailTab = tabChoice ?? (comp.status === 'draft' || chance ? 'setup' : 'leaderboard')
+
   return (
     <>
       <CompetitionHero
@@ -252,7 +274,33 @@ export function AdminCompetitionDetailPage() {
 
       <CompetitionStats comp={comp} livePlays={live?.eligible_play_count} />
 
+      {/* One area at a time, so the page reads as sections, not one long scroll. */}
+      <div className="sticky top-16 z-20 -mx-1 mb-5 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-fit gap-1 rounded-lg bg-accent p-1">
+          {detailTabs
+            .filter((item) => !(chance && item.id === 'leaderboard'))
+            .map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold tracking-[0.08em] whitespace-nowrap uppercase transition-colors',
+                  tab === item.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
+                )}
+              >
+                {item.label}
+                {item.id === 'winners' && queue.length > 0 ? (
+                  <span className="rounded-sm bg-amber-300 px-1 text-[10px] text-amber-950">{queue.length}</span>
+                ) : null}
+              </button>
+            ))}
+        </div>
+      </div>
+
       <div className="grid gap-4">
+        {tab === 'setup' ? (
+          <>
         <Panel title="Setup" icon={<CalendarClock className="size-5 text-sky-600" />}>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Fact label="Opens" value={formatDate(comp.starts_at)} />
@@ -516,6 +564,17 @@ export function AdminCompetitionDetailPage() {
 
         {analytics && status !== 'draft' ? <RiskPanel analytics={analytics} /> : null}
 
+          </>
+        ) : null}
+
+        {tab === 'money' ? (
+          <>
+        {status === 'draft' ? (
+          <EmptyTab
+            title="No money moves yet"
+            text="The prize ledger starts once the competition is published. Fund the reserve under Setup & actions."
+          />
+        ) : null}
         {status !== 'draft' ? (
           <LedgerPanel
             comp={comp}
@@ -532,10 +591,26 @@ export function AdminCompetitionDetailPage() {
           />
         ) : null}
 
+          </>
+        ) : null}
+
+        {tab === 'plays' ? (
+          <>
         <PlaysPanel comp={comp} plays={plays} onVoid={superadmin ? setVoiding : undefined} />
 
         {draw ? <DrawPanel draw={draw} /> : null}
 
+          </>
+        ) : null}
+
+        {tab === 'winners' ? (
+          <>
+        {queue.length === 0 && winners.length === 0 ? (
+          <EmptyTab
+            title="No winners yet"
+            text="Winners appear here once the round is finalised or the draw is run. Scores waiting for review show here too."
+          />
+        ) : null}
         {queue.length > 0 ? (
           <Panel title={`Review queue (${queue.length})`} icon={<ShieldAlert className="size-5 text-amber-600" />}>
             <div className="space-y-2">
@@ -701,7 +776,10 @@ export function AdminCompetitionDetailPage() {
           </Panel>
         ) : null}
 
-        {chance ? null : (
+          </>
+        ) : null}
+
+        {tab === 'leaderboard' && !chance ? (
         <Panel
           title="Leaderboard"
           icon={<Trophy className="size-5 text-amber-500" />}
@@ -720,7 +798,7 @@ export function AdminCompetitionDetailPage() {
             <LeaderPodium rows={board.slice(0, 3)} />
             {board.length > 3 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-sm">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
                     <th className="py-2 pr-4 font-medium">Rank</th>
@@ -765,7 +843,7 @@ export function AdminCompetitionDetailPage() {
             </>
           )}
         </Panel>
-        )}
+        ) : null}
       </div>
 
       <CompetitionForm

@@ -17,6 +17,7 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle } from '@
 import { formatDate } from '@/features/admin'
 import { CompetitionForm } from '@/features/admin/competition-form'
 import { ReserveCard } from '@/features/admin/competition-panels'
+import { CompetitionStandings } from '@/features/admin/competition-standings'
 import {
   competitionStatusLabel,
   competitionStatusTone,
@@ -146,22 +147,24 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
             </>
           ) : (
             <>
-              <header
-                className="relative shrink-0 px-6 pt-6 pb-5 text-white"
-                style={{ background: gameColor(comp.game_slug) }}
-              >
+              <header className="relative shrink-0 bg-brand-ink px-6 pt-6 pb-5 text-white">
+                <span
+                  aria-hidden
+                  className="absolute inset-x-0 top-0 h-1.5"
+                  style={{ background: gameColor(comp.game_slug) }}
+                />
                 <SheetClose
-                  className="absolute top-4 right-4 grid size-8 place-items-center rounded-full bg-white/20 text-white transition hover:bg-white/30 focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none"
+                  className="absolute top-4 right-4 grid size-8 place-items-center rounded-md bg-white/10 text-white transition hover:bg-white/20 focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none"
                   aria-label="Close"
                 >
                   <X className="size-4" />
                 </SheetClose>
                 <div className="flex items-start gap-3 pr-10">
-                  <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-white/20 backdrop-blur">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-lg text-white" style={{ background: gameColor(comp.game_slug) }}>
                     <GameIcon className="size-6" />
                   </span>
                   <div className="min-w-0">
-                    <SheetTitle className="text-2xl leading-tight text-white">{comp.title}</SheetTitle>
+                    <SheetTitle className="font-poster text-2xl leading-tight text-white">{comp.title}</SheetTitle>
                     <SheetDescription className="mt-0.5 text-sm text-white/85">
                       {comp.game_name} · Round {comp.round_no}
                     </SheetDescription>
@@ -176,7 +179,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   {comp.countries.map((c) => (
                     <span
                       key={c.id}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur"
+                      className="inline-flex items-center gap-1.5 rounded-md bg-white/10 px-2 py-1 text-xs font-semibold"
                     >
                       <span aria-hidden>{flagOf(c.iso_code)}</span>
                       {c.name}
@@ -188,26 +191,28 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
                 <FormAlert error={error} notice={notice} />
 
-                <div className="rounded-2xl bg-orange-500 p-5 text-white shadow-md">
-                  <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.14em] text-white/80 uppercase">
+                <CompetitionStandings comp={comp} />
+
+                <div className="rounded-xl bg-amber-300 p-5 text-amber-950">
+                  <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.14em] text-amber-950/70 uppercase">
                     <Trophy className="size-3.5" />
                     Prize
                   </p>
                   <p className="mt-1 font-poster text-3xl">{prize}</p>
-                  <p className="mt-1 text-sm text-white/90">{comp.prize_description}</p>
+                  <p className="mt-1 text-sm font-medium text-amber-950/80">{comp.prize_description}</p>
                   <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium">
-                    <span className="rounded-full bg-white/20 px-2.5 py-1">
+                    <span className="rounded-md bg-white/60 px-2 py-1 font-bold">
                       {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
                     </span>
                     {comp.prize_growth_enabled ? (
-                      <span className="rounded-full bg-white/20 px-2.5 py-1">Grows with every play</span>
+                      <span className="rounded-md bg-white/60 px-2 py-1 font-bold">Grows with every play</span>
                     ) : null}
                   </div>
                 </div>
 
-                <section className="space-y-3 rounded-2xl border border-border/60 p-4">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold">
-                    <CalendarClock className="size-4 text-primary" />
+                <section className="space-y-3 rounded-lg border-2 border-brand-ink/10 p-4">
+                  <h3 className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase">
+                    <CalendarClock className="size-4 text-brand-violet" />
                     Schedule
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
@@ -217,9 +222,9 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   <p className="text-xs text-muted-foreground">Runs on {comp.timezone}</p>
                 </section>
 
-                <section className="space-y-3 rounded-2xl border border-border/60 p-4">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold">
-                    <Users className="size-4 text-primary" />
+                <section className="space-y-3 rounded-lg border-2 border-brand-ink/10 p-4">
+                  <h3 className="flex items-center gap-2 text-[11px] font-bold tracking-[0.14em] uppercase">
+                    <Users className="size-4 text-brand-violet" />
                     Players
                   </h3>
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -267,7 +272,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                 ) : null}
 
                 {isDraft && blocked ? (
-                  <section className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
+                  <section className="rounded-lg border-2 border-amber-300 bg-amber-50 p-4">
                     <h3 className="text-sm font-semibold text-amber-900">Before it can be published</h3>
                     <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-sm text-amber-900">
                       {comp.schedule_blockers.map((b) => (
@@ -278,7 +283,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                 ) : null}
 
                 {comp.official_rules ? (
-                  <details className="rounded-2xl border border-border/60 px-4 py-3 text-sm">
+                  <details className="rounded-lg border-2 border-brand-ink/10 px-4 py-3 text-sm">
                     <summary className="cursor-pointer font-medium">Official rules</summary>
                     <p className="mt-2 whitespace-pre-wrap text-muted-foreground">{comp.official_rules}</p>
                   </details>
@@ -290,10 +295,10 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   <p className="text-xs text-muted-foreground">A super admin funds the reserve and publishes it.</p>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button asChild variant="ghost" className="h-10 rounded-full px-3 text-muted-foreground">
+                  <Button asChild variant="outline" className="h-10 px-4">
                     <Link to={`/admin/competitions/${comp.id}`}>
                       <ExternalLink className="size-4" />
-                      Full page
+                      Full leaderboard &amp; details
                     </Link>
                   </Button>
                   <div className="ml-auto flex gap-2">
