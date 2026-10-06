@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import {
-  ChevronDown,
   Clapperboard,
   Gift,
   Heart,
@@ -32,7 +31,6 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('all')
   const { isAuthenticated, role, logout } = useAuth()
   const { itemCount } = useCart()
   const { unreadCount, openMessages } = useCustomerMessages()
@@ -46,7 +44,6 @@ export function SiteHeader() {
     event.preventDefault()
     const params = new URLSearchParams()
     if (query.trim()) params.set('q', query.trim())
-    if (category && category !== 'all') params.set('category', category)
     const suffix = params.toString()
     navigate(`/products${suffix ? `?${suffix}` : ''}`)
     setOpen(false)
@@ -73,22 +70,6 @@ export function SiteHeader() {
           <label className="sr-only" htmlFor="site-search">
             Search gifts
           </label>
-          <div className="relative">
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="h-11 appearance-none border-0 border-r border-brand-ink/10 bg-accent py-2 pr-8 pl-3 text-sm font-semibold text-brand-ink outline-none"
-              aria-label="Search category"
-            >
-              <option value="all">All gifts</option>
-              {giftCategories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-brand-ink" />
-          </div>
           <Input
             id="site-search"
             value={query}
