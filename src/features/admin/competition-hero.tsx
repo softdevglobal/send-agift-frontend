@@ -1,6 +1,5 @@
-import { ArrowLeft, BellRing, Check, Gamepad2, Medal, Pencil, ShieldAlert, Trophy, Users, type LucideIcon } from 'lucide-react'
+import { BellRing, Check, Gamepad2, Medal, Pencil, ShieldAlert, Trophy, Users, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
 
 import type { AdminCompetition, CompetitionLeaderRow, CompetitionStatus } from '@/api/competitions'
 import { Button } from '@/components/ui/button'
@@ -79,14 +78,7 @@ export function CompetitionHero({
     >
       <Icon aria-hidden className="pointer-events-none absolute -right-8 -bottom-10 size-64 text-white/10" />
 
-      <div className="relative flex flex-wrap items-center justify-between gap-3">
-        <Link
-          to="/admin/competitions"
-          className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium backdrop-blur transition hover:bg-white/25"
-        >
-          <ArrowLeft className="size-4" />
-          All competitions
-        </Link>
+      <div className="relative flex flex-wrap items-center justify-end gap-3">
         {onEdit ? (
           <Button
             type="button"

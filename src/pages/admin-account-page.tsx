@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Calendar, LoaderCircle, Mail, ShieldCheck } from 'lucide-react'
+import { Calendar, KeyRound, LoaderCircle, Mail, ShieldCheck } from 'lucide-react'
 
 import { getAdminMe, updateAdminMe, type Admin } from '@/api/admin'
 import { FormAlert } from '@/components/common/form-alert'
+import { Dot, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,7 +11,6 @@ import {
   AdminPageHeader,
   adminDisplayName,
   adminInitials,
-  adminPanelClass,
   adminRoleLabel,
   formatDate,
 } from '@/features/admin'
@@ -58,7 +58,7 @@ export function AdminAccountPage() {
     try {
       const updated = await updateAdminMe({
         display_name: optionalString(displayName),
-        image_url: optionalString(imageUrl),
+        image_url: imageUrl,
       })
       setAdmin(updated)
       setDisplayName(updated.display_name ?? '')
@@ -88,109 +88,76 @@ export function AdminAccountPage() {
 
           {admin ? (
             <>
-              <section
-                className={cn(
-                  adminPanelClass,
-                  'relative overflow-hidden px-6 py-7 sm:px-8',
-                )}
-              >
-                <div className="relative flex flex-wrap items-center gap-4">
-                  {imageUrl ? (
-                    <img
-                      src={imageUrl}
-                      alt=""
-                      className="size-14 shrink-0 rounded-full object-cover ring-4 ring-background"
-                    />
-                  ) : (
-                    <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground ring-4 ring-background">
-                      {adminInitials(admin)}
-                    </div>
-                  )}
+              {/* Who you are: the photo, with clear ways to change it. */}
+              <section className="relative overflow-hidden rounded-xl bg-brand-violet px-6 py-7 text-white sm:px-8">
+                <Sparkle className="absolute top-6 right-[14%] size-7 text-brand-teal" />
+                <Dot className="absolute right-[30%] bottom-6 hidden size-3 bg-white/50 sm:block" />
+                <div className="relative flex flex-wrap items-center gap-6">
+                  <div className="size-24 shrink-0 overflow-hidden rounded-xl bg-white ring-4 ring-white">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="" className="size-full object-cover" />
+                    ) : (
+                      <span className="flex size-full items-center justify-center font-poster text-4xl text-brand-ink">
+                        {adminInitials(admin)}
+                      </span>
+                    )}
+                  </div>
+
                   <div className="min-w-0 flex-1">
-                    <h1 className="font-poster text-2xl">
-                      {adminDisplayName(admin)}
-                    </h1>
-                    <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted-foreground">
-                      <Mail className="size-3.5 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 rounded-md bg-brand-teal px-2.5 py-1 text-[11px] font-bold text-brand-ink">
+                      <ShieldCheck className="size-3.5" />
+                      {adminRoleLabel(role)}
+                    </span>
+                    <h1 className="mt-3 font-poster text-4xl">{adminDisplayName(admin)}</h1>
+                    <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-white/75">
+                      <Mail className="size-4 shrink-0" />
                       {admin.email}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
-                    {adminRoleLabel(role)}
-                  </span>
                 </div>
               </section>
 
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className={cn(adminPanelClass, 'p-4')}>
-                  <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    <Calendar className="size-3.5" />
-                    Member since
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium">
-                    {formatDate(admin.created_at)}
-                  </dd>
-                </div>
-                <div className={cn(adminPanelClass, 'p-4')}>
-                  <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    <Calendar className="size-3.5" />
-                    Last updated
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium">
-                    {formatDate(admin.updated_at)}
-                  </dd>
-                </div>
-                <div className={cn(adminPanelClass, 'p-4')}>
-                  <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    <ShieldCheck className="size-3.5" />
-                    Status
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium capitalize">
-                    {admin.status || '-'}
-                  </dd>
-                </div>
-                <div className={cn(adminPanelClass, 'p-4')}>
-                  <dt className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                    <ShieldCheck className="size-3.5" />
-                    MFA required
-                  </dt>
-                  <dd className="mt-1 text-sm font-medium">
-                    {admin.mfa_required ? 'Yes' : 'No'}
-                  </dd>
-                </div>
-              </div>
+              {/* The account at a glance. */}
+              <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {[
+                  { icon: Calendar, label: 'Member since', value: formatDate(admin.created_at), tone: 'bg-brand-ink text-white' },
+                  { icon: Calendar, label: 'Last updated', value: formatDate(admin.updated_at), tone: 'bg-card border-2 border-brand-ink/10' },
+                  { icon: ShieldCheck, label: 'Status', value: admin.status || '-', tone: 'bg-brand-teal text-brand-ink' },
+                  { icon: KeyRound, label: 'Two-step sign-in', value: admin.mfa_required ? 'Required' : 'Not required', tone: 'bg-amber-300 text-amber-950' },
+                ].map((item) => (
+                  <div key={item.label} className={cn('rounded-xl p-4', item.tone)}>
+                    <dt className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] uppercase opacity-75">
+                      <item.icon className="size-3.5" />
+                      {item.label}
+                    </dt>
+                    <dd className="mt-2 text-sm font-extrabold capitalize">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
 
               <form
                 onSubmit={handleSave}
-                className={cn(adminPanelClass, 'space-y-4 p-6 sm:p-8')}
+                className="space-y-5 rounded-xl border-2 border-brand-ink/10 bg-card p-6 sm:p-8"
               >
                 <div className="space-y-1">
-                  <h2 className="font-poster text-xl">Profile</h2>
+                  <h2 className="font-poster text-2xl">
+                    <span className="marker-underline">Profile</span>
+                  </h2>
                   <p className="text-sm text-muted-foreground">
-                    Update your display name and avatar.
+                    The name other admins and the audit log show for you.
                   </p>
                 </div>
-                <div className="space-y-2">
+                <div className="max-w-md space-y-2">
                   <Label htmlFor="admin-display-name">Display name</Label>
                   <Input
                     id="admin-display-name"
                     value={displayName}
                     onChange={(event) => setDisplayName(event.target.value)}
-                    className="h-11 bg-surface px-3"
+                    className="h-11 px-3"
+                    placeholder="How you appear in the console"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="admin-image">Image URL</Label>
-                  <Input
-                    id="admin-image"
-                    type="url"
-                    value={imageUrl}
-                    onChange={(event) => setImageUrl(event.target.value)}
-                    className="h-11 bg-surface px-3"
-                    placeholder="https://"
-                  />
-                </div>
-                <Button type="submit" disabled={saving} className="h-10">
+                <Button type="submit" disabled={saving} className="h-11 px-5">
                   {saving ? (
                     <>
                       <LoaderCircle className="animate-spin" />
@@ -201,6 +168,7 @@ export function AdminAccountPage() {
                   )}
                 </Button>
               </form>
+
             </>
           ) : null}
         </div>

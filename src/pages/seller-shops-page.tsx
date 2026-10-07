@@ -1003,11 +1003,11 @@ export function SellerShopsPage() {
                       <div
                         role="group"
                         aria-label="Status"
-                        className="relative inline-flex rounded-full bg-muted p-1"
+                        className="relative inline-flex rounded-lg bg-accent p-1"
                       >
                         <div
                           aria-hidden
-                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-md bg-brand-ink transition-transform duration-300 ease-out"
                           style={{
                             transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
                           }}
@@ -1018,10 +1018,10 @@ export function SellerShopsPage() {
                             type="button"
                             onClick={() => updateField('status', option.value)}
                             className={cn(
-                              'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                              'relative z-10 w-[5.25rem] rounded-md py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors duration-200 active:scale-95',
                               form.status === option.value
-                                ? 'text-foreground'
-                                : 'text-muted-foreground hover:text-foreground',
+                                ? 'text-white'
+                                : 'text-brand-ink/60 hover:text-brand-ink',
                             )}
                           >
                             {option.label}

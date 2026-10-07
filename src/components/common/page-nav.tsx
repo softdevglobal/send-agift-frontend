@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 export const TABLE_PAGE_SIZE = 10
 export const GRID_PAGE_SIZE = 8
@@ -46,6 +47,7 @@ export function PageNav({
   onPage,
   label = 'Pages',
   scroll = true,
+  className,
 }: {
   page: number
   pageCount: number
@@ -53,6 +55,7 @@ export function PageNav({
   label?: string
   /** Full pages jump back to the top. Sections inside a page should leave this off. */
   scroll?: boolean
+  className?: string
 }) {
   if (pageCount <= 1) return null
 
@@ -62,7 +65,10 @@ export function PageNav({
   }
 
   return (
-    <nav aria-label={label} className="mt-8 flex flex-wrap items-center justify-center gap-2">
+    <nav
+      aria-label={label}
+      className={cn('mt-8 flex flex-wrap items-center justify-center gap-2', className)}
+    >
       <Button
         type="button"
         variant="outline"

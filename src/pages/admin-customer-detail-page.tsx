@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ShoppingBag } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { ShoppingBag } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import { getAdminCustomer, type AdminCustomerRecord } from '@/api/admin'
 import { getCustomerPoints, type PointsWallet } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
-import { Button } from '@/components/ui/button'
 import {
   AdminFacts,
   AdminRecordSection,
@@ -65,12 +65,7 @@ export function AdminCustomerDetailPage() {
 
   return (
     <>
-      <Button asChild variant="ghost" className="mb-4 -ml-2 h-9 rounded-full px-3">
-        <Link to="/admin/customers">
-          <ArrowLeft className="size-4" />
-          Customers
-        </Link>
-      </Button>
+      <BackLink to="/admin/customers" label="All customers" className="mb-4" />
 
       {loading ? <Loading /> : null}
       <FormAlert error={error} className="mb-4" />

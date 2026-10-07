@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft,
   ArrowRight,
   Clock,
   Film,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import { getPublicProduct } from '@/api/products'
 import { ApiError } from '@/lib/api'
 import { SiteLayout } from '@/components/common/site-layout'
@@ -234,12 +234,7 @@ export function ProductViewPage() {
   return (
     <SiteLayout>
       <main className={cn(storefrontFrameClass, 'py-8 lg:py-12')}>
-        <Button asChild variant="ghost" className="mb-6 h-9 rounded-full px-3">
-          <Link to="/products">
-            <ArrowLeft className="size-4" />
-            All gifts
-          </Link>
-        </Button>
+        <BackLink to="/products" label="All gifts" className="mb-6" />
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-3">

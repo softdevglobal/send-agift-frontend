@@ -63,6 +63,7 @@ export function SellerOrderItemList({
   const paged = usePagedList(orders, TABLE_PAGE_SIZE)
 
   return (
+    <>
     <section className={cn(sellerPanelClass, 'overflow-hidden')}>
       {/* Phones get one card per parcel: a seven-column table would scroll
           sideways and hide half its columns. */}
@@ -207,14 +208,21 @@ export function SellerOrderItemList({
           </tbody>
         </table>
       </div>
-      <div className="px-4 pb-4">
+    </section>
+
+      {/* The count and pager sit under the list, not inside it. */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-ink uppercase">
+          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+        </p>
         <PageNav
           page={paged.page}
           pageCount={paged.pageCount}
           onPage={paged.setPage}
           label="Order pages"
+          className="mt-0"
         />
       </div>
-    </section>
+    </>
   )
 }

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Check, LoaderCircle, ShieldAlert, X } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { Check, LoaderCircle, ShieldAlert, X } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import {
   getAdminGameLeaderboard,
   listAdminGameScores,
@@ -98,13 +99,7 @@ export function AdminGameDetailPage() {
 
   return (
     <>
-      <Link
-        to="/admin/games"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        All games
-      </Link>
+      <BackLink to="/admin/games" label="All games" className="mb-4" />
 
       <AdminPageHeader
         eyebrow="Leaderboard"
@@ -190,15 +185,15 @@ export function AdminGameDetailPage() {
               Scores are held when a round looks too fast or the app disagreed with the server's replay.
             </p>
           </div>
-          <div className="flex rounded-full bg-muted p-1">
+          <div className="flex gap-1 rounded-lg bg-accent p-1">
             {filters.map((f) => (
               <button
                 key={f.label}
                 type="button"
                 onClick={() => setFilter(f.value)}
                 className={cn(
-                  'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                  filter === f.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  'rounded-md px-3 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
+                  filter === f.value ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
                 )}
               >
                 {f.label}

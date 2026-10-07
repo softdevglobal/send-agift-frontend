@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
+import { BackLink } from '@/components/common/back-link'
 import { getRecipient, type RecipientDetails } from "@/api/customers";
 import { cancelOrder, getOrder, type OrderDetails } from "@/api/orders";
 import { FormAlert } from "@/components/common/form-alert";
@@ -164,16 +165,10 @@ export function CustomerOrderDetailPage() {
 
   return (
     <div>
+      <BackLink to={listPath} label={listLabel} className="mb-4" />
       <section className="relative mb-6 overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-6 text-white ring-1 ring-white/10 sm:px-8 sm:py-7">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <Link
-              to={listPath}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white"
-            >
-              <ArrowLeft className="size-3.5" />
-              {listLabel}
-            </Link>
             <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
               {order.order_number}
             </h1>

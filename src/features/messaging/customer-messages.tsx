@@ -407,12 +407,12 @@ function PanelList({
                   aria-selected={active}
                   onClick={() => onFilterChange(tab.id)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                    active ? 'bg-white text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
+                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-bold tracking-[0.08em] uppercase transition-colors',
+                    active ? 'bg-brand-teal text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {tab.label}
-                  <span className={active ? 'text-brand-ink/50' : 'text-white/45'}>
+                  <span className={active ? 'text-brand-ink/60' : 'text-white/45'}>
                     {counts[tab.id]}
                   </span>
                 </button>

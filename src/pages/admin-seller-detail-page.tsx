@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import { getAdminSeller, type AdminSellerRecord } from '@/api/admin'
 import type { Shop, ShopDeliveryZone } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { GRID_PAGE_SIZE, PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
-import { Button } from '@/components/ui/button'
 import {
   AdminFacts,
   AdminRecordSection,
@@ -74,12 +73,7 @@ export function AdminSellerDetailPage() {
 
   return (
     <>
-      <Button asChild variant="ghost" className="mb-4 -ml-2 h-9 rounded-full px-3">
-        <Link to="/admin/sellers">
-          <ArrowLeft className="size-4" />
-          Sellers
-        </Link>
-      </Button>
+      <BackLink to="/admin/sellers" label="All sellers" className="mb-4" />
 
       {loading ? <Loading /> : null}
       <FormAlert error={error} className="mb-4" />

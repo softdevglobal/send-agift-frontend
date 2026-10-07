@@ -87,6 +87,9 @@ export function AdminPointsPage() {
     void load()
   }, [load])
 
+  // The Actions column only earns its space while something can be actioned.
+  const showActions = canAct && pages.visible.some((p) => p.status === 'pending')
+
   const counts = {
     pending: all.filter((p) => p.status === 'pending').length,
     completed: all.filter((p) => p.status === 'completed').length,
@@ -243,7 +246,8 @@ export function AdminPointsPage() {
                 <th className="px-3 py-3 font-medium">Amount</th>
                 <th className="px-3 py-3 font-medium">Points</th>
                 <th className="px-3 py-3 font-medium">Status</th>
-                <th className="px-5 py-3" />
+                <th className="px-3 py-3 font-medium">Settled</th>
+                {showActions ? <th className="px-5 py-3 text-right font-medium">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
@@ -291,35 +295,54 @@ export function AdminPointsPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-3 text-right whitespace-nowrap">
-                    {canAct && p.status === 'pending' ? (
-                      <div className="inline-flex gap-1.5">
-                        <Button size="sm" className="h-8" onClick={() => setConfirming(p)}>
-                          <CheckCircle2 className="size-3.5" />
-                          Confirm paid
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8"
-                          onClick={() => setFailing(p)}
-                        >
-                          <XCircle className="size-3.5" />
-                          Fail
-                        </Button>
-                      </div>
-                    ) : null}
+                  <td className="px-3 py-3.5 text-xs whitespace-nowrap text-muted-foreground">
+                    {p.status === 'pending'
+                      ? 'Waiting for payment'
+                      : formatDate(p.completed_at ?? p.failed_at ?? p.updated_at)}
                   </td>
+                  {showActions ? (
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      {canAct && p.status === 'pending' ? (
+                        <div className="inline-flex gap-1.5">
+                          <Button size="sm" className="h-8" onClick={() => setConfirming(p)}>
+                            <CheckCircle2 className="size-3.5" />
+                            Confirm paid
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => setFailing(p)}
+                          >
+                            <XCircle className="size-3.5" />
+                            Fail
+                          </Button>
+                        </div>
+                      ) : null}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
           </table>
           </div>
-          <div className="px-4 pb-4">
-            <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Purchase pages" />
-          </div>
         </div>
       )}
+
+      {!loading && items.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-ink uppercase">
+            {items.length} {items.length === 1 ? 'purchase' : 'purchases'}
+          </p>
+          <PageNav
+            page={pages.page}
+            pageCount={pages.pageCount}
+            onPage={pages.setPage}
+            label="Purchase pages"
+            className="mt-0"
+          />
+        </div>
+      ) : null}
 
       <ConfirmPaidDialog
         purchase={confirming}

@@ -1,4 +1,4 @@
-import { CalendarClock, ExternalLink, LoaderCircle, Pencil, Send, Trophy, Users, X } from 'lucide-react'
+import { ArrowRight, CalendarClock, LoaderCircle, Pencil, Send, Trophy, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
@@ -295,13 +295,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   <p className="text-xs text-muted-foreground">A super admin funds the reserve and publishes it.</p>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button asChild variant="outline" className="h-10 px-4">
-                    <Link to={`/admin/competitions/${comp.id}`}>
-                      <ExternalLink className="size-4" />
-                      Full leaderboard &amp; details
-                    </Link>
-                  </Button>
-                  <div className="ml-auto flex gap-2">
+                  <div className="ml-auto flex flex-wrap justify-end gap-2">
                     {canEdit ? (
                       <Button
                         type="button"
@@ -344,6 +338,12 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                         Publish
                       </Button>
                     ) : null}
+                    <Button asChild className="h-10 px-4">
+                      <Link to={`/admin/competitions/${comp.id}`}>
+                        Full leaderboard &amp; details
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               </footer>

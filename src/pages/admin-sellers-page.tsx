@@ -379,19 +379,24 @@ export function AdminSellersPage() {
             </tbody>
           </table>
           </div>
-          <p className="border-t border-brand-ink/10 px-4 py-3 text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
-            {total} {total === 1 ? 'seller' : 'sellers'}
-          </p>
-          <div className="px-4 pb-4">
-            <PageNav
-              page={page}
-              pageCount={Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE))}
-              onPage={setPage}
-              label="Seller pages"
-            />
-          </div>
         </div>
       )}
+
+      {/* The count and pager sit under the table, not inside it. */}
+      {!loading && items.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-ink uppercase">
+            {total} {total === 1 ? 'seller' : 'sellers'}
+          </p>
+          <PageNav
+            page={page}
+            pageCount={Math.max(1, Math.ceil(total / TABLE_PAGE_SIZE))}
+            onPage={setPage}
+            label="Seller pages"
+            className="mt-0"
+          />
+        </div>
+      ) : null}
 
       <ConfirmDialog
         open={verifying !== null}

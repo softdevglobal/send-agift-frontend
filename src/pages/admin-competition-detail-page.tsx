@@ -58,6 +58,7 @@ import {
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { BackLink } from '@/components/common/back-link'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
@@ -251,6 +252,8 @@ export function AdminCompetitionDetailPage() {
 
   return (
     <>
+      <BackLink to="/admin/competitions" label="All competitions" className="mb-4" />
+
       <CompetitionHero
         comp={comp}
         status={status}
