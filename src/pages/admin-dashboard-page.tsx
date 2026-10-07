@@ -3,18 +3,25 @@ import {
   ArrowRight,
   ArrowUpRight,
   Ban,
+  CheckCircle2,
+  Coins,
+  Gamepad2,
   Globe2,
   LoaderCircle,
   Plus,
+  ShieldAlert,
   Store,
   Trophy,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import { getAdminMe, listAdminSellers, type Admin } from '@/api/admin'
+import { getAdminMe, listAdminSellers, type Admin, type AdminSeller } from '@/api/admin'
 import { listAdminCompetitions, type AdminCompetition } from '@/api/competitions'
 import { listCountries, type Country } from '@/api/countries'
+import { listAdminGames, type AdminGameSummary } from '@/api/games'
+import { listPointsPurchasesForAdmin, searchCustomers, type CustomerPointsSummary } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,7 +29,9 @@ import {
   adminRoleLabel,
   formatDate,
 } from '@/features/admin'
-import { StatusPill } from '@/features/admin/games-ui'
+import { formatScore } from '@/features/admin/games-format'
+import { GameBadge, StatusPill } from '@/features/admin/games-ui'
+import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-seller-badge'
 import { useAuth } from '@/features/auth/auth-context'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
@@ -113,6 +122,10 @@ export function AdminDashboardPage() {
   const [sellerTotal, setSellerTotal] = useState<number | null>(null)
   const [suspendedTotal, setSuspendedTotal] = useState<number | null>(null)
   const [competitions, setCompetitions] = useState<AdminCompetition[] | null>(null)
+  const [recentSellers, setRecentSellers] = useState<AdminSeller[] | null>(null)
+  const [newestCustomers, setNewestCustomers] = useState<CustomerPointsSummary[] | null>(null)
+  const [games, setGames] = useState<AdminGameSummary[] | null>(null)
+  const [pendingPurchases, setPendingPurchases] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,6 +153,35 @@ export function AdminDashboardPage() {
     listAdminSellers('suspended', '', 1, 1)
       .then((res) => {
         if (!cancelled) setSuspendedTotal(res.total)
+      })
+      .catch(() => {})
+    listAdminSellers('', '', 1, 5)
+      .then((res) => {
+        if (!cancelled) setRecentSellers(res.items)
+      })
+      .catch(() => {
+        if (!cancelled) setRecentSellers([])
+      })
+    searchCustomers('')
+      .then((items) => {
+        if (!cancelled)
+          setNewestCustomers(
+            [...items].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5),
+          )
+      })
+      .catch(() => {
+        if (!cancelled) setNewestCustomers([])
+      })
+    listAdminGames()
+      .then((items) => {
+        if (!cancelled) setGames(items.filter((g) => g.practice))
+      })
+      .catch(() => {
+        if (!cancelled) setGames([])
+      })
+    listPointsPurchasesForAdmin('pending')
+      .then((res) => {
+        if (!cancelled) setPendingPurchases(res.items.length)
       })
       .catch(() => {})
     listAdminCompetitions()
@@ -178,6 +220,16 @@ export function AdminDashboardPage() {
       return rank(a) - rank(b) || a.starts_at.localeCompare(b.starts_at)
     })
     .slice(0, 4)
+
+  const scoresToReview = (games ?? []).reduce((sum, g) => sum + g.under_review, 0)
+  const competitionReviews = (competitions ?? []).reduce((sum, c) => sum + c.under_review, 0)
+  const attention = [
+    { label: 'Points purchases waiting for payment', count: pendingPurchases ?? 0, to: '/admin/points', icon: Coins, tone: 'bg-amber-300 text-amber-950' },
+    { label: 'Game scores held for review', count: scoresToReview, to: '/admin/games', icon: ShieldAlert, tone: 'bg-brand-violet text-white' },
+    { label: 'Competition entries to review', count: competitionReviews, to: '/admin/competitions', icon: Trophy, tone: 'bg-brand-teal text-brand-ink' },
+    { label: 'Suspended sellers', count: suspendedTotal ?? 0, to: '/admin/sellers', icon: Ban, tone: 'bg-brand-ink text-white' },
+  ].filter((item) => item.count > 0)
+  const topGames = [...(games ?? [])].sort((a, b) => b.plays - a.plays).slice(0, 4)
 
   const show = (value: number | null) => (value === null ? '–' : String(value))
 
@@ -249,6 +301,91 @@ export function AdminDashboardPage() {
           to="/admin/competitions"
         />
       </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-4">
+          <PanelTitle title="Needs attention" />
+          {attention.length ? (
+            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+              {attention.map((item) => (
+                <li key={item.label} className="border-b border-brand-ink/10 last:border-0">
+                  <Link
+                    to={item.to}
+                    className="flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-accent/50"
+                  >
+                    <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-md', item.tone)}>
+                      <item.icon className="size-4.5" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-sm font-bold">{item.label}</span>
+                    <span className="font-poster text-2xl">{item.count}</span>
+                    <ArrowRight className="size-4 text-brand-ink/40" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border-2 border-brand-ink/10 bg-card px-4 py-5">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-teal text-brand-ink">
+                <CheckCircle2 className="size-5" />
+              </span>
+              <div>
+                <p className="text-sm font-bold">All clear</p>
+                <p className="text-xs text-muted-foreground">
+                  Nothing is waiting on you right now.
+                </p>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-4">
+          <PanelTitle title="Recent sellers" to="/admin/sellers" linkLabel="All" />
+          {recentSellers === null ? (
+            <div className="flex justify-center py-10">
+              <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : recentSellers.length ? (
+            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+              {recentSellers.map((seller) => {
+                const name = seller.trading_name?.trim() || seller.legal_name
+                return (
+                  <li key={seller.id} className="border-b border-brand-ink/10 last:border-0">
+                    <Link
+                      to={`/admin/sellers/${seller.id}`}
+                      className="flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-accent/50"
+                    >
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-violet text-xs font-extrabold text-white">
+                        {name
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((part) => part[0] ?? '')
+                          .join('')
+                          .toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="truncate text-sm font-bold">{name}</span>
+                          <VerifiedSellerBadge status={seller.verification_status} />
+                        </span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {seller.country_name} · joined {formatDate(seller.created_at)}
+                        </span>
+                      </span>
+                      <StatusPill tone={seller.status === 'active' ? 'good' : 'bad'}>
+                        {seller.status}
+                      </StatusPill>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : (
+            <div className="rounded-xl border-2 border-dashed border-brand-ink/20 px-6 py-10 text-center text-sm text-muted-foreground">
+              No sellers yet.
+            </div>
+          )}
+        </section>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-4">
@@ -336,6 +473,98 @@ export function AdminDashboardPage() {
               <Button asChild variant="outline" className="mt-4 h-10 px-4">
                 <Link to="/admin/competitions">Set one up</Link>
               </Button>
+            </div>
+          )}
+        </section>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-4">
+          <PanelTitle title="Popular games" to="/admin/games" linkLabel="All games" />
+          {games === null ? (
+            <div className="flex justify-center py-10">
+              <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : topGames.length ? (
+            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+              {topGames.map((game) => (
+                <li key={game.slug} className="border-b border-brand-ink/10 last:border-0">
+                  <Link
+                    to={`/admin/games/${game.slug}`}
+                    className="flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-accent/50"
+                  >
+                    <GameBadge slug={game.slug} className="size-10" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold">{game.name}</span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {game.plays.toLocaleString()} plays · {game.players.toLocaleString()} players
+                      </span>
+                    </span>
+                    {game.top_score !== undefined ? (
+                      <span className="text-right">
+                        <span className="block font-poster text-lg text-amber-600">
+                          {formatScore(game.top_score)}
+                        </span>
+                        <span className="block text-[10px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                          best
+                        </span>
+                      </span>
+                    ) : null}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border-2 border-dashed border-brand-ink/20 p-4 text-sm font-semibold">
+              <Gamepad2 className="size-5 text-brand-violet" />
+              No games played yet.
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-4">
+          <PanelTitle title="Newest customers" to="/admin/customers" linkLabel="All" />
+          {newestCustomers === null ? (
+            <div className="flex justify-center py-10">
+              <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : newestCustomers.length ? (
+            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+              {newestCustomers.map((customer) => (
+                <li key={customer.customer_id} className="border-b border-brand-ink/10 last:border-0">
+                  <Link
+                    to={`/admin/customers/${customer.customer_id}`}
+                    className="flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-accent/50"
+                  >
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-teal text-xs font-extrabold text-brand-ink">
+                      {(customer.display_name || customer.email)
+                        .split(/[\s@._-]+/)
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((part) => part[0] ?? '')
+                        .join('')
+                        .toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-bold">
+                        {customer.display_name || customer.email}
+                      </span>
+                      <span className="block truncate text-xs text-muted-foreground">
+                        {customer.country_name} · joined {formatDate(customer.created_at)}
+                      </span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-xs font-bold text-amber-950 tabular-nums">
+                      <Coins className="size-3.5" />
+                      {customer.balance.toLocaleString()}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border-2 border-dashed border-brand-ink/20 p-4 text-sm font-semibold">
+              <Users className="size-5 text-brand-violet" />
+              No customers yet.
             </div>
           )}
         </section>
