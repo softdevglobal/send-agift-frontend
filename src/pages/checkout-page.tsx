@@ -18,6 +18,7 @@ import {
   getCustomerMe,
   getRecipient,
   listRecipients,
+  updateRecipientAddress,
   type Recipient,
   type RecipientAddress,
   type RecipientDetails,
@@ -35,6 +36,7 @@ import {
   type DeliveryQuote,
 } from '@/api/orders'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
+import { LocationPinPicker } from '@/components/common/location-pin-picker'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -226,6 +228,10 @@ function sameCurrency(a: string | undefined, b: string): boolean {
   return Boolean(a) && a!.toUpperCase() === b.toUpperCase()
 }
 
+function hasPoint(address: { latitude?: number | null; longitude?: number | null } | null) {
+  return typeof address?.latitude === 'number' && typeof address?.longitude === 'number'
+}
+
 function formatStreetAddress(
   address: {
     line1?: string
@@ -272,6 +278,9 @@ export function CheckoutPage() {
   >({})
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteSettled, setQuoteSettled] = useState(false)
+  // A saved address with no map point gets one pin here, stored on the address.
+  const [pendingPin, setPendingPin] = useState<{ latitude: number; longitude: number } | null>(null)
+  const [savingPin, setSavingPin] = useState(false)
   const [customerType, setCustomerType] = useState<CartCustomerType>(
     cartCustomerType ?? 'personal',
   )
@@ -388,6 +397,7 @@ export function CheckoutPage() {
   // Loads the picked recipient's saved addresses. The list only carries a
   // name, so the address has to be fetched once someone is actually chosen.
   useEffect(() => {
+    setPendingPin(null)
     if (!recipientId) {
       setRecipientDetails(null)
       return
@@ -426,7 +436,8 @@ export function CheckoutPage() {
       .filter((line) => isUuid(line.product.id))
       .map((line) => ({ product_id: line.product.id, quantity: line.quantity }))
 
-    if (!recipientId || !deliveryDate || items.length === 0) {
+    const shipTo = recipientDetails?.id === recipientId ? defaultAddress(recipientDetails) : null
+    if (!recipientId || !deliveryDate || items.length === 0 || !hasPoint(shipTo)) {
       setQuote(null)
       setQuoteSelections({})
       setQuoteLoading(false)
@@ -462,7 +473,7 @@ export function CheckoutPage() {
       cancelled = true
     }
     // quoteKey stands in for the cart contents; `lines` is a new array each render.
-  }, [recipientId, deliveryDate, quoteKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [recipientId, recipientDetails, deliveryDate, quoteKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Only API-backed products can be ordered. Demo catalog entries have no server record.
   const unorderable = useMemo(
@@ -501,7 +512,10 @@ export function CheckoutPage() {
         Boolean(shop.seller_delivery?.available) &&
         Boolean(chargeableSelections[shop.shop_id]),
     )
-  const awaitingDeliveryQuote = Boolean(recipientId) && !quoteSettled
+  const shipToAddress =
+    recipientDetails && recipientDetails.id === recipientId ? defaultAddress(recipientDetails) : null
+  const needsPin = Boolean(recipientId) && shipToAddress != null && !hasPoint(shipToAddress)
+  const awaitingDeliveryQuote = Boolean(recipientId) && !needsPin && !quoteSettled
   const noDeliveryOptions = Boolean(recipientId) && quoteSettled && !hasChargeableDelivery
   const shopsLackOptions =
     quotedShops.length === 0 ||
@@ -519,7 +533,9 @@ export function CheckoutPage() {
         ? 'Your cart mixes personal and corporate catalog items. Remove one type to check out.'
         : typeMismatch
           ? 'Order type must match the catalog you used when adding these gifts to your cart.'
-          : noDeliveryOptions
+          : needsPin
+            ? 'Pin the delivery spot on the map so the shop can measure the distance.'
+            : noDeliveryOptions
             ? shopsLackOptions
               ? 'This address is outside the shop delivery zones, so this order cannot be placed.'
               : 'Delivery for this order is not priced in the cart currency, so it cannot be placed.'
@@ -596,6 +612,10 @@ export function CheckoutPage() {
       setError('Pick an address from the list so the street and city fill in.')
       return
     }
+    if (!hasPoint(newRecipient)) {
+      setError('Drop a pin on the map at the delivery spot.')
+      return
+    }
     setSavingRecipient(true)
     setError(null)
     try {
@@ -631,6 +651,40 @@ export function CheckoutPage() {
       setError(getErrorMessage(err, 'Could not add this recipient.'))
     } finally {
       setSavingRecipient(false)
+    }
+  }
+
+  async function saveRecipientPin(address: RecipientAddress) {
+    if (!recipientDetails || !pendingPin) return
+    setSavingPin(true)
+    setError(null)
+    try {
+      const saved = await updateRecipientAddress(recipientDetails.id, address.id, {
+        country_id: address.country_id,
+        label: address.label ?? null,
+        address_type: address.address_type,
+        line1: address.line1,
+        line2: address.line2 ?? null,
+        city: address.city,
+        region: address.region ?? null,
+        postal_code: address.postal_code ?? null,
+        latitude: pendingPin.latitude,
+        longitude: pendingPin.longitude,
+        is_default: address.is_default,
+      })
+      const withPin = (details: RecipientDetails) => ({
+        ...details,
+        addresses: details.addresses.map((row) => (row.id === saved.id ? { ...row, ...saved } : row)),
+      })
+      setRecipientDetails((current) => (current ? withPin(current) : current))
+      setSavedRecipients((current) =>
+        current.map((details) => (details.id === recipientDetails.id ? withPin(details) : details)),
+      )
+      setPendingPin(null)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not save the pin.'))
+    } finally {
+      setSavingPin(false)
     }
   }
 
@@ -921,6 +975,31 @@ export function CheckoutPage() {
                         className="h-11 bg-surface px-3"
                       />
                     </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label>Delivery pin</Label>
+                      {hasPoint(newRecipient) ? null : (
+                        <p className="text-xs text-muted-foreground">
+                          The map could not place this address. Tap the exact delivery spot.
+                          The pin is saved, so you only do this once.
+                        </p>
+                      )}
+                      <LocationPinPicker
+                        latitude={newRecipient.latitude}
+                        longitude={newRecipient.longitude}
+                        searchHint={[newRecipient.line1, newRecipient.city, newRecipient.region]
+                          .filter(Boolean)
+                          .join(', ')}
+                        countryCode={
+                          countries.find(
+                            (country) =>
+                              country.id === (newRecipient.country_id || countryId),
+                          )?.iso_code
+                        }
+                        onChange={(latitude, longitude) =>
+                          setNewRecipient((current) => ({ ...current, latitude, longitude }))
+                        }
+                      />
+                    </div>
                     <div className="flex items-center gap-2 sm:col-span-2">
                       <Checkbox
                         id="checkout-new-default"
@@ -981,10 +1060,12 @@ export function CheckoutPage() {
                         </p>
                       )
                     }
-                    const countryName = countries.find(
+                    const addressCountry = countries.find(
                       (country) => country.id === address.country_id,
-                    )?.name
+                    )
+                    const countryName = addressCountry?.name
                     return (
+                      <>
                       <div className="animate-fade-in flex items-start gap-3 rounded-xl border border-border/60 bg-accent/40 p-3.5 text-sm">
                         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
                           {initials(recipientDetails.name)}
@@ -1002,6 +1083,36 @@ export function CheckoutPage() {
                           ) : null}
                         </div>
                       </div>
+                      {hasPoint(address) ? null : (
+                        <div className="space-y-3 rounded-xl border border-amber-300/70 bg-amber-50/60 p-3.5">
+                          <p className="flex items-start gap-2 text-sm">
+                            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" />
+                            <span>
+                              This address has no map point, so delivery cannot be priced. Tap
+                              the exact delivery spot and save the pin. Later orders reuse it.
+                            </span>
+                          </p>
+                          <LocationPinPicker
+                            latitude={pendingPin?.latitude ?? null}
+                            longitude={pendingPin?.longitude ?? null}
+                            searchHint={[address.line1, address.city, address.region]
+                              .filter(Boolean)
+                              .join(', ')}
+                            countryCode={addressCountry?.iso_code}
+                            onChange={(latitude, longitude) => setPendingPin({ latitude, longitude })}
+                          />
+                          <Button
+                            type="button"
+                            className="h-10 rounded-full"
+                            disabled={!pendingPin || savingPin}
+                            onClick={() => void saveRecipientPin(address)}
+                          >
+                            {savingPin ? <LoaderCircle className="animate-spin" /> : <MapPin />}
+                            Save pin
+                          </Button>
+                        </div>
+                      )}
+                      </>
                     )
                   })()
                 ) : null
