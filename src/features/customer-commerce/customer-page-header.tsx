@@ -1,33 +1,45 @@
 import type { ReactNode } from 'react'
+import { useLocation } from 'react-router-dom'
 
 type CustomerPageHeaderProps = {
   title: string
   description?: string
   action?: ReactNode
-  eyebrow?: boolean
+  /** Label in the chip above the title; `false` hides it. Defaults by section. */
+  eyebrow?: string | false
+}
+
+function sectionLabel(pathname: string) {
+  if (pathname.startsWith('/sellers')) return 'Shop'
+  if (pathname.startsWith('/cart') || pathname.startsWith('/checkout')) return 'Your bag'
+  return 'My account'
 }
 
 export function CustomerPageHeader({
   title,
   description,
   action,
-  eyebrow = true,
+  eyebrow,
 }: CustomerPageHeaderProps) {
+  const { pathname } = useLocation()
+  const label = eyebrow === false ? null : (eyebrow ?? sectionLabel(pathname))
   return (
     <div
       className={
         description
-          ? 'mb-7 flex flex-wrap items-start justify-between gap-4'
-          : 'mb-7 flex flex-wrap items-center justify-between gap-4'
+          ? 'mb-8 flex flex-wrap items-start justify-between gap-4'
+          : 'mb-8 flex flex-wrap items-center justify-between gap-4'
       }
     >
-      <div className="space-y-1.5">
-        {eyebrow ? (
-          <p className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
-            Customer portal
+      <div className="min-w-0 space-y-3">
+        {label ? (
+          <p className="w-fit rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            {label}
           </p>
         ) : null}
-        <h1 className="font-display text-3xl tracking-tight">{title}</h1>
+        <h1 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">
+          <span className="marker-underline">{title}</span>
+        </h1>
         {description ? (
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
             {description}

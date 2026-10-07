@@ -54,14 +54,14 @@ export function CustomerReceivedGiftsPage() {
         <div className="space-y-5">
           {pages.visible.map((gift) => (
             <article key={gift.order_id} className={cn(customerPanelClass, 'overflow-hidden')}>
-              <header className="relative bg-gradient-to-br from-pink-500 via-fuchsia-500 to-amber-400 px-5 py-5 text-white sm:px-6">
+              <header className="relative overflow-hidden bg-brand-violet px-5 py-5 text-white sm:px-6">
                 <Gift aria-hidden className="absolute -top-3 -right-3 size-24 rotate-12 opacity-15" />
                 <p className="text-[11px] font-semibold tracking-[0.18em] uppercase opacity-85">
                   Delivered {new Date(gift.delivered_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                 </p>
-                <h2 className="mt-1 font-display text-2xl">From {gift.sender_name}</h2>
+                <h2 className="mt-1 font-poster text-2xl">From {gift.sender_name}</h2>
                 {gift.gift_points > 0 ? (
-                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold backdrop-blur">
+                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-brand-teal px-2.5 py-1 text-xs font-bold text-brand-ink">
                     <Star className="size-3.5 fill-current" />
                     {gift.gift_points.toLocaleString()} points included
                   </span>
@@ -70,12 +70,12 @@ export function CustomerReceivedGiftsPage() {
 
               <div className="space-y-4 px-5 py-5 sm:px-6">
                 {gift.gift_message ? (
-                  <blockquote className="relative rounded-2xl bg-gradient-to-br from-orange-50 to-pink-50 px-5 py-4 ring-1 ring-orange-100">
-                    <Quote aria-hidden className="mb-1 size-4 text-pink-400" />
-                    <p className="font-display text-lg leading-relaxed whitespace-pre-line text-orange-950 italic">
+                  <blockquote className="relative rounded-2xl bg-accent px-5 py-4">
+                    <Quote aria-hidden className="mb-1 size-4 text-brand-violet" />
+                    <p className="text-lg leading-relaxed font-semibold whitespace-pre-line text-brand-ink">
                       {gift.gift_message}
                     </p>
-                    <footer className="mt-2 text-sm font-semibold text-pink-700">From {gift.sender_name}</footer>
+                    <footer className="mt-2 text-sm font-bold text-brand-violet">From {gift.sender_name}</footer>
                   </blockquote>
                 ) : null}
 

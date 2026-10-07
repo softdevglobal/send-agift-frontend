@@ -28,7 +28,7 @@ import {
   RulesChecklist,
   ScheduleTimeline,
 } from '@/features/admin/competition-wizard-parts'
-import { gameGradient } from '@/features/admin/games-format'
+import { gameColor } from '@/features/admin/games-format'
 import { GameBadge } from '@/features/admin/games-ui'
 import { QuizEditor } from '@/features/admin/quiz-editor'
 import {
@@ -750,11 +750,11 @@ export function CompetitionForm({
         <WizardPreviewFrame caption="This is what will be saved.">
           <div
             className="-mx-5 -mt-5 mb-5 flex items-center gap-4 rounded-t-2xl px-5 py-5 text-white"
-            style={{ background: game ? gameGradient(game.slug) : undefined }}
+            style={{ background: game ? gameColor(game.slug) : undefined }}
           >
             {game ? <GameBadge slug={game.slug} className="size-12 bg-white/20 shadow-none" /> : null}
             <div className="min-w-0">
-              <p className="font-display text-xl leading-tight tracking-tight">
+              <p className="font-poster text-xl leading-tight tracking-tight">
                 {form.title.trim() || 'Untitled competition'}
               </p>
               <p className="text-sm text-white/85">

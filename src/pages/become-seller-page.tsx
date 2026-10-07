@@ -12,11 +12,11 @@ import { Link } from 'react-router-dom'
 
 import { SectionHeading } from '@/components/common/section-heading'
 import { SiteLayout } from '@/components/common/site-layout'
+import { Marker, Sparkle } from '@/components/common/storefront-decor'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { sellerTestimonials } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
-import { HeroPhotoBackdrop } from '@/features/marketing/hero-photo'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { cn } from '@/lib/utils'
 
@@ -74,31 +74,34 @@ export function BecomeSellerPage() {
   return (
     <SiteLayout>
       <main>
-        <section className="relative overflow-hidden bg-[oklch(0.97_0.015_95)]">
-          <HeroPhotoBackdrop />
-          <div
-            className={cn(
-              storefrontFrameClass,
-              'relative flex items-center py-12 lg:min-h-[36rem] lg:py-16',
-            )}
-          >
-            <div className="animate-fade-up max-w-xl space-y-6">
-              <p className="inline-flex items-center gap-2 text-xs font-medium tracking-[0.18em] text-muted-foreground uppercase">
-                <Store className="size-3.5 text-primary" />
+        <section className={cn(storefrontFrameClass, 'pt-5 pb-14 lg:pt-6 lg:pb-16')}>
+          <div className="relative grid overflow-hidden rounded-[2rem] bg-brand-ink text-white lg:grid-cols-[1.1fr_1fr]">
+            <Sparkle className="absolute top-10 left-[48%] hidden size-7 text-brand-teal lg:block" />
+            <Sparkle className="absolute bottom-10 left-[6%] size-5 text-brand-violet" />
+            <div className="animate-fade-up relative space-y-7 px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
+              <p className="inline-flex items-center gap-2 rounded-md bg-brand-teal px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
+                <Store className="size-3.5" />
                 Seller portal
               </p>
-              <h1 className="font-display text-4xl leading-[1.08] tracking-tight sm:text-5xl">
-                Start selling on SendAgift today.
+              <h1 className="font-poster text-5xl sm:text-6xl lg:text-7xl">
+                Start
+                <br />
+                <Marker tone="violet">selling</Marker>
+                <br />
+                today.
               </h1>
-              <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Join a governed gifting marketplace built for verification,
-                payout readiness, fulfilment quality, and country-by-country
-                growth.
+              <p className="max-w-lg text-base leading-relaxed text-white/70">
+                Join a gifting marketplace built for verification, payout
+                readiness, fulfilment quality, and country-by-country growth.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg" className="h-11 gap-2 rounded-full px-6">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 gap-2 bg-white px-7 text-brand-ink hover:bg-brand-teal"
+                >
                   <Link to="/seller/register">
-                    Sign up as Seller
+                    Sign up as seller
                     <ArrowRight className="size-4" />
                   </Link>
                 </Button>
@@ -106,11 +109,18 @@ export function BecomeSellerPage() {
                   asChild
                   variant="outline"
                   size="lg"
-                  className="h-11 rounded-full bg-background/80 px-5"
+                  className="h-12 border-2 border-white bg-transparent px-6 text-white hover:bg-white hover:text-brand-ink"
                 >
                   <Link to="/seller/login">Seller sign in</Link>
                 </Button>
               </div>
+            </div>
+            <div className="relative min-h-72 p-6 pt-0 sm:p-10 sm:pt-0 lg:p-8">
+              <img
+                src="/images/hero/hero.jpg"
+                alt="A gift being handed over"
+                className="size-full min-h-72 rounded-[1.5rem] object-cover object-[60%_30%]"
+              />
             </div>
           </div>
         </section>
@@ -123,11 +133,9 @@ export function BecomeSellerPage() {
             {sellerSteps.map((item) => (
               <div
                 key={item.step}
-                className="rounded-2xl bg-card p-6 ring-1 ring-border/60"
+                className="rounded-2xl bg-accent p-7"
               >
-                <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-                  Step {item.step}
-                </p>
+                <p className="font-poster text-5xl text-brand-violet">{item.step}</p>
                 <h3 className="mt-3 font-display text-2xl tracking-tight">
                   {item.title}
                 </h3>
@@ -139,7 +147,7 @@ export function BecomeSellerPage() {
           </div>
         </section>
 
-        <section className="bg-muted/40">
+        <section>
           <div
             className={cn(
               storefrontFrameClass,
@@ -159,7 +167,7 @@ export function BecomeSellerPage() {
             </div>
 
             <div className="rounded-[1.75rem] bg-cream p-8 sm:p-10">
-              <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-brand-teal text-brand-ink">
                 <ShieldCheck className="size-6" />
               </div>
               <h3 className="font-display text-2xl tracking-tight sm:text-3xl">
@@ -180,17 +188,19 @@ export function BecomeSellerPage() {
         <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
           <SectionHeading title="What sellers say" align="center" />
           <div className="grid gap-5 md:grid-cols-3">
-            {sellerTestimonials.map((testimonial) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+            {sellerTestimonials.map((testimonial, index) => (
+              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
             ))}
           </div>
         </section>
 
         <section className="pb-16 lg:pb-20">
           <div className={storefrontFrameClass}>
-            <div className="overflow-hidden rounded-[1.75rem] bg-primary px-8 py-12 text-center text-primary-foreground sm:px-12">
-              <h2 className="font-display text-3xl tracking-tight sm:text-4xl">
-                Ready to grow your gift shop?
+            <div className="relative overflow-hidden rounded-[1.75rem] bg-brand-violet px-8 py-14 text-center text-white sm:px-12">
+              <Sparkle className="absolute top-8 left-[10%] size-7 text-brand-teal" />
+              <Sparkle className="absolute right-[12%] bottom-8 size-5 text-white/80" />
+              <h2 className="font-poster text-4xl sm:text-5xl">
+                Ready to <Marker tone="ink">grow</Marker> your gift shop?
               </h2>
               <p className="mx-auto mt-3 max-w-xl text-sm text-primary-foreground/80 sm:text-base">
                 Register, verify, connect payouts, and start fulfilling with
@@ -200,7 +210,7 @@ export function BecomeSellerPage() {
                 asChild
                 size="lg"
                 variant="secondary"
-                className="mt-7 h-11 bg-background px-6 text-foreground hover:bg-background/90"
+                className="mt-7 h-12 bg-white px-7 text-brand-ink hover:bg-brand-teal"
               >
                 <Link to="/seller/register">Become a Seller</Link>
               </Button>

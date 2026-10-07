@@ -145,7 +145,7 @@ export function ProductReviews({
     <section className={className} aria-labelledby="product-reviews-heading">
       <h2
         id="product-reviews-heading"
-        className="font-display text-xl tracking-tight sm:text-2xl"
+        className="font-poster text-xl tracking-tight sm:text-2xl"
       >
         Reviews
       </h2>

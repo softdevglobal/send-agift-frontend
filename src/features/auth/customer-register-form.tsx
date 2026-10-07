@@ -20,6 +20,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { completeSocialSignup, type SocialSignInResult } from '@/api/auth'
 import { loginCustomer, registerCustomer } from '@/api/customers'
 import { FormAlert } from '@/components/common/form-alert'
+import { Marker } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -182,11 +183,8 @@ export function CustomerRegisterForm() {
       noValidate
     >
       <div className="space-y-3">
-        <h2 className="font-display text-3xl leading-[1.05] sm:text-4xl tracking-tight text-foreground">
-          Start sending{' '}
-          <span className="bg-gradient-to-r from-primary via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
-            smiles
-          </span>
+        <h2 className="font-poster text-4xl text-brand-ink sm:text-5xl dark:text-foreground">
+          Start sending <Marker tone="violet">smiles</Marker>
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Create your account, then add a photo and delivery addresses whenever you like.
@@ -195,7 +193,7 @@ export function CustomerRegisterForm() {
           {perks.map((perk) => (
             <li
               key={perk.label}
-              className="flex min-w-0 items-center justify-center gap-1.5 rounded-full bg-card px-2 py-1.5 text-xs whitespace-nowrap text-muted-foreground ring-1 ring-border/60"
+              className="flex min-w-0 items-center justify-center gap-1.5 rounded-md bg-accent px-2 py-1.5 text-xs font-semibold whitespace-nowrap text-brand-ink"
             >
               <perk.icon className="size-3.5 shrink-0 text-primary" />
               {perk.label}
@@ -207,7 +205,7 @@ export function CustomerRegisterForm() {
       {social ? (
         <div
           id="social-signup-card"
-          className="animate-fade-up flex items-center gap-3.5 rounded-2xl bg-gradient-to-br from-accent to-pink-50 p-4 ring-1 ring-primary/20"
+          className="animate-fade-up flex items-center gap-3.5 rounded-2xl bg-accent p-4 ring-1 ring-primary/20"
         >
           {social.image_url ? (
             <img src={social.image_url} alt="" className="size-12 shrink-0 rounded-full object-cover ring-2 ring-background" />
@@ -386,7 +384,7 @@ export function CustomerRegisterForm() {
       {emailTaken ? (
         <div
           role="status"
-          className="animate-fade-up overflow-hidden rounded-2xl bg-gradient-to-br from-accent to-pink-50 p-5 ring-1 ring-primary/20"
+          className="animate-fade-up overflow-hidden rounded-2xl bg-accent p-5 ring-1 ring-primary/20"
         >
           <div className="flex items-start gap-3.5">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl text-primary-foreground shadow-sm">

@@ -63,8 +63,69 @@ export function SellerOrderItemList({
   const paged = usePagedList(orders, TABLE_PAGE_SIZE)
 
   return (
+    <>
     <section className={cn(sellerPanelClass, 'overflow-hidden')}>
-      <div className="overflow-x-auto">
+      {/* Phones get one card per parcel: a seven-column table would scroll
+          sideways and hide half its columns. */}
+      <ul className="divide-y divide-brand-ink/10 md:hidden">
+        {paged.visible.map((order) => {
+          const active = order.items.some((item) => item.id === activeItemId)
+          const openId =
+            order.items.find((item) => item.id === activeItemId)?.id ?? order.items[0].id
+          const total = order.items.reduce((sum, item) => sum + item.total_amount, 0)
+          const statuses = new Set(order.items.map((item) => item.fulfilment_status))
+          const sharedStatus = statuses.size === 1 ? order.items[0].fulfilment_status : null
+          return (
+            <li key={order.key}>
+              <button
+                type="button"
+                onClick={() => onOpen(openId)}
+                aria-current={active ? 'true' : undefined}
+                className={cn(
+                  'flex w-full flex-col gap-3 px-4 py-4 text-left transition-colors',
+                  active ? 'bg-accent' : 'active:bg-accent/60',
+                )}
+              >
+                <span className="flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block truncate font-extrabold tracking-tight">
+                      {order.orderNumber}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                      {[order.shopName, order.recipientName && `for ${order.recipientName}`]
+                        .filter(Boolean)
+                        .join(' · ') || '-'}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block font-poster text-lg">
+                      {formatPriceAmount(total, 'USD')}
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {order.items.length} product{order.items.length === 1 ? '' : 's'}
+                    </span>
+                  </span>
+                </span>
+                <span className="flex flex-wrap items-center gap-1.5">
+                  {sharedStatus ? (
+                    <FulfilmentStatusBadge status={sharedStatus} />
+                  ) : (
+                    <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] text-brand-ink uppercase">
+                      Mixed
+                    </span>
+                  )}
+                  <OrderStatusBadge status={order.orderStatus} />
+                  <span className="ml-auto text-[11px] font-bold tracking-[0.06em] text-brand-violet uppercase">
+                    Deliver {formatDeliveryDate(order.deliveryDate)}
+                  </span>
+                </span>
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[52rem] text-left text-sm">
           <thead>
             <tr className="border-b border-border/50 bg-surface/50 text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
@@ -147,14 +208,21 @@ export function SellerOrderItemList({
           </tbody>
         </table>
       </div>
-      <div className="px-4 pb-4">
+    </section>
+
+      {/* The count and pager sit under the list, not inside it. */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-ink uppercase">
+          {orders.length} {orders.length === 1 ? 'order' : 'orders'}
+        </p>
         <PageNav
           page={paged.page}
           pageCount={paged.pageCount}
           onPage={paged.setPage}
           label="Order pages"
+          className="mt-0"
         />
       </div>
-    </section>
+    </>
   )
 }

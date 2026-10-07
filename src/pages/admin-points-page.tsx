@@ -12,6 +12,7 @@ import {
   type PointsRate,
 } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AdminEmptyState, AdminPageHeader, adminPanelClass, formatDate } from '@/features/admin'
+import { AdminEmptyState, AdminPageHeader, formatDate } from '@/features/admin'
 import { Loading, ReasonDialog, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
@@ -54,6 +55,8 @@ export function AdminPointsPage() {
   const [tab, setTab] = useState<PointsPurchaseStatus | ''>('pending')
   const [items, setItems] = useState<PointsPurchase[]>([])
   const [rate, setRate] = useState<PointsRate | null>(null)
+  /** Every purchase, for the summary cards and the tab counts. */
+  const [all, setAll] = useState<PointsPurchase[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -65,9 +68,13 @@ export function AdminPointsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await listPointsPurchasesForAdmin(tab)
+      const [res, everything] = await Promise.all([
+        listPointsPurchasesForAdmin(tab),
+        listPointsPurchasesForAdmin(''),
+      ])
       setItems(res.items)
       setRate(res.rate)
+      setAll(everything.items)
       setError(null)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not load purchases.'))
@@ -80,6 +87,20 @@ export function AdminPointsPage() {
     void load()
   }, [load])
 
+  // The Actions column only earns its space while something can be actioned.
+  const showActions = canAct && pages.visible.some((p) => p.status === 'pending')
+
+  const counts = {
+    pending: all.filter((p) => p.status === 'pending').length,
+    completed: all.filter((p) => p.status === 'completed').length,
+    failed: all.filter((p) => p.status === 'failed').length,
+    cancelled: all.filter((p) => p.status === 'cancelled').length,
+  }
+  const completed = all.filter((p) => p.status === 'completed')
+  const pointsSold = completed.reduce((sum, p) => sum + (p.points_credited ?? p.points), 0)
+  const collected = completed.reduce((sum, p) => sum + (p.paid_amount_cents ?? p.amount_cents), 0)
+  const currency = completed[0]?.currency || 'USD'
+
   return (
     <>
       <AdminPageHeader
@@ -89,20 +110,67 @@ export function AdminPointsPage() {
         }. A pending purchase is credited only when its payment is confirmed.`}
       />
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
+      {/* The rate, then the four numbers that matter, then the list. */}
+      <section className="relative mb-5 grid overflow-hidden rounded-xl bg-amber-300 text-amber-950 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <Sparkle className="absolute top-5 right-[40%] hidden size-6 text-white lg:block" />
+        <div className="flex flex-col justify-center gap-2 px-6 py-6 sm:px-8">
+          <p className="inline-flex w-fit items-center gap-1.5 rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            <Coins className="size-3.5 text-amber-300" />
+            Points rate
+          </p>
+          <p className="font-poster text-4xl sm:text-5xl">{rate ? describeRate(rate) : '–'}</p>
+          <p className="text-sm font-medium text-amber-950/75">
+            What sellers pay for every point they promise as a reward.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4 sm:p-5 lg:w-[34rem] lg:grid-cols-2">
+          <SummaryTile
+            label="Waiting"
+            value={String(counts.pending)}
+            hint="pending payment"
+            className="bg-white text-brand-ink"
+          />
+          <SummaryTile
+            label="Points sold"
+            value={pointsSold.toLocaleString()}
+            hint={`${counts.completed} completed`}
+            className="bg-brand-violet text-white"
+          />
+          <SummaryTile
+            label="Collected"
+            value={formatCents(collected, currency)}
+            hint="from completed purchases"
+            className="bg-brand-teal text-brand-ink"
+          />
+          <SummaryTile
+            label="Didn't go through"
+            value={String(counts.failed + counts.cancelled)}
+            hint={`${counts.failed} failed · ${counts.cancelled} cancelled`}
+            className="bg-brand-ink text-white"
+          />
+        </div>
+      </section>
+
+      <div className="mb-5 flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
         {tabs.map((t) => (
           <button
             key={t.label}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-              tab === t.id
-                ? 'bg-foreground text-background'
-                : 'bg-muted text-muted-foreground hover:text-foreground',
+              'rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
+              tab === t.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
             )}
           >
             {t.label}
+            <span
+              className={cn(
+                'ml-1.5 rounded-sm px-1 text-[10px]',
+                tab === t.id ? 'bg-brand-teal text-brand-ink' : 'bg-white text-brand-ink',
+              )}
+            >
+              {t.id ? counts[t.id] : all.length}
+            </span>
           </button>
         ))}
       </div>
@@ -118,8 +186,59 @@ export function AdminPointsPage() {
           description={tab === 'pending' ? 'No purchases are waiting for payment.' : 'No purchases yet.'}
         />
       ) : (
-        <div className={cn(adminPanelClass, 'overflow-x-auto')}>
-          <table className="w-full min-w-[48rem] text-sm">
+        <div className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+          <ul className="divide-y divide-border/40 md:hidden">
+            {pages.visible.map((p) => (
+              <li key={p.id} className="space-y-3 px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-extrabold">{p.seller_name ?? 'Seller'}</p>
+                    <p className="truncate text-xs text-muted-foreground">{p.seller_email}</p>
+                  </div>
+                  <StatusPill tone={statusTone[p.status]}>{p.status}</StatusPill>
+                </div>
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="font-poster text-xl tabular-nums">
+                      {(p.points_credited ?? p.points).toLocaleString()}
+                      <span className="ml-1 font-sans text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                        points
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{formatDate(p.created_at)}</p>
+                  </div>
+                  <div className="text-right text-sm font-bold tabular-nums">
+                    {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                    {p.paid_amount_cents != null && p.paid_amount_cents !== p.amount_cents ? (
+                      <p className="text-xs font-normal text-muted-foreground">
+                        asked {formatCents(p.amount_cents, p.currency)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                {p.confirmed_by ? (
+                  <p className="text-xs text-muted-foreground">Confirmed by {p.confirmed_by}</p>
+                ) : null}
+                {p.failure_reason ? (
+                  <p className="text-xs text-muted-foreground">{p.failure_reason}</p>
+                ) : null}
+                {canAct && p.status === 'pending' ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-9 flex-1" onClick={() => setConfirming(p)}>
+                      <CheckCircle2 className="size-3.5" />
+                      Confirm paid
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-9 flex-1" onClick={() => setFailing(p)}>
+                      <XCircle className="size-3.5" />
+                      Fail
+                    </Button>
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block">
+          <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
                 <th className="px-5 py-3 font-medium">Seller</th>
@@ -127,18 +246,33 @@ export function AdminPointsPage() {
                 <th className="px-3 py-3 font-medium">Amount</th>
                 <th className="px-3 py-3 font-medium">Points</th>
                 <th className="px-3 py-3 font-medium">Status</th>
-                <th className="px-5 py-3" />
+                <th className="px-3 py-3 font-medium">Settled</th>
+                {showActions ? <th className="px-5 py-3 text-right font-medium">Actions</th> : null}
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
               {pages.visible.map((p) => (
                 <tr key={p.id}>
-                  <td className="px-5 py-3">
-                    <p className="font-medium">{p.seller_name ?? 'Seller'}</p>
-                    <p className="text-xs text-muted-foreground">{p.seller_email}</p>
+                  <td className="px-5 py-3.5">
+                    <div className="flex items-center gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-violet text-xs font-extrabold text-white">
+                        {(p.seller_name ?? 'S')
+                          .split(/\s+/)
+                          .slice(0, 2)
+                          .map((part) => part[0] ?? '')
+                          .join('')
+                          .toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-extrabold">{p.seller_name ?? 'Seller'}</p>
+                        <p className="truncate text-xs text-muted-foreground">{p.seller_email}</p>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">{formatDate(p.created_at)}</td>
-                  <td className="px-3 py-3 tabular-nums">
+                  <td className="px-3 py-3.5 text-xs whitespace-nowrap text-muted-foreground">
+                    {formatDate(p.created_at)}
+                  </td>
+                  <td className="px-3 py-3.5 font-poster text-lg tabular-nums">
                     {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
                     {p.paid_amount_cents != null && p.paid_amount_cents !== p.amount_cents ? (
                       <p className="text-xs text-muted-foreground">
@@ -146,8 +280,11 @@ export function AdminPointsPage() {
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-3 py-3 font-medium tabular-nums">
-                    {(p.points_credited ?? p.points).toLocaleString()}
+                  <td className="px-3 py-3.5">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-2 py-1 text-xs font-bold tabular-nums text-amber-950">
+                      <Coins className="size-3.5" />
+                      {(p.points_credited ?? p.points).toLocaleString()}
+                    </span>
                   </td>
                   <td className="px-3 py-3">
                     <StatusPill tone={statusTone[p.status]}>{p.status}</StatusPill>
@@ -158,34 +295,54 @@ export function AdminPointsPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-3 text-right whitespace-nowrap">
-                    {canAct && p.status === 'pending' ? (
-                      <div className="inline-flex gap-1.5">
-                        <Button size="sm" className="h-8" onClick={() => setConfirming(p)}>
-                          <CheckCircle2 className="size-3.5" />
-                          Confirm paid
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8"
-                          onClick={() => setFailing(p)}
-                        >
-                          <XCircle className="size-3.5" />
-                          Fail
-                        </Button>
-                      </div>
-                    ) : null}
+                  <td className="px-3 py-3.5 text-xs whitespace-nowrap text-muted-foreground">
+                    {p.status === 'pending'
+                      ? 'Waiting for payment'
+                      : formatDate(p.completed_at ?? p.failed_at ?? p.updated_at)}
                   </td>
+                  {showActions ? (
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                      {canAct && p.status === 'pending' ? (
+                        <div className="inline-flex gap-1.5">
+                          <Button size="sm" className="h-8" onClick={() => setConfirming(p)}>
+                            <CheckCircle2 className="size-3.5" />
+                            Confirm paid
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            onClick={() => setFailing(p)}
+                          >
+                            <XCircle className="size-3.5" />
+                            Fail
+                          </Button>
+                        </div>
+                      ) : null}
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="px-4 pb-4">
-            <PageNav page={pages.page} pageCount={pages.pageCount} onPage={pages.setPage} label="Purchase pages" />
           </div>
         </div>
       )}
+
+      {!loading && items.length > 0 ? (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-bold tracking-[0.12em] text-brand-ink uppercase">
+            {items.length} {items.length === 1 ? 'purchase' : 'purchases'}
+          </p>
+          <PageNav
+            page={pages.page}
+            pageCount={pages.pageCount}
+            onPage={pages.setPage}
+            label="Purchase pages"
+            className="mt-0"
+          />
+        </div>
+      ) : null}
 
       <ConfirmPaidDialog
         purchase={confirming}
@@ -315,5 +472,25 @@ function ConfirmPaidDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function SummaryTile({
+  label,
+  value,
+  hint,
+  className,
+}: {
+  label: string
+  value: string
+  hint: string
+  className: string
+}) {
+  return (
+    <div className={cn('flex flex-col justify-between rounded-lg p-3.5', className)}>
+      <span className="text-[10px] font-bold tracking-[0.14em] uppercase opacity-75">{label}</span>
+      <span className="mt-2 truncate font-poster text-2xl">{value}</span>
+      <span className="truncate text-[11px] font-medium opacity-70">{hint}</span>
+    </div>
   )
 }

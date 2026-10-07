@@ -58,6 +58,8 @@ import {
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
+import { BackLink } from '@/components/common/back-link'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
@@ -98,6 +100,25 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { cn } from '@/lib/utils'
 
+type DetailTab = 'leaderboard' | 'winners' | 'setup' | 'money' | 'plays'
+
+const detailTabs: { id: DetailTab; label: string }[] = [
+  { id: 'leaderboard', label: 'Leaderboard' },
+  { id: 'winners', label: 'Winners & review' },
+  { id: 'setup', label: 'Setup & actions' },
+  { id: 'money', label: 'Prize & money' },
+  { id: 'plays', label: 'Plays' },
+]
+
+function EmptyTab({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-xl border-2 border-dashed border-brand-ink/20 px-6 py-12 text-center">
+      <p className="font-poster text-xl">{title}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{text}</p>
+    </div>
+  )
+}
+
 function Fact({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
@@ -126,11 +147,22 @@ export function AdminCompetitionDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
+  const [tabChoice, setTab] = useState<DetailTab | null>(null)
   const [editing, setEditing] = useState(false)
   const [cancelOpen, setCancelOpen] = useState(false)
   const [cancelReason, setCancelReason] = useState<CancelReason>('technical_failure')
   const [cancelNote, setCancelNote] = useState('')
   const [rejecting, setRejecting] = useState<ScoreSubmission | null>(null)
+  /** The lifecycle step waiting on "are you sure". */
+  const [confirming, setConfirming] = useState<{
+    key: string
+    title: string
+    description: string
+    confirmLabel: string
+    tone: 'danger' | 'default'
+    action: () => Promise<unknown>
+    success: string
+  } | null>(null)
   const [disqualifying, setDisqualifying] = useState<CompetitionWinner | null>(null)
   const [analytics, setAnalytics] = useState<CompetitionAnalytics | null>(null)
   const [ledger, setLedger] = useState<PrizeLedgerView | null>(null)
@@ -216,8 +248,12 @@ export function AdminCompetitionDetailPage() {
     await load()
   }
 
+  const tab: DetailTab = tabChoice ?? (comp.status === 'draft' || chance ? 'setup' : 'leaderboard')
+
   return (
     <>
+      <BackLink to="/admin/competitions" label="All competitions" className="mb-4" />
+
       <CompetitionHero
         comp={comp}
         status={status}
@@ -241,7 +277,33 @@ export function AdminCompetitionDetailPage() {
 
       <CompetitionStats comp={comp} livePlays={live?.eligible_play_count} />
 
+      {/* One area at a time, so the page reads as sections, not one long scroll. */}
+      <div className="sticky top-16 z-20 -mx-1 mb-5 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex w-fit gap-1 rounded-lg bg-accent p-1">
+          {detailTabs
+            .filter((item) => !(chance && item.id === 'leaderboard'))
+            .map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold tracking-[0.08em] whitespace-nowrap uppercase transition-colors',
+                  tab === item.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
+                )}
+              >
+                {item.label}
+                {item.id === 'winners' && queue.length > 0 ? (
+                  <span className="rounded-sm bg-amber-300 px-1 text-[10px] text-amber-950">{queue.length}</span>
+                ) : null}
+              </button>
+            ))}
+        </div>
+      </div>
+
       <div className="grid gap-4">
+        {tab === 'setup' ? (
+          <>
         <Panel title="Setup" icon={<CalendarClock className="size-5 text-sky-600" />}>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <Fact label="Opens" value={formatDate(comp.starts_at)} />
@@ -310,7 +372,17 @@ export function AdminCompetitionDetailPage() {
                 variant="outline"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => run('pause', () => pauseCompetition(comp.id), 'Paused. New plays are refused; plays already started can finish.')}
+                onClick={() =>
+                  setConfirming({
+                    key: 'pause',
+                    title: 'Pause this competition?',
+                    description: 'New plays are refused until you resume it. Plays already started can finish.',
+                    confirmLabel: 'Pause',
+                    tone: 'default',
+                    action: () => pauseCompetition(comp.id),
+                    success: 'Paused. New plays are refused; plays already started can finish.',
+                  })
+                }
               >
                 {spinner('pause')}
                 <Pause className="size-4" />
@@ -335,11 +407,17 @@ export function AdminCompetitionDetailPage() {
                 variant="outline"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => {
-                  if (window.confirm('Close this round now? No new plays will be accepted.')) {
-                    void run('close', () => closeCompetition(comp.id), 'Closed. The prize is fixed at its current amount.')
-                  }
-                }}
+                onClick={() =>
+                  setConfirming({
+                    key: 'close',
+                    title: 'Close this round now?',
+                    description: 'No new plays will be accepted, and the prize is fixed at its current amount. This cannot be undone.',
+                    confirmLabel: 'Close now',
+                    tone: 'danger',
+                    action: () => closeCompetition(comp.id),
+                    success: 'Closed. The prize is fixed at its current amount.',
+                  })
+                }
               >
                 {spinner('close')}
                 <Square className="size-4" />
@@ -365,11 +443,15 @@ export function AdminCompetitionDetailPage() {
                 }
                 disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() =>
-                  run(
-                    'schedule',
-                    () => scheduleCompetition(comp.id),
-                    `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
-                  )
+                  setConfirming({
+                    key: 'schedule',
+                    title: 'Publish this competition?',
+                    description: `Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} get a push notification straight away, and it goes live at its start time.`,
+                    confirmLabel: 'Publish',
+                    tone: 'default',
+                    action: () => scheduleCompetition(comp.id),
+                    success: `Published. Players in ${comp.countries.length === 1 ? comp.countries[0].name : `${comp.countries.length} countries`} are being sent a push notification, and it goes live at its start time.`,
+                  })
                 }
               >
                 {spinner('schedule')}
@@ -382,7 +464,17 @@ export function AdminCompetitionDetailPage() {
                 type="button"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => run('freeze', () => freezeCompetition(comp.id), 'Frozen. The leaderboard is locked and snapshotted.')}
+                onClick={() =>
+                  setConfirming({
+                    key: 'freeze',
+                    title: 'Freeze the leaderboard?',
+                    description: 'The leaderboard is locked and snapshotted. Scores can no longer change after this.',
+                    confirmLabel: 'Freeze',
+                    tone: 'danger',
+                    action: () => freezeCompetition(comp.id),
+                    success: 'Frozen. The leaderboard is locked and snapshotted.',
+                  })
+                }
               >
                 {spinner('freeze')}
                 <Snowflake className="size-4" />
@@ -394,11 +486,17 @@ export function AdminCompetitionDetailPage() {
                 type="button"
                 className="h-10"
                 disabled={busy !== null}
-                onClick={() => {
-                  if (window.confirm('Run the draw now? Winners are picked at random from every entry, and it cannot be run again.')) {
-                    void run('draw', () => runDraw(comp.id), 'Draw complete. Validate the winners below.')
-                  }
-                }}
+                onClick={() =>
+                  setConfirming({
+                    key: 'draw',
+                    title: 'Run the draw now?',
+                    description: 'Winners are picked at random from every entry. The draw cannot be run again.',
+                    confirmLabel: 'Run the draw',
+                    tone: 'danger',
+                    action: () => runDraw(comp.id),
+                    success: 'Draw complete. Validate the winners below.',
+                  })
+                }
               >
                 {spinner('draw')}
                 <Trophy className="size-4" />
@@ -411,7 +509,15 @@ export function AdminCompetitionDetailPage() {
                 className="h-10"
                 disabled={busy !== null}
                 onClick={() =>
-                  run('finalise', () => finaliseCompetition(comp.id), 'Finalised. Validate the winners below.')
+                  setConfirming({
+                    key: 'finalise',
+                    title: 'Finalise and declare winners?',
+                    description: 'The results become final and winners are declared. You will validate each winner next.',
+                    confirmLabel: 'Finalise',
+                    tone: 'danger',
+                    action: () => finaliseCompetition(comp.id),
+                    success: 'Finalised. Validate the winners below.',
+                  })
                 }
               >
                 {spinner('finalise')}
@@ -461,6 +567,17 @@ export function AdminCompetitionDetailPage() {
 
         {analytics && status !== 'draft' ? <RiskPanel analytics={analytics} /> : null}
 
+          </>
+        ) : null}
+
+        {tab === 'money' ? (
+          <>
+        {status === 'draft' ? (
+          <EmptyTab
+            title="No money moves yet"
+            text="The prize ledger starts once the competition is published. Fund the reserve under Setup & actions."
+          />
+        ) : null}
         {status !== 'draft' ? (
           <LedgerPanel
             comp={comp}
@@ -477,10 +594,26 @@ export function AdminCompetitionDetailPage() {
           />
         ) : null}
 
+          </>
+        ) : null}
+
+        {tab === 'plays' ? (
+          <>
         <PlaysPanel comp={comp} plays={plays} onVoid={superadmin ? setVoiding : undefined} />
 
         {draw ? <DrawPanel draw={draw} /> : null}
 
+          </>
+        ) : null}
+
+        {tab === 'winners' ? (
+          <>
+        {queue.length === 0 && winners.length === 0 ? (
+          <EmptyTab
+            title="No winners yet"
+            text="Winners appear here once the round is finalised or the draw is run. Scores waiting for review show here too."
+          />
+        ) : null}
         {queue.length > 0 ? (
           <Panel title={`Review queue (${queue.length})`} icon={<ShieldAlert className="size-5 text-amber-600" />}>
             <div className="space-y-2">
@@ -646,7 +779,10 @@ export function AdminCompetitionDetailPage() {
           </Panel>
         ) : null}
 
-        {chance ? null : (
+          </>
+        ) : null}
+
+        {tab === 'leaderboard' && !chance ? (
         <Panel
           title="Leaderboard"
           icon={<Trophy className="size-5 text-amber-500" />}
@@ -654,7 +790,7 @@ export function AdminCompetitionDetailPage() {
         >
           {board.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-10 text-center">
-              <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-md">
+              <span className="grid size-14 place-items-center rounded-2xl bg-orange-500 text-white shadow-md">
                 <Trophy className="size-7" />
               </span>
               <p className="font-medium">No scores yet</p>
@@ -665,7 +801,7 @@ export function AdminCompetitionDetailPage() {
             <LeaderPodium rows={board.slice(0, 3)} />
             {board.length > 3 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[560px] text-sm">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
                     <th className="py-2 pr-4 font-medium">Rank</th>
@@ -710,7 +846,7 @@ export function AdminCompetitionDetailPage() {
             </>
           )}
         </Panel>
-        )}
+        ) : null}
       </div>
 
       <CompetitionForm
@@ -779,6 +915,23 @@ export function AdminCompetitionDetailPage() {
       <AdjustPrizeDialog comp={comp} open={adjustOpen} onOpenChange={setAdjustOpen} onDone={done} />
       <VoidPlayDialog comp={comp} play={voiding} onOpenChange={(open) => !open && setVoiding(null)} onDone={done} />
       <SettleDialog comp={comp} open={settleOpen} onOpenChange={setSettleOpen} onDone={done} />
+
+      <ConfirmDialog
+        open={confirming !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirming(null)
+        }}
+        title={confirming?.title ?? ''}
+        description={confirming?.description ?? ''}
+        confirmLabel={confirming?.confirmLabel ?? 'Confirm'}
+        tone={confirming?.tone}
+        busy={confirming !== null && busy === confirming.key}
+        onConfirm={() => {
+          if (!confirming) return
+          const step = confirming
+          void run(step.key, step.action, step.success).then(() => setConfirming(null))
+        }}
+      />
 
       <ReasonDialog
         open={rejecting !== null}

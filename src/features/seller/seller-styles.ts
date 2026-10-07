@@ -1,37 +1,36 @@
-export const sellerPanelClass =
-  'rounded-2xl bg-card shadow-[0_10px_36px_rgba(40,50,30,0.05)] ring-1 ring-border/50'
+export const sellerPanelClass = 'rounded-xl border border-brand-ink/20 bg-card'
 
 /**
- * A panel you can open. The lift on hover is the affordance. Without it a
- * clickable gift card looked exactly like the static ones around it.
+ * A panel you can open. The ink outline on hover is the affordance. Without
+ * it a clickable gift card looked exactly like the static ones around it.
  */
 export const sellerCardClass =
-  'rounded-2xl bg-card shadow-[0_10px_36px_rgba(40,50,30,0.05)] ring-1 ring-border/50 transition-[transform,box-shadow] duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_44px_rgba(40,50,30,0.12)]'
+  'rounded-xl border border-brand-ink/20 bg-card transition-colors duration-200 hover:border-brand-ink'
 
 export const sellerListRowClass =
-  'flex items-start justify-between gap-4 rounded-xl border border-border/40 bg-surface/90 px-4 py-3.5 transition-colors hover:border-border hover:bg-muted/40'
+  'flex items-start justify-between gap-4 rounded-lg border-2 border-brand-ink/15 bg-card px-4 py-3.5 transition-colors hover:border-brand-ink hover:bg-accent/40'
 
 /**
- * Accent washes for metric tiles. Each nav area gets its own so a seller can
+ * Solid colours for metric tiles. Each nav area gets its own so a seller can
  * tell the four numbers apart at a glance instead of reading four identical
  * white boxes.
  */
 export const sellerToneClass = {
   violet: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.96_0.04_296)_0%,var(--card)_62%)]',
-    icon: 'bg-[oklch(0.93_0.06_296)] text-[oklch(0.42_0.2_296)]',
+    tile: 'bg-card',
+    icon: 'bg-brand-violet text-white',
   },
   teal: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.95_0.05_195)_0%,var(--card)_62%)]',
-    icon: 'bg-[oklch(0.92_0.07_195)] text-[oklch(0.42_0.11_205)]',
+    tile: 'bg-card',
+    icon: 'bg-brand-teal text-brand-ink',
   },
   amber: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.96_0.05_85)_0%,var(--card)_62%)]',
-    icon: 'bg-[oklch(0.93_0.08_85)] text-[oklch(0.48_0.12_75)]',
+    tile: 'bg-card',
+    icon: 'bg-amber-300 text-amber-950',
   },
   navy: {
-    tile: 'bg-[linear-gradient(140deg,oklch(0.94_0.03_265)_0%,var(--card)_62%)]',
-    icon: 'bg-[oklch(0.91_0.05_265)] text-[oklch(0.38_0.13_270)]',
+    tile: 'bg-card',
+    icon: 'bg-brand-ink text-white',
   },
 } as const
 

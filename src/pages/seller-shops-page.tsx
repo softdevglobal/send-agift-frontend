@@ -8,9 +8,11 @@ import {
 } from 'react'
 import {
   Camera,
+  Clock,
   ChevronLeft,
   ChevronRight,
   Eye,
+  Globe2,
   ImagePlus,
   Link2,
   LoaderCircle,
@@ -46,6 +48,7 @@ import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -56,7 +59,6 @@ import {
   SellerSheetFacts,
   SellerSheetRow,
   SellerSheetSection,
-  sellerCardClass,
   sellerPanelClass,
 } from '@/features/seller'
 import { DeliveryRangeMap } from '@/features/seller/delivery-range-map'
@@ -214,9 +216,9 @@ function ShopGifts({ shopId }: { shopId: string }) {
   )
 
   return (
-    <div className="mt-3 rounded-xl border border-border/50 bg-muted/30 p-3">
+    <div className="mt-3 rounded-lg bg-accent/60 p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-muted-foreground">
+        <p className="text-[10px] font-bold tracking-[0.14em] text-brand-ink/60 uppercase">
           {loading
             ? 'Gifts'
             : `${products.length} gift${products.length === 1 ? '' : 's'}`}
@@ -261,8 +263,8 @@ function ShopGifts({ shopId }: { shopId: string }) {
         <ul className="mt-2 space-y-2">
           {visible.map((product) => (
             <li key={product.id} className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate font-medium">{product.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">
+              <span className="min-w-0 truncate font-semibold">{product.name}</span>
+              <span className="shrink-0 text-xs font-medium text-brand-ink/70">
                 {formatPriceAmount(product.price_amount, product.currency || 'USD')}
                 {' · '}
                 {productStatusLabel(product.status)}
@@ -324,7 +326,7 @@ function ShopPreviewCard({ form }: { form: ShopInput }) {
         {form.image_url ? (
           <img src={form.image_url} alt="" className="size-full object-cover" />
         ) : (
-          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+          <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
             <Store className="size-8" />
           </div>
         )}
@@ -686,9 +688,8 @@ export function SellerShopsPage() {
                   <li
                     key={shop.id}
                     className={cn(
-                      sellerCardClass,
-                      'group flex flex-col overflow-hidden',
-                      editingId === shop.id && 'ring-2 ring-primary/30',
+                      'group flex flex-col rounded-xl border-2 border-brand-ink/15 bg-card p-2.5 transition-colors hover:border-brand-ink',
+                      editingId === shop.id && 'border-brand-violet',
                     )}
                   >
                     {/* The cover opens the preview; the buttons below act in place. */}
@@ -696,47 +697,44 @@ export function SellerShopsPage() {
                       type="button"
                       aria-label={`Preview ${shop.name}`}
                       onClick={() => setPreviewShop(shop)}
-                      className="relative aspect-video w-full overflow-hidden bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                      className="relative aspect-video w-full overflow-hidden rounded-lg bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                     >
                       {shop.image_url ? (
                         <img
                           src={shop.image_url}
                           alt=""
-                          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                         />
                       ) : (
-                        <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
-                          <Store className="size-8" />
+                        <div className="relative flex size-full items-center justify-center bg-brand-violet text-white">
+                          <Sparkle className="absolute top-4 left-[14%] size-5 text-brand-teal" />
+                          <Sparkle className="absolute right-[16%] bottom-5 size-3.5 text-white/70" />
+                          <Store className="size-9" />
                         </div>
                       )}
                       <span
                         className={cn(
-                          'absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-xs font-medium backdrop-blur-sm',
+                          'absolute top-2.5 left-2.5 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase',
                           shop.status === 'active'
-                            ? 'bg-primary/90 text-primary-foreground'
-                            : 'bg-foreground/70 text-background',
+                            ? 'bg-brand-teal text-brand-ink'
+                            : 'bg-brand-ink text-white',
                         )}
                       >
-                        {shop.status === 'active' ? 'Active' : 'Inactive'}
+                        {shop.status === 'active' ? 'Open' : 'Closed'}
                       </span>
-                      <span className="absolute right-3 bottom-3 flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100">
+                      <span className="absolute right-2.5 bottom-2.5 flex items-center gap-1.5 rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.1em] text-white uppercase opacity-0 transition-opacity group-hover:opacity-100">
                         <Eye className="size-3.5" />
                         Preview
                       </span>
                     </button>
 
-                    <div className="flex flex-1 flex-col p-5">
-                      <h3 className="font-display text-lg tracking-tight">{shop.name}</h3>
+                    <div className="flex flex-1 flex-col px-1.5 pt-4 pb-1">
+                      <h3 className="font-poster text-xl text-brand-ink dark:text-foreground">
+                        {shop.name}
+                      </h3>
                       {shop.slug ? (
-                        <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                          /{shop.slug}
-                        </p>
-                      ) : null}
-                      {country || shop.timezone ? (
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {[country ? countryOptionLabel(country) : '', shop.timezone]
-                            .filter(Boolean)
-                            .join(' · ')}
+                        <p className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                          sendagift/{shop.slug}
                         </p>
                       ) : null}
                       {shop.description ? (
@@ -744,55 +742,61 @@ export function SellerShopsPage() {
                           {shop.description}
                         </p>
                       ) : null}
-                      {shop.customer_visible_location ? (
-                        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="size-3 shrink-0" />
-                          <span className="truncate">
-                            {shop.customer_visible_location}
+
+                      {/* The facts customers judge a shop by, as small chips. */}
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {country ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-brand-ink">
+                            <Globe2 className="size-3" />
+                            {country.name}
                           </span>
-                        </p>
-                      ) : null}
-                      {formatZoneSummary(shop.delivery_zones) ? (
-                        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Truck className="size-3 shrink-0" />
-                          <span className="truncate">
-                            {formatZoneSummary(shop.delivery_zones)}
+                        ) : null}
+                        {shop.customer_visible_location ? (
+                          <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-brand-ink">
+                            <MapPin className="size-3 shrink-0" />
+                            <span className="truncate">{shop.customer_visible_location}</span>
                           </span>
-                        </p>
-                      ) : null}
+                        ) : null}
+                        {formatZoneSummary(shop.delivery_zones) ? (
+                          <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-brand-teal/20 px-2 py-1 text-[11px] font-semibold text-brand-ink">
+                            <Truck className="size-3 shrink-0" />
+                            <span className="truncate">{formatZoneSummary(shop.delivery_zones)}</span>
+                          </span>
+                        ) : null}
+                        {shop.timezone ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-brand-ink">
+                            <Clock className="size-3" />
+                            {shop.timezone}
+                          </span>
+                        ) : null}
+                      </div>
 
                       <ShopGifts shopId={shop.id} />
 
-                      <div className="mt-4 flex items-center gap-2 border-t border-border/50 pt-4">
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="h-9 flex-1 rounded-full"
+                      <div className="mt-auto flex items-center gap-1.5 pt-4">
+                        <Link
+                          to={`/seller/products?shop=${shop.id}`}
+                          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md bg-brand-violet text-[11px] font-bold tracking-[0.08em] text-white uppercase transition-colors hover:bg-brand-ink"
                         >
-                          <Link to={`/seller/products?shop=${shop.id}`}>
-                            <Package className="size-4" />
-                            Products
-                          </Link>
-                        </Button>
-                        <Button
+                          <Package className="size-4" />
+                          Products
+                        </Link>
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
                           aria-label={`Edit ${shop.name}`}
                           onClick={() => startEdit(shop)}
+                          className="flex size-9 items-center justify-center rounded-md border-2 border-brand-ink/15 text-brand-ink transition-colors hover:border-brand-ink hover:bg-brand-ink hover:text-white dark:text-foreground"
                         >
                           <Pencil className="size-4" />
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
                           aria-label={`Delete ${shop.name}`}
                           onClick={() => setShopToDelete(shop)}
+                          className="flex size-9 items-center justify-center rounded-md border-2 border-brand-ink/15 text-destructive transition-colors hover:border-destructive hover:bg-destructive hover:text-white"
                         >
                           <Trash2 className="size-4" />
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   </li>
@@ -813,14 +817,10 @@ export function SellerShopsPage() {
                 'relative overflow-hidden px-6 py-16 text-center sm:py-20',
               )}
             >
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_at_top,oklch(0.94_0.03_125/0.45),transparent_70%)]"
-              />
               <div className="relative mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-accent text-primary ring-1 ring-primary/10">
                 <Store className="size-6" />
               </div>
-              <h2 className="relative font-display text-xl tracking-tight">
+              <h2 className="relative font-poster text-xl">
                 No shops yet
               </h2>
               <p className="relative mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
@@ -852,7 +852,7 @@ export function SellerShopsPage() {
                     <Store className="size-4" />
                   </span>
                   <div>
-                    <h2 className="font-display text-xl tracking-tight">
+                    <h2 className="font-poster text-xl">
                       {editingId ? 'Edit shop' : 'New shop'}
                     </h2>
                     <p className="mt-0.5 text-sm text-muted-foreground">
@@ -1003,11 +1003,11 @@ export function SellerShopsPage() {
                       <div
                         role="group"
                         aria-label="Status"
-                        className="relative inline-flex rounded-full bg-muted p-1"
+                        className="relative inline-flex rounded-lg bg-accent p-1"
                       >
                         <div
                           aria-hidden
-                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-md bg-brand-ink transition-transform duration-300 ease-out"
                           style={{
                             transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
                           }}
@@ -1018,10 +1018,10 @@ export function SellerShopsPage() {
                             type="button"
                             onClick={() => updateField('status', option.value)}
                             className={cn(
-                              'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                              'relative z-10 w-[5.25rem] rounded-md py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors duration-200 active:scale-95',
                               form.status === option.value
-                                ? 'text-foreground'
-                                : 'text-muted-foreground hover:text-foreground',
+                                ? 'text-white'
+                                : 'text-brand-ink/60 hover:text-brand-ink',
                             )}
                           >
                             {option.label}
@@ -1380,7 +1380,7 @@ export function SellerShopsPage() {
                   className="size-full object-cover"
                 />
               ) : (
-                <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+                <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                   <Store className="size-8" />
                 </div>
               )}

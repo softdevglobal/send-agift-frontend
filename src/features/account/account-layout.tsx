@@ -17,7 +17,7 @@ export function AccountLayout() {
 
   return (
     <SiteLayout>
-      <main className={cn(storefrontFrameClass, 'py-8 lg:py-10')}>
+      <main className={cn(storefrontFrameClass, 'account-box py-8 lg:py-10')}>
         {/* minmax(0, 1fr) on phones too: an auto track grew to fit the
             sideways-scrolling nav strip and pushed every page off screen. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
@@ -25,7 +25,7 @@ export function AccountLayout() {
             <nav className="flex gap-4 overflow-x-auto pb-2 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-0">
               {accountNavGroups.map((group) => (
                 <div key={group.label} className="shrink-0 lg:shrink">
-                  <p className="mb-1.5 hidden px-3 text-[10px] font-medium tracking-[0.18em] text-muted-foreground uppercase lg:block">
+                  <p className="mb-2 hidden px-3 text-[10px] font-bold tracking-[0.18em] text-brand-ink/50 uppercase lg:block dark:text-muted-foreground">
                     {group.label}
                   </p>
                   <div className="flex gap-1 lg:flex-col lg:gap-0.5">
@@ -36,17 +36,17 @@ export function AccountLayout() {
                         end={item.end}
                         className={({ isActive }) =>
                           cn(
-                            'flex shrink-0 items-center gap-2.5 rounded-full px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors lg:rounded-lg',
+                            'flex shrink-0 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors',
                             isActive
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                              ? 'bg-brand-ink text-white'
+                              : 'text-muted-foreground hover:bg-accent hover:text-brand-ink',
                           )
                         }
                       >
                         <item.icon className="size-4 shrink-0" />
                         <span className="flex-1">{item.label}</span>
                         {item.to === '/account/saved-gifts' && gifts.length > 0 ? (
-                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                          <span className="rounded-md bg-brand-teal px-1.5 py-0.5 text-[10px] font-bold text-brand-ink">
                             {gifts.length}
                           </span>
                         ) : null}

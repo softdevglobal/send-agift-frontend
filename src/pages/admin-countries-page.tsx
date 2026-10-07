@@ -18,7 +18,9 @@ import {
 import { createCountry, deleteCountry, listCountryCapabilities, updateCountry } from '@/api/admin'
 import { listCountries, type Country, type CountryInput } from '@/api/countries'
 import { KNOWN_CURRENCIES, type CountryCapability } from '@/api/types'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
 import {
@@ -98,6 +100,8 @@ function statusTone(status: string): string {
 
 export function AdminCountriesPage() {
   const [countries, setCountries] = useState<Country[]>([])
+  const [countryToDelete, setCountryToDelete] = useState<Country | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const countryPages = usePagedList(countries, 9)
   const [capabilities, setCapabilities] = useState<Record<string, CountryCapability>>({})
   const [loading, setLoading] = useState(true)
@@ -241,6 +245,7 @@ export function AdminCountriesPage() {
   async function handleDelete(id: string) {
     setError(null)
     setNotice(null)
+    setDeleting(true)
     try {
       await deleteCountry(id)
       if (viewCountry?.id === id) setViewOpen(false)
@@ -253,6 +258,9 @@ export function AdminCountriesPage() {
           ? 'This country cannot be deleted while customers, sellers, or other records still use it.'
           : message,
       )
+    } finally {
+      setDeleting(false)
+      setCountryToDelete(null)
     }
   }
 
@@ -262,7 +270,7 @@ export function AdminCountriesPage() {
         title="Countries"
         description="Create markets customers and sellers can register into, then toggle what each country allows."
         action={
-          <Button type="button" className="h-11 rounded-full px-5" onClick={openCreate}>
+          <Button type="button" className="h-11 px-5" onClick={openCreate}>
             <Plus className="size-4" />
             Add country
           </Button>
@@ -279,111 +287,141 @@ export function AdminCountriesPage() {
 
           {countries.length ? (
             <>
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {countryPages.visible.map((country) => (
-                <div
-                  key={country.id}
-                  className={cn(
-                    adminPanelClass,
-                    'group flex flex-col gap-3 p-4 transition-shadow hover:shadow-[0_14px_44px_rgba(40,50,30,0.1)]',
-                  )}
-                >
-                  <button
-                    type="button"
-                    onClick={() => openView(country)}
-                    className="flex min-w-0 items-start gap-3 text-left"
-                  >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-accent text-2xl">
-                      {flagEmoji(country.iso_code)}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium">{country.name}</p>
-                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold tracking-wide text-muted-foreground">
-                          {country.iso_code}
-                        </span>
-                      </div>
-                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {country.default_currency} · {country.default_timezone}
-                      </p>
-                      {capabilities[country.id] ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 text-[10px] font-medium',
-                              capabilities[country.id].customer_registration_enabled
-                                ? 'bg-accent text-primary'
-                                : 'bg-muted text-muted-foreground',
-                            )}
-                          >
-                            Customers{' '}
-                            {capabilities[country.id].customer_registration_enabled
-                              ? 'on'
-                              : 'off'}
-                          </span>
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 text-[10px] font-medium',
-                              capabilities[country.id].seller_registration_enabled
-                                ? 'bg-accent text-primary'
-                                : 'bg-muted text-muted-foreground',
-                            )}
-                          >
-                            Sellers{' '}
-                            {capabilities[country.id].seller_registration_enabled ? 'on' : 'off'}
-                          </span>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-[10px] tracking-wide text-muted-foreground uppercase">
-                          Gates not set
-                        </p>
-                      )}
-                    </div>
-                  </button>
-
-                  <div className="flex items-center justify-between gap-2 border-t border-border/50 pt-3">
-                    <span
-                      className={cn(
-                        'inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                        statusTone(country.status),
-                      )}
-                    >
-                      <span className="size-1.5 rounded-full bg-current" />
-                      {country.status || 'unknown'}
-                    </span>
-
-                    <div className="flex shrink-0 items-center gap-0.5 opacity-70 transition-opacity group-hover:opacity-100">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`View ${country.name}`}
-                        onClick={() => openView(country)}
-                      >
-                        <Eye className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Edit ${country.name}`}
-                        onClick={() => openEdit(country)}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Delete ${country.name}`}
-                        onClick={() => handleDelete(country.id)}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </div>
+            {/* Four numbers first: how many markets, and who can sign up. */}
+            <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {[
+                { label: 'Countries', value: countries.length, tone: 'bg-brand-ink text-white' },
+                {
+                  label: 'Active',
+                  value: countries.filter((c) => c.status?.toLowerCase() === 'active').length,
+                  tone: 'bg-brand-violet text-white',
+                },
+                {
+                  label: 'Customer sign-up on',
+                  value: countries.filter((c) => capabilities[c.id]?.customer_registration_enabled).length,
+                  tone: 'bg-brand-teal text-brand-ink',
+                },
+                {
+                  label: 'Seller sign-up on',
+                  value: countries.filter((c) => capabilities[c.id]?.seller_registration_enabled).length,
+                  tone: 'bg-amber-300 text-amber-950',
+                },
+              ].map((item) => (
+                <div key={item.label} className={cn('rounded-xl p-4', item.tone)}>
+                  <p className="font-poster text-4xl">{item.value}</p>
+                  <p className="mt-1 text-[11px] font-bold tracking-[0.12em] uppercase opacity-80">
+                    {item.label}
+                  </p>
                 </div>
               ))}
+            </section>
+
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {countryPages.visible.map((country) => {
+                const active = country.status?.toLowerCase() === 'active'
+                const gates = capabilities[country.id]
+                return (
+                  <div
+                    key={country.id}
+                    className="group flex flex-col overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card transition-colors hover:border-brand-ink"
+                  >
+                    {/* Passport-style band: flag, code and name. */}
+                    <button
+                      type="button"
+                      onClick={() => openView(country)}
+                      className={cn(
+                        'relative flex items-center gap-3 px-4 py-4 text-left',
+                        active ? 'bg-brand-violet text-white' : 'bg-brand-ink text-white',
+                      )}
+                    >
+                      <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-white text-3xl">
+                        {flagEmoji(country.iso_code)}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-poster text-3xl leading-none">{country.iso_code}</span>
+                        <span className="mt-1 block truncate text-sm font-bold text-white/85">
+                          {country.name}
+                        </span>
+                      </span>
+                      <span
+                        className={cn(
+                          'shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase',
+                          active ? 'bg-brand-teal text-brand-ink' : 'bg-white/15 text-white',
+                        )}
+                      >
+                        {country.status || 'unknown'}
+                      </span>
+                    </button>
+
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        <span className="rounded-md bg-accent px-2 py-1 text-[11px] font-bold text-brand-ink">
+                          {country.default_currency}
+                        </span>
+                        <span className="truncate rounded-md bg-accent px-2 py-1 text-[11px] font-semibold text-brand-ink">
+                          {country.default_timezone}
+                        </span>
+                      </div>
+
+                      {gates ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { label: 'Customers', on: gates.customer_registration_enabled },
+                            { label: 'Sellers', on: gates.seller_registration_enabled },
+                          ].map((gate) => (
+                            <span
+                              key={gate.label}
+                              className={cn(
+                                'flex items-center gap-1.5 rounded-md px-2.5 py-2 text-[11px] font-bold',
+                                gate.on ? 'bg-brand-teal/20 text-brand-ink' : 'bg-muted text-muted-foreground',
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  'size-2 rounded-sm',
+                                  gate.on ? 'bg-brand-teal' : 'bg-muted-foreground/40',
+                                )}
+                              />
+                              {gate.label} {gate.on ? 'on' : 'off'}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="rounded-md bg-amber-50 px-2.5 py-2 text-[11px] font-bold text-amber-900">
+                          Sign-up gates not set yet
+                        </p>
+                      )}
+
+                      <div className="mt-auto flex gap-1.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => openView(country)}
+                          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-brand-ink/15 text-[11px] font-bold tracking-[0.08em] text-brand-ink uppercase transition-colors hover:border-brand-ink hover:bg-brand-ink hover:text-white"
+                        >
+                          <Eye className="size-4" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Edit ${country.name}`}
+                          onClick={() => openEdit(country)}
+                          className="flex size-9 items-center justify-center rounded-md border-2 border-brand-ink/15 text-brand-ink transition-colors hover:border-brand-ink hover:bg-brand-ink hover:text-white"
+                        >
+                          <Pencil className="size-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Delete ${country.name}`}
+                          onClick={() => setCountryToDelete(country)}
+                          className="flex size-9 items-center justify-center rounded-md border-2 border-destructive/35 text-destructive transition-colors hover:border-destructive hover:bg-destructive hover:text-white"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </section>
             <PageNav
               page={countryPages.page}
@@ -422,25 +460,20 @@ export function AdminCountriesPage() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
-          <div className="relative overflow-hidden bg-gradient-to-br from-accent/60 via-cream to-cream px-6 pt-6 pb-5">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-20 -right-14 size-48 rounded-full bg-[oklch(0.92_0.04_125/0.6)]"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-10 -left-16 size-40 rounded-full bg-[oklch(0.93_0.04_80/0.5)]"
-            />
+        <DialogContent className="account-box gap-0 overflow-hidden border-2 border-brand-ink p-0 sm:max-w-xl [&>[data-slot=dialog-close]]:text-white">
+          <div className="relative overflow-hidden bg-brand-ink px-6 pt-6 pb-5 text-white">
+            <Sparkle className="absolute top-5 right-14 size-5 text-brand-teal" />
 
             <DialogHeader className="relative">
               <div className="mb-1 flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-accent text-primary">
-                  <Sparkles className="size-4" />
+                <div className="flex size-10 items-center justify-center rounded-lg bg-brand-teal text-brand-ink">
+                  <Sparkles className="size-5" />
                 </div>
-                <DialogTitle>{editingId ? 'Edit country' : 'Add country'}</DialogTitle>
+                <DialogTitle className="font-poster text-2xl text-white">
+                  {editingId ? 'Edit country' : 'Add country'}
+                </DialogTitle>
               </div>
-              <DialogDescription>
+              <DialogDescription className="text-white/65">
                 {editingId
                   ? 'Update this market. Changes apply to registration forms immediately.'
                   : 'A quick two-step setup. Fill in the details, then confirm before it goes live.'}
@@ -457,18 +490,20 @@ export function AdminCountriesPage() {
                     <div className="flex items-center gap-2">
                       <div
                         className={cn(
-                          'flex size-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold transition-colors',
-                          isDone || isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground',
+                          'flex size-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold transition-colors',
+                          isActive
+                            ? 'bg-brand-teal text-brand-ink'
+                            : isDone
+                              ? 'bg-brand-violet text-white'
+                              : 'bg-white/12 text-white/60',
                         )}
                       >
                         {isDone ? <Check className="size-3.5" /> : index + 1}
                       </div>
                       <span
                         className={cn(
-                          'text-xs font-medium whitespace-nowrap',
-                          isActive ? 'text-foreground' : 'text-muted-foreground',
+                          'text-[11px] font-bold tracking-[0.1em] whitespace-nowrap uppercase',
+                          isActive ? 'text-white' : 'text-white/55',
                         )}
                       >
                         {item.label}
@@ -477,8 +512,8 @@ export function AdminCountriesPage() {
                     {index < wizardSteps.length - 1 ? (
                       <div
                         className={cn(
-                          'mx-3 h-px w-10 shrink-0 transition-colors',
-                          isDone ? 'bg-primary' : 'bg-border',
+                          'mx-3 h-0.5 w-10 shrink-0 transition-colors',
+                          isDone ? 'bg-brand-violet' : 'bg-white/15',
                         )}
                       />
                     ) : null}
@@ -489,7 +524,7 @@ export function AdminCountriesPage() {
           </div>
 
           <form onSubmit={handleFormSubmit}>
-            <div className="border-t border-border/60 bg-card px-6 py-6">
+            <div className="bg-card px-6 py-6">
               {formError ? (
                 <div className="mb-4">
                   <FormAlert error={formError} />
@@ -568,11 +603,11 @@ export function AdminCountriesPage() {
                     <div
                       role="group"
                       aria-label="Status"
-                      className="relative inline-flex rounded-full bg-muted p-1"
+                      className="relative inline-flex rounded-lg bg-accent p-1"
                     >
                       <div
                         aria-hidden
-                        className="absolute inset-y-1 left-1 w-[5.25rem] rounded-full bg-card shadow-sm transition-transform duration-300 ease-out"
+                        className="absolute inset-y-1 left-1 w-[5.25rem] rounded-md bg-brand-ink transition-transform duration-300 ease-out"
                         style={{
                           transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
                         }}
@@ -583,10 +618,10 @@ export function AdminCountriesPage() {
                           type="button"
                           onClick={() => updateField('status', option.value)}
                           className={cn(
-                            'relative z-10 w-[5.25rem] rounded-full py-1.5 text-sm font-medium transition-colors duration-200 active:scale-95',
+                            'relative z-10 w-[5.25rem] rounded-md py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors duration-200 active:scale-95',
                             form.status === option.value
-                              ? 'text-foreground'
-                              : 'text-muted-foreground hover:text-foreground',
+                              ? 'text-white'
+                              : 'text-brand-ink/60 hover:text-brand-ink',
                           )}
                         >
                           {option.label}
@@ -597,35 +632,27 @@ export function AdminCountriesPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="relative overflow-hidden rounded-2xl bg-primary px-6 py-6 text-primary-foreground shadow-[0_12px_32px_rgba(40,55,25,0.18)]">
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute -top-10 -right-6 size-32 rounded-full bg-white/10"
-                    />
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute -bottom-12 -left-8 size-32 rounded-full bg-white/10"
-                    />
+                  <div className="relative overflow-hidden rounded-xl bg-brand-violet px-6 py-6 text-white">
                     <div className="relative flex items-center gap-4">
                       <span className="text-5xl leading-none drop-shadow-sm">
                         {flagEmoji(form.iso_code)}
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-display text-2xl tracking-tight">
+                        <p className="truncate font-poster text-2xl">
                           {form.name.trim() || 'Unnamed market'}
                         </p>
-                        <p className="text-sm text-primary-foreground/75">
+                        <p className="text-sm text-white/75">
                           {form.iso_code.trim().toUpperCase()}
                           {form.status?.trim() ? ` · ${form.status.trim()}` : ''}
                         </p>
                       </div>
                     </div>
                     <div className="relative mt-5 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-bold">
                         <Coins className="size-3.5" />
                         {form.default_currency.trim().toUpperCase() || '-'}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1 text-xs font-medium">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-bold">
                         <Clock className="size-3.5" />
                         {form.default_timezone.trim() || '-'}
                       </span>
@@ -639,8 +666,8 @@ export function AdminCountriesPage() {
               )}
             </div>
 
-            <DialogFooter className="flex-row items-center justify-between border-t border-border/60 bg-muted/40 px-6 py-4 sm:justify-between">
-              <span className="hidden text-xs text-muted-foreground sm:inline">
+            <DialogFooter className="flex-row items-center justify-between border-t-2 border-brand-ink/10 bg-accent/60 px-6 py-4 sm:justify-between">
+              <span className="hidden text-[11px] font-bold tracking-[0.12em] text-brand-ink/60 uppercase sm:inline">
                 Step {step === 'details' ? '1' : '2'} of {wizardSteps.length}
               </span>
               <div className="flex flex-1 justify-end gap-2 sm:flex-none">
@@ -702,8 +729,8 @@ export function AdminCountriesPage() {
                 />
                 <SheetHeader className="relative">
                   <div className="flex items-center gap-4">
-                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-[0_8px_24px_rgba(0,0,0,0.12)] ring-1 ring-white/25">
-                      <span className="font-display text-2xl tracking-tight">
+                    <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/25">
+                      <span className="font-poster text-2xl">
                         {viewCountry.iso_code}
                       </span>
                     </div>
@@ -798,7 +825,7 @@ export function AdminCountriesPage() {
                   type="button"
                   variant="outline"
                   className="h-10 flex-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => handleDelete(viewCountry.id)}
+                  onClick={() => setCountryToDelete(viewCountry)}
                 >
                   <Trash2 className="size-4" />
                   Delete
@@ -808,6 +835,19 @@ export function AdminCountriesPage() {
           ) : null}
         </SheetContent>
       </Sheet>
+      <ConfirmDialog
+        open={countryToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setCountryToDelete(null)
+        }}
+        title={`Delete ${countryToDelete?.name ?? 'this country'}?`}
+        description="It disappears from the registration forms straight away. A country still used by customers, sellers or orders cannot be deleted."
+        confirmLabel="Delete country"
+        busy={deleting}
+        onConfirm={() => {
+          if (countryToDelete) void handleDelete(countryToDelete.id)
+        }}
+      />
     </>
   )
 }

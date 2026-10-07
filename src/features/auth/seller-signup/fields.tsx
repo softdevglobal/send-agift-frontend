@@ -65,10 +65,10 @@ export function ChipGroup({ label, options, value, onChange, disabled }: ChipGro
               )
             }
             className={cn(
-              'rounded-full border px-3.5 py-1.5 text-sm transition-colors disabled:opacity-50',
+              'rounded-md border-2 px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50',
               active
-                ? 'border-primary bg-primary/10 font-medium text-primary'
-                : 'border-border bg-surface text-foreground hover:border-primary/40',
+                ? 'border-brand-ink bg-brand-ink text-white'
+                : 'border-brand-ink/15 bg-surface text-foreground hover:border-brand-ink',
             )}
           >
             {option.label}

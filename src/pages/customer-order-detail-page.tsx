@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
+import { BackLink } from '@/components/common/back-link'
 import { getRecipient, type RecipientDetails } from "@/api/customers";
 import { cancelOrder, getOrder, type OrderDetails } from "@/api/orders";
 import { FormAlert } from "@/components/common/form-alert";
@@ -164,24 +165,10 @@ export function CustomerOrderDetailPage() {
 
   return (
     <div>
-      <section className="relative mb-6 overflow-hidden rounded-3xl bg-gradient-to-br from-brand-navy via-brand-ink to-[oklch(0.32_0.14_296)] px-6 py-6 text-white shadow-[0_18px_48px_rgba(20,20,55,0.28)] ring-1 ring-white/10 sm:px-8 sm:py-7">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-16 size-72 rounded-full bg-[var(--brand-violet)]/45 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 left-10 size-56 rounded-full bg-[var(--brand-teal)]/25 blur-3xl"
-        />
+      <BackLink to={listPath} label={listLabel} className="mb-4" />
+      <section className="relative mb-6 overflow-hidden rounded-[1.75rem] bg-brand-ink px-6 py-6 text-white ring-1 ring-white/10 sm:px-8 sm:py-7">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-2">
-            <Link
-              to={listPath}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/60 hover:text-white"
-            >
-              <ArrowLeft className="size-3.5" />
-              {listLabel}
-            </Link>
             <h1 className="font-display text-3xl tracking-tight sm:text-4xl">
               {order.order_number}
             </h1>
@@ -220,13 +207,13 @@ export function CustomerOrderDetailPage() {
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
 
       {rewardPoints > 0 || (order.gift_points && order.gift_points_status !== "none") ? (
-        <section className="relative mb-6 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,oklch(0.97_0.05_88),oklch(0.93_0.09_80))] p-5 ring-1 ring-[oklch(0.85_0.1_80)] sm:p-6">
+        <section className="relative mb-6 overflow-hidden rounded-2xl bg-amber-100 p-5 sm:p-6">
           <Sparkles
             aria-hidden
             className="pointer-events-none absolute -right-3 -bottom-4 size-28 text-[oklch(0.8_0.13_78)]/40"
           />
           <div className="relative flex flex-wrap items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,oklch(0.86_0.14_85),oklch(0.76_0.15_65))] text-white shadow-md">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-amber-950">
               <Coins className="size-6" />
             </span>
             <div className="min-w-[12rem] flex-1">
@@ -234,7 +221,7 @@ export function CustomerOrderDetailPage() {
                 Points from this order
               </p>
               {rewardPoints > 0 ? (
-                <p className="font-display text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
+                <p className="font-poster text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
                   {rewardEarned
                     ? `+${formatPoints(rewardPoints)} points added to your balance`
                     : rewardLine(order.items.find((i) => i.reward_points)?.reward_status, rewardPoints)}
@@ -260,7 +247,7 @@ export function CustomerOrderDetailPage() {
       <section className={cn(customerPanelClass, "mb-6 p-5 sm:p-6")}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="font-medium">Track this gift</h2>
+            <h2 className="font-poster text-xl">Track this gift</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Delivery {formatDeliveryDate(order.delivery_date)}
             </p>
@@ -278,7 +265,7 @@ export function CustomerOrderDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)]">
         <section className={cn(customerPanelClass, "p-5 sm:p-6")}>
-          <h2 className="font-medium">Items</h2>
+          <h2 className="font-poster text-xl">Items</h2>
           <ul className="mt-4 space-y-4">
             {order.items.map((item) => {
               const product = getCatalogProduct(item.product_id);
@@ -350,7 +337,7 @@ export function CustomerOrderDetailPage() {
 
         <div className="space-y-6">
           <section className={cn(customerPanelClass, "p-5")}>
-            <h2 className="font-medium">Summary</h2>
+            <h2 className="font-poster text-xl">Summary</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Status</dt>
@@ -439,7 +426,7 @@ export function CustomerOrderDetailPage() {
           </section>
 
           <section className={cn(customerPanelClass, "p-5")}>
-            <h2 className="font-medium">Deliver to</h2>
+            <h2 className="font-poster text-xl">Deliver to</h2>
             {recipient ? (
               <>
                 <p className="mt-3 text-sm font-medium">{recipient.name}</p>

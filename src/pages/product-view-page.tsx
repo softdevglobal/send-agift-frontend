@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft,
   ArrowRight,
   Clock,
   Film,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import { getPublicProduct } from '@/api/products'
 import { ApiError } from '@/lib/api'
 import { SiteLayout } from '@/components/common/site-layout'
@@ -187,10 +187,10 @@ export function ProductViewPage() {
     return (
       <SiteLayout>
         <main className={cn(storefrontFrameClass, 'py-20 text-center')}>
-          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-accent text-primary">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-brand-violet text-white">
             <PackageX className="size-5" />
           </div>
-          <h1 className="font-display text-2xl tracking-tight">Gift not available</h1>
+          <h1 className="font-poster text-3xl">Gift not available</h1>
           <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
             This gift may have been unpublished or removed by the seller.
           </p>
@@ -234,16 +234,11 @@ export function ProductViewPage() {
   return (
     <SiteLayout>
       <main className={cn(storefrontFrameClass, 'py-8 lg:py-12')}>
-        <Button asChild variant="ghost" className="mb-6 h-9 rounded-full px-3">
-          <Link to="/products">
-            <ArrowLeft className="size-4" />
-            All gifts
-          </Link>
-        </Button>
+        <BackLink to="/products" label="All gifts" className="mb-6" />
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-2xl bg-card ring-1 ring-border/50">
+            <div className="relative overflow-hidden rounded-[1.75rem] bg-accent">
               {currentIsVideo ? (
                 <video
                   key={current.url}
@@ -277,7 +272,7 @@ export function ProductViewPage() {
                       className={cn(
                         'relative size-16 shrink-0 overflow-hidden rounded-xl ring-1 transition-shadow',
                         index === activeMedia
-                          ? 'ring-2 ring-primary'
+                          ? 'ring-[3px] ring-brand-ink'
                           : 'ring-border/50 hover:ring-border',
                       )}
                     >
@@ -306,18 +301,21 @@ export function ProductViewPage() {
 
           <div>
             {category ? (
-              <p className="text-xs font-medium tracking-[0.14em] text-muted-foreground uppercase">
+              <Link
+                to={`/products?category=${product.categoryId}`}
+                className="inline-block rounded-md bg-brand-teal px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-ink uppercase"
+              >
                 {category}
-              </p>
+              </Link>
             ) : null}
-            <h1 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">
+            <h1 className="mt-4 font-display text-4xl leading-[1.05] text-brand-ink sm:text-5xl dark:text-foreground">
               {product.name}
             </h1>
 
             <ProductRatingBadge productId={product.id} className="mt-3" />
 
             <div className="mt-4 flex items-baseline gap-3">
-              <p className="font-display text-3xl tracking-tight">{price}</p>
+              <p className="font-poster text-4xl text-brand-violet">{price}</p>
               {product.compareAt ? (
                 <p className="text-muted-foreground line-through">
                   {formatMoney(product.compareAt)}
@@ -339,7 +337,7 @@ export function ProductViewPage() {
               </div>
             ) : null}
 
-            <div className="mt-5 flex items-center justify-between gap-3 rounded-xl bg-muted/50 p-3 ring-1 ring-border/40">
+            <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-cream p-4">
               <ShopIdentity
                 shopName={shopName}
                 sellerName={sellerName}
@@ -374,7 +372,7 @@ export function ProductViewPage() {
 
             {description ? (
               <div className="mt-6">
-                <h2 className="text-sm font-medium">About this gift</h2>
+                <h2 className="text-[11px] font-bold tracking-[0.16em] text-brand-ink uppercase dark:text-foreground">About this gift</h2>
                 <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-muted-foreground">
                   {description}
                 </p>
@@ -385,7 +383,7 @@ export function ProductViewPage() {
               {isCustomer ? (
                 <>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="inline-flex items-center rounded-full border border-border bg-background">
+                    <div className="inline-flex h-12 items-center rounded-md border-2 border-brand-ink bg-background">
                       <Button
                         type="button"
                         variant="ghost"
@@ -412,7 +410,7 @@ export function ProductViewPage() {
                     </div>
                     <Button
                       type="button"
-                      className="h-11 rounded-full px-5"
+                      className="h-12 flex-1 px-7 sm:flex-none"
                       onClick={handleAdd}
                     >
                       <ShoppingBag className="size-4" />
@@ -498,8 +496,8 @@ export function ProductViewPage() {
         {moreFromShop.length > 0 ? (
           <section className="mt-14">
             <div className="mb-5 flex items-end justify-between gap-3">
-              <h2 className="font-display text-xl tracking-tight sm:text-2xl">
-                More from {shopName}
+              <h2 className="font-poster text-2xl text-brand-ink sm:text-3xl dark:text-foreground">
+                <span className="marker-underline">More from {shopName}</span>
               </h2>
               <Button asChild variant="ghost" className="h-9 rounded-full px-3">
                 <Link to={shopHref ?? '/products'}>

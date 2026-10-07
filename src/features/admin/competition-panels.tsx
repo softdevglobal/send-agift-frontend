@@ -14,11 +14,11 @@ import { cn } from '@/lib/utils'
 /** A titled card, used on the competition page and in its side drawer. */
 export function Panel({ title, icon, children, action }: { title: string; icon?: ReactNode; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className={cn(adminPanelClass, 'p-5')}>
+    <section className={cn(adminPanelClass, 'border-2 border-brand-ink/10 p-5')}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2.5 font-display text-lg tracking-tight">
+        <h2 className="flex items-center gap-2.5 font-poster text-xl text-brand-ink dark:text-foreground">
           {icon ? (
-            <span className="grid size-9 place-items-center rounded-xl bg-muted/70 ring-1 ring-border/50">{icon}</span>
+            <span className="grid size-9 place-items-center rounded-lg bg-accent">{icon}</span>
           ) : null}
           {title}
         </h2>

@@ -32,21 +32,21 @@ export function SellerStat({ icon: Icon, label, value, hint, tone, to }: SellerS
     <>
       <div
         className={cn(
-          'mb-4 flex size-10 items-center justify-center rounded-xl',
+          'mb-4 flex size-10 items-center justify-center rounded-lg',
           styles.icon,
         )}
       >
         <Icon className="size-4.5" />
       </div>
-      <p className="text-[11px] font-medium tracking-[0.14em] text-muted-foreground uppercase">
+      <p className="text-[11px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
         {label}
       </p>
-      <p className="mt-1 truncate font-display text-2xl tracking-tight">{value}</p>
+      <p className="mt-1 truncate font-poster text-3xl">{value}</p>
       {hint ? (
         <p className="mt-1 truncate text-xs text-muted-foreground">{hint}</p>
       ) : null}
       {to ? (
-        <ArrowRight className="absolute top-5 right-5 size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+        <ArrowRight className="absolute top-5 right-5 size-4 text-brand-ink opacity-0 transition-opacity group-hover:opacity-100" />
       ) : null}
     </>
   )

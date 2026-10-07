@@ -613,7 +613,7 @@ export function CustomerRecipientsPage() {
               {recipientPages.visible.map((recipient) => (
                 <li key={recipient.id} className={customerListRowClass}>
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="size-12 shrink-0 overflow-hidden rounded-full bg-muted">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-brand-violet">
                       {recipient.image_url ? (
                         <img
                           src={recipient.image_url}
@@ -621,13 +621,13 @@ export function CustomerRecipientsPage() {
                           className="size-full object-cover"
                         />
                       ) : (
-                        <div className="flex size-full items-center justify-center text-muted-foreground">
-                          <Users className="size-4" />
+                        <div className="flex size-full items-center justify-center text-white">
+                          <Users className="size-5" />
                         </div>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{recipient.name}</p>
+                      <p className="truncate font-extrabold">{recipient.name}</p>
                       <p className="truncate text-sm text-muted-foreground">
                         {[recipient.relationship, recipient.email, recipient.phone]
                           .filter(Boolean)
@@ -685,7 +685,7 @@ export function CustomerRecipientsPage() {
                 onSubmit={handleSavePerson}
                 className={cn(customerPanelClass, 'space-y-5 p-6')}
               >
-                <h2 className="font-display text-xl tracking-tight">
+                <h2 className="font-poster text-xl tracking-tight">
                   {editingId ? 'Edit recipient' : 'New recipient'}
                 </h2>
 
@@ -918,7 +918,7 @@ export function CustomerRecipientsPage() {
                 <section className={cn(customerPanelClass, 'space-y-5 p-6')}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-display text-xl tracking-tight">Addresses</h2>
+                      <h2 className="font-poster text-xl tracking-tight">Addresses</h2>
                       <p className="mt-0.5 text-sm text-muted-foreground">
                         Shipping locations for this person.
                       </p>
@@ -999,7 +999,7 @@ export function CustomerRecipientsPage() {
 
                   {showAddressForm ? (
                     <form onSubmit={handleSubmitAddress} className="space-y-4">
-                      <h3 className="font-medium">
+                      <h3 className="font-extrabold">
                         {editingAddressId ? 'Edit address' : 'New address'}
                       </h3>
                       <AddressFields

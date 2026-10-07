@@ -15,7 +15,6 @@ import {
   MessagesSquare,
   Package,
   Paperclip,
-  Search,
   Store,
   X,
   type LucideIcon,
@@ -40,7 +39,7 @@ import { cn } from '@/lib/utils'
 
 import { ChatAvatar } from './chat-avatar'
 import { ChatThread, type ChatDraft } from './chat-thread'
-import { customerConversationText, useConversationLabel } from './conversation-label'
+import { useConversationLabel } from './conversation-label'
 import { CustomerConversationList } from './customer-conversation-list'
 import { useInbox, useResolvedConversation } from './use-inbox'
 
@@ -259,7 +258,7 @@ export function CustomerMessagesProvider({ children }: { children: ReactNode }) 
           <SheetContent
             showCloseButton={false}
             aria-describedby={undefined}
-            className="gap-0 overflow-hidden p-0 sm:max-w-lg"
+            className="account-box gap-0 overflow-hidden border-l-2 border-brand-ink p-0 shadow-none sm:max-w-lg"
           >
             <SheetTitle className="sr-only">Messages</SheetTitle>
             {view.kind === 'loading' ? (
@@ -368,35 +367,22 @@ function PanelList({
     return totals
   }, [conversations])
 
-  const [query, setQuery] = useState('')
-
   // Support only appears as a tab if the customer actually has a support thread.
   const tabs = PANEL_FILTERS.filter((tab) => tab.id !== 'support' || counts.support > 0)
-  const needle = query.trim().toLowerCase()
   const visible = conversations.filter(
-    (item) =>
-      (filter === 'all' || item.type === filter) &&
-      (!needle || customerConversationText(item).includes(needle)),
+    (item) => filter === 'all' || item.type === filter,
   )
 
   return (
     <>
-      <header className="relative overflow-hidden bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy px-5 pt-5 pb-4 text-white">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -right-12 size-56 rounded-full bg-brand-violet/45 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 -left-8 size-44 rounded-full bg-brand-teal/25 blur-3xl"
-        />
+      <header className="relative overflow-hidden bg-brand-ink px-5 pt-5 pb-4 text-white">
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-white/12 shadow-sm ring-1 ring-white/15 backdrop-blur-sm">
+            <span className="flex size-11 items-center justify-center rounded-lg bg-brand-teal text-brand-ink">
               <MessagesSquare className="size-5" />
             </span>
             <div>
-              <p className="font-display text-2xl tracking-tight">Messages</p>
+              <p className="font-poster text-2xl">Messages</p>
               <p className="text-xs text-white/60">
                 {unreadTotal > 0
                   ? `${unreadTotal} unread ${unreadTotal === 1 ? 'message' : 'messages'}`
@@ -410,21 +396,7 @@ function PanelList({
         </div>
 
         {conversations.length > 0 ? (
-          <div className="relative mt-4">
-            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-white/50" />
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search shops or gifts"
-              aria-label="Search conversations"
-              className="h-10 w-full rounded-full bg-white/10 pr-4 pl-10 text-sm text-white ring-1 ring-white/15 outline-none placeholder:text-white/50 focus-visible:bg-white/15 focus-visible:ring-white/35"
-            />
-          </div>
-        ) : null}
-
-        {conversations.length > 0 ? (
-          <div className="relative mt-3 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter conversations">
+          <div className="relative mt-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter conversations">
             {tabs.map((tab) => {
               const active = filter === tab.id
               return (
@@ -435,12 +407,12 @@ function PanelList({
                   aria-selected={active}
                   onClick={() => onFilterChange(tab.id)}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                    active ? 'bg-white text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
+                    'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-bold tracking-[0.08em] uppercase transition-colors',
+                    active ? 'bg-brand-teal text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
                   )}
                 >
                   {tab.label}
-                  <span className={active ? 'text-brand-ink/50' : 'text-white/45'}>
+                  <span className={active ? 'text-brand-ink/60' : 'text-white/45'}>
                     {counts[tab.id]}
                   </span>
                 </button>
@@ -463,7 +435,7 @@ function PanelList({
           <MessagesWelcome />
         ) : visible.length === 0 ? (
           <p className="px-6 py-16 text-center text-sm text-muted-foreground">
-            {needle ? `No chats match “${query.trim()}”.` : 'Nothing here yet.'}
+            Nothing here yet.
           </p>
         ) : (
           <CustomerConversationList
@@ -525,7 +497,7 @@ function MessagesWelcome() {
       </ol>
 
       <SheetClose asChild>
-        <Button asChild className="mt-7 h-11 rounded-full px-6">
+        <Button asChild className="mt-7 h-11 rounded-md px-6">
           <Link to="/products">
             Browse gifts
             <ArrowRight className="size-4" />
@@ -540,7 +512,6 @@ function MessagesWelcome() {
 function ChatScene() {
   return (
     <div aria-hidden className="relative h-36 w-52">
-      <div className="absolute inset-4 rounded-full bg-brand-violet/15 blur-2xl" />
 
       <div className="absolute top-3 left-0 w-36 rounded-2xl rounded-bl-md bg-card px-3 py-2.5 shadow-[0_12px_30px_rgba(20,20,55,0.12)] ring-1 ring-border/60 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-3 motion-safe:duration-700">
         <div className="flex items-center gap-2">
@@ -553,7 +524,7 @@ function ChatScene() {
         <span className="mt-1.5 block h-2 w-16 rounded-full bg-muted-foreground/15" />
       </div>
 
-      <div className="absolute right-0 bottom-3 w-32 rounded-2xl rounded-br-md bg-gradient-to-br from-brand-violet to-brand-navy px-3 py-2.5 shadow-[0_14px_30px_rgba(76,29,149,0.35)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-3 motion-safe:fill-mode-both motion-safe:duration-700 motion-safe:delay-150">
+      <div className="absolute right-0 bottom-3 w-32 rounded-2xl rounded-br-md bg-brand-violet px-3 py-2.5 shadow-[0_14px_30px_rgba(76,29,149,0.35)] motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-right-3 motion-safe:fill-mode-both motion-safe:duration-700 motion-safe:delay-150">
         <span className="block h-2 w-20 rounded-full bg-white/55" />
         <span className="mt-1.5 block h-2 w-12 rounded-full bg-white/35" />
       </div>
@@ -624,7 +595,7 @@ function NewMessageNotice({
       aria-live="polite"
       className="fixed right-4 bottom-4 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl bg-card shadow-[0_18px_48px_rgba(20,20,55,0.22)] ring-1 ring-border/60 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-300"
     >
-      <div aria-hidden className="h-1 bg-gradient-to-r from-brand-violet via-brand-teal to-brand-navy" />
+      <div aria-hidden className="grid h-1 grid-cols-3"><span className="bg-brand-violet" /><span className="bg-brand-teal" /><span className="bg-brand-navy" /></div>
       <div className="flex items-start gap-3 p-4">
         <span className="relative shrink-0">
           <ChatAvatar kind={label.kind} imageUrl={label.imageUrl} />
@@ -640,13 +611,13 @@ function NewMessageNotice({
           <p className="mt-0.5 truncate text-sm font-semibold">{label.title}</p>
           <p className="truncate text-xs text-muted-foreground">{label.subtitle}</p>
           <div className="mt-3 flex gap-2">
-            <Button type="button" className="h-8 rounded-full px-3.5 text-xs" onClick={onOpen}>
+            <Button type="button" className="h-8 rounded-md px-3.5 text-xs" onClick={onOpen}>
               View message
             </Button>
             <Button
               type="button"
               variant="ghost"
-              className="h-8 rounded-full px-3 text-xs"
+              className="h-8 rounded-md px-3 text-xs"
               onClick={onDismiss}
             >
               Later

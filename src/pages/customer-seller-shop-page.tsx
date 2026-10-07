@@ -3,12 +3,12 @@ import { ArrowLeft, MapPin, Store } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
 import { GRID_PAGE_SIZE, PageNav, usePagedList } from '@/components/common/page-nav'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
   GiftCard,
-  customerPanelClass,
   listCatalogProductsForSeller,
 } from '@/features/customer-commerce'
 import { publicSellerInitials, subscribePublicSellers, type PublicSeller, type PublicShop } from '@/lib/public-sellers'
@@ -17,7 +17,6 @@ import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-selle
 import { MessageShopButton } from '@/features/messaging'
 import { sellerFromCatalog, subscribePublishedCatalog } from '@/lib/published-catalog'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
-import { cn } from '@/lib/utils'
 
 function shopFromCatalog(
   seller: PublicSeller,
@@ -169,13 +168,15 @@ export function CustomerSellerShopPage() {
 
       {/* Facebook-style header: the shop's own image spans the top as a cover
           photo, with the seller's profile picture overlapping its lower edge. */}
-      <section className={cn(customerPanelClass, 'mb-8 overflow-hidden')}>
-        <div className="relative aspect-[3/1] w-full bg-muted">
+      <section className="mb-10 overflow-hidden rounded-[1.75rem] bg-accent">
+        <div className="relative aspect-[3/1] w-full bg-brand-violet">
           {shop.image_url ? (
             <img src={shop.image_url} alt="" className="size-full object-cover" />
           ) : (
-            <div className="flex size-full items-center justify-center bg-accent/40 text-muted-foreground">
-              <Store className="size-10" />
+            <div className="relative flex size-full items-center justify-center text-white">
+              <Sparkle className="absolute top-6 left-[12%] size-7 text-brand-teal" />
+              <Sparkle className="absolute right-[18%] bottom-8 size-5 text-white/70" />
+              <Store className="size-12" />
             </div>
           )}
 
@@ -184,10 +185,10 @@ export function CustomerSellerShopPage() {
               <img
                 src={seller.image_url}
                 alt=""
-                className="size-20 rounded-full object-cover ring-4 ring-card sm:size-24"
+                className="size-20 rounded-full object-cover ring-4 ring-accent sm:size-24"
               />
             ) : (
-              <span className="flex size-20 items-center justify-center rounded-full bg-accent text-xl font-semibold text-primary ring-4 ring-card sm:size-24">
+              <span className="flex size-20 items-center justify-center rounded-full bg-brand-ink font-poster text-xl text-white ring-4 ring-accent sm:size-24">
                 {publicSellerInitials({ name: sellerName })}
               </span>
             )}
@@ -198,7 +199,7 @@ export function CustomerSellerShopPage() {
         <div className="flex flex-wrap items-start justify-between gap-4 px-5 pt-12 pb-5 sm:px-7 sm:pt-14">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-display text-2xl tracking-tight">{shop.name}</h2>
+              <h2 className="font-poster text-3xl text-brand-ink dark:text-foreground">{shop.name}</h2>
               <VerifiedSellerBadge status={seller.verification_status} />
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
@@ -222,7 +223,7 @@ export function CustomerSellerShopPage() {
 
       {shopProducts.length ? (
         <>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {giftPages.visible.map((product) => (
             <GiftCard key={product.id} product={product} />
           ))}

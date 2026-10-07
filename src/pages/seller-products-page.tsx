@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Boxes,
+  Coins,
+  Images,
   LoaderCircle,
   Package,
   Pencil,
@@ -37,7 +39,6 @@ import {
   SellerSheetFacts,
   SellerSheetRow,
   SellerSheetSection,
-  sellerCardClass,
 } from '@/features/seller'
 import { ProductWizard } from '@/features/seller/product-wizard'
 import {
@@ -65,19 +66,19 @@ const statusMeta: Record<
   },
   published: {
     label: 'Published',
-    tone: 'bg-primary/90 text-primary-foreground',
+    tone: 'bg-brand-violet text-white',
     dot: 'bg-primary',
     hint: 'Visible in the customer catalog',
   },
   paused: {
     label: 'Paused',
-    tone: 'bg-[oklch(0.96_0.04_85)] text-[oklch(0.48_0.1_80)]',
-    dot: 'bg-[oklch(0.72_0.16_75)]',
+    tone: 'bg-amber-300 text-amber-950',
+    dot: 'bg-amber-500',
     hint: 'Temporarily hidden from customers',
   },
   rejected: {
     label: 'Rejected',
-    tone: 'bg-destructive/10 text-destructive',
+    tone: 'bg-destructive text-white',
     dot: 'bg-destructive',
     hint: 'Not shown to customers',
   },
@@ -393,67 +394,83 @@ export function SellerProductsPage() {
                   <li
                     key={product.id}
                     className={cn(
-                      sellerCardClass,
-                      'group relative flex flex-col overflow-hidden rounded-xl',
-                      editing?.id === product.id && 'ring-2 ring-primary/40',
+                      'group relative flex flex-col rounded-xl border-2 border-brand-ink/15 bg-card p-2 transition-colors hover:border-brand-ink',
+                      editing?.id === product.id && 'border-brand-violet',
                     )}
                   >
-                    {/*
-                      The card face opens the preview panel; Edit and Delete
-                      float over the image on hover so they don't cost a row.
-                    */}
+                    {/* The card face opens the preview panel. */}
                     <button
                       type="button"
                       className="flex flex-col text-left focus-visible:outline-none"
                       onClick={() => setPreviewProduct(product)}
                       aria-label={`Preview ${product.name}`}
                     >
-                      <div className="relative aspect-square w-full overflow-hidden bg-muted">
+                      <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-accent">
                         {cover ? (
                           <img
                             src={cover}
                             alt=""
-                            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                           />
                         ) : (
-                          <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
-                            <Package className="size-7" />
+                          <div className="flex size-full items-center justify-center text-brand-violet">
+                            <Package className="size-8" />
                           </div>
                         )}
                         <span
                           className={cn(
-                            'absolute top-2 left-2 size-2.5 rounded-full ring-2 ring-background',
-                            meta.dot,
+                            'absolute top-2 left-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-[0.08em] uppercase',
+                            meta.tone,
                           )}
-                          title={meta.label}
-                        />
-                        <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2 py-0.5 text-xs font-semibold tracking-tight shadow-sm backdrop-blur-sm">
+                        >
+                          {meta.label}
+                        </span>
+                        {(product.media?.length ?? 0) > 1 ? (
+                          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-md bg-brand-ink/80 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            <Images className="size-3" />
+                            {product.media?.length}
+                          </span>
+                        ) : null}
+                        {product.reward_points ? (
+                          <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
+                            <Coins className="size-3" />+{product.reward_points}
+                          </span>
+                        ) : null}
+                        {/* The price as a tag in the corner of the photo. */}
+                        <span className="absolute right-2 bottom-2 rounded-md bg-brand-ink px-2.5 py-1 font-poster text-base text-white">
                           {formatPriceAmount(product.price_amount, product.currency)}
                         </span>
                       </div>
 
-                      <div className="w-full p-2.5">
-                        <h3 className="truncate text-sm leading-tight font-medium">
+                      <div className="w-full px-1 pt-3">
+                        <h3 className="truncate text-sm leading-tight font-extrabold">
                           {product.name}
                         </h3>
                         <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
                           {meta.hint}
                         </p>
+                        {product.stock_left != null ? (
+                          <p className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
+                            <TriangleAlert className="size-3" />
+                            {product.stock_left <= 0 ? 'Out of stock' : `Only ${product.stock_left} left`}
+                          </p>
+                        ) : null}
                       </div>
                     </button>
 
-                    <div className="absolute top-2 right-2 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+                    <div className="mt-3 flex gap-1.5 px-1 pb-1">
                       <button
                         type="button"
-                        className="flex size-7 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                        className="flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md border-2 border-brand-ink/15 text-[11px] font-bold tracking-[0.08em] text-brand-ink uppercase transition-colors hover:border-brand-ink hover:bg-brand-ink hover:text-white dark:text-foreground"
                         aria-label={`Edit ${product.name}`}
                         onClick={() => handleEdit(product.id)}
                       >
                         <Pencil className="size-3.5" />
+                        Edit
                       </button>
                       <button
                         type="button"
-                        className="flex size-7 items-center justify-center rounded-full bg-background/90 text-destructive shadow-sm backdrop-blur-sm transition-colors hover:bg-background"
+                        className="flex size-8 items-center justify-center rounded-md border-2 border-brand-ink/15 text-destructive transition-colors hover:border-destructive hover:bg-destructive hover:text-white"
                         aria-label={`Delete ${product.name}`}
                         onClick={() => setProductToDelete(product)}
                       >
@@ -566,7 +583,7 @@ function ProductPreviewPanel({
             {coverUrl ? (
               <img src={coverUrl} alt="" className="size-full object-cover" />
             ) : (
-              <div className="flex size-full items-center justify-center bg-[radial-gradient(ellipse_at_center,oklch(0.94_0.03_125/0.7),transparent_70%)] text-muted-foreground">
+              <div className="flex size-full items-center justify-center bg-muted text-muted-foreground">
                 <Package className="size-10" />
               </div>
             )}
@@ -609,7 +626,7 @@ function ProductPreviewPanel({
       {product ? (
         <>
           <div>
-            <p className="font-display text-3xl tracking-tight">
+            <p className="font-poster text-3xl">
               {formatPriceAmount(product.price_amount, product.currency)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{meta.hint}</p>

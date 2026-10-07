@@ -95,7 +95,7 @@ export function ReelsPage() {
             asChild
             variant="outline"
             size="sm"
-            className="absolute top-2 right-3 z-20 hidden rounded-full bg-background/80 backdrop-blur-sm sm:inline-flex"
+            className="absolute top-2 right-3 z-20 hidden bg-background sm:inline-flex"
           >
             <Link to="/products">
               <Gift className="size-4" />
@@ -129,7 +129,7 @@ export function ReelsPage() {
                 title="No reels yet"
                 description="Sellers have not posted anything to watch yet. Browse the shelves in the meantime."
                 action={
-                  <Button asChild className="rounded-full">
+                  <Button asChild>
                     <Link to="/products">Browse gifts</Link>
                   </Button>
                 }
@@ -160,7 +160,7 @@ export function ReelsPage() {
                 reel={commentsReel}
                 onClose={closeComments}
                 onPatch={patchReel}
-                className="overflow-hidden rounded-2xl border border-border shadow-sm"
+                className="overflow-hidden rounded-xl border-2 border-brand-ink/20"
               />
             </aside>
           ) : null}
@@ -191,12 +191,12 @@ function FeedMessage({
   action?: React.ReactNode
 }) {
   return (
-    <div className="m-3 grid min-h-[60svh] place-items-center rounded-2xl border border-border bg-card px-6 py-16 text-center sm:m-0">
+    <div className="m-3 grid min-h-[60svh] place-items-center rounded-xl border-2 border-brand-ink/20 bg-card px-6 py-16 text-center sm:m-0">
       <div className="flex max-w-sm flex-col items-center gap-3">
-        <span className="grid size-14 place-items-center rounded-xl bg-gradient-to-br from-brand-navy to-brand-violet text-white">
+        <span className="grid size-14 place-items-center rounded-xl bg-brand-violet text-white">
           {icon}
         </span>
-        <h2 className="font-display text-xl tracking-tight">{title}</h2>
+        <h2 className="font-poster text-xl">{title}</h2>
         <p className="text-sm text-muted-foreground">{description}</p>
         {action ? <div className="mt-2">{action}</div> : null}
       </div>

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { ShoppingBag } from 'lucide-react'
+import { useParams } from 'react-router-dom'
 
+import { BackLink } from '@/components/common/back-link'
 import { getAdminCustomer, type AdminCustomerRecord } from '@/api/admin'
 import { getCustomerPoints, type PointsWallet } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
-import { Button } from '@/components/ui/button'
 import {
   AdminFacts,
   AdminRecordSection,
@@ -15,6 +15,7 @@ import {
 } from '@/features/admin/admin-record'
 import { AdminPageHeader, formatDate } from '@/features/admin'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
+import { OrderStatusBadge } from '@/features/customer-commerce/order-tracking'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
 
@@ -64,12 +65,7 @@ export function AdminCustomerDetailPage() {
 
   return (
     <>
-      <Button asChild variant="ghost" className="mb-4 -ml-2 h-9 rounded-full px-3">
-        <Link to="/admin/customers">
-          <ArrowLeft className="size-4" />
-          Customers
-        </Link>
-      </Button>
+      <BackLink to="/admin/customers" label="All customers" className="mb-4" />
 
       {loading ? <Loading /> : null}
       <FormAlert error={error} className="mb-4" />
@@ -190,21 +186,41 @@ export function AdminCustomerDetailPage() {
               <p className="text-sm text-muted-foreground">No orders yet.</p>
             ) : (
               <>
-              <ul className="divide-y divide-border/50 text-sm">
-                {orderPages.visible.map((order) => (
-                  <li key={order.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
-                    <div>
-                      <p className="font-medium">{order.order_number}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {readable(order.status)} · {readable(order.customer_type)} · {formatDate(order.created_at)}
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {formatPriceAmount(order.total_amount, order.currency)}
-                    </p>
-                  </li>
-                ))}
-              </ul>
+              <div className="overflow-hidden rounded-lg border-2 border-brand-ink/10">
+                <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] gap-4 bg-brand-ink px-4 py-2.5 text-[10px] font-bold tracking-[0.14em] text-white uppercase md:grid">
+                  <span>Order</span>
+                  <span>Placed</span>
+                  <span>Total</span>
+                  <span className="text-right">Status</span>
+                </div>
+                <ul className="divide-y divide-brand-ink/10">
+                  {orderPages.visible.map((order) => (
+                    <li
+                      key={order.id}
+                      className="grid gap-2 px-4 py-3 transition-colors hover:bg-accent/40 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,0.8fr)_auto] md:items-center md:gap-4"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand-teal text-brand-ink">
+                          <ShoppingBag className="size-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-mono text-sm font-bold">{order.order_number}</span>
+                          <span className="block text-[11px] text-muted-foreground">
+                            {readable(order.customer_type)}
+                          </span>
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
+                      <span className="font-poster text-lg">
+                        {formatPriceAmount(order.total_amount, order.currency)}
+                      </span>
+                      <span className="md:text-right">
+                        <OrderStatusBadge status={order.status} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               <PageNav
                 page={orderPages.page}
                 pageCount={orderPages.pageCount}

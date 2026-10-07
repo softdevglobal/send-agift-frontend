@@ -9,6 +9,7 @@ export { SaveGiftButton } from './save-gift-button'
 export { SavedGiftsProvider, useSavedGifts } from './saved-gifts-context'
 export {
   customerDisplayName,
+  customerFirstName,
   customerInitials,
   customerAccountStatus,
 } from './customer-utils'

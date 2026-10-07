@@ -157,7 +157,7 @@ export function ReelCard({
             align={overlay ? 'end' : 'center'}
             sideOffset={10}
             collisionPadding={12}
-            className="z-50 w-64 rounded-2xl border border-border bg-card p-4 text-sm text-foreground shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+            className="z-50 w-64 rounded-lg border-2 border-brand-ink bg-card p-4 text-sm text-foreground data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
           >
             {likeGate === 'customer-only' ? (
               <p className="text-muted-foreground">Likes are for customer accounts.</p>
@@ -165,7 +165,7 @@ export function ReelCard({
               <>
                 <p className="font-semibold">Like this reel?</p>
                 <p className="mt-1 text-muted-foreground">Sign in to like it.</p>
-                <Button asChild size="sm" className="mt-3 h-8 rounded-full px-4">
+                <Button asChild size="sm" className="mt-3 h-8 px-4">
                   <Link to="/login" state={returnToState(location.pathname, location.search)}>
                     Sign in
                   </Link>
@@ -225,7 +225,7 @@ export function ReelCard({
          * derives the width from the height, so the player takes only the
          * width a vertical clip needs.
          */
-        className="relative h-full w-full max-w-full overflow-hidden bg-brand-navy shadow-[0_24px_70px_-20px_rgba(15,27,69,0.55)] sm:aspect-[9/16] sm:w-auto sm:rounded-2xl"
+        className="relative h-full w-full max-w-full overflow-hidden bg-brand-navy sm:aspect-[9/16] sm:w-auto sm:rounded-2xl sm:border-2 sm:border-brand-ink"
         aria-label={product ? `Reel: ${product.name}` : `Reel by ${reel.shopName}`}
       >
         <button
@@ -290,9 +290,9 @@ export function ReelCard({
           </>
         ) : null}
 
-        {/* Scrims top and bottom: the clip keeps its colour in the middle, and
-            the text on either end stays readable whatever it sits on. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-brand-navy/55 via-transparent to-brand-navy/90" />
+        {/* One flat scrim, so the text on either end stays readable whatever
+            it sits on. */}
+        <div className="pointer-events-none absolute inset-0 bg-brand-ink/35" />
 
         <div className="pointer-events-none absolute inset-x-3 top-3 h-[3px] overflow-hidden rounded-full bg-white/25">
           <div
@@ -303,7 +303,7 @@ export function ReelCard({
 
         {paused ? (
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <span className="grid size-16 place-items-center rounded-full bg-brand-navy/55 backdrop-blur-sm">
+            <span className="grid size-16 place-items-center rounded-xl bg-brand-ink/80">
               <Play className="size-8 fill-white text-white" />
             </span>
           </div>
@@ -318,7 +318,7 @@ export function ReelCard({
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 pr-[4.5rem] text-white sm:p-5 sm:pr-5">
           <div className="pointer-events-auto flex items-center gap-2.5">
-            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-brand-navy to-brand-violet ring-2 ring-white/25">
+            <span className="grid size-9 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-violet ring-2 ring-white/25">
               {reel.shopImageUrl ? (
                 <img
                   src={reel.shopImageUrl}
@@ -334,7 +334,7 @@ export function ReelCard({
           </div>
 
           {product ? (
-            <h3 className="mt-3 line-clamp-2 font-display text-2xl font-semibold tracking-tight">
+            <h3 className="mt-3 line-clamp-2 font-poster text-2xl">
               {product.name}
             </h3>
           ) : null}
@@ -373,7 +373,7 @@ export function ReelCard({
               <span className="text-lg font-bold">{product.priceLabel}</span>
               <Button
                 asChild
-                className="h-11 flex-1 rounded-full bg-gradient-to-r from-brand-navy to-brand-violet text-white shadow-lg shadow-brand-violet/30 hover:opacity-95"
+                className="h-11 flex-1 bg-brand-violet text-white hover:bg-brand-teal hover:text-brand-ink"
               >
                 <Link to={`/products/${product.id}`}>
                   <Gift className="size-4" />
@@ -423,10 +423,10 @@ function RailButton({
     >
       <span
         className={cn(
-          'grid size-11 place-items-center rounded-full transition-all hover:scale-105 active:scale-95',
+          'grid size-11 place-items-center rounded-lg transition-all hover:scale-105 active:scale-95',
           overlay
-            ? 'bg-black/45 text-white backdrop-blur-sm'
-            : 'bg-muted text-foreground',
+            ? 'bg-brand-ink/70 text-white'
+            : 'bg-accent text-brand-ink',
           active && activeClassName,
         )}
       >
@@ -461,7 +461,7 @@ function PhotoStep({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'absolute top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-brand-navy/45 text-white backdrop-blur-sm transition-opacity hover:bg-brand-navy/70',
+        'absolute top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-lg bg-brand-ink/70 text-white transition-opacity hover:bg-brand-ink',
         side === 'left' ? 'left-2' : 'right-2',
         disabled && 'pointer-events-none opacity-0',
       )}

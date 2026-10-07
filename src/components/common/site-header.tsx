@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
 import {
-  ChevronDown,
   Clapperboard,
   Gift,
   Heart,
@@ -19,6 +18,7 @@ import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { accountNavItems } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
@@ -31,7 +31,6 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('all')
   const { isAuthenticated, role, logout } = useAuth()
   const { itemCount } = useCart()
   const { unreadCount, openMessages } = useCustomerMessages()
@@ -40,12 +39,21 @@ export function SiteHeader() {
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
   const isGuest = !isAuthenticated
+  const activeCategory = new URLSearchParams(location.search).get('category')
+  const path = location.pathname
+
+  /** Which row of the phone menu is the page you are on. */
+  function isCurrent(to: string) {
+    if (to === '/orders') {
+      return path === '/orders' || (path.startsWith('/orders/') && !path.startsWith('/orders/history'))
+    }
+    return path === to || path.startsWith(`${to}/`)
+  }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const params = new URLSearchParams()
     if (query.trim()) params.set('q', query.trim())
-    if (category && category !== 'all') params.set('category', category)
     const suffix = params.toString()
     navigate(`/products${suffix ? `?${suffix}` : ''}`)
     setOpen(false)
@@ -60,60 +68,32 @@ export function SiteHeader() {
       <div
         className={cn(
           storefrontFrameClass,
-          'flex items-center gap-3 py-3 lg:gap-5',
+          'flex items-center gap-3 py-1 sm:py-3 lg:gap-5',
         )}
       >
-        <BrandLogo imgClassName="h-14 sm:h-16" />
+        <BrandLogo imgClassName="h-11 sm:h-16" />
 
         <form
           onSubmit={handleSearch}
-          className="hidden min-w-0 flex-1 items-stretch md:flex"
+          className="hidden min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet md:flex"
         >
           <label className="sr-only" htmlFor="site-search">
             Search gifts
           </label>
-          <div className="relative">
-            <select
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="h-11 appearance-none rounded-l-lg border border-r-0 border-input bg-muted/40 py-2 pr-8 pl-3 text-sm text-foreground outline-none focus-visible:z-10 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
-              aria-label="Search category"
-            >
-              <option value="all">All gifts</option>
-              {giftCategories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          </div>
           <Input
             id="site-search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search for gifts, sellers, occasions…"
-            className="h-11 flex-1 rounded-none border-x-0 bg-background px-3"
+            className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
           />
-          <Button type="submit" className="h-11 rounded-l-none px-5">
+          <Button type="submit" className="h-11 rounded-none px-5">
             <Search className="size-4" />
             Search
           </Button>
         </form>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            aria-label="Search gifts"
-            asChild
-          >
-            <Link to="/products">
-              <Search className="size-4.5" />
-            </Link>
-          </Button>
-
           <Button
             asChild
             variant="ghost"
@@ -136,7 +116,7 @@ export function SiteHeader() {
                   Sign in
                 </Link>
               </Button>
-              <Button asChild className="h-9 rounded-full px-3.5 sm:px-4">
+              <Button asChild className="h-9 px-3.5 sm:px-4">
                 <Link to="/register">Sign up</Link>
               </Button>
             </>
@@ -196,7 +176,7 @@ export function SiteHeader() {
             <Button
               asChild
               variant="outline"
-              className="ml-1 hidden h-9 px-3 md:inline-flex"
+              className="ml-1 hidden h-9 border-2 border-brand-ink px-3 md:inline-flex"
             >
               <Link to="/become-a-seller">Become a seller</Link>
             </Button>
@@ -214,25 +194,47 @@ export function SiteHeader() {
         </div>
       </div>
 
-      {open ? (
-        <div className="border-t border-border bg-background px-4 py-4 md:hidden">
-          <form onSubmit={handleSearch} className="mb-4 space-y-2">
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search gifts, sellers…"
-              className="h-10 bg-background"
-            />
-            <Button type="submit" className="h-10 w-full">
-              <Search className="size-4" />
+      {/* Phone menu: a panel that slides in from the right and leaves a strip
+          of the page showing on the left. */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          showCloseButton={false}
+          aria-describedby={undefined}
+          className="w-[86%] max-w-sm gap-0 border-l-2 border-brand-ink bg-background p-0 shadow-none md:hidden"
+        >
+          <div className="flex shrink-0 items-center justify-between border-b border-brand-ink/10 px-5 py-4">
+            <SheetTitle className="font-poster text-xl">Menu</SheetTitle>
+            <SheetClose
+              aria-label="Close menu"
+              className="flex size-9 items-center justify-center rounded-md bg-brand-ink text-white"
+            >
+              <X className="size-4" />
+            </SheetClose>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <form onSubmit={handleSearch} className="mb-4">
+            <label className="sr-only" htmlFor="site-search-mobile">
               Search gifts
-            </Button>
+            </label>
+            <div className="flex overflow-hidden rounded-lg border border-brand-ink/15 bg-background transition-colors focus-within:border-brand-violet">
+              <Input
+                id="site-search-mobile"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search gifts, sellers…"
+                className="h-11 flex-1 rounded-none border-0 bg-background px-3 shadow-none focus-visible:ring-0"
+              />
+              <Button type="submit" aria-label="Search" className="h-11 rounded-none px-4">
+                <Search className="size-4" />
+              </Button>
+            </div>
           </form>
           <nav className="flex flex-col gap-1">
             <Link
               to="/products"
               onClick={closeMenu}
-              className="flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-accent-foreground"
+              aria-current={path === '/products' && !activeCategory ? 'page' : undefined}
+              className={menuRowClass(path === '/products' && !activeCategory)}
             >
               <Gift className="size-4" />
               Browse gifts
@@ -241,7 +243,8 @@ export function SiteHeader() {
             <Link
               to="/reels"
               onClick={closeMenu}
-              className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-semibold"
+              aria-current={isCurrent('/reels') ? 'page' : undefined}
+              className={menuRowClass(isCurrent('/reels'))}
             >
               <Clapperboard className="size-4" />
               Reels
@@ -270,7 +273,8 @@ export function SiteHeader() {
                 key={item.id}
                 to={`/products?category=${item.id}`}
                 onClick={closeMenu}
-                className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-current={path === '/products' && activeCategory === item.id ? 'page' : undefined}
+                className={menuRowClass(path === '/products' && activeCategory === item.id, 'font-medium')}
               >
                 {item.name}
               </Link>
@@ -287,9 +291,9 @@ export function SiteHeader() {
                     closeMenu()
                     openMessages()
                   }}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium hover:bg-muted"
+                  className={cn(menuRowClass(false), 'text-left')}
                 >
-                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <MessageSquare className="size-4" />
                   <span className="flex-1">Messages</span>
                   {unreadCount > 0 ? (
                     <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand-teal px-1.5 text-[10px] font-semibold text-white">
@@ -302,9 +306,10 @@ export function SiteHeader() {
                     key={item.to}
                     to={item.to}
                     onClick={closeMenu}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
+                    aria-current={isCurrent(item.to) ? 'page' : undefined}
+                    className={menuRowClass(isCurrent(item.to))}
                   >
-                    <item.icon className="size-4 text-muted-foreground" />
+                    <item.icon className="size-4" />
                     {item.label}
                   </Link>
                 ))}
@@ -334,8 +339,9 @@ export function SiteHeader() {
               </Button>
             ) : null}
           </nav>
-        </div>
-      ) : null}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <SignOutDialog
         open={signOutOpen}
@@ -346,5 +352,14 @@ export function SiteHeader() {
         }}
       />
     </header>
+  )
+}
+
+/** One row of the phone menu: the current page is a solid ink box. */
+function menuRowClass(active: boolean, extra?: string) {
+  return cn(
+    'flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm font-semibold transition-colors',
+    active ? 'bg-brand-ink text-white' : 'text-brand-ink hover:bg-accent',
+    extra,
   )
 }

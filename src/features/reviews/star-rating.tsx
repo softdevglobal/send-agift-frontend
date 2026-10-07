@@ -271,7 +271,7 @@ export function RatingBars({
             </span>
             <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
               <span
-                className="animate-meter-fill block h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500"
+                className="animate-meter-fill block h-full rounded-full bg-amber-400"
                 style={{ width: `${percent}%` }}
               />
             </span>

@@ -16,7 +16,11 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
+import {
+  CustomerEmptyState,
+  CustomerPageHeader,
+  customerListRowClass,
+} from '@/features/customer-commerce'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
@@ -157,10 +161,10 @@ export function AccountAddressesPage() {
               {addressPages.visible.map((address) => (
                 <li
                   key={address.id}
-                  className="flex items-start justify-between gap-4 rounded-xl bg-card px-4 py-3 ring-1 ring-border/60"
+                  className={customerListRowClass}
                 >
                   <div className="min-w-0 text-sm">
-                    <p className="font-medium">
+                    <p className="font-extrabold">
                       {address.label || address.address_type || 'Address'}
                       {address.is_default ? ' · Default' : ''}
                     </p>
@@ -208,8 +212,8 @@ export function AccountAddressesPage() {
             />
           )}
 
-          <section className="space-y-4 rounded-2xl bg-card p-6 ring-1 ring-border/60">
-            <h2 className="font-display text-xl">Add an address</h2>
+          <section className="space-y-4 rounded-2xl border border-brand-ink/20 bg-card p-6">
+            <h2 className="font-poster text-xl">Add an address</h2>
             <form onSubmit={handleAdd} className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="addr-country">Country</Label>

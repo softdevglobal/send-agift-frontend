@@ -65,7 +65,7 @@ type ChatThreadProps = {
   emptyHint?: string
   /** Starter questions offered while the thread is still empty. */
   suggestions?: string[]
-  /** `brand` puts the header on the dark brand gradient (the storefront panel). */
+  /** `brand` puts the header on solid brand ink (the storefront panel). */
   tone?: 'default' | 'brand'
   className?: string
 }
@@ -252,22 +252,10 @@ export function ChatThread({
         className={cn(
           'relative overflow-hidden px-3 py-3 sm:px-4',
           onDark
-            ? 'bg-gradient-to-br from-brand-navy via-brand-ink to-brand-navy text-white'
+            ? 'bg-brand-ink text-white'
             : 'border-b border-border/60 bg-card',
         )}
       >
-        {onDark ? (
-          <>
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-16 -right-12 size-44 rounded-full bg-brand-violet/45 blur-3xl"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -bottom-20 left-10 size-36 rounded-full bg-brand-teal/20 blur-3xl"
-            />
-          </>
-        ) : null}
         <div className="relative flex items-center gap-3">
           {onBack ? (
             <Button
@@ -304,7 +292,7 @@ export function ChatThread({
               <>
                 <span
                   className={cn(
-                    'hidden rounded-full px-2 py-0.5 text-[11px] font-medium sm:inline',
+                    'hidden rounded-md px-2 py-0.5 text-[11px] font-medium sm:inline',
                     supportCase.priority === 'urgent' || supportCase.priority === 'high'
                       ? 'bg-destructive/10 text-destructive'
                       : 'bg-muted text-muted-foreground',
@@ -319,7 +307,7 @@ export function ChatThread({
             ) : status === 'closed' ? (
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[11px] font-medium',
+                  'rounded-md px-2 py-0.5 text-[11px] font-medium',
                   onDark ? 'bg-white/12 text-white/80' : 'bg-muted text-muted-foreground',
                 )}
               >
@@ -435,7 +423,7 @@ export function ChatThread({
             <Button
               type="button"
               variant="outline"
-              className="h-9 rounded-full px-4"
+              className="h-9 rounded-md px-4"
               disabled={reopening}
               onClick={handleReopen}
             >
@@ -500,7 +488,7 @@ function ThreadWelcome({
       {label.context ? (
         <ContextCard context={label.context} />
       ) : (
-        <span className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-violet to-brand-navy text-white shadow-[0_12px_28px_rgba(76,29,149,0.3)]">
+        <span className="flex size-14 items-center justify-center rounded-xl bg-brand-violet text-white">
           <MessageSquare className="size-6" />
         </span>
       )}
@@ -541,7 +529,7 @@ function ContextCard({ context }: { context: ConversationContext }) {
           <img src={context.imageUrl} alt="" className="aspect-[16/10] w-full object-cover" />
           <div
             aria-hidden
-            className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent"
+            className="absolute inset-0 bg-black/15"
           />
           <span className="absolute top-2.5 left-2.5 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-semibold tracking-wide text-white backdrop-blur">
             {context.caption}

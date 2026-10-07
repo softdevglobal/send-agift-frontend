@@ -17,6 +17,7 @@ import { loginAdmin } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
 import { loginSeller } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { Marker } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -164,11 +165,8 @@ export function LoginForm({ role }: LoginFormProps) {
       noValidate
     >
       <div className="space-y-3">
-        <h2 className="font-display text-3xl leading-[1.05] tracking-tight text-foreground sm:text-4xl">
-          Welcome{' '}
-          <span className="bg-gradient-to-r from-primary via-fuchsia-600 to-pink-500 bg-clip-text text-transparent">
-            back
-          </span>
+        <h2 className="font-poster text-4xl text-brand-ink sm:text-5xl dark:text-foreground">
+          Welcome <Marker tone="violet">back</Marker>
         </h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           {copy.supporting}
@@ -178,7 +176,7 @@ export function LoginForm({ role }: LoginFormProps) {
             {perks.map((perk) => (
               <li
                 key={perk.label}
-                className="flex min-w-0 items-center justify-center gap-1.5 rounded-full bg-card px-2 py-1.5 text-xs whitespace-nowrap text-muted-foreground ring-1 ring-border/60"
+                className="flex min-w-0 items-center justify-center gap-1.5 rounded-md bg-accent px-2 py-1.5 text-xs font-semibold whitespace-nowrap text-brand-ink"
               >
                 <perk.icon className="size-3.5 shrink-0 text-primary" />
                 {perk.label}

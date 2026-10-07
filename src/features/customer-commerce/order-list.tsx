@@ -28,19 +28,19 @@ export function CustomerOrderList({
 
   return (
     <section className={customerPanelClass}>
-      <ul className="divide-y divide-border/50">
+      <ul className="divide-y divide-brand-ink/10">
         {paged.visible.map((order) => (
           <li key={order.id}>
             <Link
               to={`/orders/${order.id}`}
               className={cn(
                 customerListRowClass,
-                'flex-col items-stretch rounded-none border-0 hover:bg-muted/50',
+                'flex-col items-stretch rounded-none border-0 bg-transparent hover:bg-accent/50',
               )}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-medium">{order.order_number}</p>
+                  <p className="font-extrabold tracking-tight">{order.order_number}</p>
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     Placed {formatOrderDate(order.created_at)} · Delivers{' '}
                     {formatDeliveryDate(order.delivery_date)}
@@ -48,7 +48,7 @@ export function CustomerOrderList({
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-right">
                   <div>
-                    <p className="text-sm font-medium">
+                    <p className="text-base font-extrabold tracking-tight">
                       {formatPriceAmount(order.total_amount, order.currency)}
                     </p>
                     <div className="mt-1 flex justify-end">

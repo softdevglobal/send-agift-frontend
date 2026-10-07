@@ -1,4 +1,4 @@
-import { LoaderCircle, TriangleAlert } from 'lucide-react'
+import { CircleHelp, LoaderCircle, TriangleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
 
 type ConfirmDialogProps = {
   open: boolean
@@ -20,10 +21,12 @@ type ConfirmDialogProps = {
   onConfirm: () => void
   /** Disables both buttons and spins the confirm button. */
   busy?: boolean
+  /** `danger` for deletes and suspensions; `default` for big but safe steps. */
+  tone?: 'danger' | 'default'
 }
 
 /**
- * The portal's one "are you sure". Deliberately a centred dialog rather than
+ * The portals' one "are you sure". Deliberately a centred dialog rather than
  * a side panel: a confirm interrupts, so it belongs in front of the work, not
  * beside it.
  */
@@ -35,29 +38,36 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   busy = false,
+  tone = 'danger',
 }: ConfirmDialogProps) {
+  const danger = tone === 'danger'
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        // A half-finished delete should not close by a stray outside click.
+        // A half-finished action should not close by a stray outside click.
         if (!next && busy) return
         onOpenChange(next)
       }}
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-            <TriangleAlert className="size-5" />
+          <div
+            className={cn(
+              'mb-2 flex size-11 rotate-[-6deg] items-center justify-center rounded-lg',
+              danger ? 'bg-destructive text-white' : 'bg-brand-violet text-white',
+            )}
+          >
+            {danger ? <TriangleAlert className="size-5" /> : <CircleHelp className="size-5" />}
           </div>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogTitle className="font-poster text-2xl">{title}</DialogTitle>
+          <DialogDescription className="text-sm leading-relaxed">{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            className="h-10 rounded-full px-4"
+            className="h-10 px-4"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
@@ -65,8 +75,10 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
-            className="h-10 rounded-full px-4"
+            className={cn(
+              'h-10 px-4',
+              danger && 'bg-destructive text-white hover:bg-destructive/85 hover:text-white',
+            )}
             disabled={busy}
             onClick={onConfirm}
           >

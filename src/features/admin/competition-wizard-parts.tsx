@@ -19,7 +19,7 @@ import { useState, type ReactNode } from 'react'
 import { PRIZE_TYPES, type PrizeType } from '@/api/competitions'
 import type { AdminGameSummary } from '@/api/games'
 import type { Country } from '@/api/types'
-import { gameGradient, gameLook } from '@/features/admin/games-format'
+import { gameColor, gameLook } from '@/features/admin/games-format'
 import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
 
@@ -99,7 +99,7 @@ export function GamePicker({
               >
                 <div
                   className="relative flex h-20 items-center justify-center"
-                  style={{ background: gameGradient(game.slug) }}
+                  style={{ background: gameColor(game.slug) }}
                 >
                   <Icon className="size-8 text-white drop-shadow transition-transform group-hover:scale-110" />
                   {selected ? (
@@ -171,7 +171,7 @@ export function CountryCards({
         {countries.map((c) => (
           <div
             key={c.id}
-            className="group relative flex items-center gap-3 rounded-2xl bg-gradient-to-br from-violet-50 to-sky-50 p-3 ring-1 ring-violet-100"
+            className="group relative flex items-center gap-3 rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100"
           >
             <span className="text-3xl leading-none" aria-hidden>
               {flagOf(c.iso_code) || '🌐'}
@@ -238,7 +238,7 @@ export function ScheduleTimeline({
   const from = whenLabel(startsAt)
   const to = whenLabel(endsAt)
   return (
-    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-brand-navy to-brand-violet p-5 text-white shadow-lg">
+    <div className="overflow-hidden rounded-2xl bg-brand-navy p-5 text-white shadow-lg">
       <p className="text-xs font-semibold tracking-[0.12em] text-white/70 uppercase">
         Runs for {duration(endsAt.getTime() - startsAt.getTime())}
       </p>
@@ -249,7 +249,7 @@ export function ScheduleTimeline({
           <p className="text-sm text-white/80">{from.time}</p>
         </div>
         <div className="relative mx-1 h-1.5 flex-1 rounded-full bg-white/20">
-          <div className="absolute inset-y-0 left-0 w-full rounded-full bg-gradient-to-r from-brand-teal to-white/80" />
+          <div className="absolute inset-y-0 left-0 w-full rounded-full bg-brand-teal" />
           <ArrowRight className="absolute top-1/2 left-1/2 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-violet p-0.5" />
         </div>
         <div className="min-w-0 text-right">
@@ -323,12 +323,12 @@ export function PrizePreview({
 }) {
   const Icon = prizeIcons[type]
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-500 p-5 text-white shadow-lg">
+    <div className="relative overflow-hidden rounded-2xl bg-orange-500 p-5 text-white shadow-lg">
       <Icon className="absolute -right-4 -bottom-4 size-28 text-white/15" />
       <p className="text-[11px] font-semibold tracking-[0.14em] text-white/80 uppercase">
         Prize preview
       </p>
-      <p className="mt-1 font-display text-3xl tracking-tight">{amount}</p>
+      <p className="mt-1 font-poster text-3xl">{amount}</p>
       <p className="mt-1 max-w-[80%] text-sm text-white/90">
         {description.trim() || 'Describe what the winner gets'}
       </p>

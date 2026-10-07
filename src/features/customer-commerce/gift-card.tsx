@@ -62,9 +62,21 @@ export function GiftCard({ product, href }: GiftCardProps) {
   const shopHref =
     sellerId && shopId ? `/sellers/${sellerId}/shops/${shopId}` : undefined
 
+  const shopProps = {
+    shopName,
+    sellerName,
+    href: shopHref,
+    imageUrl: sellerImageUrl,
+    rating: sellerStats?.average ?? 0,
+    reviewCount: sellerStats?.count ?? 0,
+    verificationStatus: isCatalogProduct(product)
+      ? product.sellerVerificationStatus
+      : undefined,
+  }
+
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-card shadow-[0_8px_30px_rgba(40,50,30,0.06)] ring-1 ring-border/60 transition-transform duration-300 hover:-translate-y-1">
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+    <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-2 transition-colors sm:p-3 hover:border-brand-ink dark:border-border">
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
         <Link to={to} className="block size-full">
           <img
             src={product.image}
@@ -74,41 +86,35 @@ export function GiftCard({ product, href }: GiftCardProps) {
           />
         </Link>
         {category ? (
-          <span className="absolute bottom-3 left-3 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-medium text-foreground shadow-sm">
+          <span className="absolute bottom-3 left-3 rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-white uppercase">
             {category}
           </span>
         ) : null}
-        <SaveGiftButton productId={product.id} className="absolute top-3 right-3 z-10" />
+        <SaveGiftButton productId={product.id} className="absolute top-2 right-2 z-10 size-8 sm:top-3 sm:right-3 sm:size-9" />
         {isCatalogProduct(product) ? (
-          <RewardBadge points={product.rewardPoints} className="absolute top-3 left-3" />
+          <RewardBadge points={product.rewardPoints} className="absolute top-2 left-2 sm:top-3 sm:left-3" />
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
+      <div className="flex flex-1 flex-col gap-2 px-0.5 pt-3 pb-0.5 sm:gap-3 sm:px-1 sm:pt-4 sm:pb-1">
         {isCatalogProduct(product) ? (
-          <ShopIdentity
-            shopName={shopName}
-            sellerName={sellerName}
-            href={shopHref}
-            imageUrl={sellerImageUrl}
-            rating={sellerStats?.average ?? 0}
-            reviewCount={sellerStats?.count ?? 0}
-            verificationStatus={product.sellerVerificationStatus}
-            size="md"
-          />
+          <>
+            <ShopIdentity {...shopProps} size="sm" className="sm:hidden" />
+            <ShopIdentity {...shopProps} size="md" className="hidden sm:flex" />
+          </>
         ) : null}
 
         <div className="space-y-1.5">
           <Link to={to} className="hover:text-primary">
-            <h3 className="line-clamp-2 text-sm font-semibold text-foreground">{product.name}</h3>
+            <h3 className="line-clamp-2 text-sm leading-snug font-bold text-foreground sm:text-[15px]">{product.name}</h3>
           </Link>
           {description ? (
-            <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            <p className="hidden line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:block">
               {description}
             </p>
           ) : null}
           <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="text-base font-semibold">{priceLabel(product)}</span>
+            <span className="text-base font-extrabold tracking-tight sm:text-lg">{priceLabel(product)}</span>
             {product.compareAt ? (
               <span className="text-sm text-muted-foreground line-through">
                 {formatMoney(product.compareAt)}
@@ -124,7 +130,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
         <Button
           type="button"
-          className="mt-auto h-10 w-full gap-2"
+          className="mt-auto h-10 w-full gap-1.5 sm:h-11 sm:gap-2"
           onClick={() => addItem(product.id)}
         >
           <ShoppingCart className="size-4" />

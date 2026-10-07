@@ -27,7 +27,7 @@ export function DeliveryStep({ state, update, country, disabled }: StepProps) {
               the price and delivery time.
             </p>
           </div>
-          <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
+          <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-bold text-brand-ink">
             Prices in {currency || '—'}
           </span>
         </div>

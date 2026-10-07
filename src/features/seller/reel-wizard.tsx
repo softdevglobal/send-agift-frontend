@@ -515,7 +515,7 @@ function ReelPreview({
         <img src={poster} alt="" className="size-full object-cover" />
       ) : null}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/90 via-transparent to-brand-navy/40" />
+      <div className="absolute inset-0 bg-brand-navy/40" />
 
       <div className="absolute inset-x-0 bottom-0 space-y-1 p-3 text-white">
         <div className="flex items-center gap-1.5">
@@ -540,7 +540,7 @@ function ReelPreview({
             <span className="text-[11px] font-bold">
               {formatPriceAmount(product.price_amount, product.currency)}
             </span>
-            <span className="flex-1 rounded-full bg-gradient-to-r from-brand-navy to-brand-violet px-2 py-1 text-center text-[9px] font-semibold">
+            <span className="flex-1 rounded-full bg-brand-violet px-2 py-1 text-center text-[9px] font-semibold">
               Send as a gift
             </span>
           </div>

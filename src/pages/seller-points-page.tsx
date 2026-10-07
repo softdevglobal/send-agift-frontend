@@ -28,6 +28,7 @@ import {
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Toast } from '@/components/common/toast'
+import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -54,17 +55,17 @@ const statusStyle: Record<
 > = {
   pending: {
     label: 'Pending',
-    className: 'bg-[oklch(0.95_0.06_85)] text-[oklch(0.45_0.12_75)]',
+    className: 'bg-amber-300 text-amber-950',
     icon: Clock,
   },
   completed: {
     label: 'Completed',
-    className: 'bg-[oklch(0.94_0.06_155)] text-[oklch(0.42_0.12_155)]',
+    className: 'bg-brand-teal text-brand-ink',
     icon: CheckCircle2,
   },
   failed: {
     label: 'Failed',
-    className: 'bg-[oklch(0.95_0.05_25)] text-[oklch(0.5_0.18_25)]',
+    className: 'bg-destructive text-white',
     icon: XCircle,
   },
   cancelled: {
@@ -160,24 +161,46 @@ export function SellerPointsPage() {
         title="Points"
         description="Buy points and set a reward on your products. Customers earn them when they order, paid from your balance."
         action={
-          <Button
-            onClick={() => setBuying(true)}
-            disabled={!wallet}
-            className="h-10 rounded-full bg-white px-5 text-brand-navy hover:bg-white/90"
-          >
+          <Button onClick={() => setBuying(true)} disabled={!wallet} className="h-11 px-5">
             <CreditCard className="size-4" />
             Buy points
           </Button>
         }
-      >
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-white/75">
-          <span className="inline-flex items-center gap-2 font-semibold text-white">
-            <Sparkles className="size-4 text-[oklch(0.85_0.13_85)]" />
-            {rateLabel}
-          </span>
-          <span>$1.00 = 10 points · $10.00 = 100 points · $100.00 = 1,000 points</span>
+      />
+
+      {/* The exchange rate is the number a seller needs most, so it gets a
+          banner of its own instead of a line of small print. */}
+      <section className="relative grid overflow-hidden rounded-xl bg-amber-300 text-amber-950 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <Sparkle className="absolute top-5 right-[42%] hidden size-6 text-white lg:block" />
+        <Sparkle className="absolute bottom-5 left-[46%] hidden size-4 text-amber-950/60 lg:block" />
+        <div className="flex flex-col justify-center gap-2 px-6 py-6 sm:px-8">
+          <p className="inline-flex w-fit items-center gap-1.5 rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            <Sparkles className="size-3.5 text-amber-300" />
+            Points rate
+          </p>
+          <p className="font-poster text-4xl sm:text-5xl lg:text-6xl">{rateLabel}</p>
+          <p className="max-w-md text-sm font-medium text-amber-950/75">
+            What every point costs you, and what a purchase turns into.
+          </p>
         </div>
-      </SellerPageHeader>
+        <div className="grid grid-cols-3 gap-2 p-4 sm:p-5 lg:w-[26rem]">
+          {[
+            ['$1', '10'],
+            ['$10', '100'],
+            ['$100', '1,000'],
+          ].map(([money, pts]) => (
+            <div
+              key={money}
+              className="flex flex-col justify-between rounded-lg bg-white/70 p-3 sm:p-4"
+            >
+              <span className="font-poster text-2xl sm:text-3xl">{money}</span>
+              <span className="mt-3 text-[11px] font-bold tracking-[0.08em] uppercase sm:text-xs">
+                = {pts} pts
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <FormAlert error={loadError} />
 
@@ -240,7 +263,74 @@ export function SellerPointsPage() {
           </p>
         ) : (
           <>
-          <div className="overflow-x-auto">
+          <ul className="divide-y divide-brand-ink/10 md:hidden">
+            {purchasePages.visible.map((p) => {
+              const busy = busyId === p.id
+              return (
+                <li key={p.id} className="space-y-3 px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-poster text-xl">
+                        {formatPoints(p.points_credited ?? p.points)}
+                        <span className="ml-1 font-sans text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                          points
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">{shortDate(p.created_at)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold tabular-nums">
+                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                      </p>
+                      <div className="mt-1">
+                        <StatusPill status={p.status} />
+                      </div>
+                    </div>
+                  </div>
+                  {p.failure_reason ? (
+                    <p className="text-xs text-muted-foreground">{p.failure_reason}</p>
+                  ) : null}
+                  {p.status === 'pending' ? (
+                    <div className="flex flex-wrap gap-2">
+                      {wallet?.test_payments ? (
+                        <Button
+                          size="sm"
+                          className="h-9 flex-1"
+                          disabled={busy}
+                          onClick={() =>
+                            void act(
+                              p.id,
+                              () => completeTestPayment(p.id, 'success'),
+                              `${formatPoints(p.points)} points added.`,
+                            )
+                          }
+                        >
+                          {busy ? <LoaderCircle className="size-3.5 animate-spin" /> : null}
+                          {wallet.payment_provider === 'instant' ? 'Add points' : 'Pay (test)'}
+                        </Button>
+                      ) : p.checkout_url ? (
+                        <Button asChild size="sm" className="h-9 flex-1">
+                          <a href={p.checkout_url}>Pay now</a>
+                        </Button>
+                      ) : null}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 border-2 border-brand-ink/15"
+                        disabled={busy}
+                        onClick={() =>
+                          void act(p.id, () => cancelPointsPurchase(p.id), 'Purchase cancelled.')
+                        }
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[40rem] text-sm">
               <thead>
                 <tr className="text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
@@ -254,23 +344,9 @@ export function SellerPointsPage() {
               <tbody className="divide-y divide-border/50">
                 {purchasePages.visible.map((p) => {
                   const busy = busyId === p.id
-                  return (
-                    <tr key={p.id}>
-                      <td className="px-5 py-3.5 whitespace-nowrap">{shortDate(p.created_at)}</td>
-                      <td className="px-3 py-3.5 tabular-nums">
-                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
-                      </td>
-                      <td className="px-3 py-3.5 font-medium tabular-nums">
-                        {formatPoints(p.points_credited ?? p.points)}
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <StatusPill status={p.status} />
-                        {p.failure_reason ? (
-                          <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
-                        ) : null}
-                      </td>
-                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                        {p.status === 'pending' ? (
+                  const actions = (
+                    <>
+                      {p.status === 'pending' ? (
                           <div className="inline-flex gap-1.5">
                             {wallet?.test_payments ? (
                               <Button
@@ -306,6 +382,25 @@ export function SellerPointsPage() {
                             </Button>
                           </div>
                         ) : null}
+                    </>
+                  )
+                  return (
+                    <tr key={p.id}>
+                      <td className="px-5 py-3.5 whitespace-nowrap">{shortDate(p.created_at)}</td>
+                      <td className="px-3 py-3.5 tabular-nums">
+                        {formatCents(p.paid_amount_cents ?? p.amount_cents, p.currency)}
+                      </td>
+                      <td className="px-3 py-3.5 font-medium tabular-nums">
+                        {formatPoints(p.points_credited ?? p.points)}
+                      </td>
+                      <td className="px-3 py-3.5">
+                        <StatusPill status={p.status} />
+                        {p.failure_reason ? (
+                          <p className="mt-1 text-xs text-muted-foreground">{p.failure_reason}</p>
+                        ) : null}
+                      </td>
+                      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+                        {actions}
                       </td>
                     </tr>
                   )
@@ -469,9 +564,9 @@ function BuyPointsDialog({
           </p>
         </div>
 
-        <div className="flex items-center justify-between rounded-xl bg-[linear-gradient(140deg,oklch(0.96_0.05_85)_0%,var(--card)_70%)] px-4 py-3 ring-1 ring-border/50">
+        <div className="flex items-center justify-between rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3">
           <span className="text-sm text-muted-foreground">You get</span>
-          <span className="font-display text-2xl tracking-tight">
+          <span className="font-poster text-2xl">
             {formatPoints(points)} <span className="text-sm text-muted-foreground">points</span>
           </span>
         </div>

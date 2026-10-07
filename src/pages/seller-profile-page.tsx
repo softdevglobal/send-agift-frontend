@@ -117,7 +117,7 @@ function SectionHeader({
           <Icon className="size-4" />
         </span>
         <div>
-          <h2 className="font-display text-xl tracking-tight">{title}</h2>
+          <h2 className="font-poster text-xl">{title}</h2>
           {description ? (
             <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
           ) : null}
@@ -131,7 +131,7 @@ function SectionHeader({
 function HeroStat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="font-display text-xl tracking-tight">{value}</p>
+      <p className="font-poster text-xl">{value}</p>
       <p className="mt-0.5 text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">
         {label}
       </p>
@@ -431,14 +431,6 @@ export function SellerProfilePage() {
               'relative overflow-hidden px-5 py-6 sm:px-8 sm:py-8',
             )}
           >
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -top-16 -right-10 size-56 rounded-full bg-[oklch(0.92_0.04_125/0.45)]"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -bottom-20 left-10 size-48 rounded-full bg-[oklch(0.93_0.04_80/0.35)]"
-            />
             <div className="relative flex flex-wrap items-center gap-5">
               {/* The completion ring wraps the avatar, so identity and setup progress read as one. */}
               <div className="relative flex size-28 shrink-0 items-center justify-center sm:size-32">
@@ -477,10 +469,10 @@ export function SellerProfilePage() {
                     <img
                       src={imageUrl}
                       alt=""
-                      className="size-[5.5rem] rounded-full object-cover shadow-[0_8px_24px_rgba(60,80,40,0.22)] sm:size-[6.25rem]"
+                      className="size-[5.5rem] rounded-full object-cover sm:size-[6.25rem]"
                     />
                   ) : (
-                    <div className="flex size-[5.5rem] items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground shadow-[0_8px_24px_rgba(60,80,40,0.22)] sm:size-[6.25rem]">
+                    <div className="flex size-[5.5rem] items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground sm:size-[6.25rem]">
                       {profile ? sellerInitials(profile) : 'S'}
                     </div>
                   )}
@@ -505,7 +497,7 @@ export function SellerProfilePage() {
                 <p className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
                   Seller portal
                 </p>
-                <h1 className="mt-1 font-display text-3xl tracking-tight">
+                <h1 className="mt-1 font-poster text-3xl">
                   {profile ? sellerDisplayName(profile) : 'Profile'}
                 </h1>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">

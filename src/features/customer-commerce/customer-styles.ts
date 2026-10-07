@@ -1,5 +1,5 @@
 export const customerPanelClass =
-  'rounded-2xl bg-card shadow-[0_10px_36px_rgba(40,50,30,0.05)] ring-1 ring-border/50'
+  'rounded-2xl border border-brand-ink/20 bg-card'
 
 export const customerListRowClass =
-  'flex items-start justify-between gap-4 rounded-xl border border-border/40 bg-surface/90 px-4 py-3.5 transition-colors hover:border-border hover:bg-muted/40'
+  'flex items-start justify-between gap-4 rounded-lg border-2 border-brand-ink/15 bg-card px-4 py-3.5 transition-colors hover:border-brand-ink hover:bg-accent/40'

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 export function PageLayout() {
   return (
     <SiteLayout>
-      <main className={cn(storefrontFrameClass, 'py-8 lg:py-10')}>
+      <main className={cn(storefrontFrameClass, 'account-box py-8 lg:py-10')}>
         <Outlet />
       </main>
     </SiteLayout>

@@ -64,7 +64,7 @@ export function SellerSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         className={cn(
-          'gap-0 p-0',
+          'account-box gap-0 border-l-2 border-brand-ink p-0 shadow-none',
           // On a phone the sheet stops short of the left edge and rounds that
           // corner, so the dimmed page shows behind it and it reads as a
           // slide-over, not a new full-screen route. Full width again from sm.
@@ -91,8 +91,7 @@ export function SellerSheet({
               // Room for the close button, which floats over the cover when
               // there is one and over the header when there is not.
               !media && 'pr-14',
-              !media &&
-                'bg-[linear-gradient(180deg,var(--accent)_0%,transparent_100%)]',
+              !media && 'bg-accent',
             )}
           >
             <div className="flex items-start justify-between gap-3">

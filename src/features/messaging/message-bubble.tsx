@@ -82,11 +82,11 @@ export function MessageBubble({
           {body ? (
             <div
               className={cn(
-                'rounded-[1.25rem] px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap',
+                'rounded-lg px-3.5 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap',
                 own
-                  ? 'bg-primary text-primary-foreground shadow-[0_8px_20px_rgba(109,40,217,0.28)]'
-                  : 'bg-card text-foreground shadow-[0_4px_14px_rgba(20,20,55,0.06)] ring-1 ring-border/60',
-                endsGroup && (own ? 'rounded-br-md' : 'rounded-bl-md'),
+                  ? 'bg-brand-violet text-white'
+                  : 'border border-brand-ink/20 bg-card text-foreground',
+                endsGroup && (own ? 'rounded-br-none' : 'rounded-bl-none'),
               )}
             >
               {body}
@@ -131,7 +131,7 @@ function ImageAttachment({
 
   if (!attachment.cdn_url) {
     return (
-      <div className="flex aspect-square items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+      <div className="flex aspect-square items-center justify-center rounded-lg bg-muted text-muted-foreground">
         <ImageOff className="size-5" />
         <span className="sr-only">Photo unavailable</span>
       </div>
@@ -145,7 +145,7 @@ function ImageAttachment({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group block w-full overflow-hidden rounded-2xl bg-muted shadow-[0_6px_18px_rgba(20,20,55,0.10)] ring-1 ring-border/60"
+        className="group block w-full overflow-hidden rounded-lg bg-muted ring-1 ring-brand-ink/25"
       >
         <img
           src={attachment.cdn_url}

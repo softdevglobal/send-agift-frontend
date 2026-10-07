@@ -46,7 +46,7 @@ function Card({ label, value, hint, tone }: { label: string; value: ReactNode; h
       <p className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">{label}</p>
       <p
         className={cn(
-          'mt-1 font-display text-xl tracking-tight tabular-nums',
+          'mt-1 font-poster text-xl tabular-nums',
           tone === 'good' && 'text-emerald-700',
           tone === 'bad' && 'text-red-700',
         )}

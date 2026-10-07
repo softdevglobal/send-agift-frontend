@@ -75,7 +75,7 @@ export function SellerVerifyEmailForm() {
         <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
           Confirm your email
         </p>
-        <h2 className="font-display text-3xl tracking-tight text-foreground">Enter your code</h2>
+        <h2 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">Enter your code</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">
           Your seller account is created. Sign-in stays closed until this code matches the one we
           sent.

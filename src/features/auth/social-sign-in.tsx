@@ -151,7 +151,7 @@ export function SocialSignInButtons({ verb = 'Continue', onResult, className }: 
             type="button"
             onClick={() => void start('google')}
             disabled={busy !== null}
-            className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-card whitespace-nowrap px-4 text-sm font-semibold text-foreground ring-1 ring-border transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20 disabled:pointer-events-none disabled:opacity-60"
+            className="flex h-12 items-center justify-center gap-2.5 rounded-md bg-card whitespace-nowrap px-4 text-sm font-semibold text-foreground ring-1 ring-border transition-all hover:-translate-y-0.5 hover:shadow-md hover:ring-foreground/20 disabled:pointer-events-none disabled:opacity-60"
           >
             {busy === 'google' ? <LoaderCircle className="size-4 animate-spin" /> : <GoogleMark />}
             {verb ? `${verb} with Google` : 'Google'}
@@ -162,7 +162,7 @@ export function SocialSignInButtons({ verb = 'Continue', onResult, className }: 
             type="button"
             onClick={() => void start('facebook')}
             disabled={busy !== null}
-            className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-[#1877F2] whitespace-nowrap px-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#166FE5] hover:shadow-md disabled:pointer-events-none disabled:opacity-60"
+            className="flex h-12 items-center justify-center gap-2.5 rounded-md bg-[#1877F2] whitespace-nowrap px-4 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-[#166FE5] hover:shadow-md disabled:pointer-events-none disabled:opacity-60"
           >
             {busy === 'facebook' ? <LoaderCircle className="size-4 animate-spin" /> : <FacebookMark />}
             {verb ? `${verb} with Facebook` : 'Facebook'}

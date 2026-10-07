@@ -58,7 +58,7 @@ export function ChatAvatar({ kind, imageUrl, name, size = 'md', className }: Cha
       className={cn(
         'flex shrink-0 items-center justify-center rounded-full',
         kind === 'support'
-          ? 'bg-gradient-to-br from-brand-violet to-brand-navy text-white'
+          ? 'bg-brand-violet text-white'
           : 'bg-accent text-accent-foreground',
         dimensions,
         className,

@@ -2,12 +2,13 @@ import { ArrowRight, Clapperboard, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { storefrontFrameClass } from '@/components/common/site-styles'
+import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
 import { useReelFeed } from '@/features/reels/use-reel-feed'
 import type { ReelView } from '@/features/reels/reel-view'
 import { cn } from '@/lib/utils'
 
 /**
- * Home-page entry point into the feed: a soft tinted card with a scrollable
+ * Home-page entry point into the feed: a solid ink card with a scrollable
  * row of the newest reels.
  *
  * Cards are stills, not autoplaying video. A row of clips competing for
@@ -25,33 +26,30 @@ export function ReelsStrip() {
 
   return (
     <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
-      <div className="relative overflow-hidden rounded-[1.75rem] p-6 ring-1 ring-border/50 sm:p-8 lg:p-10 bg-[linear-gradient(140deg,var(--accent)_0%,var(--card)_52%,oklch(0.95_0.045_190)_100%)]">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 right-[10%] size-64 rounded-full bg-[var(--brand-violet)]/10 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-24 left-[4%] size-72 rounded-full bg-[var(--brand-teal)]/12 blur-3xl"
-        />
+      <div className="relative overflow-hidden rounded-[1.75rem] bg-brand-ink p-6 text-white sm:p-8 lg:p-10">
+        <Sparkle className="absolute top-8 right-[34%] size-6 text-brand-teal" />
+        <Sparkle className="absolute top-16 right-[6%] size-4 text-brand-violet" />
+        <Dot className="absolute top-10 right-[20%] size-2.5 bg-white/40" />
 
         <div className="relative mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[11px] font-semibold tracking-[0.14em] text-accent-foreground uppercase ring-1 ring-primary/10">
+            <span className="inline-flex items-center gap-1.5 rounded-md bg-brand-teal px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-brand-ink uppercase">
               <Clapperboard className="size-3.5" />
               Reels
             </span>
-            <h2 className="mt-3 font-display text-3xl tracking-tight text-foreground sm:text-4xl">
-              Watch it made, then send it
+            <h2 className="mt-4 font-poster text-3xl sm:text-4xl lg:text-5xl">
+              Watch it <Marker tone="violet">made</Marker>,
+              <br />
+              then send it
             </h2>
-            <p className="mt-1.5 max-w-md text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
               Real clips from the people who make these gifts. Send one straight
               from the feed.
             </p>
           </div>
           <Link
             to="/reels"
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-navy to-brand-violet px-5 text-sm font-semibold text-white shadow-lg shadow-brand-violet/20 transition-transform hover:-translate-y-0.5"
+            className="inline-flex h-11 shrink-0 items-center gap-2 rounded-md bg-white px-5 text-xs font-bold tracking-[0.08em] text-brand-ink uppercase transition-colors hover:bg-brand-teal"
           >
             Watch all reels
             <ArrowRight className="size-4" />
@@ -73,7 +71,7 @@ function ReelTile({ reel }: { reel: ReelView }) {
   return (
     <Link
       to="/reels"
-      className="group relative aspect-[9/16] w-44 shrink-0 snap-start overflow-hidden rounded-2xl bg-brand-navy shadow-[0_12px_32px_-12px_rgba(15,27,69,0.4)] ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 sm:w-52 lg:w-56"
+      className="group relative aspect-[9/16] w-44 shrink-0 snap-start overflow-hidden rounded-2xl bg-brand-navy ring-1 ring-white/10 transition-transform duration-300 hover:-translate-y-1 sm:w-52 lg:w-56"
     >
       {reel.imageUrl ? (
         <img
@@ -84,13 +82,11 @@ function ReelTile({ reel }: { reel: ReelView }) {
         />
       ) : null}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-navy/90 via-brand-navy/5 to-transparent" />
-
-      <span className="absolute top-2.5 right-2.5 grid size-9 place-items-center rounded-full bg-brand-violet/85 text-white backdrop-blur-sm transition-transform group-hover:scale-110">
+      <span className="absolute top-2.5 right-2.5 grid size-9 place-items-center rounded-full bg-brand-violet text-white transition-transform group-hover:scale-110">
         <Play className="size-4 fill-current" />
       </span>
 
-      <div className="absolute inset-x-0 bottom-0 p-3.5 text-white">
+      <div className="absolute inset-x-2 bottom-2 rounded-xl bg-brand-ink/85 p-3 text-white backdrop-blur-sm">
         <p className="truncate text-xs font-medium text-white/80">
           {reel.shopName}
         </p>

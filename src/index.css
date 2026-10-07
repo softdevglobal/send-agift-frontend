@@ -91,6 +91,11 @@
     --ring: #6d28d9;
     --brand: #6d28d9;
     --brand-foreground: #ffffff;
+    /* Solid fill of the default button. The storefront swaps it for ink. */
+    --button-solid: var(--primary);
+    --button-solid-hover: color-mix(in oklch, var(--primary), black 14%);
+    /* Buttons are boxes everywhere, never pills. */
+    --button-radius: 0.375rem;
     /* Sampled from the logo, matching the mobile app's app_colors.dart: the
        navy gift box, the violet ribbon bow, the teal paper plane. */
     --brand-navy: #0f1b45;
@@ -238,6 +243,67 @@
 }
 
 @layer components {
+  /*
+   * Customer storefront look: heavy geometric display type, solid ink
+   * buttons, flat brand-colour blocks. Set on the storefront layout and on
+   * <body> while it is mounted, so dialogs and sheets portalled out of the
+   * layout pick it up too. Seller and admin screens keep their own look.
+   */
+  .storefront {
+    --font-display: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    --button-solid: var(--brand-ink);
+    --button-solid-hover: var(--brand-violet);
+  }
+
+  /* In the seller and admin portals the main action buttons are violet,
+     turning ink on hover, so they stand out on the ink page banners. */
+  .seller-portal,
+  .admin-portal {
+    --button-solid: var(--brand-violet);
+    --button-solid-hover: var(--brand-ink);
+  }
+
+  .storefront .font-display {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  /* Poster headline: the uppercase, ultra-heavy line used for page and
+     section titles on the storefront. */
+  .font-poster {
+    font-family: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+    text-transform: uppercase;
+  }
+
+  /* A word set on a solid block of colour, like a highlighter swipe. */
+  .marker-block {
+    display: inline-block;
+    padding: 0.04em 0.18em 0.02em;
+    margin-inline: -0.04em;
+    box-decoration-break: clone;
+  }
+
+  /* A thick solid bar behind the lower half of a heading. */
+  .marker-underline {
+    position: relative;
+    isolation: isolate;
+    display: inline-block;
+  }
+
+  .marker-underline::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    left: -0.12em;
+    right: -0.12em;
+    bottom: 0.02em;
+    height: 0.42em;
+    background: var(--marker, var(--brand-teal));
+  }
+
   /* Customer storefront column. Modest side gutters, wide content. */
   .storefront-frame {
     width: 100%;
@@ -260,16 +326,111 @@
 }
 
 @layer utilities {
+  /* Storefront buttons read as small, heavy, uppercase labels. Kept in the
+     utilities layer so it outranks the button's own weight and size. */
+  .storefront [data-slot='button']:not([data-size^='icon']) {
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  /* Pill-shaped text buttons predate the box look; square them off so every
+     action reads as the same solid block. Icon buttons stay round. */
+  [data-slot='button'].rounded-full:not([data-size^='icon']) {
+    border-radius: var(--button-radius);
+  }
+
+  .storefront [data-slot='input'] {
+    border-radius: 0.375rem;
+  }
+
+  /*
+   * The signed-in customer area (AccountLayout), the cart and checkout, and
+   * the seller and admin portals are boxes all the way down:
+   * pill chips, tabs and badges become rounded boxes, soft round icon chips
+   * become rounded squares, and the faint rings round cards gain a visible
+   * ink outline. Scoped to those areas only.
+   */
+  .account-box [class*='rounded-full'][class*='px-']:not([data-slot='button']) {
+    border-radius: 0.375rem;
+  }
+
+  .account-box
+    [class*='rounded-full'][class*='size-']:not(img):not(.animate-spin):not([class*='size-1']):not([class*='size-2']):not([class*='size-3']):not([class*='size-4']):not([class*='size-5']) {
+    border-radius: 0.625rem;
+  }
+
+  /* One crisp corner for every card, row and panel in the area. */
+  .account-box [class*='rounded-xl'],
+  .account-box [class*='rounded-2xl'],
+  .account-box [class*='rounded-[1.75rem]'] {
+    border-radius: 0.625rem;
+  }
+
+  /* Form controls: a solid outline that turns ink on focus, not a faint
+     hairline. */
+  .account-box input:not([type='checkbox']):not([type='radio']):not([type='file']),
+  .account-box select,
+  .account-box textarea {
+    border-width: 2px;
+    border-color: color-mix(in oklch, var(--brand-ink) 18%, transparent);
+    border-radius: 0.5rem;
+    background-color: var(--card);
+  }
+
+  .account-box input:not([type='checkbox']):not([type='radio']):not([type='file']):focus-visible,
+  .account-box select:focus-visible,
+  .account-box textarea:focus-visible {
+    border-color: var(--brand-ink);
+    --tw-ring-color: color-mix(in oklch, var(--brand-violet) 28%, transparent);
+  }
+
+  /* Every table in these areas: a solid ink header row and a light hover. */
+  .account-box thead tr {
+    background-color: var(--brand-ink);
+    color: white;
+    border: 0;
+  }
+
+  .account-box thead th {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: white;
+  }
+
+  .account-box tbody tr {
+    transition: background-color 150ms;
+  }
+
+  .account-box tbody tr:hover {
+    background-color: color-mix(in oklch, var(--accent), transparent 50%);
+  }
+
+  .account-box fieldset {
+    border-width: 2px;
+    border-color: color-mix(in oklch, var(--brand-ink) 14%, transparent);
+  }
+
+  .account-box [class*='ring-border'] {
+    --tw-ring-color: color-mix(in oklch, var(--brand-ink) 22%, transparent);
+  }
+
+  .account-box .bg-muted\/50,
+  .account-box .bg-muted\/60 {
+    background-color: var(--accent);
+  }
+
   .font-display {
     font-family: var(--font-display);
   }
 
+  /* A faint grain only. No colour washes: whatever sits under it stays a
+     solid brand colour. */
   .bg-grain {
-    background-image:
-      radial-gradient(circle at 18% 18%, oklch(0.93 0.07 296 / 0.38), transparent 42%),
-      radial-gradient(circle at 82% 12%, oklch(0.92 0.05 296 / 0.22), transparent 38%),
-      radial-gradient(circle at 70% 82%, oklch(0.88 0.07 296 / 0.30), transparent 45%),
-      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
   .animate-fade-up {

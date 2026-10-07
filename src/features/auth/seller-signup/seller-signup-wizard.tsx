@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { listCountries, type Country } from '@/api/countries'
 import { checkShopSlug, registerSeller } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { Dot, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { shopCategories, signupSteps } from '@/features/auth/seller-signup/options'
 import {
@@ -208,15 +209,15 @@ export function SellerSignupWizard() {
     <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_18rem]">
       <aside className="lg:sticky lg:top-6 lg:self-start">
         <div className="mb-4 space-y-1.5">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[11px] font-bold tracking-[0.14em] text-brand-ink uppercase dark:text-foreground">
             <span>
               Step {step + 1} of {signupSteps.length}
             </span>
             <span>{Math.round(((step + 1) / signupSteps.length) * 100)}%</span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-2 overflow-hidden rounded-sm bg-brand-ink/10">
             <div
-              className="h-full rounded-full bg-primary transition-all"
+              className="h-full bg-brand-violet transition-all"
               style={{ width: `${((step + 1) / signupSteps.length) * 100}%` }}
             />
           </div>
@@ -234,22 +235,33 @@ export function SellerSignupWizard() {
                   onClick={() => goTo(index)}
                   aria-current={index === step ? 'step' : undefined}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors',
-                    index === step ? 'bg-surface shadow-sm ring-1 ring-border/60' : 'hover:bg-surface/60',
+                    'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors',
+                    index === step ? 'bg-brand-ink text-white' : 'hover:bg-accent',
                     !reachable && 'cursor-default opacity-50 hover:bg-transparent',
                   )}
                 >
                   <span
                     className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-full',
-                      done || index === step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground',
+                      'flex size-8 shrink-0 items-center justify-center rounded-md',
+                      index === step
+                        ? 'bg-brand-teal text-brand-ink'
+                        : done
+                          ? 'bg-brand-violet text-white'
+                          : 'bg-accent text-brand-ink/60',
                     )}
                   >
                     {done ? <Check className="size-4" /> : <Icon className="size-4" />}
                   </span>
                   <span className="hidden min-w-0 sm:block">
-                    <span className="block text-sm font-medium">{item.title}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{item.caption}</span>
+                    <span className="block text-sm font-bold">{item.title}</span>
+                    <span
+                      className={cn(
+                        'block truncate text-xs',
+                        index === step ? 'text-white/65' : 'text-muted-foreground',
+                      )}
+                    >
+                      {item.caption}
+                    </span>
                   </span>
                 </button>
               </li>
@@ -264,13 +276,15 @@ export function SellerSignupWizard() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="min-w-0 rounded-2xl border border-border/60 bg-background/80 p-5 shadow-sm sm:p-8"
+        className="min-w-0 rounded-[1.75rem] border border-brand-ink/20 bg-card p-5 sm:p-8"
       >
-        <div ref={formTop} className="scroll-mt-6 space-y-2 pb-6">
-          <p className="text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
-            {current.title}
+        <div ref={formTop} className="scroll-mt-6 space-y-3 pb-6">
+          <p className="w-fit rounded-md bg-brand-ink px-2.5 py-1 text-[10px] font-bold tracking-[0.18em] text-white uppercase">
+            Step {step + 1} &middot; {current.title}
           </p>
-          <h2 className="font-display text-3xl tracking-tight text-foreground">{current.heading}</h2>
+          <h2 className="font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">
+            <span className="marker-underline">{current.heading}</span>
+          </h2>
           <p className="text-sm leading-relaxed text-muted-foreground">{current.intro}</p>
         </div>
 
@@ -282,7 +296,7 @@ export function SellerSignupWizard() {
         {errors.length ? (
           <div
             role="alert"
-            className="mb-6 rounded-xl bg-destructive/10 px-4 py-3 text-sm text-destructive ring-1 ring-destructive/25"
+            className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive ring-1 ring-destructive/25"
           >
             <p className="font-medium">Please check the following:</p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">
@@ -317,7 +331,7 @@ export function SellerSignupWizard() {
             <Button
               type="button"
               variant="outline"
-              className="h-11"
+              className="h-12 border-2 border-brand-ink px-5"
               onClick={() => goTo(step - 1)}
               disabled={isSubmitting}
             >
@@ -329,7 +343,7 @@ export function SellerSignupWizard() {
               Already registered? <span className="font-medium text-primary">Sign in</span>
             </Link>
           )}
-          <Button type="submit" className="h-11 px-5" disabled={isSubmitting || Boolean(blockedMessage)}>
+          <Button type="submit" className="h-12 px-6" disabled={isSubmitting || Boolean(blockedMessage)}>
             {isSubmitting ? (
               <>
                 <LoaderCircle className="animate-spin" />
@@ -367,17 +381,20 @@ function ShopPreview({ state, country }: { state: SignupState; country: Country 
 
   return (
     <aside className="hidden xl:sticky xl:top-6 xl:block xl:self-start">
-      <p className="mb-3 text-xs font-medium tracking-[0.16em] text-muted-foreground uppercase">
+      <p className="mb-3 text-[11px] font-bold tracking-[0.16em] text-brand-ink uppercase dark:text-foreground">
         Live shop preview
       </p>
-      <div className="overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-sm">
-        <div className="h-20 bg-gradient-to-br from-primary/25 via-fuchsia-200/50 to-pink-200/60" />
+      <div className="overflow-hidden rounded-[1.5rem] border border-brand-ink/20 bg-card">
+        <div className="relative h-24 bg-brand-violet">
+          <Sparkle className="absolute top-4 right-6 size-6 text-brand-teal" />
+          <Dot className="absolute right-16 bottom-5 size-2.5 bg-white/60" />
+        </div>
         <div className="space-y-3 p-4">
-          <div className="-mt-10 flex size-14 items-center justify-center rounded-2xl bg-background text-primary shadow ring-1 ring-border/60">
+          <div className="relative -mt-11 flex size-14 items-center justify-center rounded-xl bg-brand-ink text-white ring-4 ring-card">
             <Store className="size-6" />
           </div>
           <div>
-            <p className="font-display text-lg leading-tight">{state.shopName.trim() || 'Your shop name'}</p>
+            <p className="font-display text-xl leading-tight">{state.shopName.trim() || 'Your shop name'}</p>
             <p className="truncate text-xs text-muted-foreground">
               sendagift/shop/{state.shopSlug || 'your-shop'}
             </p>
@@ -388,7 +405,7 @@ function ShopPreview({ state, country }: { state: SignupState; country: Country 
           {categories.length ? (
             <div className="flex flex-wrap gap-1.5">
               {categories.map((label) => (
-                <span key={label} className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs text-primary">
+                <span key={label} className="rounded-md bg-brand-teal px-2 py-0.5 text-[11px] font-bold text-brand-ink">
                   {label}
                 </span>
               ))}

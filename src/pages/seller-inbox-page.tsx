@@ -123,16 +123,16 @@ export function SellerInboxPage() {
                 aria-selected={active}
                 onClick={() => setFilter(item.id)}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-                  active ? 'bg-white text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
+                  'inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
+                  active ? 'bg-brand-teal text-brand-ink' : 'text-white/70 hover:bg-white/10 hover:text-white',
                 )}
               >
                 {item.label}
                 {unread > 0 ? (
                   <span
                     className={cn(
-                      'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-semibold',
-                      active ? 'bg-primary text-primary-foreground' : 'bg-white/15 text-white',
+                      'flex h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] font-bold',
+                      active ? 'bg-brand-ink text-white' : 'bg-white/15 text-white',
                     )}
                   >
                     {unread > 99 ? '99+' : unread}
