@@ -79,3 +79,26 @@ export function completeSocialSignup(body: {
     auth: false,
   })
 }
+
+export type CodeChannel = 'sms' | 'email'
+
+/** Signed in, or someone new who proved the phone/email and may sign up with it. */
+export type CodeLoginResult =
+  | { status: 'signed_in'; token: string; role: UserRole }
+  | { status: 'needs_signup'; signup_token: string; channel: CodeChannel; destination: string }
+
+export function requestLoginCode(body: { channel: CodeChannel; destination: string }) {
+  return api<{ message: string }>('/customers/login/code', { method: 'POST', body, auth: false })
+}
+
+export function verifyLoginCode(body: { channel: CodeChannel; destination: string; code: string }) {
+  return api<CodeLoginResult>('/customers/login/code/verify', { method: 'POST', body, auth: false })
+}
+
+export function requestPhoneCode(phone: string) {
+  return api<{ message: string }>('/customers/me/phone/code', { method: 'POST', body: { phone } })
+}
+
+export function verifyPhoneCode(phone: string, code: string) {
+  return api<{ message: string }>('/customers/me/phone/verify', { method: 'POST', body: { phone, code } })
+}

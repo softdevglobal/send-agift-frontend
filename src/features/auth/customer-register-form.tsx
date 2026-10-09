@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
-import { completeSocialSignup, type SocialSignInResult } from '@/api/auth'
+import { completeSocialSignup, type CodeLoginResult, type SocialSignInResult } from '@/api/auth'
 import { loginCustomer, registerCustomer } from '@/api/customers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Marker } from '@/components/common/storefront-decor'
@@ -63,17 +63,34 @@ function socialFromState(state: unknown): SocialSignup | null {
   return social?.status === 'needs_profile' ? social : null
 }
 
+type CodeSignup = Extract<CodeLoginResult, { status: 'needs_signup' }>
+
+/** A phone or email proven by a sign-in code on the login page, if any. */
+function codeSignupFromState(state: unknown): CodeSignup | null {
+  const codeSignup = (state as { codeSignup?: CodeLoginResult } | null)?.codeSignup
+  return codeSignup?.status === 'needs_signup' ? codeSignup : null
+}
+
 export function CustomerRegisterForm() {
   const { login } = useAuth()
   const location = useLocation()
   // Someone who chose Google or Facebook: the provider vouched for their
   // email, so only a country and phone are still needed.
   const [social, setSocial] = useState<SocialSignup | null>(() => socialFromState(location.state))
+  const [codeSignup] = useState(() => codeSignupFromState(location.state))
   const [customerType, setCustomerType] = useState<CustomerTypeValue>('individual')
   const [displayName, setDisplayName] = useState(() => socialFromState(location.state)?.name ?? '')
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(() =>
+    codeSignupFromState(location.state)?.channel === 'email'
+      ? codeSignupFromState(location.state)!.destination
+      : '',
+  )
   const [countryId, setCountryId] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(() =>
+    codeSignupFromState(location.state)?.channel === 'sms'
+      ? codeSignupFromState(location.state)!.destination
+      : '',
+  )
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -156,6 +173,7 @@ export function CustomerRegisterForm() {
         customer_type: customerType,
         display_name: displayName.trim(),
         phone: phone.trim(),
+        signup_token: codeSignup?.signup_token,
       })
       const session = await loginCustomer({ email: trimmedEmail, password })
       login(session.token, 'customer', true)
@@ -304,7 +322,7 @@ export function CustomerRegisterForm() {
                   setEmailTaken(false)
                 }}
                 className={cn('h-12 bg-surface pl-10', emailTaken && 'ring-2 ring-amber-400')}
-                disabled={isSubmitting}
+                disabled={isSubmitting || codeSignup?.channel === 'email'}
               />
             </IconInput>
           </Field>
@@ -323,7 +341,7 @@ export function CustomerRegisterForm() {
               id="customer-phone"
               value={phone}
               onChange={setPhone}
-              disabled={isSubmitting}
+              disabled={isSubmitting || codeSignup?.channel === 'sms'}
               required
             />
           </Field>
