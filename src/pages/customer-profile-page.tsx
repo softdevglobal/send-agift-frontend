@@ -15,6 +15,7 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangeEmailCard } from '@/features/account/change-email-card'
 import { ChangePasswordCard } from '@/features/account/change-password-card'
 import { VerifyPhoneCard } from '@/features/account/verify-phone-card'
 import { useAuth } from '@/features/auth/auth-context'
@@ -388,6 +389,14 @@ export function CustomerProfilePage() {
               onConfirm={handleCropConfirm}
             />
           ) : null}
+
+          <ChangeEmailCard
+            role="customer"
+            email={profile?.email ?? ''}
+            onChanged={(email) =>
+              setProfile((prev) => (prev ? { ...prev, email } : prev))
+            }
+          />
 
           <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
 

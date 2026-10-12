@@ -28,6 +28,7 @@ import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
+import { EmailUndoPage } from '@/pages/email-undo-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
 import { CustomerOrderHistoryPage } from '@/pages/customer-order-history-page'
@@ -49,6 +50,7 @@ import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
+import { SellerEmailUndoPage } from '@/pages/seller-email-undo-page'
 import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
@@ -171,6 +173,11 @@ export function AppRouter() {
       />
 
       {/* Signed-in account area. */}
+      {/*
+        The "this wasn't me" link from the old inbox. Public on purpose: the
+        session it was meant to protect is already gone.
+      */}
+      <Route path="/account/email/undo" element={<EmailUndoPage />} />
       <Route
         path="/account"
         element={
@@ -270,6 +277,7 @@ export function AppRouter() {
       />
       <Route path="/admin/register" element={<AdminRegisterPage />} />
 
+      <Route path="/seller/email/undo" element={<SellerEmailUndoPage />} />
       <Route
         path="/seller"
         element={

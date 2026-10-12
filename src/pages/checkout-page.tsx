@@ -69,6 +69,7 @@ import { cn } from '@/lib/utils'
 function blankRecipient(country = '') {
   return {
     name: '',
+    email: '',
     phone: '',
     country_id: country,
     label: '',
@@ -608,6 +609,11 @@ export function CheckoutPage() {
     }
     const line1 = newRecipient.line1.trim()
     const city = newRecipient.city.trim() || newRecipient.region.trim()
+    const recipientEmail = newRecipient.email.trim()
+    if (recipientEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+      setError('Enter a valid email for the recipient, or leave it blank.')
+      return
+    }
     if (!addressCountry || !line1 || !city) {
       setError('Pick an address from the list so the street and city fill in.')
       return
@@ -621,6 +627,7 @@ export function CheckoutPage() {
     try {
       const created = await createRecipient({
         name,
+        email: optionalString(recipientEmail) ?? null,
         phone: optionalString(newRecipient.phone) ?? null,
         addresses: [
           {
@@ -842,6 +849,29 @@ export function CheckoutPage() {
                           setNewRecipient((current) => ({ ...current, phone }))
                         }
                       />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="checkout-new-email">
+                        Email <span className="font-normal text-muted-foreground">(optional)</span>
+                      </Label>
+                      <Input
+                        id="checkout-new-email"
+                        type="email"
+                        autoComplete="off"
+                        value={newRecipient.email}
+                        onChange={(event) =>
+                          setNewRecipient((current) => ({
+                            ...current,
+                            email: event.target.value,
+                          }))
+                        }
+                        className="h-11 bg-surface px-3"
+                        placeholder="jane@example.com"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        We email them when the gift is delivered, and it lets you send them
+                        points.
+                      </p>
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="checkout-new-country">Country</Label>

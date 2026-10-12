@@ -13,6 +13,7 @@ import {
   getRole,
   getToken,
   postLoginPath,
+  replaceToken as storeToken,
   setSession,
   type AuthLocationState,
   type UserRole,
@@ -23,6 +24,8 @@ type AuthContextValue = {
   role: UserRole | null
   isAuthenticated: boolean
   login: (token: string, role: UserRole, persist?: boolean) => void
+  /** Keeps the user signed in with a fresh token, e.g. after an email change. */
+  replaceToken: (token: string) => void
   logout: () => void
 }
 
@@ -53,6 +56,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [location.search, location.state, navigate],
   )
 
+  const replaceToken = useCallback((nextToken: string) => {
+    storeToken(nextToken)
+    setToken(nextToken)
+  }, [])
+
   const logout = useCallback(() => {
     clearSession()
     setToken(null)
@@ -67,9 +75,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       role,
       isAuthenticated: Boolean(token && role),
       login,
+      replaceToken,
       logout,
     }),
-    [token, role, login, logout],
+    [token, role, login, replaceToken, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
