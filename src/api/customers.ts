@@ -35,6 +35,7 @@ export type CustomerRegisterRequest = {
   date_of_birth?: string
   image_url?: string
   addresses?: AddressInput[]
+  signup_token?: string
 }
 
 export type CustomerUpdateRequest = {

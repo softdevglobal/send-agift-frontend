@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { PageLayout } from '@/components/common/page-layout'
 import { AccountLayout } from '@/features/account/account-layout'
 import { AdminShell } from '@/features/admin'
+import { useAuth } from '@/features/auth/auth-context'
 import { GuestRoute, ProtectedRoute } from '@/features/auth/protected-route'
 import { SellerShell } from '@/features/seller'
 import { AccountAddressesPage } from '@/pages/account-addresses-page'
@@ -27,6 +28,7 @@ import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
+import { EmailUndoPage } from '@/pages/email-undo-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
 import { CustomerOrderHistoryPage } from '@/pages/customer-order-history-page'
@@ -48,6 +50,7 @@ import { SellerAnalyticsPage } from '@/pages/seller-analytics-page'
 import { SellerDashboardPage } from '@/pages/seller-dashboard-page'
 import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
+import { SellerEmailUndoPage } from '@/pages/seller-email-undo-page'
 import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
@@ -81,6 +84,15 @@ function RedirectOrderItem() {
   return <Navigate to={`/seller/orders/${orderItemId}`} replace />
 }
 
+/** An old or shared review link: the login page's code tab handles it. */
+function RedirectReview() {
+  const { token } = useParams()
+  const { isAuthenticated, role } = useAuth()
+  // Already signed in as a customer: their gifts, and the reviews, are here.
+  if (isAuthenticated && role === 'customer') return <Navigate to="/account/gifts" replace />
+  return <Navigate to={`/login?review=${token}&next=/account/gifts`} replace />
+}
+
 function RedirectOrder() {
   const { orderId } = useParams()
   return <Navigate to={`/orders/${orderId}`} replace />
@@ -94,6 +106,7 @@ export function AppRouter() {
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/products/:productId" element={<ProductViewPage />} />
       <Route path="/reels" element={<ReelsPage />} />
+      <Route path="/review/:token" element={<RedirectReview />} />
       <Route path="/become-a-seller" element={<BecomeSellerPage />} />
 
       <Route element={<PageLayout />}>
@@ -160,6 +173,11 @@ export function AppRouter() {
       />
 
       {/* Signed-in account area. */}
+      {/*
+        The "this wasn't me" link from the old inbox. Public on purpose: the
+        session it was meant to protect is already gone.
+      */}
+      <Route path="/account/email/undo" element={<EmailUndoPage />} />
       <Route
         path="/account"
         element={
@@ -259,6 +277,7 @@ export function AppRouter() {
       />
       <Route path="/admin/register" element={<AdminRegisterPage />} />
 
+      <Route path="/seller/email/undo" element={<SellerEmailUndoPage />} />
       <Route
         path="/seller"
         element={

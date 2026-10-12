@@ -51,6 +51,7 @@ import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangeEmailCard } from '@/features/account/change-email-card'
 import { ChangePasswordCard } from '@/features/account/change-password-card'
 import { useAuth } from '@/features/auth/auth-context'
 import { PhoneField } from '@/features/auth/phone-field'
@@ -946,6 +947,14 @@ export function SellerProfilePage() {
                   </ul>
                 </section>
               ) : null}
+
+              <ChangeEmailCard
+                role="seller"
+                email={profile?.email ?? ''}
+                onChanged={(email) =>
+                  setProfile((prev) => (prev ? { ...prev, email } : prev))
+                }
+              />
 
               <ChangePasswordCard role="seller" />
 

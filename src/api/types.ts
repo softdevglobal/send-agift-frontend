@@ -139,6 +139,7 @@ export type Customer = {
   image_url?: string
   /** True for an account made for a gift recipient still on its temporary password. */
   password_change_required?: boolean
+  phone_verified_at?: string
 }
 
 export type CustomerDetails = Customer & { addresses: Address[] }

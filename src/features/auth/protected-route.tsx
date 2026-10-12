@@ -65,7 +65,9 @@ export function GuestRoute({ forRole, children }: GuestRouteProps) {
   const location = useLocation()
 
   if (isAuthenticated && role && alreadyHasGuestRole(role, forRole)) {
-    const from = (location.state as AuthLocationState | null)?.from
+    const from = (location.state as AuthLocationState | null)?.from ??
+      new URLSearchParams(location.search).get('next') ??
+      undefined
     return <Navigate to={postLoginPath(from, role)} replace />
   }
 

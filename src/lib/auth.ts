@@ -81,6 +81,15 @@ export function setSession(
   store.setItem(ROLE_KEY, role)
 }
 
+/**
+ * Swaps the stored token for a fresh one, keeping the role and wherever the
+ * session was saved (stay signed in, or this tab only).
+ */
+export function replaceToken(token: string): void {
+  const store = localStorage.getItem(TOKEN_KEY) !== null ? localStorage : sessionStorage
+  store.setItem(TOKEN_KEY, token)
+}
+
 export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(ROLE_KEY)

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Gift, Quote, Star } from 'lucide-react'
 
 import { listReceivedGifts } from '@/api/orders'
@@ -20,8 +20,28 @@ import { cn } from '@/lib/utils'
 export function CustomerReceivedGiftsPage() {
   const [gifts, setGifts] = useState<ReceivedGift[] | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const { byOrderItem, apply } = useMyReviews()
-  const pages = usePagedList(gifts ?? [], TABLE_PAGE_SIZE)
+  const { byOrderItem, apply, loading: reviewsLoading } = useMyReviews()
+  // The review link in a gift email or text names the order to review: show it
+  // first, with the form for its first unreviewed item already open.
+  const focusOrder = useSearchParams()[0].get('order')
+  const ordered = useMemo(
+    () =>
+      focusOrder
+        ? [...(gifts ?? [])].sort(
+            (a, b) => Number(b.order_id === focusOrder) - Number(a.order_id === focusOrder),
+          )
+        : (gifts ?? []),
+    [gifts, focusOrder],
+  )
+  const autoOpenItemId = useMemo(() => {
+    if (!focusOrder || reviewsLoading) return null
+    const gift = (gifts ?? []).find((g) => g.order_id === focusOrder)
+    const item = gift?.items.find(
+      (it) => it.fulfilment_status === 'delivered' && !it.review_id && !byOrderItem.has(it.id),
+    )
+    return item?.id ?? null
+  }, [gifts, focusOrder, reviewsLoading, byOrderItem])
+  const pages = usePagedList(ordered, TABLE_PAGE_SIZE)
 
   useEffect(() => {
     listReceivedGifts()
@@ -117,6 +137,7 @@ export function CustomerReceivedGiftsPage() {
                               delivered={item.fulfilment_status === 'delivered'}
                               review={mine}
                               productName={item.product_name}
+                              defaultOpen={item.id === autoOpenItemId}
                               onSaved={apply}
                             />
                           )}

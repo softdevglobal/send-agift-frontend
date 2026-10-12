@@ -15,7 +15,9 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ChangeEmailCard } from '@/features/account/change-email-card'
 import { ChangePasswordCard } from '@/features/account/change-password-card'
+import { VerifyPhoneCard } from '@/features/account/verify-phone-card'
 import { useAuth } from '@/features/auth/auth-context'
 import { PhoneField } from '@/features/auth/phone-field'
 import { CustomerPageHeader } from '@/features/customer-commerce'
@@ -321,6 +323,13 @@ export function CustomerProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="profile-phone">Phone</Label>
                 <PhoneField id="profile-phone" value={phone} onChange={setPhone} />
+                <VerifyPhoneCard
+                  phone={profile?.phone ?? ''}
+                  verified={Boolean(profile?.phone_verified_at)}
+                  onVerified={() => {
+                    void load().then(() => setNotice('Phone verified.'))
+                  }}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-dob">Date of birth</Label>
@@ -380,6 +389,14 @@ export function CustomerProfilePage() {
               onConfirm={handleCropConfirm}
             />
           ) : null}
+
+          <ChangeEmailCard
+            role="customer"
+            email={profile?.email ?? ''}
+            onChanged={(email) =>
+              setProfile((prev) => (prev ? { ...prev, email } : prev))
+            }
+          />
 
           <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
 

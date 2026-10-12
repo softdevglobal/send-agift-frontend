@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
-import { loginAdmin } from '@/api/auth'
+import { loginAdmin, type CodeLoginResult } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
 import { loginSeller } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/auth-context'
+import { CodeLoginPanel } from '@/features/auth/code-login-panel'
 import { loginCopy } from '@/features/auth/copy'
 import { SocialDivider, SocialSignInButtons } from '@/features/auth/social-sign-in'
 import type { AuthRole } from '@/features/auth/types'
@@ -101,6 +102,9 @@ export function LoginForm({ role }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [mode, setMode] = useState<'password' | 'code'>(() =>
+    searchParams.get('review') ? 'code' : 'password',
+  )
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hint, setHint] = useState<string | null>(null)
@@ -116,16 +120,19 @@ export function LoginForm({ role }: LoginFormProps) {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (mode === 'code') return
     setError(null)
     setHint(null)
 
     const trimmedEmail = email.trim()
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)
+    const isPhone = trimmedEmail.replace(/\D/g, '').length >= 7
     if (!trimmedEmail) {
-      setError('Enter your email.')
+      setError(role === 'customer' ? 'Enter your email or phone number.' : 'Enter your email.')
       return
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError('Enter a valid email.')
+    if (role === 'customer' ? !isEmail && !isPhone : !isEmail) {
+      setError(role === 'customer' ? 'Enter a valid email or phone number.' : 'Enter a valid email.')
       return
     }
     if (!password) {
@@ -186,16 +193,46 @@ export function LoginForm({ role }: LoginFormProps) {
         ) : null}
       </div>
 
+      {role === 'customer' ? (
+        <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 text-sm font-medium">
+          {(['password', 'code'] as const).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                setMode(item)
+                setError(null)
+              }}
+              className={`rounded-full py-2 transition-colors ${
+                mode === item ? 'bg-background shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              {item === 'password' ? 'Password' : 'One-time code'}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {mode === 'code' && role === 'customer' ? (
+        <CodeLoginPanel
+          reviewToken={searchParams.get('review') ?? undefined}
+          onResult={(result: CodeLoginResult) => {
+            if (result.status === 'signed_in') login(result.token, 'customer', remember)
+            else navigate('/register', { state: { codeSignup: result } })
+          }}
+        />
+      ) : (
+        <>
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor={`${role}-email`}>Email</Label>
+          <Label htmlFor={`${role}-email`}>{role === 'customer' ? 'Email or phone' : 'Email'}</Label>
           <div className="relative">
             <Mail className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id={`${role}-email`}
-              type="email"
-              autoComplete="email"
-              placeholder="you@example.com"
+              type={role === 'customer' ? 'text' : 'email'}
+              autoComplete={role === 'customer' ? 'username' : 'email'}
+              placeholder={role === 'customer' ? 'you@example.com or 77 123 4567' : 'you@example.com'}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               className="h-12 bg-surface pl-10"
@@ -301,7 +338,9 @@ export function LoginForm({ role }: LoginFormProps) {
             <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
           </>
         )}
-      </Button>
+        </Button>
+        </>
+      )}
 
       {role === 'customer' ? (
         <div className="space-y-5">

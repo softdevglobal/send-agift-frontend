@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PencilLine, Star } from 'lucide-react'
 
 import {
@@ -24,6 +24,8 @@ export type ReviewOrderItemButtonProps = {
   /** The existing review for this line, when there is one. */
   review?: ProductReview
   productName?: string
+  /** Opens the form as soon as it can, e.g. when arriving from a review link. */
+  defaultOpen?: boolean
   onSaved: (review: ProductReview) => void
 }
 
@@ -37,9 +39,14 @@ export function ReviewOrderItemButton({
   delivered,
   review,
   productName,
+  defaultOpen = false,
   onSaved,
 }: ReviewOrderItemButtonProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
+
+  useEffect(() => {
+    if (defaultOpen) setOpen(true)
+  }, [defaultOpen])
 
   if (!delivered) return null
 
