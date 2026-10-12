@@ -10,6 +10,7 @@ import {
   LoaderCircle,
   Plus,
   ShieldAlert,
+  ShieldCheck,
   Store,
   Trophy,
   Users,
@@ -23,6 +24,7 @@ import { listCountries, type Country } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
 import { listPointsPurchasesForAdmin, searchCustomers, type CustomerPointsSummary } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
+import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import {
   adminDisplayName,
@@ -44,10 +46,25 @@ function greeting() {
 }
 
 /** A section title in the poster style, with an optional link on the right. */
-function PanelTitle({ title, to, linkLabel }: { title: string; to?: string; linkLabel?: string }) {
+function PanelTitle({
+  title,
+  to,
+  linkLabel,
+  icon: Icon,
+}: {
+  title: string
+  to?: string
+  linkLabel?: string
+  icon?: LucideIcon
+}) {
   return (
     <div className="flex items-end justify-between gap-3">
-      <h2 className="font-poster text-xl text-brand-ink dark:text-foreground">
+      <h2 className="flex items-center gap-2.5 font-poster text-xl text-brand-ink dark:text-foreground">
+        {Icon ? (
+          <span className="flex size-8 items-center justify-center rounded-lg bg-brand-ink text-white">
+            <Icon className="size-4" />
+          </span>
+        ) : null}
         <span className="marker-underline">{title}</span>
       </h2>
       {to && linkLabel ? (
@@ -81,7 +98,7 @@ function StatCard({
   hint: string
   to: string
 }) {
-  const iconClass = {
+  const card = {
     violet: 'bg-brand-violet text-white',
     teal: 'bg-brand-teal text-brand-ink',
     ink: 'bg-brand-ink text-white',
@@ -90,20 +107,22 @@ function StatCard({
   return (
     <Link
       to={to}
-      className="group flex flex-col gap-4 rounded-xl border-2 border-brand-ink/10 bg-card p-5 transition-colors hover:border-brand-ink"
+      className={cn(
+        'group relative flex flex-col justify-between gap-6 overflow-hidden rounded-2xl p-5 transition-transform hover:-translate-y-1',
+        card,
+      )}
     >
+      <Icon className="absolute -right-3 -bottom-3 size-24 opacity-15" />
       <div className="flex items-center justify-between gap-2">
-        <span className={cn('flex size-10 items-center justify-center rounded-lg', iconClass)}>
+        <span className="flex size-10 items-center justify-center rounded-xl bg-white/20">
           <Icon className="size-5" />
         </span>
-        <ArrowUpRight className="size-4 text-brand-ink/30 transition-colors group-hover:text-brand-ink" />
+        <ArrowUpRight className="size-5 opacity-60 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </div>
-      <div>
-        <p className="font-poster text-4xl text-brand-ink dark:text-foreground">{value}</p>
-        <p className="mt-1 text-xs font-bold tracking-[0.12em] text-brand-ink uppercase dark:text-foreground">
-          {label}
-        </p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      <div className="relative">
+        <p className="font-poster text-5xl">{value}</p>
+        <p className="mt-1 text-xs font-bold tracking-[0.14em] uppercase">{label}</p>
+        <p className="mt-0.5 text-xs opacity-75">{hint}</p>
       </div>
     </Link>
   )
@@ -121,6 +140,8 @@ export function AdminDashboardPage() {
   const [countries, setCountries] = useState<Country[]>([])
   const [sellerTotal, setSellerTotal] = useState<number | null>(null)
   const [suspendedTotal, setSuspendedTotal] = useState<number | null>(null)
+  const [awaitingReview, setAwaitingReview] = useState<number | null>(null)
+  const [customerTotal, setCustomerTotal] = useState<number | null>(null)
   const [competitions, setCompetitions] = useState<AdminCompetition[] | null>(null)
   const [recentSellers, setRecentSellers] = useState<AdminSeller[] | null>(null)
   const [newestCustomers, setNewestCustomers] = useState<CustomerPointsSummary[] | null>(null)
@@ -155,16 +176,28 @@ export function AdminDashboardPage() {
         if (!cancelled) setSuspendedTotal(res.total)
       })
       .catch(() => {})
-    listAdminSellers('', '', 1, 5)
+    listAdminSellers('', '', 1, 100)
       .then((res) => {
-        if (!cancelled) setRecentSellers(res.items)
+        if (cancelled) return
+        const sorted = [...res.items].sort((a, b) => b.created_at.localeCompare(a.created_at))
+        setRecentSellers(sorted.slice(0, 5))
+        setAwaitingReview(
+          res.items.filter(
+            (s) =>
+              s.status === 'active' &&
+              s.verification_status !== 'verified' &&
+              s.verification_status !== 'rejected',
+          ).length,
+        )
       })
       .catch(() => {
         if (!cancelled) setRecentSellers([])
       })
     searchCustomers('')
       .then((items) => {
-        if (!cancelled)
+        if (cancelled) return
+        setCustomerTotal(items.length)
+        if (items)
           setNewestCustomers(
             [...items].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 5),
           )
@@ -208,7 +241,8 @@ export function AdminDashboardPage() {
     (country) => country.status?.toLowerCase() === 'active',
   )
   const name = adminDisplayName(admin)
-  const firstName = name.split(/\s+/)[0] || name
+  // The whole display name, never a half of it; an email becomes its local part.
+  const who = name.includes('@') ? name.split('@')[0] : name
   const running = (competitions ?? []).filter((item) =>
     ['live', 'scheduled', 'paused'].includes(item.effective_status),
   )
@@ -224,6 +258,7 @@ export function AdminDashboardPage() {
   const scoresToReview = (games ?? []).reduce((sum, g) => sum + g.under_review, 0)
   const competitionReviews = (competitions ?? []).reduce((sum, c) => sum + c.under_review, 0)
   const attention = [
+    { label: 'Sellers waiting to be verified', count: awaitingReview ?? 0, to: '/admin/sellers', icon: ShieldCheck, tone: 'bg-brand-violet text-white' },
     { label: 'Points purchases waiting for payment', count: pendingPurchases ?? 0, to: '/admin/points', icon: Coins, tone: 'bg-amber-300 text-amber-950' },
     { label: 'Game scores held for review', count: scoresToReview, to: '/admin/games', icon: ShieldAlert, tone: 'bg-brand-violet text-white' },
     { label: 'Competition entries to review', count: competitionReviews, to: '/admin/competitions', icon: Trophy, tone: 'bg-brand-teal text-brand-ink' },
@@ -237,28 +272,34 @@ export function AdminDashboardPage() {
     <div className="space-y-6 sm:space-y-8">
       <FormAlert error={error} />
 
-      <section className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
-            {greeting()} · {adminRoleLabel(role)}
-          </p>
-          <h1 className="mt-1 font-poster text-3xl text-brand-ink sm:text-4xl dark:text-foreground">
-            Hi, {firstName}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {suspendedTotal
-              ? `${suspendedTotal} ${suspendedTotal === 1 ? 'seller is' : 'sellers are'} suspended.`
-              : 'Here is the marketplace at a glance.'}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" className="h-10 px-4">
+      <section className="relative overflow-hidden rounded-2xl bg-brand-ink px-6 py-8 text-white sm:px-10 sm:py-10">
+        <Sparkle className="absolute top-6 right-10 size-7 text-brand-teal" />
+        <Sparkle className="absolute right-24 bottom-6 size-4 text-white/40" />
+        <Dot className="absolute top-10 right-28 size-2.5 bg-brand-violet" />
+        <p className="w-fit rounded-md bg-white px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
+          {adminRoleLabel(role)}
+        </p>
+        <h1 className="mt-3 font-poster text-4xl sm:text-5xl">{greeting()},</h1>
+        <p className="mt-1 font-poster text-3xl sm:text-4xl">
+          <Marker>{who}</Marker>
+        </p>
+        <p className="mt-2 max-w-md text-sm text-white/70">
+          {attention.length
+            ? `${attention.reduce((n, item) => n + item.count, 0)} things are waiting on you.`
+            : 'Nothing is waiting on you. Here is the marketplace at a glance.'}
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button asChild className="h-10 rounded-full bg-white px-5 text-brand-ink hover:bg-white/90">
             <Link to="/admin/sellers">
               <Store className="size-4" />
               Review sellers
             </Link>
           </Button>
-          <Button asChild className="h-10 px-4">
+          <Button
+            asChild
+            variant="outline"
+            className="h-10 rounded-full border-white/30 bg-transparent px-5 text-white hover:border-white hover:bg-white/10 hover:text-white"
+          >
             <Link to="/admin/countries">
               <Plus className="size-4" />
               Add a country
@@ -273,16 +314,16 @@ export function AdminDashboardPage() {
           icon={Store}
           label="Sellers"
           value={show(sellerTotal)}
-          hint="All seller accounts"
+          hint={awaitingReview ? `${awaitingReview} awaiting verification` : 'All seller accounts'}
           to="/admin/sellers"
         />
         <StatCard
           tone="ink"
-          icon={Ban}
-          label="Suspended"
-          value={show(suspendedTotal)}
-          hint="Paused from selling"
-          to="/admin/sellers"
+          icon={Users}
+          label="Customers"
+          value={show(customerTotal)}
+          hint="Registered gift senders"
+          to="/admin/customers"
         />
         <StatCard
           tone="teal"
@@ -303,10 +344,10 @@ export function AdminDashboardPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4">
-          <PanelTitle title="Needs attention" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-amber-300 bg-card p-5 shadow-sm">
+          <PanelTitle icon={ShieldAlert} title="Needs attention" />
           {attention.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {attention.map((item) => (
                 <li key={item.label} className="border-b border-brand-ink/10 last:border-0">
                   <Link
@@ -338,14 +379,14 @@ export function AdminDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-4">
-          <PanelTitle title="Recent sellers" to="/admin/sellers" linkLabel="All" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-brand-violet bg-card p-5 shadow-sm">
+          <PanelTitle icon={Store} title="Recent sellers" to="/admin/sellers" linkLabel="All" />
           {recentSellers === null ? (
             <div className="flex justify-center py-10">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : recentSellers.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {recentSellers.map((seller) => {
                 const name = seller.trading_name?.trim() || seller.legal_name
                 return (
@@ -388,10 +429,10 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4">
-          <PanelTitle title="Markets" to="/admin/countries" linkLabel="Manage" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-brand-teal bg-card p-5 shadow-sm">
+          <PanelTitle icon={Globe2} title="Markets" to="/admin/countries" linkLabel="Manage" />
           {countries.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {countries.slice(0, 6).map((country) => {
                 const active = country.status?.toLowerCase() === 'active'
                 return (
@@ -431,14 +472,14 @@ export function AdminDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-4">
-          <PanelTitle title="Competitions" to="/admin/competitions" linkLabel="All" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-brand-ink bg-card p-5 shadow-sm">
+          <PanelTitle icon={Trophy} title="Competitions" to="/admin/competitions" linkLabel="All" />
           {competitions === null ? (
             <div className="flex justify-center py-10">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : upcoming.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {upcoming.map((item) => (
                 <li key={item.id} className="border-b border-brand-ink/10 last:border-0">
                   <Link
@@ -479,14 +520,14 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4">
-          <PanelTitle title="Popular games" to="/admin/games" linkLabel="All games" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-amber-300 bg-card p-5 shadow-sm">
+          <PanelTitle icon={Gamepad2} title="Popular games" to="/admin/games" linkLabel="All games" />
           {games === null ? (
             <div className="flex justify-center py-10">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : topGames.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {topGames.map((game) => (
                 <li key={game.slug} className="border-b border-brand-ink/10 last:border-0">
                   <Link
@@ -522,14 +563,14 @@ export function AdminDashboardPage() {
           )}
         </section>
 
-        <section className="space-y-4">
-          <PanelTitle title="Newest customers" to="/admin/customers" linkLabel="All" />
+        <section className="space-y-4 rounded-2xl border-2 border-t-[6px] border-brand-ink/10 border-t-brand-violet bg-card p-5 shadow-sm">
+          <PanelTitle icon={Users} title="Newest customers" to="/admin/customers" linkLabel="All" />
           {newestCustomers === null ? (
             <div className="flex justify-center py-10">
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : newestCustomers.length ? (
-            <ul className="overflow-hidden rounded-xl border-2 border-brand-ink/10 bg-card">
+            <ul className="overflow-hidden rounded-xl bg-accent/50">
               {newestCustomers.map((customer) => (
                 <li key={customer.customer_id} className="border-b border-brand-ink/10 last:border-0">
                   <Link
