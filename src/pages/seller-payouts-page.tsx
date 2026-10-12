@@ -19,6 +19,7 @@ import {
 import { FormAlert } from '@/components/common/form-alert'
 import { SellerPageHeader, SellerStat, sellerPanelClass } from '@/features/seller'
 import { PayoutAccountCard } from '@/features/seller/payout-account-card'
+import { WithdrawCard } from '@/features/seller/withdraw-card'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -105,6 +106,10 @@ export function SellerPayoutsPage() {
         <>
           <PayoutAccountCard status={data.account} refreshing={refreshing} onRefresh={() => void refresh()} />
 
+          {data.account.connected && data.account.payouts_enabled ? (
+            <WithdrawCard account={data.account} totals={data.totals} onChanged={load} />
+          ) : null}
+
           {totals.map((t) => {
             const c = t.currency
             const tag = multiCurrency ? ` (${c.toUpperCase()})` : ''
@@ -121,7 +126,11 @@ export function SellerPayoutsPage() {
                   icon={Clock}
                   label={`Next payout${tag}`}
                   value={money(t.awaiting, c)}
-                  hint="Delivered, paid out soon"
+                  hint={
+                    data.account.payout_mode === 'manual'
+                      ? 'Delivered, ready to withdraw'
+                      : 'Delivered, paid out soon'
+                  }
                   tone="violet"
                 />
                 <SellerStat

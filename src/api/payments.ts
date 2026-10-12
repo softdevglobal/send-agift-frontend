@@ -19,6 +19,17 @@ export type SellerPayouts = {
   payouts_enabled: boolean
   details_submitted: boolean
   account_id?: string
+  /** Automatic sends each delivered gift on; manual waits for a withdrawal. */
+  payout_mode?: PayoutMode
+}
+
+export type PayoutMode = 'automatic' | 'manual'
+
+/** What one withdrawal sent. Amounts are minor units. */
+export type Withdrawal = {
+  sent: number
+  failed: number
+  amount: number
 }
 
 /** One settlement paid out to the seller for a delivered gift. */
@@ -85,4 +96,17 @@ export function getPayoutHistory() {
 /** A link to Stripe's hosted page for the seller's bank and identity details. */
 export function startSellerPayoutOnboarding() {
   return api<{ url: string }>('/sellers/me/stripe/onboarding', { method: 'POST' })
+}
+
+/** Chooses between automatic payouts and withdrawing the balance by hand. */
+export function setPayoutMode(mode: PayoutMode) {
+  return api<SellerPayouts>('/sellers/me/payouts/mode', {
+    method: 'PUT',
+    body: { mode },
+  })
+}
+
+/** Pays out everything delivered and not yet paid, now. */
+export function withdrawPayouts() {
+  return api<Withdrawal>('/sellers/me/payouts/withdraw', { method: 'POST' })
 }
