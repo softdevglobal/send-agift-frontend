@@ -156,7 +156,7 @@ export function AdminCustomersPage() {
       />
 
       <Sheet open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
+        <SheetContent className="w-[calc(100%-2.5rem)] overflow-y-auto sm:max-w-lg">
           {selected ? (
             <WalletSheet
               key={selected.customer_id}

@@ -715,7 +715,7 @@ export function AdminCountriesPage() {
       </Dialog>
 
       <Sheet open={viewOpen} onOpenChange={setViewOpen}>
-        <SheetContent className="gap-0 p-0">
+        <SheetContent className="w-[calc(100%-2.5rem)] gap-0 p-0">
           {viewCountry ? (
             <>
               <div className="relative overflow-hidden bg-primary px-6 pt-10 pb-7 text-primary-foreground">

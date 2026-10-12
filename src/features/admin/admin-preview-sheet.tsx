@@ -45,13 +45,15 @@ export function AdminPreviewSheet({
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
       <SheetContent className="account-box w-[calc(100%-2.5rem)] gap-0 border-l-2 border-brand-ink p-0 shadow-none sm:max-w-lg [&>[data-slot=sheet-close]]:text-white [&>[data-slot=sheet-close]]:opacity-90">
-        <SheetHeader className="shrink-0 bg-brand-ink px-6 py-6 pr-14 text-white">
+        <SheetHeader className="min-w-0 shrink-0 bg-brand-ink px-6 py-6 pr-14 text-white">
           <p className="w-fit rounded-md bg-brand-teal px-2 py-0.5 text-[10px] font-bold tracking-[0.18em] text-brand-ink uppercase">
             {eyebrow}
           </p>
-          <SheetTitle className="font-poster text-3xl text-white">{title}</SheetTitle>
+          <SheetTitle className="truncate font-poster text-3xl text-white" title={typeof title === 'string' ? title : undefined}>
+            {title}
+          </SheetTitle>
           {description ? (
-            <SheetDescription className="text-white/65">{description}</SheetDescription>
+            <SheetDescription className="truncate text-white/65">{description}</SheetDescription>
           ) : null}
           {badges ? <div className="mt-2 flex flex-wrap items-center gap-2">{badges}</div> : null}
         </SheetHeader>

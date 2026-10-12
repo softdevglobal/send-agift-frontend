@@ -138,7 +138,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   return (
     <>
       <Sheet open={id !== null} onOpenChange={(open) => !open && onClose()}>
-        <SheetContent showCloseButton={false} className="w-full gap-0 overflow-hidden p-0 sm:max-w-xl">
+        <SheetContent showCloseButton={false} className="w-[calc(100%-2.5rem)] gap-0 overflow-hidden p-0 sm:max-w-xl">
           {loading || !comp ? (
             <>
               <SheetTitle className="sr-only">Competition</SheetTitle>
@@ -148,11 +148,6 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
           ) : (
             <>
               <header className="relative shrink-0 bg-brand-ink px-6 pt-6 pb-5 text-white">
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 top-0 h-1.5"
-                  style={{ background: gameColor(comp.game_slug) }}
-                />
                 <SheetClose
                   className="absolute top-4 right-4 grid size-8 place-items-center rounded-md bg-white/10 text-white transition hover:bg-white/20 focus-visible:ring-3 focus-visible:ring-white/50 focus-visible:outline-none"
                   aria-label="Close"
