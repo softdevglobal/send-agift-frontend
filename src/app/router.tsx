@@ -54,6 +54,7 @@ import { SellerEmailUndoPage } from '@/pages/seller-email-undo-page'
 import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
 import { SellerPointsPage } from '@/pages/seller-points-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
@@ -300,6 +301,7 @@ export function AppRouter() {
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
         <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
+        <Route path="payouts" element={<SellerPayoutsPage />} />
         <Route path="points" element={<SellerPointsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />

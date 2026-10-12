@@ -37,6 +37,7 @@ import {
 } from '@/api/orders'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { LocationPinPicker } from '@/components/common/location-pin-picker'
+import { startOrderPayment } from '@/api/payments'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -725,9 +726,17 @@ export function CheckoutPage() {
       })
       setPlaced(true)
       clearCart()
-      navigate(`/orders/${encodeURIComponent(order.id)}?placed=1`, {
-        replace: true,
-      })
+      // The gift is only sent once it is paid, on Stripe's own page. If card
+      // payments are not available the order simply waits on its page.
+      try {
+        const payment = await startOrderPayment(order.id)
+        window.location.assign(payment.url)
+        return
+      } catch {
+        navigate(`/orders/${encodeURIComponent(order.id)}?placed=1`, {
+          replace: true,
+        })
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Could not place your order.'))
       setSubmitting(false)
@@ -1528,8 +1537,8 @@ export function CheckoutPage() {
 
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             Line prices are confirmed by the seller when the order is created, so the
-            final total may differ. Payment is not captured yet. New orders stay
-            awaiting payment.
+            final total may differ. You pay securely on Stripe next, and your gift
+            is only sent once the payment succeeds.
           </p>
           <Button
             type="submit"
@@ -1543,7 +1552,7 @@ export function CheckoutPage() {
             {submitting ? (
               <>
                 <LoaderCircle className="animate-spin" />
-                Placing order…
+                Taking you to payment…
               </>
             ) : (
               'Send A Gift'

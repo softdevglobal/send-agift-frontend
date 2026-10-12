@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,6 +7,7 @@ import {
   Gift,
   LoaderCircle,
   MessageSquare,
+  Quote,
   Receipt,
   Sparkles,
 } from "lucide-react";
@@ -16,6 +17,8 @@ import { BackLink } from '@/components/common/back-link'
 import { getRecipient, type RecipientDetails } from "@/api/customers";
 import { cancelOrder, getOrder, type OrderDetails } from "@/api/orders";
 import { FormAlert } from "@/components/common/form-alert";
+import { syncOrderPayment } from "@/api/payments";
+import { PayNowCard } from "@/features/payments/pay-now-card";
 import { Button } from "@/components/ui/button";
 import {
   CustomerPageHeader,
@@ -48,6 +51,9 @@ export function CustomerOrderDetailPage() {
   const { orderId } = useParams();
   const [searchParams] = useSearchParams();
   const justPlaced = searchParams.get("placed") === "1";
+  // Stripe sends the customer back here, paid or not.
+  const returnedPaid = searchParams.get("paid") === "1";
+  const paymentCancelled = searchParams.get("payment") === "cancelled";
   const { messageAboutOrderItem } = useCustomerMessages();
   // One request for the whole page, rather than one per line.
   const myReviews = useMyReviews();
@@ -57,6 +63,9 @@ export function CustomerOrderDetailPage() {
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setCatalogTick] = useState(0);
+  // After paying on Stripe, the order turns "paid" when Stripe's webhook
+  // reaches the server. Watch for that for a short while.
+  const [awaitingPayment, setAwaitingPayment] = useState(returnedPaid);
 
   const load = useCallback(async () => {
     if (!orderId) return;
@@ -96,6 +105,41 @@ export function CustomerOrderDetailPage() {
       cancelled = true;
     };
   }, []);
+
+  // An order still waiting for payment may already be paid: Stripe's webhook
+  // can be late, or missed. Ask the server to check with Stripe, once, as soon
+  // as the order is known to be unpaid.
+  const unpaidChecked = useRef(false);
+  const waitingForPayment = order?.status === "pending_payment";
+  useEffect(() => {
+    if (!orderId || !waitingForPayment || unpaidChecked.current) return;
+    unpaidChecked.current = true;
+    void syncOrderPayment(orderId)
+      .then((r) => (r.paid ? load() : undefined))
+      .catch(() => undefined);
+  }, [orderId, waitingForPayment, load]);
+
+  useEffect(() => {
+    if (!awaitingPayment || !orderId) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      void syncOrderPayment(orderId)
+        .catch(() => undefined)
+        .then(() => load())
+        .catch(() => undefined)
+        .finally(() => {
+          if (tries >= 15) setAwaitingPayment(false);
+        });
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [awaitingPayment, orderId, load]);
+
+  useEffect(() => {
+    if (awaitingPayment && order && order.status !== "pending_payment") {
+      setAwaitingPayment(false);
+    }
+  }, [awaitingPayment, order]);
 
   async function handleCancel() {
     if (!orderId) return;
@@ -149,9 +193,11 @@ export function CustomerOrderDetailPage() {
     : "Track orders";
   const placedNotice =
     justPlaced && order.status === "pending_payment"
-      ? "Your gift order is placed. Payment has not been captured yet. Track progress below while it awaits payment."
+      ? awaitingPayment
+        ? null
+        : "Your gift order is created. Complete the payment below and it is on its way."
       : justPlaced
-        ? "Your gift order is placed. Track its progress below."
+        ? "Payment received. Your gift order is placed. Track its progress below."
         : null;
 
   const rewardPoints = order.items.reduce(
@@ -176,9 +222,12 @@ export function CustomerOrderDetailPage() {
               Placed {formatOrderDate(order.created_at)}
             </p>
           </div>
-          <div className="rounded-full bg-white/95 px-1 py-1">
-            <OrderStatusBadge status={order.status} />
-          </div>
+          {/* On the dark header the chip stands on its own; the thin ring keeps
+              the ink-coloured states (dispatched) from disappearing into it. */}
+          <OrderStatusBadge
+            status={order.status}
+            className="px-3 py-1.5 ring-1 ring-white/25"
+          />
         </div>
         <div className="relative mt-6 grid gap-3 sm:grid-cols-3">
           <HeroFact
@@ -205,6 +254,24 @@ export function CustomerOrderDetailPage() {
       </section>
 
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
+
+      {order.status === "pending_payment" ? (
+        awaitingPayment ? (
+          <section className="mb-6 flex items-center gap-3 rounded-2xl border border-brand-ink/20 bg-card p-5">
+            <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+            <p className="text-sm">Payment received. Confirming your order…</p>
+          </section>
+        ) : (
+          <PayNowCard
+            orderId={order.id}
+            subtotal={order.subtotal_amount}
+            delivery={order.delivery_amount}
+            total={order.total_amount}
+            currency={order.currency}
+            cancelled={paymentCancelled}
+          />
+        )
+      ) : null}
 
       {rewardPoints > 0 || (order.gift_points && order.gift_points_status !== "none") ? (
         <section className="relative mb-6 overflow-hidden rounded-2xl bg-amber-100 p-5 sm:p-6">
@@ -302,23 +369,28 @@ export function CustomerOrderDetailPage() {
                           {rewardLine(item.reward_status, item.reward_points)}
                         </p>
                       ) : null}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          messageAboutOrderItem(item.id, item.product_id)
-                        }
-                        className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-                      >
-                        <MessageSquare className="size-3.5" />
-                        Message the shop
-                      </button>
-                      <ReviewOrderItemButton
-                        orderItemId={item.id}
-                        delivered={item.fulfilment_status === "delivered"}
-                        review={myReviews.byOrderItem.get(item.id)}
-                        productName={product?.name}
-                        onSaved={myReviews.apply}
-                      />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            messageAboutOrderItem(item.id, item.product_id)
+                          }
+                          className="h-9 gap-2 rounded-full px-4"
+                        >
+                          <MessageSquare className="size-3.5" />
+                          Message the shop
+                        </Button>
+                        <ReviewOrderItemButton
+                          asButton
+                          orderItemId={item.id}
+                          delivered={item.fulfilment_status === "delivered"}
+                          review={myReviews.byOrderItem.get(item.id)}
+                          productName={product?.name}
+                          onSaved={myReviews.apply}
+                        />
+                      </div>
                     </div>
                     <p className="text-sm font-medium">
                       {formatPriceAmount(item.total_amount, order.currency)}
@@ -457,9 +529,15 @@ export function CustomerOrderDetailPage() {
               </p>
             )}
             {order.gift_message ? (
-              <p className="mt-3 rounded-lg bg-muted/60 px-3 py-2 text-sm">
-                {order.gift_message}
-              </p>
+              <figure className="mt-4 overflow-hidden rounded-xl border border-brand-ink/20 border-l-4 border-l-brand-violet bg-accent/40">
+                <figcaption className="flex items-center gap-1.5 border-b border-brand-ink/10 px-3.5 py-2 text-[10px] font-bold tracking-[0.1em] text-muted-foreground uppercase">
+                  <Quote className="size-3.5 text-brand-violet" />
+                  Gift message
+                </figcaption>
+                <blockquote className="px-3.5 py-3 font-display text-lg leading-snug break-words whitespace-pre-wrap">
+                  {order.gift_message}
+                </blockquote>
+              </figure>
             ) : null}
             {order.gift_points && order.gift_points_status !== "none" ? (
               <p className="mt-3 flex items-start gap-2 rounded-lg bg-[oklch(0.96_0.05_85)] px-3 py-2 text-sm text-[oklch(0.4_0.1_70)]">

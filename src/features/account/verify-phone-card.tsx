@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BadgeCheck, LoaderCircle } from 'lucide-react'
 
 import { requestPhoneCode, verifyPhoneCode } from '@/api/auth'
-import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { getErrorMessage } from '@/lib/api'
+import { describeCodeProblem, type CodeProblem } from '@/features/auth/code-problem'
+import { CodeProblemAlert } from '@/features/auth/code-problem-alert'
 
 type VerifyPhoneCardProps = {
   phone: string
@@ -17,7 +17,14 @@ export function VerifyPhoneCard({ phone, verified, onVerified }: VerifyPhoneCard
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [problem, setProblem] = useState<CodeProblem | null>(null)
+  const [wait, setWait] = useState(0)
+
+  useEffect(() => {
+    if (wait <= 0) return
+    const id = window.setTimeout(() => setWait((s) => s - 1), 1000)
+    return () => window.clearTimeout(id)
+  }, [wait])
 
   if (verified) {
     return (
@@ -29,26 +36,32 @@ export function VerifyPhoneCard({ phone, verified, onVerified }: VerifyPhoneCard
   if (!phone.trim()) return null
 
   async function send() {
-    setError(null)
+    setProblem(null)
     setBusy(true)
     try {
       await requestPhoneCode(phone)
       setSent(true)
+      setWait(60)
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not send a code.'))
+      const p = describeCodeProblem(err, 'Could not send a code.')
+      setProblem(p)
+      if (p.kind === 'wait') {
+        setSent(true)
+        setWait(p.seconds ?? 60)
+      }
     } finally {
       setBusy(false)
     }
   }
 
   async function confirm() {
-    setError(null)
+    setProblem(null)
     setBusy(true)
     try {
       await verifyPhoneCode(phone, code)
       onVerified()
     } catch (err) {
-      setError(getErrorMessage(err, 'That code did not work.'))
+      setProblem(describeCodeProblem(err, 'That code did not work.'))
     } finally {
       setBusy(false)
     }
@@ -78,7 +91,7 @@ export function VerifyPhoneCard({ phone, verified, onVerified }: VerifyPhoneCard
           {busy ? <LoaderCircle className="animate-spin" /> : 'Send code'}
         </Button>
       )}
-      <FormAlert error={error} notice={null} />
+      {problem ? <CodeProblemAlert problem={problem} secondsLeft={wait} /> : null}
     </div>
   )
 }

@@ -98,7 +98,11 @@ type StarPickerProps = {
   value: number
   onChange: (value: number) => void
   /** Small is for the three breakdown rows; large is the headline rating. */
-  size?: 'md' | 'lg'
+  size?: 'md' | 'lg' | 'xl'
+  /** "dark" for stars sitting on the ink banner: unlit ones need to show. */
+  tone?: 'light' | 'dark'
+  /** Told which score the pointer is previewing (0 when it leaves). */
+  onPreview?: (value: number) => void
   /** Shows the live word for the current score. */
   showWord?: boolean
   label: string
@@ -118,6 +122,8 @@ export function StarPicker({
   value,
   onChange,
   size = 'lg',
+  tone = 'light',
+  onPreview,
   showWord = false,
   label,
   id,
@@ -131,8 +137,9 @@ export function StarPicker({
   // give; they fall back to the committed value the moment it leaves.
   const shown = hovered || value
 
-  const starClass = size === 'lg' ? 'size-9' : 'size-6'
-  const gapClass = size === 'lg' ? 'gap-1.5' : 'gap-1'
+  const starClass = size === 'xl' ? 'size-11' : size === 'lg' ? 'size-9' : 'size-6'
+  const gapClass = size === 'xl' ? 'gap-2' : size === 'lg' ? 'gap-1.5' : 'gap-1'
+  const unlit = tone === 'dark' ? 'text-white/25' : 'text-muted-foreground/35'
 
   function pick(next: number) {
     if (disabled) return
@@ -147,7 +154,10 @@ export function StarPicker({
         aria-label={label}
         id={id}
         tabIndex={disabled ? -1 : 0}
-        onMouseLeave={() => setHovered(0)}
+        onMouseLeave={() => {
+          setHovered(0)
+          onPreview?.(0)
+        }}
         onKeyDown={(event) => {
           if (disabled) return
           if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
@@ -178,8 +188,14 @@ export function StarPicker({
               aria-label={`${rating} ${rating === 1 ? 'star' : 'stars'}. ${ratingWord(rating)}`}
               disabled={disabled}
               tabIndex={-1}
-              onMouseEnter={() => setHovered(rating)}
-              onFocus={() => setHovered(rating)}
+              onMouseEnter={() => {
+                setHovered(rating)
+                onPreview?.(rating)
+              }}
+              onFocus={() => {
+                setHovered(rating)
+                onPreview?.(rating)
+              }}
               onClick={() => pick(rating)}
               className={cn(
                 'relative rounded-lg p-0.5 transition-transform duration-150',
@@ -201,7 +217,7 @@ export function StarPicker({
                   'transition-colors duration-150',
                   lit
                     ? 'fill-amber-400 text-amber-400 drop-shadow-[0_1px_6px_rgb(251_191_36/0.45)]'
-                    : 'text-muted-foreground/35',
+                    : unlit,
                   // Only the star that was clicked springs. Popping the whole
                   // row on every click turns a small confirmation into noise.
                   justPicked === rating && 'animate-star-pop',

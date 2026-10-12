@@ -14,7 +14,7 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 
 const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   draft: 'This order is still being prepared on our side.',
-  pending_payment: 'Payment has not been captured yet.',
+  pending_payment: 'Waiting for your payment.',
   paid: 'Payment is confirmed. Waiting for the seller to accept.',
   accepted: 'The seller has accepted this gift order.',
   preparing: 'The seller is preparing your gift.',
