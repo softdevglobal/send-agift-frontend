@@ -216,8 +216,21 @@ export type SellerPointsWallet = {
   available: number
   lifetime_purchased: number
   lifetime_spent: number
+  /**
+   * Points the platform fronted for rewards the seller could not cover (paid
+   * out, or promised on open orders). Taken from their next purchase first.
+   */
+  owed: number
+  /** How far below zero `available` may go before rewards stop. */
+  credit_limit: number
+  /** What can still be promised, credit included: available + credit_limit. */
+  credit_left: number
+  /** The biggest reward on the seller's live products. */
+  largest_reward: number
+  /** Owes points, or covers only a few more orders: time to top up. */
+  low_balance: boolean
   rate: PointsRate
-  /** "manual" (an admin confirms payment) or "test". */
+  /** "stripe" (pay on Stripe), "manual" (an admin confirms payment), "instant" or "test". */
   payment_provider: string
   /** When true the seller can approve their own purchase (development only). */
   test_payments: boolean
@@ -232,7 +245,13 @@ export type PointsPurchase = {
   amount_cents: number
   currency: string
   cents_per_point: number
+  /** Includes `bonus_points`. */
   points: number
+  bonus_points: number
+  package_id?: string
+  package_name?: string
+  /** How much of what was credited paid off owed points. */
+  points_settled: number
   paid_amount_cents?: number
   points_credited?: number
   status: PointsPurchaseStatus
@@ -262,7 +281,9 @@ export async function listSellerPointsPurchases() {
  * Starts a purchase. The server works out the points from the amount at its
  * own rate; the key makes a double-clicked Buy one purchase.
  */
-export function createPointsPurchase(body: { amount_cents: number; idempotency_key: string }) {
+export function createPointsPurchase(
+  body: { amount_cents?: number; package_id?: string; idempotency_key: string },
+) {
   return api<PointsPurchase>('/sellers/me/points/purchases', { method: 'POST', body })
 }
 
@@ -276,6 +297,71 @@ export function completeTestPayment(id: string, outcome: 'success' | 'failure') 
     method: 'POST',
     body: { outcome },
   })
+}
+
+/**
+ * Re-checks a purchase's payment with Stripe, for when the seller comes back
+ * from paying before Stripe has told the server.
+ */
+export function syncPointsPurchase(id: string) {
+  return api<PointsPurchase>(`/sellers/me/points/purchases/${id}/sync`, { method: 'POST' })
+}
+
+// ─── Point packages ───────────────────────────────────────────────────────
+
+/** A ready-made bundle of points, set up by a Super Admin. */
+export type PointPackage = {
+  id: string
+  name: string
+  description?: string
+  points: number
+  /** Added on top of `points`. */
+  bonus_points: number
+  price_cents: number
+  currency: string
+  /** A short label on the card, e.g. "Most popular". */
+  badge?: string
+  is_active: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+export type PointPackageInput = {
+  name: string
+  description?: string | null
+  points: number
+  bonus_points: number
+  price_cents: number
+  badge?: string | null
+  is_active: boolean
+  sort_order: number
+}
+
+/** The packages a seller can buy. */
+export async function listSellerPointPackages() {
+  const res = await api<{ items: PointPackage[] | null; rate: PointsRate }>(
+    '/sellers/me/points/packages',
+  )
+  return { items: res.items ?? [], rate: res.rate }
+}
+
+/** Every package, on sale or not. */
+export async function listAdminPointPackages() {
+  const res = await api<{ items: PointPackage[] | null; rate: PointsRate }>(
+    '/admin/points/packages',
+  )
+  return { items: res.items ?? [], rate: res.rate }
+}
+
+/** Super Admin only (with a fresh password confirmation). */
+export function createPointPackage(body: PointPackageInput) {
+  return api<PointPackage>('/admin/points/packages', { method: 'POST', body })
+}
+
+/** Super Admin only (with a fresh password confirmation). */
+export function updatePointPackage(id: string, body: PointPackageInput) {
+  return api<PointPackage>(`/admin/points/packages/${id}`, { method: 'PUT', body })
 }
 
 export async function listPointsPurchasesForAdmin(status: PointsPurchaseStatus | '' = '') {
