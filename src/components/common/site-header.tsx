@@ -7,7 +7,6 @@ import {
   MessageSquare,
   Search,
   ShoppingBag,
-  Store,
   X,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
