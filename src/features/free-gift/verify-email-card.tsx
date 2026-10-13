@@ -4,8 +4,8 @@ import { LoaderCircle } from 'lucide-react'
 import { requestLoginCode, verifyLoginCode } from '@/api/auth'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { getErrorMessage } from '@/lib/api'
+import { OtpInput } from '@/components/common/otp-input'
 
 type VerifyEmailCardProps = {
   email: string
@@ -60,15 +60,7 @@ export function VerifyEmailCard({ email, onVerified }: VerifyEmailCardProps) {
       </p>
       {sent ? (
         <div className="flex gap-2">
-          <Input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="6-digit code"
-            aria-label="Email code"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-          />
+          <OtpInput aria-label="Email code" value={code} onChange={setCode} />
           <Button type="button" onClick={() => void confirm()} disabled={busy || code.length !== 6}>
             {busy ? <LoaderCircle className="animate-spin" /> : 'Verify'}
           </Button>

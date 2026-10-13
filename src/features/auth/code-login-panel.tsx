@@ -15,6 +15,7 @@ import { PhoneField } from '@/features/auth/phone-field'
 import { describeCodeProblem, type CodeProblem } from '@/features/auth/code-problem'
 import { CodeProblemAlert } from '@/features/auth/code-problem-alert'
 import { api, getErrorMessage } from '@/lib/api'
+import { OtpInput } from '@/components/common/otp-input'
 
 const RESEND_SECONDS = 60
 
@@ -148,11 +149,15 @@ export function CodeLoginPanel({ onResult, reviewToken }: CodeLoginPanelProps) {
     }
   }
 
+  function submitOnEnter() {
+    if (busy) return
+    void (sent ? verify() : sendCode())
+  }
+
   function onEnter(event: KeyboardEvent) {
     if (event.key !== 'Enter') return
     event.preventDefault()
-    if (busy) return
-    void (sent ? verify() : sendCode())
+    submitOnEnter()
   }
 
   if (reviewToken) {
@@ -174,17 +179,7 @@ export function CodeLoginPanel({ onResult, reviewToken }: CodeLoginPanelProps) {
         {sent ? (
           <div className="space-y-2">
             <Label htmlFor="login-code">6-digit code</Label>
-            <Input
-              id="login-code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="123456"
-              value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-              onKeyDown={onEnter}
-              className="h-12 bg-surface text-center text-lg tracking-[0.5em]"
-            />
+            <OtpInput id="login-code" value={code} onChange={setCode} onEnter={submitOnEnter} />
             <div className="flex justify-end text-xs">
               <button
                 type="button"
@@ -261,17 +256,7 @@ export function CodeLoginPanel({ onResult, reviewToken }: CodeLoginPanelProps) {
       {sent ? (
         <div className="space-y-2">
           <Label htmlFor="login-code">6-digit code</Label>
-          <Input
-            id="login-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="123456"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-            onKeyDown={onEnter}
-            className="h-12 bg-surface text-center text-lg tracking-[0.5em]"
-          />
+          <OtpInput id="login-code" value={code} onChange={setCode} onEnter={submitOnEnter} />
           <div className="flex justify-between text-xs">
             <button
               type="button"

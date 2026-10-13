@@ -4,7 +4,6 @@ import {
   useRef,
   useState,
   type ChangeEvent,
-  type FormEvent,
 } from 'react'
 import {
   Camera,
@@ -24,8 +23,6 @@ import {
   Trash2,
   Truck,
   Undo2,
-  X,
-  type LucideIcon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -46,7 +43,6 @@ import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { TimezoneSelect } from '@/components/common/timezone-select'
 import { ImageCropDialog } from '@/components/common/image-crop-dialog'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
-import { SaveButton, type SaveStatus } from '@/components/common/save-button'
 import { Toast } from '@/components/common/toast'
 import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
@@ -62,6 +58,11 @@ import {
   sellerPanelClass,
 } from '@/features/seller'
 import { DeliveryRangeMap } from '@/features/seller/delivery-range-map'
+import {
+  WizardDialog,
+  WizardPreviewFrame,
+  type WizardStep,
+} from '@/features/seller/wizard-dialog'
 import type { ShopDeliveryZone } from '@/api/types'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
@@ -293,30 +294,6 @@ function toShopInput(shop: Shop): ShopInput {
   }
 }
 
-function FormSectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: LucideIcon
-  title: string
-  description?: string
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent text-primary ring-1 ring-primary/10">
-        <Icon className="size-4" />
-      </span>
-      <div>
-        <h3 className="font-medium">{title}</h3>
-        {description ? (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        ) : null}
-      </div>
-    </div>
-  )
-}
-
 /** Mirrors the real shop card exactly, so sellers see what customers will see as they type. */
 function ShopPreviewCard({ form }: { form: ShopInput }) {
   const isActive = (form.status ?? 'active') === 'active'
@@ -398,9 +375,11 @@ export function SellerShopsPage() {
   const shopPages = usePagedList(shops, 6)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SaveStatus>('idle')
+  const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Save and upload failures, shown inside the wizard rather than behind it. */
+  const [wizardError, setWizardError] = useState<string | null>(null)
   const [toast, setToast] = useState<{
     message: string
     variant: 'success' | 'error'
@@ -422,8 +401,6 @@ export function SellerShopsPage() {
     null,
   )
   const imageInputRef = useRef<HTMLInputElement>(null)
-  const formRef = useRef<HTMLDivElement>(null)
-  const savedTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([
@@ -451,24 +428,6 @@ export function SellerShopsPage() {
       cancelled = true
     }
   }, [load])
-
-  useEffect(() => {
-    const timers = savedTimers
-    return () => {
-      timers.current.forEach(clearTimeout)
-    }
-  }, [])
-
-  /** Holds the tick on screen briefly, then runs any follow-up (e.g. closing the form). */
-  function flashSaved(onDone?: () => void) {
-    setStatus('saved')
-    const timer = setTimeout(() => {
-      savedTimers.current = savedTimers.current.filter((t) => t !== timer)
-      setStatus('idle')
-      onDone?.()
-    }, 1100)
-    savedTimers.current.push(timer)
-  }
 
   function updateField<K extends keyof ShopInput>(key: K, value: ShopInput[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -519,11 +478,7 @@ export function SellerShopsPage() {
     setTimezoneTouched(false)
     setEditingId(null)
     setShowForm(true)
-    setError(null)
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      document.getElementById('shop-name')?.focus()
-    })
+    setWizardError(null)
   }
 
   function startEdit(shop: Shop) {
@@ -536,10 +491,7 @@ export function SellerShopsPage() {
     setSlugTouched(true)
     setTimezoneTouched(false)
     setShowForm(true)
-    setError(null)
-    requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    setWizardError(null)
   }
 
   function handleImageChange(event: ChangeEvent<HTMLInputElement>) {
@@ -557,7 +509,7 @@ export function SellerShopsPage() {
   async function handleCropConfirm(croppedFile: File) {
     if (pendingImage) URL.revokeObjectURL(pendingImage.src)
     setPendingImage(null)
-    setError(null)
+    setWizardError(null)
     setUploadingImage(true)
     try {
       const url = await uploadPublicImage(croppedFile, 'shop-image')
@@ -565,39 +517,23 @@ export function SellerShopsPage() {
       setToast({ message: 'Cover uploaded.', variant: 'success' })
     } catch (err) {
       const message = getErrorMessage(err, 'Could not upload image.')
-      setError(message)
+      setWizardError(message)
       setToast({ message, variant: 'error' })
     } finally {
       setUploadingImage(false)
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError(null)
-    if (!form.name.trim()) {
-      setError('Shop name is required.')
-      return
-    }
-    if (!form.country_id.trim() || !zoneCurrency.trim()) {
-      setError('Choose the shop country. Its currency is used for products and delivery.')
-      return
-    }
+  /** The wizard's last step. Each step already blocked on its own gaps, so this only re-checks and saves. */
+  async function completeWizard() {
+    setWizardError(null)
     const timezone = (form.timezone ?? '').trim() || shopCountry?.default_timezone || ''
-    if (!timezone) {
-      setError('Choose the shop timezone. Same-day cutoffs use this clock.')
-      return
-    }
     const zones = draftsToZones(zoneDrafts, zoneCurrency)
     if (typeof zones === 'string') {
-      setError(zones)
+      setWizardError(zones)
       return
     }
-    if (zones.length === 0) {
-      setError('Add at least one delivery range.')
-      return
-    }
-    setStatus('saving')
+    setSaving(true)
     try {
       const body = serializeShop({ ...form, timezone }, zones)
       if (editingId) {
@@ -607,12 +543,12 @@ export function SellerShopsPage() {
       }
       const saved = editingId ? 'Shop updated.' : 'Shop created.'
       await load()
-      // Let the tick finish before the form collapses, so the confirmation is seen.
-      flashSaved(resetForm)
+      resetForm()
       setToast({ message: saved, variant: 'success' })
     } catch (err) {
-      setStatus('idle')
-      setError(getErrorMessage(err, 'Could not save shop.'))
+      setWizardError(getErrorMessage(err, 'Could not save shop.'))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -639,6 +575,506 @@ export function SellerShopsPage() {
 
   const activeCount = shops.filter((shop) => shop.status === 'active').length
 
+
+  const zoneCheck = draftsToZones(zoneDrafts, zoneCurrency)
+  const detailsBlocked = !form.name.trim()
+    ? 'Give the shop a name to continue.'
+    : !form.country_id.trim() || !zoneCurrency
+      ? 'Choose the shop country to continue.'
+      : !((form.timezone ?? '').trim() || shopCountry?.default_timezone)
+        ? 'Choose the shop timezone to continue.'
+        : null
+  const deliveryBlocked =
+    typeof zoneCheck === 'string'
+      ? zoneCheck
+      : zoneCheck.length === 0
+        ? 'Add at least one delivery range to continue.'
+        : null
+
+  const wizardSteps: WizardStep[] = [
+    {
+      id: 'cover',
+      title: 'Cover image',
+      description: 'The banner customers see first when browsing this shop.',
+      icon: ImagePlus,
+      blockedReason: uploadingImage ? 'Wait for the cover to finish uploading.' : null,
+      content: (
+        <div className="space-y-3">
+          <button
+            type="button"
+            disabled={uploadingImage}
+            onClick={() => imageInputRef.current?.click()}
+            className="group/cover relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-md"
+          >
+            {form.image_url ? (
+              <img src={form.image_url} alt="" className="size-full object-cover" />
+            ) : (
+              <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                <ImagePlus className="size-6" />
+                <span className="text-sm font-medium">Upload a cover</span>
+                <span className="text-xs">Cropped to 16:9</span>
+              </span>
+            )}
+            <span
+              className={cn(
+                'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
+                uploadingImage
+                  ? 'opacity-100'
+                  : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
+              )}
+            >
+              {uploadingImage ? (
+                <LoaderCircle className="size-5 animate-spin" />
+              ) : (
+                <>
+                  <Camera className="size-4" />
+                  {form.image_url ? 'Change cover' : 'Upload cover'}
+                </>
+              )}
+            </span>
+          </button>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+          {form.image_url ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 px-2 text-xs text-muted-foreground"
+              onClick={() => updateField('image_url', '')}
+            >
+              <Trash2 className="size-3.5" />
+              Remove cover
+            </Button>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      id: 'details',
+      title: 'Shop details',
+      description: 'Name, slug, and how it appears to customers.',
+      icon: Store,
+      blockedReason: detailsBlocked,
+      content: (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="shop-country">Country</Label>
+            <select
+              id="shop-country"
+              value={form.country_id}
+              onChange={(event) => handleCountryChange(event.target.value)}
+              className={selectClassName}
+              required
+            >
+              <option value="">Select country</option>
+              {countries.map((country) => (
+                <option key={country.id} value={country.id}>
+                  {countryOptionLabel(country)}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              This shop&apos;s products and delivery prices use this country&apos;s
+              currency.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shop-timezone">Timezone</Label>
+            <TimezoneSelect
+              id="shop-timezone"
+              value={form.timezone || shopCountry?.default_timezone || ''}
+              onChange={(zone) => {
+                setTimezoneTouched(true)
+                updateField('timezone', zone)
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Same-day cutoffs use this clock. It starts as the country&apos;s
+              timezone, and you can change it when the country has more than one.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shop-name">Name</Label>
+            <Input
+              id="shop-name"
+              value={form.name}
+              onChange={(event) => handleNameChange(event.target.value)}
+              className="h-11 bg-surface px-3"
+              placeholder="PD Gifts"
+              required
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="shop-slug">Slug</Label>
+                {!slugTouched && form.slug ? (
+                  <span className="text-[11px] text-muted-foreground">
+                    Auto from name
+                  </span>
+                ) : null}
+              </div>
+              <Input
+                id="shop-slug"
+                value={form.slug ?? ''}
+                onChange={(event) => {
+                  setSlugTouched(true)
+                  updateField('slug', event.target.value)
+                }}
+                className="h-11 bg-surface px-3 font-mono text-sm"
+                placeholder="auto-generated-from-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <div
+                role="group"
+                aria-label="Status"
+                className="relative inline-flex rounded-lg bg-accent p-1"
+              >
+                <div
+                  aria-hidden
+                  className="absolute inset-y-1 left-1 w-[5.25rem] rounded-md bg-brand-ink transition-transform duration-300 ease-out"
+                  style={{
+                    transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
+                  }}
+                />
+                {statusOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => updateField('status', option.value)}
+                    className={cn(
+                      'relative z-10 w-[5.25rem] rounded-md py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors duration-200 active:scale-95',
+                      form.status === option.value
+                        ? 'text-white'
+                        : 'text-brand-ink/60 hover:text-brand-ink',
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shop-description">Description</Label>
+            <textarea
+              id="shop-description"
+              value={form.description ?? ''}
+              onChange={(event) => updateField('description', event.target.value)}
+              className={textareaClassName}
+              placeholder="What makes this shop worth browsing?"
+            />
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'location',
+      title: 'Location & returns',
+      description: 'Where orders ship from, and where returns go.',
+      icon: MapPin,
+      content: (
+        <div className="space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="shop-address">Pickup address</Label>
+              <select
+                id="shop-address"
+                value={form.address_id ?? ''}
+                onChange={(event) => {
+                  const addressId = event.target.value
+                  updateField('address_id', addressId)
+                  setMapAddressId(addressId || null)
+                }}
+                className={selectClassName}
+              >
+                <option value="">No linked address</option>
+                {addresses.map((address) => (
+                  <option key={address.id} value={address.id}>
+                    {address.label ? `${address.label}. ${address.line1}` : address.line1}
+                  </option>
+                ))}
+              </select>
+              {addresses.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No addresses yet , {' '}
+                  <Link to="/seller/profile" className="text-primary hover:underline">
+                    add one on your profile
+                  </Link>
+                  .
+                </p>
+              ) : null}
+            </div>
+            <AddressAutocomplete
+              id="shop-visible-location"
+              label="Customer-visible location"
+              placeholder="Kandy, Sri Lanka"
+              helperText="The town or city shoppers see on your shop page."
+              types="cities"
+              value={form.customer_visible_location ?? ''}
+              onQueryChange={(value) =>
+                updateField('customer_visible_location', value)
+              }
+              // The label is all this field stores, so skip the billed
+              // Place Details lookup.
+              resolveDetails={false}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="shop-return-address">Return address</Label>
+            <select
+              id="shop-return-address"
+              value={form.return_address_id ?? ''}
+              onChange={(event) => {
+                const addressId = event.target.value
+                updateField('return_address_id', addressId)
+                setMapAddressId(addressId || null)
+              }}
+              className={selectClassName}
+            >
+              <option value="">No linked address</option>
+              {addresses.map((address) => (
+                <option key={address.id} value={address.id}>
+                  {address.label ? `${address.label}. ${address.line1}` : address.line1}
+                </option>
+              ))}
+            </select>
+            {addresses.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No addresses yet , {' '}
+                <Link to="/seller/profile" className="text-primary hover:underline">
+                  add one on your profile
+                </Link>
+                .
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'delivery',
+      title: 'Delivery range',
+      description: 'How far this shop delivers itself, and the price for each band.',
+      icon: Truck,
+      blockedReason: deliveryBlocked,
+      content: (
+        <div className="space-y-3">
+          {(() => {
+            const selectedId = mapAddressId || form.address_id || ''
+            const selected = addresses.find((address) => address.id === selectedId)
+            const latitude = Number(selected?.latitude)
+            const longitude = Number(selected?.longitude)
+            const rangesKm = zoneDrafts
+              .map((zone) => Number(zone.max_km))
+              .filter((km) => Number.isFinite(km) && km > 0)
+            const label = selected
+              ? selected.label
+                ? `${selected.label}. ${selected.line1}`
+                : selected.line1
+              : undefined
+            if (!selected || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+              return (
+                <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+                  Select a pickup or return address to show it on the map.
+                  The address needs a map pin, so save it from search.
+                </p>
+              )
+            }
+            return (
+              <DeliveryRangeMap
+                latitude={latitude}
+                longitude={longitude}
+                label={label}
+                rangesKm={rangesKm}
+              />
+            )
+          })()}
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <Label>Delivery range</Label>
+              <p className="mt-1 text-sm font-medium">
+                {shopCountry
+                  ? `${shopCountry.name} · ${zoneCurrency}`
+                  : 'Choose the shop country in Shop details.'}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 shrink-0 rounded-full px-3"
+              onClick={() =>
+                setZoneDrafts((current) => [
+                  ...current,
+                  { max_km: '', price_major: '', estimated_days: '1', cutoff_time: '' },
+                ])
+              }
+            >
+              <Plus className="size-3.5" />
+              Add range
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Required. How far this shop delivers itself, and the price for each band.
+            The closest band that covers the recipient is the price at checkout.
+            Days is the delivery time. Use Same day for a band that leaves today;
+            that band needs a cutoff time, and orders after it arrive the next day.
+            The price uses your shop country’s currency.
+          </p>
+          {zoneDrafts.length === 0 ? (
+            <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
+              Add at least one delivery range before saving this shop.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {zoneDrafts.map((zone, index) => {
+                const sameDay = zone.estimated_days.trim() === '0'
+                return (
+                <li key={index} className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-[7rem] flex-1 space-y-1">
+                    <Label htmlFor={`zone-km-${index}`}>Up to (km)</Label>
+                    <Input
+                      id={`zone-km-${index}`}
+                      inputMode="decimal"
+                      value={zone.max_km}
+                      placeholder="5"
+                      onChange={(event) =>
+                        setZoneDrafts((current) =>
+                          current.map((row, rowIndex) =>
+                            rowIndex === index
+                              ? { ...row, max_km: event.target.value }
+                              : row,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="min-w-[7rem] flex-1 space-y-1">
+                    <Label htmlFor={`zone-price-${index}`}>
+                      Price ({zoneCurrency || '-'})
+                    </Label>
+                    <Input
+                      id={`zone-price-${index}`}
+                      inputMode="decimal"
+                      value={zone.price_major}
+                      placeholder="0 for free"
+                      onChange={(event) =>
+                        setZoneDrafts((current) =>
+                          current.map((row, rowIndex) =>
+                            rowIndex === index
+                              ? { ...row, price_major: event.target.value }
+                              : row,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                  {sameDay ? null : (
+                    <div className="w-24 space-y-1">
+                      <Label htmlFor={`zone-days-${index}`}>Days</Label>
+                      <Input
+                        id={`zone-days-${index}`}
+                        inputMode="numeric"
+                        value={zone.estimated_days}
+                        placeholder="1"
+                        onChange={(event) =>
+                          setZoneDrafts((current) =>
+                            current.map((row, rowIndex) =>
+                              rowIndex === index
+                                ? { ...row, estimated_days: event.target.value }
+                                : row,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant={sameDay ? 'default' : 'outline'}
+                    className="h-10 rounded-full px-3"
+                    onClick={() =>
+                      setZoneDrafts((current) =>
+                        current.map((row, rowIndex) =>
+                          rowIndex === index
+                            ? sameDay
+                              ? { ...row, estimated_days: '1', cutoff_time: '' }
+                              : { ...row, estimated_days: '0' }
+                            : row,
+                        ),
+                      )
+                    }
+                  >
+                    Same day
+                  </Button>
+                  {sameDay ? (
+                    <div className="w-32 space-y-1">
+                      <Label htmlFor={`zone-cutoff-${index}`}>Cutoff</Label>
+                      <Input
+                        id={`zone-cutoff-${index}`}
+                        type="time"
+                        value={zone.cutoff_time}
+                        onChange={(event) =>
+                          setZoneDrafts((current) =>
+                            current.map((row, rowIndex) =>
+                              rowIndex === index
+                                ? { ...row, cutoff_time: event.target.value }
+                                : row,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 rounded-full px-3 text-muted-foreground"
+                    disabled={zoneDrafts.length === 1}
+                    onClick={() =>
+                      setZoneDrafts((current) =>
+                        current.filter((_, rowIndex) => rowIndex !== index),
+                      )
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                    Remove
+                  </Button>
+                </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'preview',
+      title: 'Preview',
+      description: 'This is the card customers will see.',
+      icon: Eye,
+      content: (
+        <WizardPreviewFrame caption="How your shop appears to customers:">
+          <div className="mx-auto max-w-sm">
+            <ShopPreviewCard form={form} />
+          </div>
+        </WizardPreviewFrame>
+      ),
+    },
+  ]
+
   return (
     <div>
       <SellerPageHeader
@@ -647,22 +1083,10 @@ export function SellerShopsPage() {
         title="Shops"
         description="Each shop is a storefront customers browse. Give it a cover, a name, and a pickup address."
         action={
-          showForm ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 rounded-full px-4"
-              onClick={resetForm}
-            >
-              <X className="size-4" />
-              Cancel
-            </Button>
-          ) : (
-            <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
-              <Plus className="size-4" />
-              Create a shop
-            </Button>
-          )
+          <Button type="button" className="h-10 rounded-full px-4" onClick={startCreate}>
+            <Plus className="size-4" />
+            Create a shop
+          </Button>
         }
       />
 
@@ -810,7 +1234,7 @@ export function SellerShopsPage() {
                 label="Shop pages"
               />
             </>
-          ) : showForm ? null : (
+          ) : (
             <div
               className={cn(
                 sellerPanelClass,
@@ -838,509 +1262,23 @@ export function SellerShopsPage() {
             </div>
           )}
 
-          {showForm ? (
-            <div
-              ref={formRef}
-              className="animate-in fade-in slide-in-from-top-2 grid gap-6 duration-300 lg:grid-cols-[minmax(0,1.65fr)_minmax(16rem,1fr)] lg:items-start"
-            >
-              <form
-                onSubmit={handleSubmit}
-                className={cn(sellerPanelClass, 'space-y-7 p-6')}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent text-primary ring-1 ring-primary/10">
-                    <Store className="size-4" />
-                  </span>
-                  <div>
-                    <h2 className="font-poster text-xl">
-                      {editingId ? 'Edit shop' : 'New shop'}
-                    </h2>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                      Name is required. The slug must be unique across all shops.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <FormSectionHeader
-                    icon={ImagePlus}
-                    title="Cover image"
-                    description="The banner customers see first when browsing this shop."
-                  />
-                  <button
-                    type="button"
-                    disabled={uploadingImage}
-                    onClick={() => imageInputRef.current?.click()}
-                    className="group/cover relative block aspect-video w-full overflow-hidden rounded-xl border border-dashed border-border/70 bg-surface/60 transition-colors hover:border-border focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:max-w-md"
-                  >
-                    {form.image_url ? (
-                      <img src={form.image_url} alt="" className="size-full object-cover" />
-                    ) : (
-                      <span className="flex size-full flex-col items-center justify-center gap-2 text-muted-foreground">
-                        <ImagePlus className="size-6" />
-                        <span className="text-sm font-medium">Upload a cover</span>
-                        <span className="text-xs">Cropped to 16:9</span>
-                      </span>
-                    )}
-                    <span
-                      className={cn(
-                        'absolute inset-0 flex items-center justify-center gap-2 bg-foreground/55 text-sm font-medium text-background transition-opacity',
-                        uploadingImage
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover/cover:opacity-100 group-focus-visible/cover:opacity-100',
-                      )}
-                    >
-                      {uploadingImage ? (
-                        <LoaderCircle className="size-5 animate-spin" />
-                      ) : (
-                        <>
-                          <Camera className="size-4" />
-                          {form.image_url ? 'Change cover' : 'Upload cover'}
-                        </>
-                      )}
-                    </span>
-                  </button>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                  {form.image_url ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="h-8 px-2 text-xs text-muted-foreground"
-                      onClick={() => updateField('image_url', '')}
-                    >
-                      <Trash2 className="size-3.5" />
-                      Remove cover
-                    </Button>
-                  ) : null}
-                </div>
-
-                <div className="space-y-5">
-                  <FormSectionHeader
-                    icon={Store}
-                    title="Shop details"
-                    description="Name, slug, and how it appears to customers."
-                  />
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-country">Country</Label>
-                    <select
-                      id="shop-country"
-                      value={form.country_id}
-                      onChange={(event) => handleCountryChange(event.target.value)}
-                      className={selectClassName}
-                      required
-                    >
-                      <option value="">Select country</option>
-                      {countries.map((country) => (
-                        <option key={country.id} value={country.id}>
-                          {countryOptionLabel(country)}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-muted-foreground">
-                      This shop&apos;s products and delivery prices use this country&apos;s
-                      currency.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-timezone">Timezone</Label>
-                    <TimezoneSelect
-                      id="shop-timezone"
-                      value={form.timezone || shopCountry?.default_timezone || ''}
-                      onChange={(zone) => {
-                        setTimezoneTouched(true)
-                        updateField('timezone', zone)
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Same-day cutoffs use this clock. It starts as the country&apos;s
-                      timezone, and you can change it when the country has more than one.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-name">Name</Label>
-                    <Input
-                      id="shop-name"
-                      value={form.name}
-                      onChange={(event) => handleNameChange(event.target.value)}
-                      className="h-11 bg-surface px-3"
-                      placeholder="PD Gifts"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label htmlFor="shop-slug">Slug</Label>
-                        {!slugTouched && form.slug ? (
-                          <span className="text-[11px] text-muted-foreground">
-                            Auto from name
-                          </span>
-                        ) : null}
-                      </div>
-                      <Input
-                        id="shop-slug"
-                        value={form.slug ?? ''}
-                        onChange={(event) => {
-                          setSlugTouched(true)
-                          updateField('slug', event.target.value)
-                        }}
-                        className="h-11 bg-surface px-3 font-mono text-sm"
-                        placeholder="auto-generated-from-name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Status</Label>
-                      <div
-                        role="group"
-                        aria-label="Status"
-                        className="relative inline-flex rounded-lg bg-accent p-1"
-                      >
-                        <div
-                          aria-hidden
-                          className="absolute inset-y-1 left-1 w-[5.25rem] rounded-md bg-brand-ink transition-transform duration-300 ease-out"
-                          style={{
-                            transform: `translateX(${Math.max(0, statusOptions.findIndex((option) => option.value === form.status)) * 5.25}rem)`,
-                          }}
-                        />
-                        {statusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => updateField('status', option.value)}
-                            className={cn(
-                              'relative z-10 w-[5.25rem] rounded-md py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors duration-200 active:scale-95',
-                              form.status === option.value
-                                ? 'text-white'
-                                : 'text-brand-ink/60 hover:text-brand-ink',
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-description">Description</Label>
-                    <textarea
-                      id="shop-description"
-                      value={form.description ?? ''}
-                      onChange={(event) => updateField('description', event.target.value)}
-                      className={textareaClassName}
-                      placeholder="What makes this shop worth browsing?"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <FormSectionHeader
-                    icon={Truck}
-                    title="Location & returns"
-                    description="Where orders ship from, and where returns go."
-                  />
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="shop-address">Pickup address</Label>
-                      <select
-                        id="shop-address"
-                        value={form.address_id ?? ''}
-                        onChange={(event) => {
-                          const addressId = event.target.value
-                          updateField('address_id', addressId)
-                          setMapAddressId(addressId || null)
-                        }}
-                        className={selectClassName}
-                      >
-                        <option value="">No linked address</option>
-                        {addresses.map((address) => (
-                          <option key={address.id} value={address.id}>
-                            {address.label ? `${address.label}. ${address.line1}` : address.line1}
-                          </option>
-                        ))}
-                      </select>
-                      {addresses.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">
-                          No addresses yet , {' '}
-                          <Link to="/seller/profile" className="text-primary hover:underline">
-                            add one on your profile
-                          </Link>
-                          .
-                        </p>
-                      ) : null}
-                    </div>
-                    <AddressAutocomplete
-                      id="shop-visible-location"
-                      label="Customer-visible location"
-                      placeholder="Kandy, Sri Lanka"
-                      helperText="The town or city shoppers see on your shop page."
-                      types="cities"
-                      value={form.customer_visible_location ?? ''}
-                      onQueryChange={(value) =>
-                        updateField('customer_visible_location', value)
-                      }
-                      // The label is all this field stores, so skip the billed
-                      // Place Details lookup.
-                      resolveDetails={false}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="shop-return-address">Return address</Label>
-                    <select
-                      id="shop-return-address"
-                      value={form.return_address_id ?? ''}
-                      onChange={(event) => {
-                        const addressId = event.target.value
-                        updateField('return_address_id', addressId)
-                        setMapAddressId(addressId || null)
-                      }}
-                      className={selectClassName}
-                    >
-                      <option value="">No linked address</option>
-                      {addresses.map((address) => (
-                        <option key={address.id} value={address.id}>
-                          {address.label ? `${address.label}. ${address.line1}` : address.line1}
-                        </option>
-                      ))}
-                    </select>
-                    {addresses.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">
-                        No addresses yet , {' '}
-                        <Link to="/seller/profile" className="text-primary hover:underline">
-                          add one on your profile
-                        </Link>
-                        .
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="space-y-3">
-                    {(() => {
-                      const selectedId = mapAddressId || form.address_id || ''
-                      const selected = addresses.find((address) => address.id === selectedId)
-                      const latitude = Number(selected?.latitude)
-                      const longitude = Number(selected?.longitude)
-                      const rangesKm = zoneDrafts
-                        .map((zone) => Number(zone.max_km))
-                        .filter((km) => Number.isFinite(km) && km > 0)
-                      const label = selected
-                        ? selected.label
-                          ? `${selected.label}. ${selected.line1}`
-                          : selected.line1
-                        : undefined
-                      if (!selected || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-                        return (
-                          <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-                            Select a pickup or return address to show it on the map.
-                            The address needs a map pin, so save it from search.
-                          </p>
-                        )
-                      }
-                      return (
-                        <DeliveryRangeMap
-                          latitude={latitude}
-                          longitude={longitude}
-                          label={label}
-                          rangesKm={rangesKm}
-                        />
-                      )
-                    })()}
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                      <div>
-                        <Label>Delivery range</Label>
-                        <p className="mt-1 text-sm font-medium">
-                          {shopCountry
-                            ? `${shopCountry.name} · ${zoneCurrency}`
-                            : 'Choose the shop country above.'}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-8 shrink-0 rounded-full px-3"
-                        onClick={() =>
-                          setZoneDrafts((current) => [
-                            ...current,
-                            { max_km: '', price_major: '', estimated_days: '1', cutoff_time: '' },
-                          ])
-                        }
-                      >
-                        <Plus className="size-3.5" />
-                        Add range
-                      </Button>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Required. How far this shop delivers itself, and the price for each band.
-                      The closest band that covers the recipient is the price at checkout.
-                      Days is the delivery time. Use Same day for a band that leaves today;
-                      that band needs a cutoff time, and orders after it arrive the next day.
-                      The price uses your shop country’s currency.
-                    </p>
-                    {zoneDrafts.length === 0 ? (
-                      <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm text-muted-foreground">
-                        Add at least one delivery range before saving this shop.
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {zoneDrafts.map((zone, index) => {
-                          const sameDay = zone.estimated_days.trim() === '0'
-                          return (
-                          <li key={index} className="flex flex-wrap items-end gap-2">
-                            <div className="min-w-[7rem] flex-1 space-y-1">
-                              <Label htmlFor={`zone-km-${index}`}>Up to (km)</Label>
-                              <Input
-                                id={`zone-km-${index}`}
-                                inputMode="decimal"
-                                value={zone.max_km}
-                                placeholder="5"
-                                onChange={(event) =>
-                                  setZoneDrafts((current) =>
-                                    current.map((row, rowIndex) =>
-                                      rowIndex === index
-                                        ? { ...row, max_km: event.target.value }
-                                        : row,
-                                    ),
-                                  )
-                                }
-                              />
-                            </div>
-                            <div className="min-w-[7rem] flex-1 space-y-1">
-                              <Label htmlFor={`zone-price-${index}`}>
-                                Price ({zoneCurrency || '-'})
-                              </Label>
-                              <Input
-                                id={`zone-price-${index}`}
-                                inputMode="decimal"
-                                value={zone.price_major}
-                                placeholder="0 for free"
-                                onChange={(event) =>
-                                  setZoneDrafts((current) =>
-                                    current.map((row, rowIndex) =>
-                                      rowIndex === index
-                                        ? { ...row, price_major: event.target.value }
-                                        : row,
-                                    ),
-                                  )
-                                }
-                              />
-                            </div>
-                            {sameDay ? null : (
-                              <div className="w-24 space-y-1">
-                                <Label htmlFor={`zone-days-${index}`}>Days</Label>
-                                <Input
-                                  id={`zone-days-${index}`}
-                                  inputMode="numeric"
-                                  value={zone.estimated_days}
-                                  placeholder="1"
-                                  onChange={(event) =>
-                                    setZoneDrafts((current) =>
-                                      current.map((row, rowIndex) =>
-                                        rowIndex === index
-                                          ? { ...row, estimated_days: event.target.value }
-                                          : row,
-                                      ),
-                                    )
-                                  }
-                                />
-                              </div>
-                            )}
-                            <Button
-                              type="button"
-                              variant={sameDay ? 'default' : 'outline'}
-                              className="h-10 rounded-full px-3"
-                              onClick={() =>
-                                setZoneDrafts((current) =>
-                                  current.map((row, rowIndex) =>
-                                    rowIndex === index
-                                      ? sameDay
-                                        ? { ...row, estimated_days: '1', cutoff_time: '' }
-                                        : { ...row, estimated_days: '0' }
-                                      : row,
-                                  ),
-                                )
-                              }
-                            >
-                              Same day
-                            </Button>
-                            {sameDay ? (
-                              <div className="w-32 space-y-1">
-                                <Label htmlFor={`zone-cutoff-${index}`}>Cutoff</Label>
-                                <Input
-                                  id={`zone-cutoff-${index}`}
-                                  type="time"
-                                  value={zone.cutoff_time}
-                                  onChange={(event) =>
-                                    setZoneDrafts((current) =>
-                                      current.map((row, rowIndex) =>
-                                        rowIndex === index
-                                          ? { ...row, cutoff_time: event.target.value }
-                                          : row,
-                                      ),
-                                    )
-                                  }
-                                />
-                              </div>
-                            ) : null}
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="h-10 rounded-full px-3 text-muted-foreground"
-                              disabled={zoneDrafts.length === 1}
-                              onClick={() =>
-                                setZoneDrafts((current) =>
-                                  current.filter((_, rowIndex) => rowIndex !== index),
-                                )
-                              }
-                            >
-                              <Trash2 className="size-4" />
-                              Remove
-                            </Button>
-                          </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-
-                <FormAlert error={error} />
-                <div className="flex flex-wrap gap-2">
-                  <SaveButton status={status}>
-                    {editingId ? 'Update shop' : 'Create shop'}
-                  </SaveButton>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10"
-                    disabled={status !== 'idle'}
-                    onClick={resetForm}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-
-              <div className="space-y-3 lg:sticky lg:top-6">
-                <div className="flex items-center gap-2 px-1 text-sm font-medium text-muted-foreground">
-                  <Eye className="size-4" />
-                  Live preview
-                </div>
-                <ShopPreviewCard form={form} />
-              </div>
-            </div>
-          ) : null}
+          <WizardDialog
+            open={showForm}
+            onOpenChange={(open) => {
+              if (!open && !saving) resetForm()
+            }}
+            title={editingId ? 'Edit shop' : 'New shop'}
+            description={
+              editingId
+                ? 'Update the shop, step by step. Jump to any step from the rail.'
+                : 'Set up a storefront customers can browse, step by step.'
+            }
+            steps={wizardSteps}
+            onComplete={completeWizard}
+            completeLabel={editingId ? 'Save changes' : 'Create shop'}
+            completing={saving}
+            error={<FormAlert error={wizardError} />}
+          />
         </div>
       )}
 

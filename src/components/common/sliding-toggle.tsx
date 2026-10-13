@@ -14,6 +14,8 @@ type SlidingToggleProps<T extends string> = {
   value: T
   onChange: (value: T) => void
   label: string
+  /** Stretch the box to its container, with the options sharing the width equally. */
+  fullWidth?: boolean
   className?: string
 }
 
@@ -26,6 +28,7 @@ export function SlidingToggle<T extends string>({
   value,
   onChange,
   label,
+  fullWidth = false,
   className,
 }: SlidingToggleProps<T>) {
   const box = useRef<HTMLDivElement>(null)
@@ -49,7 +52,11 @@ export function SlidingToggle<T extends string>({
       ref={box}
       role="tablist"
       aria-label={label}
-      className={cn('relative flex w-fit gap-1 rounded-lg bg-accent p-1', className)}
+      className={cn(
+        'relative flex gap-1 rounded-lg bg-accent p-1',
+        fullWidth ? 'w-full' : 'w-fit',
+        className,
+      )}
     >
       {thumb ? (
         <span
@@ -68,6 +75,7 @@ export function SlidingToggle<T extends string>({
             aria-selected={active}
             onClick={() => onChange(option.id)}
             className={cn(
+              fullWidth && 'flex-1',
               'relative z-10 flex items-center justify-center gap-1.5 rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] whitespace-nowrap uppercase transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-brand-violet focus-visible:outline-none',
               // Until the thumb is measured, the chosen option paints its own fill.
               active ? 'text-white' : 'text-brand-ink/60 hover:text-brand-ink',

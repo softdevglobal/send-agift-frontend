@@ -17,6 +17,7 @@ import { loginAdmin, type CodeLoginResult } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
 import { loginSeller } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
+import { SlidingToggle } from '@/components/common/sliding-toggle'
 import { Marker } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -194,23 +195,19 @@ export function LoginForm({ role }: LoginFormProps) {
       </div>
 
       {role === 'customer' ? (
-        <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 text-sm font-medium">
-          {(['password', 'code'] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => {
-                setMode(item)
-                setError(null)
-              }}
-              className={`rounded-full py-2 transition-colors ${
-                mode === item ? 'bg-background shadow-sm' : 'text-muted-foreground'
-              }`}
-            >
-              {item === 'password' ? 'Password' : 'One-time code'}
-            </button>
-          ))}
-        </div>
+        <SlidingToggle
+          fullWidth
+          label="Sign-in method"
+          value={mode}
+          options={[
+            { id: 'password', label: 'Password' },
+            { id: 'code', label: 'One-time code' },
+          ]}
+          onChange={(next) => {
+            setMode(next)
+            setError(null)
+          }}
+        />
       ) : null}
 
       {mode === 'code' && role === 'customer' ? (

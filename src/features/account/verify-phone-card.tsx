@@ -3,9 +3,9 @@ import { BadgeCheck, LoaderCircle } from 'lucide-react'
 
 import { requestPhoneCode, verifyPhoneCode } from '@/api/auth'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { describeCodeProblem, type CodeProblem } from '@/features/auth/code-problem'
 import { CodeProblemAlert } from '@/features/auth/code-problem-alert'
+import { OtpInput } from '@/components/common/otp-input'
 
 type VerifyPhoneCardProps = {
   /** The number saved on the account. This is the one a code is sent to. */
@@ -101,14 +101,7 @@ export function VerifyPhoneCard({
       </p>
       {sent ? (
         <div className="flex gap-2">
-          <Input
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="6-digit code"
-            value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
-          />
+          <OtpInput aria-label="Phone code" value={code} onChange={setCode} />
           <Button type="button" onClick={() => void confirm()} disabled={busy || code.length !== 6}>
             {busy ? <LoaderCircle className="animate-spin" /> : 'Verify'}
           </Button>
