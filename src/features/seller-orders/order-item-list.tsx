@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Gift } from 'lucide-react'
 
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 
@@ -21,6 +21,8 @@ type SellerParcelGroup = {
   shopName: string
   recipientName: string
   orderStatus: SellerOrderItemSummary['order_status']
+  /** A free gift: this seller funds the item and its delivery. */
+  freeGift: boolean
   deliveryDate: string
   items: SellerOrderItemSummary[]
 }
@@ -38,6 +40,7 @@ function groupSellerParcels(items: SellerOrderItemSummary[]): SellerParcelGroup[
         shopName: item.shop_name || '',
         recipientName: item.recipient_name || '',
         orderStatus: item.order_status,
+        freeGift: item.order_kind === 'free_gift',
         deliveryDate: item.delivery_date,
         items: [],
       }
@@ -47,6 +50,15 @@ function groupSellerParcels(items: SellerOrderItemSummary[]): SellerParcelGroup[
     group.items.push(item)
   }
   return groups
+}
+
+function FreeGiftMarker() {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-brand-teal px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] whitespace-nowrap text-brand-ink uppercase">
+      <Gift className="size-3" />
+      Free gift · you fund this
+    </span>
+  )
 }
 
 export function SellerOrderItemList({
@@ -115,6 +127,7 @@ export function SellerOrderItemList({
                     </span>
                   )}
                   <OrderStatusBadge status={order.orderStatus} />
+                  {order.freeGift ? <FreeGiftMarker /> : null}
                   <span className="ml-auto text-[11px] font-bold tracking-[0.06em] text-brand-violet uppercase">
                     Deliver {formatDeliveryDate(order.deliveryDate)}
                   </span>
@@ -170,6 +183,11 @@ export function SellerOrderItemList({
                 >
                   <td className="px-4 py-3 align-middle font-medium">
                     {order.orderNumber}
+                    {order.freeGift ? (
+                      <span className="mt-1 block">
+                        <FreeGiftMarker />
+                      </span>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3 align-middle">{order.shopName || '-'}</td>
                   <td className="px-4 py-3 align-middle text-muted-foreground">

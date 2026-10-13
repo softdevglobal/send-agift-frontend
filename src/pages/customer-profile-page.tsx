@@ -102,6 +102,9 @@ export function CustomerProfilePage() {
           ? { ...prev, ...updated, addresses: prev.addresses }
           : { ...updated, addresses: [] },
       )
+      // Reload so what is shown (the verified badge in particular) is what the
+      // server holds: changing the phone clears its verification.
+      await load().catch(() => undefined)
       setNotice('Profile saved.')
     } catch (err) {
       setError(getErrorMessage(err, 'Could not save profile.'))
@@ -325,6 +328,8 @@ export function CustomerProfilePage() {
                 <PhoneField id="profile-phone" value={phone} onChange={setPhone} />
                 <VerifyPhoneCard
                   phone={profile?.phone ?? ''}
+                  unsaved={phone.trim() !== (profile?.phone ?? '').trim()}
+                  saving={saving}
                   verified={Boolean(profile?.phone_verified_at)}
                   onVerified={() => {
                     void load().then(() => setNotice('Phone verified.'))

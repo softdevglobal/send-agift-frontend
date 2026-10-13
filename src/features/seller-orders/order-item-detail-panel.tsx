@@ -212,6 +212,7 @@ export function SellerOrderItemDetailPanel({
     ? shopItems.reduce((sum, line) => sum + line.total_amount, 0)
     : (item?.total_amount ?? 0)
   const shopDelivery = item?.shop_delivery ?? null
+  const freeGift = item?.order?.order_kind === 'free_gift'
   // The order also holds products from other shops (this seller's or others').
   const orderHasOtherShops = Boolean(
     item?.order && item.order.subtotal_amount > parcelItemsTotal,
@@ -321,6 +322,33 @@ export function SellerOrderItemDetailPanel({
           <>
             <FormAlert error={error} notice={notice} />
 
+            {freeGift ? (
+              <div className="flex items-start gap-3 rounded-xl bg-brand-teal p-4 text-brand-ink">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-ink text-white">
+                  <Gift className="size-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-extrabold">Free gift. You fund this.</p>
+                  <p className="mt-0.5 text-sm text-brand-ink/75">
+                    The customer pays nothing.{' '}
+                    {formatPriceAmount(
+                      item.order.free_gift_cost ??
+                        parcelItemsTotal + (shopDelivery?.amount ?? 0),
+                      currency,
+                    )}{' '}
+                    (the gift and its delivery) comes out of your free gift
+                    budget when it is delivered.
+                  </p>
+                  <Link
+                    to="/seller/free-gifts"
+                    className="mt-1 inline-block text-xs font-bold tracking-[0.06em] uppercase underline-offset-4 hover:underline"
+                  >
+                    See your budget
+                  </Link>
+                </div>
+              </div>
+            ) : null}
+
             <SellerSheetSection icon={Gift} title={productsInShipment.length > 1 ? 'Products' : 'Gift'}>
               <ul className="space-y-2">
                 {(productsInShipment.length > 1 ? productsInShipment : [null]).map((line) => {
@@ -392,7 +420,7 @@ export function SellerOrderItemDetailPanel({
                 <SellerSheetRow label="Products" emphasis>
                   {formatPriceAmount(parcelItemsTotal, currency)}
                 </SellerSheetRow>
-                <SellerSheetRow label="Shipping paid">
+                <SellerSheetRow label={freeGift ? 'Delivery (you fund)' : 'Shipping paid'}>
                   {shopDelivery ? (
                     <span className="text-right">
                       {shopDelivery.amount === 0
@@ -413,9 +441,14 @@ export function SellerOrderItemDetailPanel({
                     {formatPriceAmount(item.order.delivery_amount, currency)}
                   </SellerSheetRow>
                 ) : null}
-                <SellerSheetRow label="Parcel total" emphasis>
+                <SellerSheetRow label={freeGift ? 'From your budget' : 'Parcel total'} emphasis>
                   {formatPriceAmount(parcelItemsTotal + (shopDelivery?.amount ?? 0), currency)}
                 </SellerSheetRow>
+                {freeGift ? (
+                  <SellerSheetRow label="Customer pays" emphasis>
+                    {formatPriceAmount(0, currency)}
+                  </SellerSheetRow>
+                ) : null}
               </SellerSheetFacts>
               {item.order?.gift_message ? (
                 <p className="rounded-lg bg-muted/60 px-3 py-2 text-sm italic">

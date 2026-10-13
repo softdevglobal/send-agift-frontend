@@ -5,6 +5,7 @@ import { storefrontFrameClass } from '@/components/common/site-styles'
 import { accountNavGroups } from '@/features/account/account-nav'
 import { TemporaryPasswordBanner } from '@/features/account/temporary-password-banner'
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
+import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
 import { cn } from '@/lib/utils'
 
 /**
@@ -60,6 +61,7 @@ export function AccountLayout() {
 
           <div className="min-w-0">
             <TemporaryPasswordBanner />
+            <FreeGiftBanner className="mb-6" />
             <Outlet />
           </div>
         </div>

@@ -2,6 +2,7 @@ import {
   BarChart3,
   Clapperboard,
   Coins,
+  Gift,
   LayoutDashboard,
   MessageSquare,
   Package,
@@ -36,6 +37,7 @@ export const sellerPrimaryNav: SellerNavItem[] = [
   { to: '/seller/reviews', label: 'Reviews', icon: Star },
   { to: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { to: '/seller/points', label: 'Points', icon: Coins },
+  { to: '/seller/free-gifts', label: 'Free gifts', icon: Gift },
   { to: '/seller/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/seller/inbox', label: 'Inbox', icon: MessageSquare, showsUnread: true },
 ]

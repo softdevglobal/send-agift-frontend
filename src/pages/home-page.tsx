@@ -25,6 +25,7 @@ import {
   type GiftProduct,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
+import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
 import { ReelsStrip } from '@/features/reels/reels-strip'
 import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { GiftCard, GiftSearchBar } from '@/features/customer-commerce'
@@ -247,6 +248,7 @@ export function HomePage() {
             met rather than something found after scrolling. */}
         <section className={cn(storefrontFrameClass, 'relative z-10 -mt-6 pb-14 lg:-mt-8 lg:pb-16')}>
           <GiftSearchBar />
+          <FreeGiftBanner className="mt-6" />
         </section>
 
         <FeatureBar items={homeFeatures} />
