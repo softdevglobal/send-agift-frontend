@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
 import { getErrorMessage } from '@/lib/api'
+import { OtpInput } from '@/components/common/otp-input'
 
 type ChangeEmailCardProps = {
   role: EmailChangeRole
@@ -174,15 +175,10 @@ export function ChangeEmailCard({ role, email, onChanged }: ChangeEmailCardProps
         <form onSubmit={confirm} className="space-y-4" noValidate>
           <div className="space-y-2">
             <Label htmlFor={id('email-code')}>6-digit code</Label>
-            <Input
+            <OtpInput
               id={id('email-code')}
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              placeholder="000000"
               value={code}
-              onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="h-14 max-w-xs bg-surface text-center font-display text-2xl tracking-[0.4em]"
+              onChange={setCode}
               disabled={saving}
             />
           </div>

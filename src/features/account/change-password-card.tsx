@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { OtpInput } from '@/components/common/otp-input'
 
 /** Fired after a password change so the temporary-password banner can go. */
 export const PASSWORD_CHANGED_EVENT = 'sendagift:password-changed'
@@ -158,15 +159,10 @@ export function ChangePasswordCard({
         </div>
         <div className="space-y-2 sm:col-span-2">
           <Label htmlFor={id('password-code')}>Email code</Label>
-          <Input
+          <OtpInput
             id={id('password-code')}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="6-digit code"
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            className="h-10 tracking-[0.3em]"
+            onChange={setCode}
             disabled={saving}
           />
         </div>

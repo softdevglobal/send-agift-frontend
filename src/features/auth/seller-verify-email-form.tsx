@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
 import { ApiError, getErrorMessage } from '@/lib/api'
+import { OtpInput } from '@/components/common/otp-input'
 
 export function SellerVerifyEmailForm() {
   const { login } = useAuth()
@@ -97,15 +98,10 @@ export function SellerVerifyEmailForm() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="seller-verify-code">6-digit code</Label>
-          <Input
+          <OtpInput
             id="seller-verify-code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            placeholder="000000"
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-            className="h-14 bg-surface text-center font-display text-2xl tracking-[0.4em]"
+            onChange={setCode}
             disabled={isSubmitting}
           />
         </div>
