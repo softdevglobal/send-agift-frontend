@@ -328,7 +328,7 @@ export function HomePage() {
         ) : null}
 
         {/* Two wide editorial tiles, the "what's trending" pair. */}
-        <section className={cn(storefrontFrameClass, 'pb-14 lg:pb-20')}>
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-20')}>
           <SectionHeading title="Everyone's favourite" />
           <div className="grid gap-6 md:grid-cols-2">
             {editorialTiles.map((tile) => (
