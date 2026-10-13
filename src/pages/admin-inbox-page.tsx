@@ -1,3 +1,4 @@
+import { SlidingToggle } from '@/components/common/sliding-toggle'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, LoaderCircle, SquarePen } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -16,7 +17,6 @@ import { AdminMessageSellerDialog } from '@/features/messaging/support-dialogs'
 import { getErrorMessage } from '@/lib/api'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { subscribePublicSellers } from '@/lib/public-sellers'
-import { cn } from '@/lib/utils'
 
 type StatusFilter = 'open' | 'closed' | 'all'
 
@@ -113,31 +113,13 @@ export function AdminInboxPage() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter conversations">
-        {FILTERS.map((item) => {
-          const active = filter === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => setFilter(item.id)}
-              className={cn(
-                'inline-flex items-center gap-2 rounded-md border-2 px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
-                active
-                  ? 'border-brand-ink bg-brand-ink text-white'
-                  : 'border-brand-ink/15 bg-card text-brand-ink/70 hover:border-brand-ink',
-              )}
-            >
-              {item.label}
-              <span className={cn('rounded-sm px-1 text-[10px]', active ? 'bg-brand-teal text-brand-ink' : 'bg-accent text-brand-ink')}>
-                {counts[item.id]}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+      <SlidingToggle
+        label="Filter conversations"
+        className="mb-4"
+        value={filter}
+        onChange={setFilter}
+        options={FILTERS.map((item) => ({ id: item.id, label: item.label, count: counts[item.id] }))}
+      />
 
       <FormAlert error={error} className="mb-4" />
 

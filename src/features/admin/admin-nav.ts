@@ -5,6 +5,7 @@ import {
   Globe2,
   LayoutDashboard,
   MessageSquare,
+  Package,
   ShieldCheck,
   Store,
   Trophy,
@@ -51,7 +52,8 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/sellers', label: 'Sellers', icon: Store },
       { to: '/admin/customers', label: 'Customers', icon: Users },
-      { to: '/admin/points', label: 'Seller points', icon: Coins },
+      { to: '/admin/points', label: 'Seller points', icon: Coins, end: true },
+      { to: '/admin/points/packages', label: 'Point packages', icon: Package },
       { to: '/admin/free-gifts', label: 'Free gifts', icon: Gift },
     ],
   },

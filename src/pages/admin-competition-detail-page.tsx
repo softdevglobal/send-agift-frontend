@@ -1,3 +1,4 @@
+import { SlidingToggle } from '@/components/common/sliding-toggle'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import {
   Ban,
@@ -279,26 +280,18 @@ export function AdminCompetitionDetailPage() {
 
       {/* One area at a time, so the page reads as sections, not one long scroll. */}
       <div className="sticky top-16 z-20 -mx-1 mb-5 overflow-x-auto bg-background/95 px-1 py-2 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="flex w-fit gap-1 rounded-lg bg-accent p-1">
-          {detailTabs
+        <SlidingToggle
+          label="Competition sections"
+          value={tab}
+          onChange={setTab}
+          options={detailTabs
             .filter((item) => !(chance && item.id === 'leaderboard'))
-            .map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-md px-3.5 py-2 text-xs font-bold tracking-[0.08em] whitespace-nowrap uppercase transition-colors',
-                  tab === item.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
-                )}
-              >
-                {item.label}
-                {item.id === 'winners' && queue.length > 0 ? (
-                  <span className="rounded-sm bg-amber-300 px-1 text-[10px] text-amber-950">{queue.length}</span>
-                ) : null}
-              </button>
-            ))}
-        </div>
+            .map((item) => ({
+              id: item.id,
+              label: item.label,
+              count: item.id === 'winners' && queue.length > 0 ? queue.length : undefined,
+            }))}
+        />
       </div>
 
       <div className="grid gap-4">

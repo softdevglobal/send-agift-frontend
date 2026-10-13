@@ -7,14 +7,8 @@ import {
   type CreateReviewInput,
   type ProductReview,
 } from '@/api/reviews'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { ReviewForm } from '@/features/reviews/review-form'
+import { Button } from '@/components/ui/button'
+import { ReviewDialog } from '@/features/reviews/review-dialog'
 import { StarMeter } from '@/features/reviews/star-rating'
 
 export type ReviewOrderItemButtonProps = {
@@ -26,6 +20,8 @@ export type ReviewOrderItemButtonProps = {
   productName?: string
   /** Opens the form as soon as it can, e.g. when arriving from a review link. */
   defaultOpen?: boolean
+  /** Draw it as an outlined button (beside other actions) instead of a text link. */
+  asButton?: boolean
   onSaved: (review: ProductReview) => void
 }
 
@@ -40,6 +36,7 @@ export function ReviewOrderItemButton({
   review,
   productName,
   defaultOpen = false,
+  asButton = false,
   onSaved,
 }: ReviewOrderItemButtonProps) {
   const [open, setOpen] = useState(defaultOpen)
@@ -54,13 +51,33 @@ export function ReviewOrderItemButton({
     const saved = review
       ? await updateMyReview(review.id, input)
       : await createReview(orderItemId, input)
+    // The dialog says thank you, then closes itself.
     onSaved(saved)
-    setOpen(false)
   }
 
   return (
     <>
-      {review ? (
+      {asButton ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setOpen(true)}
+          className="h-9 gap-2 rounded-full px-4"
+        >
+          {review ? (
+            <>
+              <StarMeter value={review.rating} size="xs" />
+              Edit your review
+            </>
+          ) : (
+            <>
+              <Star className="size-3.5" />
+              Write a review
+            </>
+          )}
+        </Button>
+      ) : review ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -83,25 +100,13 @@ export function ReviewOrderItemButton({
         </button>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              {review ? 'Edit your review' : 'Review this gift'}
-            </DialogTitle>
-            <DialogDescription>
-              {productName
-                ? `How was ${productName}?`
-                : 'How was this gift when it arrived?'}
-            </DialogDescription>
-          </DialogHeader>
-          <ReviewForm
-            review={review}
-            onSubmit={handleSubmit}
-            onCancel={() => setOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+      <ReviewDialog
+        open={open}
+        onOpenChange={setOpen}
+        review={review}
+        productName={productName}
+        onSubmit={handleSubmit}
+      />
     </>
   )
 }

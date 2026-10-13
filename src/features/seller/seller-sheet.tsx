@@ -1,8 +1,11 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { X } from 'lucide-react'
+
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetHeader,
@@ -19,7 +22,7 @@ export type SellerSheetSize = 'md' | 'lg' | 'xl'
 
 const sizeClass: Record<SellerSheetSize, string> = {
   md: 'sm:max-w-md',
-  lg: 'sm:max-w-2xl',
+  lg: 'sm:max-w-xl',
   xl: 'sm:max-w-3xl',
 }
 
@@ -63,17 +66,16 @@ export function SellerSheet({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        // The close button lives in the scrolling header (below), so it goes
+        // away with the header instead of floating over the content.
+        showCloseButton={false}
         className={cn(
           'account-box gap-0 border-l-2 border-brand-ink p-0 shadow-none',
-          // On a phone the sheet stops short of the left edge and rounds that
-          // corner, so the dimmed page shows behind it and it reads as a
+          // On a phone the sheet stops short of the left edge, so
+          // the dimmed page shows behind it and it reads as a
           // slide-over, not a new full-screen route. Full width again from sm.
-          'w-[calc(100%-2.75rem)] overflow-hidden rounded-l-2xl sm:w-full sm:rounded-l-none',
+          'w-[calc(100%-2.75rem)] overflow-hidden rounded-none sm:w-full',
           sizeClass[size],
-          // The close button floats over the scroll area, so it needs to sit
-          // above whatever passes under it. A dark cover photo on open, body
-          // content once scrolled. A backdrop chip keeps it legible on both.
-          '[&>[data-slot=sheet-close]]:z-20 [&>[data-slot=sheet-close]]:rounded-full [&>[data-slot=sheet-close]]:bg-background/85 [&>[data-slot=sheet-close]]:p-1.5 [&>[data-slot=sheet-close]]:text-foreground [&>[data-slot=sheet-close]]:opacity-100 [&>[data-slot=sheet-close]]:shadow-sm [&>[data-slot=sheet-close]]:backdrop-blur-sm',
         )}
       >
         {/*
@@ -83,14 +85,21 @@ export function SellerSheet({
           was squeezed into a short strip in the middle.
         */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {media}
+          {media ? (
+            <div className="relative">
+              {media}
+              <SheetClose
+                aria-label="Close"
+                className="absolute top-4 right-4 z-10 flex size-8 items-center justify-center rounded-full bg-background/85 text-foreground shadow-sm backdrop-blur-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <X className="size-4" />
+              </SheetClose>
+            </div>
+          ) : null}
 
           <SheetHeader
             className={cn(
               'gap-0 border-b border-border/50 px-6 py-5',
-              // Room for the close button, which floats over the cover when
-              // there is one and over the header when there is not.
-              !media && 'pr-14',
               !media && 'bg-accent',
             )}
           >
@@ -107,6 +116,14 @@ export function SellerSheet({
                 ) : null}
               </div>
               {badge ? <div className="shrink-0 pt-0.5">{badge}</div> : null}
+              {!media ? (
+                <SheetClose
+                  aria-label="Close"
+                  className="flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-foreground transition-colors hover:bg-background/70 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  <X className="size-4" />
+                </SheetClose>
+              ) : null}
             </div>
           </SheetHeader>
 

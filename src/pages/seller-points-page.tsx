@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  AlertTriangle,
   CheckCircle2,
   Clock,
   Coins,
   CreditCard,
+  Gift,
   History,
   LoaderCircle,
   Lock,
@@ -11,7 +13,7 @@ import {
   Sparkles,
   XCircle,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import {
   cancelPointsPurchase,
@@ -20,7 +22,10 @@ import {
   describeRate,
   formatCents,
   getSellerPoints,
+  listSellerPointPackages,
   listSellerPointsPurchases,
+  syncPointsPurchase,
+  type PointPackage,
   type PointsPurchase,
   type PointsPurchaseStatus,
   type SellerPointsWallet,
@@ -45,9 +50,6 @@ import { PointsLedger } from '@/features/points/points-ledger'
 import { SellerPageHeader, SellerStat, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
-
-/** Ready-made amounts, in dollars. */
-const PACKS = [5, 10, 25, 100]
 
 const statusStyle: Record<
   PointsPurchaseStatus,
@@ -127,6 +129,40 @@ export function SellerPointsPage() {
     void refresh()
   }, [refresh])
 
+  // Back from Stripe: re-check the payment (the webhook may not have arrived
+  // yet), say what happened, and tidy the address bar.
+  const [searchParams, setSearchParams] = useSearchParams()
+  useEffect(() => {
+    const purchaseId = searchParams.get('purchase')
+    if (!purchaseId) return
+    const cancelled = searchParams.get('cancelled') === '1'
+    setSearchParams({}, { replace: true })
+    if (cancelled) {
+      setToast({ message: 'Payment cancelled. No points were added.', variant: 'error' })
+      return
+    }
+    void syncPointsPurchase(purchaseId)
+      .then(async (p) => {
+        await refresh()
+        setToast(
+          p.status === 'completed'
+            ? {
+                message: `${formatPoints(p.points_credited ?? p.points)} points added${
+                  p.points_settled > 0
+                    ? `, ${formatPoints(p.points_settled)} of them paid off what you owed`
+                    : ''
+                }.`,
+                variant: 'success',
+              }
+            : {
+                message: 'Payment received. Your points are added the moment Stripe confirms it.',
+                variant: 'success',
+              },
+        )
+      })
+      .catch(() => undefined)
+  }, [searchParams, setSearchParams, refresh])
+
   async function act(id: string, run: () => Promise<PointsPurchase>, done: string) {
     setBusyId(id)
     try {
@@ -204,13 +240,15 @@ export function SellerPointsPage() {
 
       <FormAlert error={loadError} />
 
+      {wallet?.low_balance ? <LowBalanceBanner wallet={wallet} onBuy={() => setBuying(true)} /> : null}
+
       {wallet ? (
         <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <SellerStat
             icon={Coins}
             tone="amber"
             label="Available"
-            value={formatPoints(wallet.available)}
+            value={formatPoints(Math.max(0, wallet.available))}
             hint="Free to promise as rewards"
           />
           <SellerStat
@@ -220,13 +258,23 @@ export function SellerPointsPage() {
             value={formatPoints(wallet.reserved)}
             hint="Promised on orders not yet delivered"
           />
-          <SellerStat
-            icon={Package}
-            tone="teal"
-            label="Total balance"
-            value={formatPoints(wallet.balance)}
-            hint="Available + reserved"
-          />
+          {wallet.owed > 0 ? (
+            <SellerStat
+              icon={AlertTriangle}
+              tone="violet"
+              label="Owed"
+              value={formatPoints(wallet.owed)}
+              hint="Fronted for your rewards; paid from your next purchase"
+            />
+          ) : (
+            <SellerStat
+              icon={Package}
+              tone="teal"
+              label="Total balance"
+              value={formatPoints(wallet.balance)}
+              hint="Available + reserved"
+            />
+          )}
           <SellerStat
             icon={History}
             tone="navy"
@@ -244,9 +292,13 @@ export function SellerPointsPage() {
           <Link to="/seller/products" className="font-medium text-primary hover:underline">
             Products
           </Link>
-          . When someone orders it, that many points per unit move from your available balance to
-          the customer, and come back to you if the order is cancelled or refunded. A product only
-          shows its reward while you hold enough points to pay it.
+          . When someone orders it, that many points per unit move from your balance to the
+          customer, and come back to you if the order is cancelled or refunded. If you run low,
+          customers still get your rewards: we front up to{' '}
+          <span className="font-medium text-foreground">
+            {formatPoints(wallet?.credit_limit ?? 1000)} points
+          </span>{' '}
+          for you, and what you owe comes out of your next purchase first.
         </p>
       </section>
 
@@ -276,7 +328,11 @@ export function SellerPointsPage() {
                           points
                         </span>
                       </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">{shortDate(p.created_at)}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {shortDate(p.created_at)}
+                        {p.package_name ? ` · ${p.package_name}` : ''}
+                      </p>
+                      <PurchaseExtras purchase={p} />
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold tabular-nums">
@@ -392,6 +448,12 @@ export function SellerPointsPage() {
                       </td>
                       <td className="px-3 py-3.5 font-medium tabular-nums">
                         {formatPoints(p.points_credited ?? p.points)}
+                        {p.package_name ? (
+                          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                            {p.package_name}
+                          </span>
+                        ) : null}
+                        <PurchaseExtras purchase={p} />
                       </td>
                       <td className="px-3 py-3.5">
                         <StatusPill status={p.status} />
@@ -461,6 +523,67 @@ export function SellerPointsPage() {
   )
 }
 
+/** Bonus and settled points under a purchase, when there are any. */
+function PurchaseExtras({ purchase }: { purchase: PointsPurchase }) {
+  if (purchase.bonus_points <= 0 && purchase.points_settled <= 0) return null
+  return (
+    <p className="mt-0.5 text-xs font-normal text-muted-foreground">
+      {purchase.bonus_points > 0 ? `Incl. ${formatPoints(purchase.bonus_points)} bonus` : ''}
+      {purchase.bonus_points > 0 && purchase.points_settled > 0 ? ' · ' : ''}
+      {purchase.points_settled > 0
+        ? `${formatPoints(purchase.points_settled)} paid off what you owed`
+        : ''}
+    </p>
+  )
+}
+
+/**
+ * A heads-up when the seller owes points, or their balance covers only a few
+ * more orders of their biggest reward.
+ */
+function LowBalanceBanner({
+  wallet,
+  onBuy,
+}: {
+  wallet: SellerPointsWallet
+  onBuy: () => void
+}) {
+  const owes = wallet.owed > 0
+  return (
+    <section
+      className={cn(
+        'flex flex-wrap items-center gap-4 rounded-xl border-2 p-5',
+        owes ? 'border-destructive/30 bg-destructive/5' : 'border-amber-300 bg-amber-50',
+      )}
+    >
+      <span
+        className={cn(
+          'flex size-11 shrink-0 items-center justify-center rounded-xl',
+          owes ? 'bg-destructive text-white' : 'bg-amber-300 text-amber-950',
+        )}
+      >
+        <AlertTriangle className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-semibold">
+          {owes
+            ? `You owe ${formatPoints(wallet.owed)} points`
+            : 'Your points balance is running low'}
+        </p>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          {owes
+            ? `Your customers still got their rewards; we fronted the points. Your next purchase pays this off first. ${formatPoints(Math.max(0, wallet.credit_left))} points of credit left before rewards stop showing.`
+            : `${formatPoints(Math.max(0, wallet.available))} points left covers only a few more orders of your ${formatPoints(wallet.largest_reward)}-point reward.`}
+        </p>
+      </div>
+      <Button onClick={onBuy} className="h-10 rounded-full px-5">
+        <CreditCard className="size-4" />
+        Top up points
+      </Button>
+    </section>
+  )
+}
+
 function BuyPointsDialog({
   open,
   wallet,
@@ -472,6 +595,9 @@ function BuyPointsDialog({
   onClose: () => void
   onBought: (purchase: PointsPurchase) => void | Promise<void>
 }) {
+  const [packages, setPackages] = useState<PointPackage[] | null>(null)
+  /** A package id, or "custom" for an amount of the seller's own. */
+  const [choice, setChoice] = useState<string>('custom')
   const [dollars, setDollars] = useState('10')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -479,25 +605,53 @@ function BuyPointsDialog({
   const [key, setKey] = useState(() => crypto.randomUUID())
 
   useEffect(() => {
-    if (open) {
-      setKey(crypto.randomUUID())
-      setError(null)
-      setDollars('10')
+    if (!open) return
+    setKey(crypto.randomUUID())
+    setError(null)
+    setDollars('10')
+    let cancelled = false
+    listSellerPointPackages()
+      .then((res) => {
+        if (cancelled) return
+        setPackages(res.items)
+        // Start on the highlighted package, else the first one.
+        const pick = res.items.find((p) => p.badge) ?? res.items[0]
+        setChoice(pick ? pick.id : 'custom')
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPackages([])
+          setChoice('custom')
+        }
+      })
+    return () => {
+      cancelled = true
     }
   }, [open])
 
   const rate = wallet.rate.cents_per_point
-  const cents = Math.round(Number(dollars) * 100)
-  const valid = Number.isFinite(cents) && cents >= 100 && cents <= 1_000_000 && cents % rate === 0
+  const chosen = packages?.find((p) => p.id === choice) ?? null
+  const cents = chosen ? chosen.price_cents : Math.round(Number(dollars) * 100)
+  const valid = chosen
+    ? true
+    : Number.isFinite(cents) && cents >= 100 && cents <= 1_000_000 && cents % rate === 0
   // Shown for guidance only; the server works the points out itself.
-  const points = useMemo(() => (valid ? Math.floor(cents / rate) : 0), [valid, cents, rate])
+  const points = useMemo(
+    () => (chosen ? chosen.points + chosen.bonus_points : valid ? Math.floor(cents / rate) : 0),
+    [chosen, valid, cents, rate],
+  )
+  const settles = Math.min(points, wallet.owed)
 
   async function submit() {
     if (!valid) return
     setBusy(true)
     setError(null)
     try {
-      let purchase = await createPointsPurchase({ amount_cents: cents, idempotency_key: key })
+      let purchase = await createPointsPurchase(
+        chosen
+          ? { package_id: chosen.id, idempotency_key: key }
+          : { amount_cents: cents, idempotency_key: key },
+      )
       if (purchase.checkout_url) {
         window.location.assign(purchase.checkout_url)
         return
@@ -517,61 +671,125 @@ function BuyPointsDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Buy points</DialogTitle>
           <DialogDescription>{describeRate(wallet.rate)}. Points never expire.</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-4 gap-2">
-          {PACKS.map((pack) => {
-            const active = Number(dollars) === pack
-            return (
-              <button
-                key={pack}
-                type="button"
-                onClick={() => setDollars(String(pack))}
-                className={cn(
-                  'rounded-xl border px-2 py-3 text-center transition-colors',
-                  active
-                    ? 'border-primary bg-accent text-accent-foreground'
-                    : 'border-border hover:border-primary/40 hover:bg-muted/50',
-                )}
-              >
-                <span className="block font-display text-lg">${pack}</span>
-                <span className="block text-[11px] text-muted-foreground">
-                  {formatPoints(Math.floor((pack * 100) / rate))} pts
-                </span>
-              </button>
-            )
-          })}
+        {packages === null ? (
+          <div className="flex justify-center py-6">
+            <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : packages.length > 0 ? (
+          <div className="grid grid-cols-2 gap-2.5">
+            {packages.map((pkg) => {
+              const active = choice === pkg.id
+              return (
+                <button
+                  key={pkg.id}
+                  type="button"
+                  onClick={() => setChoice(pkg.id)}
+                  aria-pressed={active}
+                  className={cn(
+                    'relative rounded-xl border-2 p-3.5 text-left transition-all',
+                    active
+                      ? 'border-brand-ink bg-brand-ink text-white'
+                      : 'border-brand-ink/15 hover:border-brand-ink',
+                  )}
+                >
+                  {pkg.badge ? (
+                    <span
+                      className={cn(
+                        'absolute -top-2.5 right-3 rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase',
+                        active ? 'bg-brand-teal text-brand-ink' : 'bg-amber-300 text-amber-950',
+                      )}
+                    >
+                      {pkg.badge}
+                    </span>
+                  ) : null}
+                  <span className="block text-xs font-semibold opacity-75">{pkg.name}</span>
+                  <span className="mt-1 block font-poster text-2xl">
+                    {formatPoints(pkg.points + pkg.bonus_points)}
+                    <span className="ml-1 font-sans text-xs font-bold tracking-[0.1em] uppercase opacity-70">
+                      pts
+                    </span>
+                  </span>
+                  {pkg.bonus_points > 0 ? (
+                    <span
+                      className={cn(
+                        'mt-1 inline-flex items-center gap-1 text-xs font-semibold',
+                        active ? 'text-brand-teal' : 'text-brand-violet',
+                      )}
+                    >
+                      <Gift className="size-3.5" />+{formatPoints(pkg.bonus_points)} bonus
+                    </span>
+                  ) : null}
+                  <span className="mt-2 block text-sm font-bold">
+                    {formatCents(pkg.price_cents, pkg.currency)}
+                  </span>
+                  {pkg.description ? (
+                    <span className="mt-1 block text-xs opacity-70">{pkg.description}</span>
+                  ) : null}
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setChoice('custom')}
+              aria-pressed={choice === 'custom'}
+              className={cn(
+                'col-span-2 rounded-xl border-2 border-dashed px-4 py-3 text-left text-sm font-semibold transition-colors',
+                choice === 'custom'
+                  ? 'border-brand-ink bg-accent'
+                  : 'border-brand-ink/20 hover:border-brand-ink',
+              )}
+            >
+              Or choose your own amount
+            </button>
+          </div>
+        ) : null}
+
+        {choice === 'custom' ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="points-amount">Amount ({wallet.rate.currency})</Label>
+            <Input
+              id="points-amount"
+              type="number"
+              inputMode="decimal"
+              min={1}
+              max={10000}
+              step={rate / 100}
+              value={dollars}
+              onChange={(event) => setDollars(event.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Between $1 and $10,000, in steps of {formatCents(rate, wallet.rate.currency)}.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="space-y-1 rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">You get</span>
+            <span className="font-poster text-2xl">
+              {formatPoints(points)} <span className="text-sm text-muted-foreground">points</span>
+            </span>
+          </div>
+          {settles > 0 ? (
+            <p className="text-xs text-amber-950/80">
+              {formatPoints(settles)} of these pay off what you owe; {formatPoints(points - settles)}{' '}
+              go to your balance.
+            </p>
+          ) : null}
         </div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="points-amount">Or enter an amount ({wallet.rate.currency})</Label>
-          <Input
-            id="points-amount"
-            type="number"
-            inputMode="decimal"
-            min={1}
-            max={10000}
-            step={rate / 100}
-            value={dollars}
-            onChange={(event) => setDollars(event.target.value)}
-          />
-          <p className="text-xs text-muted-foreground">
-            Between $1 and $10,000, in steps of {formatCents(rate, wallet.rate.currency)}.
+        {wallet.payment_provider === 'stripe' ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            You pay securely on Stripe next. The points are added as soon as the payment goes
+            through.
           </p>
-        </div>
-
-        <div className="flex items-center justify-between rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3">
-          <span className="text-sm text-muted-foreground">You get</span>
-          <span className="font-poster text-2xl">
-            {formatPoints(points)} <span className="text-sm text-muted-foreground">points</span>
-          </span>
-        </div>
-
-        {wallet.payment_provider === 'instant' ? (
+        ) : wallet.payment_provider === 'instant' ? (
           <p className="text-xs leading-relaxed text-muted-foreground">
             The points are added to your balance straight away.
           </p>
@@ -592,7 +810,7 @@ function BuyPointsDialog({
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void submit()} disabled={!valid || busy}>
+          <Button onClick={() => void submit()} disabled={!valid || busy || packages === null}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
             Pay {valid ? formatCents(cents, wallet.rate.currency) : ''}
           </Button>

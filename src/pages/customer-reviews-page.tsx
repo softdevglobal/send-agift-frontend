@@ -25,7 +25,7 @@ import {
   getCatalogProduct,
 } from '@/features/customer-commerce'
 import { ReviewCard } from '@/features/reviews/review-card'
-import { ReviewForm } from '@/features/reviews/review-form'
+import { ReviewDialog } from '@/features/reviews/review-dialog'
 import { useMyReviews } from '@/features/reviews/my-reviews'
 import { getErrorMessage } from '@/lib/api'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
@@ -68,8 +68,8 @@ export function CustomerReviewsPage() {
   async function handleUpdate(input: CreateReviewInput) {
     if (!editing) return
     const saved = await updateMyReview(editing.id, input)
+    // The dialog says thank you and then closes, which clears `editing`.
     apply(saved)
-    setEditing(null)
   }
 
   async function handleDelete() {
@@ -148,23 +148,13 @@ export function CustomerReviewsPage() {
         </div>
       )}
 
-      <Dialog open={editing != null} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Edit your review</DialogTitle>
-            <DialogDescription>
-              Your updated review replaces the one shown on the gift.
-            </DialogDescription>
-          </DialogHeader>
-          {editing ? (
-            <ReviewForm
-              review={editing}
-              onSubmit={handleUpdate}
-              onCancel={() => setEditing(null)}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <ReviewDialog
+        open={editing != null}
+        onOpenChange={(open) => !open && setEditing(null)}
+        review={editing ?? undefined}
+        productName={editing ? getCatalogProduct(editing.product_id)?.name : undefined}
+        onSubmit={handleUpdate}
+      />
 
       <Dialog open={deleting != null} onOpenChange={(open) => !open && setDeleting(null)}>
         <DialogContent className="sm:max-w-md">

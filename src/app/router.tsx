@@ -16,6 +16,7 @@ import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCustomerDetailPage } from '@/pages/admin-customer-detail-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
+import { AdminPointPackagesPage } from '@/pages/admin-point-packages-page'
 import { AdminPointsPage } from '@/pages/admin-points-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
@@ -57,6 +58,7 @@ import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerFreeGiftsPage } from '@/pages/seller-free-gifts-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
 import { SellerPointsPage } from '@/pages/seller-points-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
@@ -305,6 +307,7 @@ export function AppRouter() {
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
         <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
+        <Route path="payouts" element={<SellerPayoutsPage />} />
         <Route path="points" element={<SellerPointsPage />} />
         <Route path="free-gifts" element={<SellerFreeGiftsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
@@ -326,6 +329,7 @@ export function AppRouter() {
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="customers/:customerId" element={<AdminCustomerDetailPage />} />
         <Route path="points" element={<AdminPointsPage />} />
+        <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}

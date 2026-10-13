@@ -1,3 +1,4 @@
+import { SlidingToggle } from '@/components/common/sliding-toggle'
 import { useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, Coins, LoaderCircle, XCircle } from 'lucide-react'
 
@@ -151,29 +152,17 @@ export function AdminPointsPage() {
         </div>
       </section>
 
-      <div className="mb-5 flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
-        {tabs.map((t) => (
-          <button
-            key={t.label}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              'rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
-              tab === t.id ? 'bg-brand-ink text-white' : 'text-brand-ink/60 hover:text-brand-ink',
-            )}
-          >
-            {t.label}
-            <span
-              className={cn(
-                'ml-1.5 rounded-sm px-1 text-[10px]',
-                tab === t.id ? 'bg-brand-teal text-brand-ink' : 'bg-white text-brand-ink',
-              )}
-            >
-              {t.id ? counts[t.id] : all.length}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SlidingToggle
+        label="Filter purchases"
+        className="mb-5"
+        value={tab}
+        onChange={setTab}
+        options={tabs.map((t) => ({
+          id: t.id,
+          label: t.label,
+          count: t.id ? counts[t.id] : all.length,
+        }))}
+      />
 
       <FormAlert error={error} notice={notice} className="mb-4" />
 

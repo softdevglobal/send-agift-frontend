@@ -1,3 +1,4 @@
+import { SlidingToggle } from '@/components/common/sliding-toggle'
 import { useCallback, useEffect, useState } from 'react'
 import { BadgeCheck, BadgeX, Ban, Eye, Power, Search, Store } from 'lucide-react'
 
@@ -144,26 +145,15 @@ export function AdminSellersPage() {
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-fit flex-wrap gap-1 rounded-lg bg-accent p-1">
-          {tabs.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => {
-                setTab(item.id)
-                setPage(1)
-              }}
-              className={cn(
-                'rounded-md px-3.5 py-1.5 text-xs font-bold tracking-[0.08em] uppercase transition-colors',
-                tab === item.id
-                  ? 'bg-brand-ink text-white'
-                  : 'text-brand-ink/60 hover:text-brand-ink',
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+        <SlidingToggle
+          label="Filter sellers"
+          value={tab}
+          onChange={(id) => {
+            setTab(id)
+            setPage(1)
+          }}
+          options={tabs.map((item) => ({ id: item.id, label: item.label }))}
+        />
         <div className="relative w-full sm:max-w-xs">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
