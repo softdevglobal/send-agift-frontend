@@ -115,7 +115,14 @@ export function SiteHeader() {
                   Sign in
                 </Link>
               </Button>
-              <Button asChild className="h-9 px-3.5 sm:px-4">
+              {/* Phones get Sign in as the one solid button; Sign up is still
+                  in the menu. From md up it is Sign in (ghost) + Sign up. */}
+              <Button asChild className="h-9 px-3.5 sm:px-4 md:hidden">
+                <Link to="/login" state={loginState}>
+                  Sign in
+                </Link>
+              </Button>
+              <Button asChild className="hidden h-9 px-4 md:inline-flex">
                 <Link to="/register">Sign up</Link>
               </Button>
             </>
