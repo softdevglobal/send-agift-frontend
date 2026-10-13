@@ -14,6 +14,7 @@ import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
 import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
+import { AdminCountryDetailPage } from '@/pages/admin-country-detail-page'
 import { AdminCustomerDetailPage } from '@/pages/admin-customer-detail-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminPointPackagesPage } from '@/pages/admin-point-packages-page'
@@ -330,6 +331,7 @@ export function AppRouter() {
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
+        <Route path="countries/:countryId" element={<AdminCountryDetailPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}
         <Route
           path="games"
