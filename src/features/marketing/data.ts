@@ -69,49 +69,6 @@ export const giftCategories: GiftCategory[] = [
   },
 ]
 
-export const bestSellingGifts: GiftProduct[] = [
-  {
-    id: '1',
-    name: 'Handbound Memory Journal',
-    price: 28,
-    compareAt: 36,
-    rating: 4.9,
-    reviews: 214,
-    image:
-      'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '2',
-    name: 'Ceramic Pour-Over Set',
-    price: 42,
-    compareAt: 55,
-    rating: 4.8,
-    reviews: 168,
-    image:
-      'https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '3',
-    name: 'Soft Linen Gift Hamper',
-    price: 64,
-    compareAt: 79,
-    rating: 4.9,
-    reviews: 301,
-    image:
-      'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=600&q=80',
-  },
-  {
-    id: '4',
-    name: 'Wireless Focus Earbuds',
-    price: 89,
-    compareAt: 119,
-    rating: 4.7,
-    reviews: 452,
-    image:
-      'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80',
-  },
-]
-
 export const customerTestimonials: Testimonial[] = [
   {
     id: 't1',
