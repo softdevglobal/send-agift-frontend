@@ -11,6 +11,7 @@ const STATUS_TONE_CLASS: Record<string, string> = {
   draft: 'bg-muted text-muted-foreground',
   pending_payment: 'bg-amber-200 text-amber-950',
   paid: 'bg-brand-violet text-white',
+  confirmed: 'bg-brand-violet text-white',
   accepted: 'bg-brand-violet text-white',
   preparing: 'bg-brand-violet text-white',
   dispatched: 'bg-brand-ink text-white',
@@ -41,12 +42,15 @@ export function OrderStatusBadge({
 
 export function OrderTrackingProgressBar({
   status,
+  kind,
   className,
 }: {
   status: string
+  /** `order_kind`: a free gift skips the payment step. */
+  kind?: string
   className?: string
 }) {
-  const progress = getOrderTrackingProgress(status)
+  const progress = getOrderTrackingProgress(status, kind)
   const total = progress.steps.length
   const value = progress.terminal ? 0 : Math.max(progress.completedCount, 1)
   const percent = progress.terminal ? 0 : Math.round((value / total) * 100)
@@ -87,14 +91,17 @@ export function OrderTrackingProgressBar({
 
 export function OrderTrackingTimeline({
   status,
+  kind,
   placedAt,
   updatedAt,
 }: {
   status: string
+  /** `order_kind`: a free gift skips the payment step. */
+  kind?: string
   placedAt?: string
   updatedAt?: string
 }) {
-  const progress = getOrderTrackingProgress(status)
+  const progress = getOrderTrackingProgress(status, kind)
   const items = progress.terminal
     ? [...progress.steps.filter((step) => step.state === 'complete'), progress.terminal]
     : progress.steps
