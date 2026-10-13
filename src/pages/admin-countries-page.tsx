@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,6 +50,7 @@ import {
   formatDate,
 } from '@/features/admin'
 import { ApiError, getErrorMessage } from '@/lib/api'
+import { TimezoneSelect } from '@/components/common/timezone-select'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
@@ -84,6 +85,24 @@ function toInput(country: Country): CountryInput {
   }
 }
 
+/**
+ * The IANA zones the browser knows for a country code, most relevant first.
+ * Empty when the code is unknown or the browser has no region data.
+ */
+function timezonesForIso(iso: string): string[] {
+  const code = iso.trim().toUpperCase()
+  if (!/^[A-Z]{2}$/.test(code)) return []
+  try {
+    const locale = new Intl.Locale(`und-${code}`) as Intl.Locale & {
+      getTimeZones?: () => string[]
+      timeZones?: string[]
+    }
+    return locale.getTimeZones?.() ?? locale.timeZones ?? []
+  } catch {
+    return []
+  }
+}
+
 function flagEmoji(iso: string): string {
   const code = iso.trim().toUpperCase()
   if (!/^[A-Z]{2}$/.test(code)) return '🌐'
@@ -96,6 +115,132 @@ function statusTone(status: string): string {
   if (normalized === 'active') return 'bg-accent text-primary'
   if (normalized === 'inactive') return 'bg-muted text-muted-foreground'
   return 'bg-muted text-muted-foreground'
+}
+
+/** Live facts for the preview: what money and the clock look like in this market. */
+function marketSample(currency: string, timezone: string) {
+  let price = ''
+  let time = ''
+  let offset = ''
+  try {
+    if (currency.trim()) {
+      price = new Intl.NumberFormat('en', {
+        style: 'currency',
+        currency: currency.trim().toUpperCase(),
+      }).format(25)
+    }
+  } catch {
+    // unknown currency code: leave the sample blank
+  }
+  try {
+    if (timezone.trim()) {
+      const now = new Date()
+      time = new Intl.DateTimeFormat('en', {
+        timeZone: timezone.trim(),
+        hour: 'numeric',
+        minute: '2-digit',
+        weekday: 'short',
+      }).format(now)
+      offset =
+        new Intl.DateTimeFormat('en', { timeZone: timezone.trim(), timeZoneName: 'longOffset' })
+          .formatToParts(now)
+          .find((part) => part.type === 'timeZoneName')
+          ?.value.replace('GMT', 'UTC') ?? ''
+    }
+  } catch {
+    // unknown zone: leave the clock blank
+  }
+  return { price, time, offset }
+}
+
+/** The last step of the country wizard: a passport page for the new market. */
+function CountryPassport({ form }: { form: CountryInput }) {
+  const iso = form.iso_code.trim().toUpperCase()
+  const name = form.name.trim()
+  const currency = form.default_currency.trim().toUpperCase()
+  const timezone = form.default_timezone.trim()
+  const active = (form.status ?? 'active') === 'active'
+  const { price, time, offset } = marketSample(currency, timezone)
+  const city = timezone.split('/').pop()?.replace(/_/g, ' ') ?? ''
+
+  return (
+    <div className="space-y-4">
+      <div className="relative overflow-hidden rounded-2xl bg-brand-violet text-white shadow-lg">
+        <Sparkle className="absolute top-4 right-[18%] size-5 text-brand-teal" />
+        <Sparkle className="absolute right-6 bottom-24 size-3.5 text-white/60" />
+        {/* The flag, huge and ghosted, behind everything. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-4 -right-4 text-[9rem] leading-none opacity-20 select-none"
+        >
+          {flagEmoji(iso)}
+        </span>
+
+        <div className="relative flex items-start justify-between gap-3 px-6 pt-5">
+          <p className="text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
+            Send A Gift · Market pass
+          </p>
+          <span
+            className={cn(
+              '-rotate-6 rounded-md border-2 px-2 py-0.5 text-[10px] font-bold tracking-[0.14em] uppercase',
+              active
+                ? 'border-brand-teal text-brand-teal'
+                : 'border-white/50 text-white/60',
+            )}
+          >
+            {active ? 'Open for gifts' : 'Closed'}
+          </span>
+        </div>
+
+        <div className="relative flex items-center gap-4 px-6 pt-4 pb-5">
+          <span className="text-6xl leading-none drop-shadow">{flagEmoji(iso)}</span>
+          <div className="min-w-0">
+            <p className="truncate font-poster text-3xl leading-tight">
+              {name || 'Unnamed market'}
+            </p>
+            <p className="font-mono text-sm tracking-[0.3em] text-white/75">
+              {iso || '--'}
+            </p>
+          </div>
+        </div>
+
+        {/* Perforated edge, like a boarding pass. */}
+        <div className="relative flex items-center">
+          <span className="-ml-3 size-6 shrink-0 rounded-full bg-card" />
+          <span className="flex-1 border-t-2 border-dashed border-white/30" />
+          <span className="-mr-3 size-6 shrink-0 rounded-full bg-card" />
+        </div>
+
+        <div className="relative grid grid-cols-2 gap-px bg-white/10">
+          <div className="bg-brand-ink/30 px-6 py-4">
+            <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] text-white/60 uppercase">
+              <Coins className="size-3.5" />
+              Currency
+            </p>
+            <p className="mt-1 font-poster text-2xl">{currency || '-'}</p>
+            <p className="text-xs text-white/70">
+              {price ? `Prices read like ${price}` : 'Pick a currency'}
+            </p>
+          </div>
+          <div className="bg-brand-ink/30 px-6 py-4">
+            <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.14em] text-white/60 uppercase">
+              <Clock className="size-3.5" />
+              Local time
+            </p>
+            <p className="mt-1 font-poster text-2xl">{time || '-'}</p>
+            <p className="truncate text-xs text-white/70">
+              {timezone ? `${city} · ${offset}` : 'Pick a timezone'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-center text-xs text-muted-foreground">
+        This is how {name || 'this market'} will appear across registration forms and the
+        countries list.
+      </p>
+    </div>
+  )
 }
 
 export function AdminCountriesPage() {
@@ -147,12 +292,38 @@ export function AdminCountriesPage() {
     }
   }, [load])
 
+  /** The last zone filled in from the ISO code, so a hand-picked zone is never overwritten. */
+  const autoZone = useRef('')
+
   function updateField<K extends keyof CountryInput>(key: K, value: CountryInput[K]) {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  function handleIsoChange(value: string) {
+    const zone = timezonesForIso(value)[0] ?? ''
+    setForm((current) => {
+      const untouched =
+        !current.default_timezone || current.default_timezone === autoZone.current
+      if (!zone || !untouched) return { ...current, iso_code: value }
+      autoZone.current = zone
+      return { ...current, iso_code: value, default_timezone: zone }
+    })
+  }
+
+  function autofillTimezone() {
+    const zone = timezonesForIso(form.iso_code)[0]
+    if (!zone) {
+      setFormError('No time zone found for that ISO code. Pick one from the list.')
+      return
+    }
+    setFormError(null)
+    autoZone.current = zone
+    updateField('default_timezone', zone)
+  }
+
   function openCreate() {
     setEditingId(null)
+    autoZone.current = ''
     setForm(emptyCountry)
     setFormError(null)
     setNotice(null)
@@ -163,6 +334,7 @@ export function AdminCountriesPage() {
   function openEdit(country: Country) {
     setViewOpen(false)
     setEditingId(country.id)
+    autoZone.current = ''
     setForm(toInput(country))
     setFormError(null)
     setNotice(null)
@@ -538,7 +710,7 @@ export function AdminCountriesPage() {
                     <Input
                       id="iso-code"
                       value={form.iso_code}
-                      onChange={(event) => updateField('iso_code', event.target.value)}
+                      onChange={(event) => handleIsoChange(event.target.value)}
                       className="h-11 bg-surface px-3 uppercase"
                       maxLength={2}
                       required
@@ -586,16 +758,24 @@ export function AdminCountriesPage() {
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="timezone">Default timezone</Label>
-                    <Input
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="timezone">Default timezone</Label>
+                      <button
+                        type="button"
+                        onClick={autofillTimezone}
+                        disabled={form.iso_code.trim().length !== 2}
+                        className="text-xs font-medium text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                      >
+                        Auto-fill from ISO code
+                      </button>
+                    </div>
+                    <TimezoneSelect
                       id="timezone"
                       value={form.default_timezone}
-                      onChange={(event) =>
-                        updateField('default_timezone', event.target.value)
-                      }
-                      className="h-11 bg-surface px-3"
-                      required
-                      placeholder="Asia/Colombo"
+                      onChange={(zone) => {
+                        autoZone.current = ''
+                        updateField('default_timezone', zone)
+                      }}
                     />
                   </div>
                   <div className="space-y-2 sm:col-span-2">
@@ -631,38 +811,7 @@ export function AdminCountriesPage() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <div className="relative overflow-hidden rounded-xl bg-brand-violet px-6 py-6 text-white">
-                    <div className="relative flex items-center gap-4">
-                      <span className="text-5xl leading-none drop-shadow-sm">
-                        {flagEmoji(form.iso_code)}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-poster text-2xl">
-                          {form.name.trim() || 'Unnamed market'}
-                        </p>
-                        <p className="text-sm text-white/75">
-                          {form.iso_code.trim().toUpperCase()}
-                          {form.status?.trim() ? ` · ${form.status.trim()}` : ''}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative mt-5 flex flex-wrap gap-2">
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-bold">
-                        <Coins className="size-3.5" />
-                        {form.default_currency.trim().toUpperCase() || '-'}
-                      </span>
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-white/15 px-2.5 py-1 text-xs font-bold">
-                        <Clock className="size-3.5" />
-                        {form.default_timezone.trim() || '-'}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-center text-xs text-muted-foreground">
-                    This is how {form.name.trim() || 'this market'} will appear across
-                    registration forms and the countries list.
-                  </p>
-                </div>
+                <CountryPassport form={form} />
               )}
             </div>
 
