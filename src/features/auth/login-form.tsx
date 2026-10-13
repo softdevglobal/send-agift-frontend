@@ -371,15 +371,17 @@ export function LoginForm({ role }: LoginFormProps) {
           </Button>
         ) : null}
 
-        <p className="text-center text-sm text-muted-foreground">
-          {copy.registerHint}{' '}
-          <Link
-            to={copy.registerTo}
-            className="font-medium text-primary transition-colors hover:text-primary/80"
-          >
-            {copy.registerLabel}
-          </Link>
-        </p>
+        {copy.registerTo ? (
+          <p className="text-center text-sm text-muted-foreground">
+            {copy.registerHint}{' '}
+            <Link
+              to={copy.registerTo}
+              className="font-medium text-primary transition-colors hover:text-primary/80"
+            >
+              {copy.registerLabel}
+            </Link>
+          </p>
+        ) : null}
 
         <p className="text-center text-sm text-muted-foreground">
           {copy.switchPrompt}{' '}

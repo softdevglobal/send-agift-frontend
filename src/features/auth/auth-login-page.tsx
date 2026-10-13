@@ -33,11 +33,13 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
           <BrandLogo className="lg:invisible" imgClassName="h-12" />
 
           <div className="flex items-center gap-4">
-            <Button asChild size="sm" className="h-9 rounded-full px-4 font-medium">
-              <Link to={copy.registerTo}>
-                {isSeller ? 'Register' : isAdmin ? 'Bootstrap' : 'Create account'}
-              </Link>
-            </Button>
+            {copy.registerTo ? (
+              <Button asChild size="sm" className="h-9 rounded-full px-4 font-medium">
+                <Link to={copy.registerTo}>
+                  {isSeller ? 'Register' : 'Create account'}
+                </Link>
+              </Button>
+            ) : null}
             {isSeller || isAdmin ? (
               <Button asChild size="sm" variant="outline" className="h-9 rounded-full bg-background/70 px-4 font-medium">
                 <Link to={copy.switchTo} state={location.state}>

@@ -22,7 +22,6 @@ import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
-import { AdminRegisterPage } from '@/pages/admin-register-page'
 import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
@@ -282,7 +281,6 @@ export function AppRouter() {
           </GuestRoute>
         }
       />
-      <Route path="/admin/register" element={<AdminRegisterPage />} />
 
       <Route path="/seller/email/undo" element={<SellerEmailUndoPage />} />
       <Route
