@@ -15,15 +15,6 @@ export type GiftProduct = {
   image: string
 }
 
-export type Testimonial = {
-  id: string
-  name: string
-  quote: string
-  rating: number
-  avatar: string
-  role?: string
-}
-
 export const giftCategories: GiftCategory[] = [
   {
     id: 'birthday',
@@ -66,38 +57,5 @@ export const giftCategories: GiftCategory[] = [
     image:
       'https://images.unsplash.com/photo-1512909006721-3d6018887383?auto=format&fit=crop&w=300&q=80',
     tint: 'bg-[#F8EFE4]',
-  },
-]
-
-export const sellerTestimonials: Testimonial[] = [
-  {
-    id: 's1',
-    name: 'Maya Chen',
-    role: 'Home gifts seller',
-    quote:
-      'Onboarding for payouts was clear by country. Orders, labels, and proof of delivery finally live in one place.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&q=80',
-  },
-  {
-    id: 's2',
-    name: 'Daniel Okoro',
-    role: 'Florist & hampers',
-    quote:
-      'Connected publishing and fulfilment tools helped us scale without losing the handmade feel of each gift.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=120&q=80',
-  },
-  {
-    id: 's3',
-    name: 'Elena Voss',
-    role: 'Wellness studio',
-    quote:
-      'The payout ledger and dispute tools give us confidence. Customers find us, and we stay ready to fulfil.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=120&q=80',
   },
 ]

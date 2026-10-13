@@ -172,16 +172,6 @@ export function SiteHeader() {
             </Link>
           </Button>
 
-          {role !== 'seller' ? (
-            <Button
-              asChild
-              variant="outline"
-              className="ml-1 hidden h-9 border-2 border-brand-ink px-3 md:inline-flex"
-            >
-              <Link to="/become-a-seller">Become a seller</Link>
-            </Button>
-          ) : null}
-
           <Button
             variant="ghost"
             size="icon"
@@ -314,15 +304,6 @@ export function SiteHeader() {
                   </Link>
                 ))}
               </>
-            ) : null}
-
-            {role !== 'seller' ? (
-              <Button asChild variant="outline" className="mt-3">
-                <Link to="/become-a-seller" onClick={closeMenu}>
-                  <Store className="size-4" />
-                  Become a seller
-                </Link>
-              </Button>
             ) : null}
 
             {isAuthenticated ? (

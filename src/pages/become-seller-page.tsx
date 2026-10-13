@@ -15,9 +15,7 @@ import { SiteLayout } from '@/components/common/site-layout'
 import { Marker, Sparkle } from '@/components/common/storefront-decor'
 import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
-import { sellerTestimonials } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
-import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { cn } from '@/lib/utils'
 
 const sellerFeatures = [
@@ -182,15 +180,6 @@ export function BecomeSellerPage() {
                 <Link to="/seller/register">Open seller portal</Link>
               </Button>
             </div>
-          </div>
-        </section>
-
-        <section className={cn(storefrontFrameClass, 'py-14 lg:py-16')}>
-          <SectionHeading title="What sellers say" align="center" />
-          <div className="grid gap-5 md:grid-cols-3">
-            {sellerTestimonials.map((testimonial, index) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
-            ))}
           </div>
         </section>
 
