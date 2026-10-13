@@ -469,17 +469,11 @@ export function CustomerRegisterForm() {
         </div>
       )}
 
-      <div className="space-y-3 text-center text-sm text-muted-foreground">
+      <div className="text-center text-sm text-muted-foreground">
         <p>
           Already have an account?{' '}
           <Link to="/login" className="font-medium text-primary hover:text-primary/80">
             Sign in
-          </Link>
-        </p>
-        <p className="text-xs">
-          Selling gifts?{' '}
-          <Link to="/seller/register" className="font-medium text-foreground hover:text-primary">
-            Open a seller account
           </Link>
         </p>
       </div>

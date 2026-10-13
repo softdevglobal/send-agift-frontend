@@ -11,7 +11,7 @@ import {
   Truck,
   type LucideIcon,
 } from 'lucide-react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin, type CodeLoginResult } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
@@ -94,7 +94,6 @@ async function loginWithCredentials(
 export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
   const { login, isAuthenticated, role: sessionRole } = useAuth()
-  const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   // Emails link here with the address filled in (e.g. a gift recipient's).
@@ -352,9 +351,8 @@ export function LoginForm({ role }: LoginFormProps) {
         </div>
       ) : null}
 
-      {/* Plain wording, not cards. Customers only see "create an account"; the
-          seller sign-in lives in the header and on its own page. */}
-      <div className="space-y-1.5 text-center text-sm text-muted-foreground">
+      {/* Plain wording, not cards. The role switch lives in the page header. */}
+      <div className="text-center text-sm text-muted-foreground">
         {copy.registerTo ? (
           <p>
             {copy.registerHint}{' '}
@@ -363,18 +361,6 @@ export function LoginForm({ role }: LoginFormProps) {
               className="font-semibold text-primary hover:underline"
             >
               {copy.registerLabel}
-            </Link>
-          </p>
-        ) : null}
-        {role !== 'customer' ? (
-          <p>
-            {copy.switchPrompt}{' '}
-            <Link
-              to={copy.switchTo}
-              state={location.state}
-              className="font-semibold text-primary hover:underline"
-            >
-              {copy.switchLabel}
             </Link>
           </p>
         ) : null}
