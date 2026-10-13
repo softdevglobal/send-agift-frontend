@@ -771,7 +771,7 @@ export function CheckoutPage() {
         <div className="space-y-6">
           <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
                 <User className="size-4" />
               </span>
               <div>
@@ -1106,7 +1106,7 @@ export function CheckoutPage() {
                     return (
                       <>
                       <div className="animate-fade-in flex items-start gap-3 rounded-xl border border-border/60 bg-accent/40 p-3.5 text-sm">
-                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-primary">
                           {initials(recipientDetails.name)}
                         </span>
                         <div className="min-w-0">
@@ -1161,7 +1161,7 @@ export function CheckoutPage() {
 
           <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
             <div className="flex items-start gap-3">
-              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
                 <CalendarDays className="size-4" />
               </span>
               <div>
@@ -1285,7 +1285,7 @@ export function CheckoutPage() {
           {recipientId ? (
             <section className={cn(customerPanelClass, 'space-y-4 p-5 sm:p-6')}>
               <div className="flex items-start gap-3">
-                <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-primary">
+                <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-full bg-accent text-primary">
                   <Truck className="size-4" />
                 </span>
                 <div>
@@ -1349,7 +1349,7 @@ export function CheckoutPage() {
                               className={cn(
                                 'flex w-full items-start justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-colors',
                                 quoteSelections[shop.shop_id]?.mode === 'seller_delivery'
-                                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                  ? 'border-primary bg-accent ring-2 ring-primary/20'
                                   : 'border-border/50 hover:border-border hover:bg-muted/40',
                               )}
                             >

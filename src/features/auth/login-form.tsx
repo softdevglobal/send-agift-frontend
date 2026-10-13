@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/auth-context'
 import { CodeLoginPanel } from '@/features/auth/code-login-panel'
 import { loginCopy } from '@/features/auth/copy'
@@ -353,46 +352,32 @@ export function LoginForm({ role }: LoginFormProps) {
         </div>
       ) : null}
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <Separator className="flex-1" />
-        </div>
-
-        {role === 'customer' ? (
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-12 w-full rounded-full text-sm"
-          >
-            <Link to="/become-a-seller">Become a seller</Link>
-          </Button>
-        ) : null}
-
+      {/* Plain wording, not cards. Customers only see "create an account"; the
+          seller sign-in lives in the header and on its own page. */}
+      <div className="space-y-1.5 text-center text-sm text-muted-foreground">
         {copy.registerTo ? (
-          <p className="text-center text-sm text-muted-foreground">
+          <p>
             {copy.registerHint}{' '}
             <Link
               to={copy.registerTo}
-              className="font-medium text-primary transition-colors hover:text-primary/80"
+              className="font-semibold text-primary hover:underline"
             >
               {copy.registerLabel}
             </Link>
           </p>
         ) : null}
-
-        <p className="text-center text-sm text-muted-foreground">
-          {copy.switchPrompt}{' '}
-          <Link
-            to={copy.switchTo}
-            state={location.state}
-            className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-          >
-            {copy.switchLabel}
-          </Link>
-        </p>
+        {role !== 'customer' ? (
+          <p>
+            {copy.switchPrompt}{' '}
+            <Link
+              to={copy.switchTo}
+              state={location.state}
+              className="font-semibold text-primary hover:underline"
+            >
+              {copy.switchLabel}
+            </Link>
+          </p>
+        ) : null}
       </div>
     </form>
   )

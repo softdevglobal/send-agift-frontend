@@ -51,7 +51,7 @@ export const giftCategories: GiftCategory[] = [
     name: 'Wellness',
     image:
       'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=300&q=80',
-    tint: 'bg-[#EDE8F5]',
+    tint: 'bg-[#F8EBE3]',
   },
   {
     id: 'tech',

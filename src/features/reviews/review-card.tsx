@@ -177,7 +177,7 @@ export function ReviewCard({
             className="size-9 shrink-0 rounded-full object-cover"
           />
         ) : (
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-primary">
             {initials(name)}
           </span>
         )}

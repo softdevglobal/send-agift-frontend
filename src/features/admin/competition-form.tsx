@@ -725,7 +725,7 @@ export function CompetitionForm({
             <button
               type="button"
               onClick={() => set('official_rules', rulesTemplate())}
-              className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/15"
+              className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-primary transition hover:bg-accent"
             >
               <Wand2 className="size-3.5" />
               Start from a template
