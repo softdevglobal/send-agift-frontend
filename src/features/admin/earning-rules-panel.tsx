@@ -4,6 +4,7 @@ import { Coins, LoaderCircle, Play } from 'lucide-react'
 import { listEarningRules, runEarning, setEarningRule, type PointsEarningRule } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { adminPanelClass } from '@/features/admin/admin-styles'
 import { formatDate } from '@/features/admin/admin-utils'
@@ -135,12 +136,10 @@ function RuleRow({
       </div>
       {!rule.earning_allowed ? <StatusPill tone="warn">Earning gate off for this country</StatusPill> : null}
       <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          className="size-4 accent-primary"
+        <Checkbox
           checked={enabled}
           disabled={!editable}
-          onChange={(e) => setEnabled(e.target.checked)}
+          onCheckedChange={(value) => setEnabled(value === true)}
         />
         On
       </label>

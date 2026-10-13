@@ -15,6 +15,7 @@ import {
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogClose,
@@ -648,11 +649,11 @@ export function VoidPlayDialog({
         </DialogHeader>
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-primary" checked={refund} onChange={(e) => setRefund(e.target.checked)} />
+            <Checkbox checked={refund} onCheckedChange={(value) => setRefund(value === true)} />
             Refund its {play?.points_spent ?? 0} points
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="size-4 accent-primary" checked={reverse} onChange={(e) => setReverse(e.target.checked)} />
+            <Checkbox checked={reverse} onCheckedChange={(value) => setReverse(value === true)} />
             Take its {prizeMoney(play?.prize_increment_cents ?? 0, comp.prize_currency)} back off the prize
           </label>
           <div className="space-y-2">

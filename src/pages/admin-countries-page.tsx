@@ -26,7 +26,6 @@ import {
 } from '@/api/types'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
-import { Sparkle } from '@/components/common/storefront-decor'
 import { PageNav, usePagedList } from '@/components/common/page-nav'
 import { TimezoneSelect } from '@/components/common/timezone-select'
 import { Button } from '@/components/ui/button'
@@ -159,8 +158,6 @@ function CountryPassport({
   return (
     <div className="space-y-4">
       <div className="relative overflow-hidden rounded-2xl bg-brand-violet text-white shadow-lg">
-        <Sparkle className="absolute top-4 right-[18%] size-5 text-brand-teal" />
-        <Sparkle className="absolute right-6 bottom-24 size-3.5 text-white/60" />
         {/* The flag, huge and ghosted, behind everything. */}
         <span
           aria-hidden
@@ -169,21 +166,9 @@ function CountryPassport({
           {flagEmoji(iso)}
         </span>
 
-        <div className="relative flex items-start justify-between gap-3 px-6 pt-5">
-          <p className="text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
-            Send A Gift · Market pass
-          </p>
-          <span
-            className={cn(
-              '-rotate-6 rounded-md border-2 px-2 py-0.5 text-[10px] font-bold tracking-[0.14em] uppercase',
-              active
-                ? 'border-brand-teal text-brand-teal'
-                : 'border-white/50 text-white/60',
-            )}
-          >
-            {active ? 'Open for gifts' : 'Closed'}
-          </span>
-        </div>
+        <p className="relative px-6 pt-5 text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
+          Send A Gift · Market pass
+        </p>
 
         <div className="relative flex items-center gap-4 px-6 pt-4 pb-5">
           <span className="text-6xl leading-none drop-shadow">{flagEmoji(iso)}</span>
@@ -193,16 +178,16 @@ function CountryPassport({
             </p>
             <p className="font-mono text-sm tracking-[0.3em] text-white/75">
               {iso || '--'}
+              <span className="font-sans tracking-normal">
+                {' · '}
+                {active ? 'Open for gifts' : 'Closed'}
+              </span>
             </p>
           </div>
         </div>
 
-        {/* Perforated edge, like a boarding pass. */}
-        <div className="relative flex items-center">
-          <span className="-ml-3 size-6 shrink-0 rounded-full bg-card" />
-          <span className="flex-1 border-t-2 border-dashed border-white/30" />
-          <span className="-mr-3 size-6 shrink-0 rounded-full bg-card" />
-        </div>
+        {/* Tear line. */}
+        <div aria-hidden className="relative mx-6 border-t-2 border-dashed border-white/30" />
 
         <div className="relative grid grid-cols-2 gap-px bg-white/10">
           <div className="bg-brand-ink/30 px-6 py-4">
@@ -718,21 +703,8 @@ export function AdminCountriesPage() {
                       >
                         {flagEmoji(country.iso_code)}
                       </span>
-                      <Sparkle className="absolute right-[38%] bottom-3 size-3.5 text-brand-teal" />
-                      <span className="relative flex items-start justify-between gap-2">
-                        <span className="text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
-                          Market pass
-                        </span>
-                        <span
-                          className={cn(
-                            '-rotate-6 rounded-md border-2 px-1.5 py-0.5 text-[10px] font-bold tracking-[0.12em] uppercase',
-                            active
-                              ? 'border-brand-teal text-brand-teal'
-                              : 'border-white/45 text-white/60',
-                          )}
-                        >
-                          {active ? 'Open' : country.status || 'Closed'}
-                        </span>
+                      <span className="relative block text-[10px] font-bold tracking-[0.2em] text-white/70 uppercase">
+                        Market pass
                       </span>
                       <span className="relative mt-3 flex items-center gap-3">
                         <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-white text-4xl shadow-sm">
@@ -744,17 +716,20 @@ export function AdminCountriesPage() {
                           </span>
                           <span className="block font-mono text-xs tracking-[0.3em] text-white/75">
                             {country.iso_code}
+                            <span className="font-sans tracking-normal">
+                              {' · '}
+                              {active ? 'Open' : country.status || 'Closed'}
+                            </span>
                           </span>
                         </span>
                       </span>
                     </button>
 
-                    {/* Perforated tear line. */}
-                    <div className="relative -mt-px flex items-center" aria-hidden>
-                      <span className="-ml-2.5 size-5 shrink-0 rounded-full border-2 border-brand-ink/10 bg-background group-hover:border-brand-ink" />
-                      <span className="flex-1 border-t-2 border-dashed border-brand-ink/15" />
-                      <span className="-mr-2.5 size-5 shrink-0 rounded-full border-2 border-brand-ink/10 bg-background group-hover:border-brand-ink" />
-                    </div>
+                    {/* Tear line. */}
+                    <div
+                      aria-hidden
+                      className="mx-4 border-t-2 border-dashed border-brand-ink/15"
+                    />
 
                     <div className="flex flex-1 flex-col gap-4 p-4 pt-3">
                       <div className="grid grid-cols-2 gap-3">
