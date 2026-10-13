@@ -19,6 +19,7 @@ import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminPointPackagesPage } from '@/pages/admin-point-packages-page'
 import { AdminPointsPage } from '@/pages/admin-points-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
+import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
 import { AdminRegisterPage } from '@/pages/admin-register-page'
@@ -31,6 +32,7 @@ import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
 import { EmailUndoPage } from '@/pages/email-undo-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
+import { FreeGiftPage } from '@/pages/free-gift-page'
 import { CustomerOrderDetailPage } from '@/pages/customer-order-detail-page'
 import { CustomerOrderHistoryPage } from '@/pages/customer-order-history-page'
 import { CustomerOrdersPage } from '@/pages/customer-orders-page'
@@ -53,6 +55,7 @@ import { SellerEarningsPage } from '@/pages/seller-earnings-page'
 import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerEmailUndoPage } from '@/pages/seller-email-undo-page'
 import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
+import { SellerFreeGiftsPage } from '@/pages/seller-free-gifts-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
@@ -118,6 +121,8 @@ export function AppRouter() {
           element={<CustomerSellerShopPage />}
         />
         <Route path="/cart" element={<CartPage />} />
+        {/* Open to guests: they see what is on offer and are asked to sign in. */}
+        <Route path="/free-gift" element={<FreeGiftPage />} />
         <Route
           path="/checkout"
           element={
@@ -304,6 +309,7 @@ export function AppRouter() {
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="payouts" element={<SellerPayoutsPage />} />
         <Route path="points" element={<SellerPointsPage />} />
+        <Route path="free-gifts" element={<SellerFreeGiftsPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
         <Route path="profile" element={<SellerProfilePage />} />
@@ -324,6 +330,7 @@ export function AppRouter() {
         <Route path="customers/:customerId" element={<AdminCustomerDetailPage />} />
         <Route path="points" element={<AdminPointsPage />} />
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
+        <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}
         <Route

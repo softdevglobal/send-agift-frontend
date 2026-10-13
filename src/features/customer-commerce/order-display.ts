@@ -4,6 +4,7 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   draft: 'Draft',
   pending_payment: 'Awaiting payment',
   paid: 'Paid',
+  confirmed: 'Confirmed',
   accepted: 'Accepted',
   preparing: 'Preparing',
   dispatched: 'Dispatched',
@@ -16,6 +17,7 @@ const ORDER_STATUS_DESCRIPTIONS: Record<OrderStatus, string> = {
   draft: 'This order is still being prepared on our side.',
   pending_payment: 'Waiting for your payment.',
   paid: 'Payment is confirmed. Waiting for the seller to accept.',
+  confirmed: 'Your free gift is confirmed. Waiting for the seller to accept.',
   accepted: 'The seller has accepted this gift order.',
   preparing: 'The seller is preparing your gift.',
   dispatched: 'The gift is on its way to the recipient.',
@@ -29,6 +31,7 @@ const ACTIVE_ORDER_STATUSES: ReadonlySet<string> = new Set([
   'draft',
   'pending_payment',
   'paid',
+  'confirmed',
   'accepted',
   'preparing',
   'dispatched',
@@ -56,7 +59,8 @@ const ORDER_TRACKING_STEPS: readonly TrackingStep[] = [
     key: 'placed',
     label: 'Order placed',
     description: 'We received your gift order.',
-    statuses: ['draft', 'pending_payment'],
+    // A free gift has nothing to pay: it is placed and confirmed in one go.
+    statuses: ['draft', 'pending_payment', 'confirmed'],
   },
   {
     key: 'paid',
@@ -105,6 +109,7 @@ const CANCELLABLE: ReadonlySet<string> = new Set([
   'draft',
   'pending_payment',
   'paid',
+  'confirmed',
   'accepted',
   'preparing',
 ])
@@ -139,13 +144,21 @@ type OrderTrackingProgress = {
   completedCount: number
 }
 
-export function getOrderTrackingProgress(status: string): OrderTrackingProgress {
-  const currentIndex = ORDER_TRACKING_STEPS.findIndex((step) =>
+export function getOrderTrackingProgress(
+  status: string,
+  kind?: string,
+): OrderTrackingProgress {
+  // A free gift has no payment step to wait on.
+  const trackingSteps =
+    kind === 'free_gift' || status === 'confirmed'
+      ? ORDER_TRACKING_STEPS.filter((step) => step.key !== 'paid')
+      : ORDER_TRACKING_STEPS
+  const currentIndex = trackingSteps.findIndex((step) =>
     step.statuses.includes(status),
   )
   const isTerminal = status === 'cancelled' || status === 'refunded'
 
-  const steps = ORDER_TRACKING_STEPS.map((step, index) => {
+  const steps = trackingSteps.map((step, index) => {
     let state: TrackingStepState = 'upcoming'
     if (isTerminal) {
       state = index === 0 ? 'complete' : 'upcoming'
@@ -186,6 +199,10 @@ export function fulfilmentStatusLabel(status: string): string {
 
 export function canCancelOrder(status: string): boolean {
   return CANCELLABLE.has(status)
+}
+
+export function isFreeGiftOrder(order: { order_kind?: string }): boolean {
+  return order.order_kind === 'free_gift'
 }
 
 /** The API sends delivery_date as a timestamp; only the date part is meaningful. */

@@ -30,6 +30,7 @@ import {
   formatDeliveryDate,
   formatOrderDate,
   fulfilmentStatusLabel,
+  isFreeGiftOrder,
   isHistoryOrderStatus,
   ordersListPath,
 } from "@/features/customer-commerce/order-display";
@@ -191,11 +192,14 @@ export function CustomerOrderDetailPage() {
   const listLabel = isHistoryOrderStatus(order.status)
     ? "Order history"
     : "Track orders";
+  const freeGift = isFreeGiftOrder(order);
   const placedNotice =
-    justPlaced && order.status === "pending_payment"
-      ? awaitingPayment
-        ? null
-        : "Your gift order is created. Complete the payment below and it is on its way."
+    justPlaced && freeGift
+      ? "Your free gift is confirmed. The seller has it now. Track its progress below."
+      : justPlaced && order.status === "pending_payment"
+        ? awaitingPayment
+          ? null
+          : "Your gift order is created. Complete the payment below and it is on its way."
       : justPlaced
         ? "Payment received. Your gift order is placed. Track its progress below."
         : null;
@@ -238,7 +242,11 @@ export function CustomerOrderDetailPage() {
           <HeroFact
             icon={Receipt}
             label="Total"
-            value={formatPriceAmount(order.total_amount, order.currency)}
+            value={
+              freeGift
+                ? "Free"
+                : formatPriceAmount(order.total_amount, order.currency)
+            }
           />
           <HeroFact
             icon={Coins}
@@ -255,7 +263,24 @@ export function CustomerOrderDetailPage() {
 
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
 
-      {order.status === "pending_payment" ? (
+      {freeGift ? (
+        <section className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl bg-brand-teal p-5 text-brand-ink sm:p-6">
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-ink text-white">
+            <Gift className="size-6" />
+          </span>
+          <div className="min-w-[12rem] flex-1">
+            <p className="text-[11px] font-bold tracking-[0.16em] uppercase">
+              Free gift
+            </p>
+            <p className="font-poster text-xl tracking-tight sm:text-2xl">
+              This one is on the seller. You pay nothing.
+            </p>
+            <p className="mt-1 text-sm font-medium text-brand-ink/75">
+              The gift and its delivery are paid for by the shop.
+            </p>
+          </div>
+        </section>
+      ) : order.status === "pending_payment" ? (
         awaitingPayment ? (
           <section className="mb-6 flex items-center gap-3 rounded-2xl border border-brand-ink/20 bg-card p-5">
             <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
@@ -324,6 +349,7 @@ export function CustomerOrderDetailPage() {
         <div className="mt-5">
           <OrderTrackingTimeline
             status={order.status}
+            kind={order.order_kind}
             placedAt={formatOrderDate(order.created_at)}
             updatedAt={formatOrderDate(order.updated_at)}
           />
@@ -471,9 +497,26 @@ export function CustomerOrderDetailPage() {
                   </p>
                 ) : null;
               })()}
+              {freeGift ? (
+                <div className="flex justify-between gap-3 text-brand-violet">
+                  <dt>Paid by the seller</dt>
+                  <dd>
+                    -
+                    {formatPriceAmount(
+                      order.free_gift_cost ??
+                        order.subtotal_amount + order.delivery_amount,
+                      order.currency,
+                    )}
+                  </dd>
+                </div>
+              ) : null}
               <div className="flex justify-between gap-3 border-t border-border/60 pt-2 font-medium">
                 <dt>Total</dt>
-                <dd>{formatPriceAmount(order.total_amount, order.currency)}</dd>
+                <dd>
+                  {freeGift
+                    ? "Free"
+                    : formatPriceAmount(order.total_amount, order.currency)}
+                </dd>
               </div>
             </dl>
 

@@ -504,6 +504,8 @@ export const ORDER_STATUSES = [
   'draft',
   'pending_payment',
   'paid',
+  /** A free gift: nothing to pay, so it never sits in pending_payment. */
+  'confirmed',
   'accepted',
   'preparing',
   'dispatched',
@@ -546,9 +548,17 @@ export type Order = {
   /** Points the sender attached to the gift. */
   gift_points?: number
   gift_points_status?: GiftPointsStatus
+  /**
+   * A free gift has `total_amount` 0: the seller funds `free_gift_cost` (item
+   * plus delivery) from their free gift budget.
+   */
+  order_kind?: OrderKind
+  free_gift_cost?: number
   created_at: string
   updated_at: string
 }
+
+export type OrderKind = 'paid' | 'free_gift'
 
 /**
  * Where points attached to a gift are: taken from the sender (held), reached
@@ -618,6 +628,7 @@ export type OrderShopDelivery = {
 export type SellerOrderItemSummary = OrderItem & {
   order_number: string
   order_status: OrderStatus
+  order_kind?: OrderKind
   delivery_date: string
   shop_name: string
   product_name: string

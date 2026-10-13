@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Gift } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
@@ -7,6 +7,7 @@ import type { Order } from '@/api/orders'
 import {
   formatDeliveryDate,
   formatOrderDate,
+  isFreeGiftOrder,
 } from '@/features/customer-commerce/order-display'
 import {
   OrderStatusBadge,
@@ -40,7 +41,15 @@ export function CustomerOrderList({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="font-extrabold tracking-tight">{order.order_number}</p>
+                  <p className="flex flex-wrap items-center gap-2 font-extrabold tracking-tight">
+                    {order.order_number}
+                    {isFreeGiftOrder(order) ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-brand-teal px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] text-brand-ink uppercase">
+                        <Gift className="size-3" />
+                        Free gift
+                      </span>
+                    ) : null}
+                  </p>
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">
                     Placed {formatOrderDate(order.created_at)} · Delivers{' '}
                     {formatDeliveryDate(order.delivery_date)}
@@ -49,7 +58,9 @@ export function CustomerOrderList({
                 <div className="flex shrink-0 items-center gap-3 text-right">
                   <div>
                     <p className="text-base font-extrabold tracking-tight">
-                      {formatPriceAmount(order.total_amount, order.currency)}
+                      {isFreeGiftOrder(order)
+                        ? 'Free'
+                        : formatPriceAmount(order.total_amount, order.currency)}
                     </p>
                     <div className="mt-1 flex justify-end">
                       <OrderStatusBadge status={order.status} />
@@ -59,7 +70,11 @@ export function CustomerOrderList({
                 </div>
               </div>
               {variant === 'track' ? (
-                <OrderTrackingProgressBar status={order.status} className="mt-3" />
+                <OrderTrackingProgressBar
+                  status={order.status}
+                  kind={order.order_kind}
+                  className="mt-3"
+                />
               ) : null}
             </Link>
           </li>

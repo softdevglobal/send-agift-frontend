@@ -8,12 +8,25 @@ import { describeCodeProblem, type CodeProblem } from '@/features/auth/code-prob
 import { CodeProblemAlert } from '@/features/auth/code-problem-alert'
 
 type VerifyPhoneCardProps = {
+  /** The number saved on the account. This is the one a code is sent to. */
   phone: string
   verified: boolean
   onVerified: () => void
+  /**
+   * The number in the field differs from the saved one. The code can only go
+   * to the saved number, so it has to be saved first.
+   */
+  unsaved?: boolean
+  saving?: boolean
 }
 
-export function VerifyPhoneCard({ phone, verified, onVerified }: VerifyPhoneCardProps) {
+export function VerifyPhoneCard({
+  phone,
+  verified,
+  onVerified,
+  unsaved = false,
+  saving = false,
+}: VerifyPhoneCardProps) {
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -26,6 +39,20 @@ export function VerifyPhoneCard({ phone, verified, onVerified }: VerifyPhoneCard
     return () => window.clearTimeout(id)
   }, [wait])
 
+  if (unsaved) {
+    return (
+      <div className="space-y-2 rounded-lg border p-3">
+        <p className="text-sm text-muted-foreground">
+          Save your phone number first. We verify the number saved on your
+          account, and this one is not saved yet.
+        </p>
+        {/* Inside the profile form, so this saves the whole profile. */}
+        <Button type="submit" variant="outline" disabled={saving}>
+          {saving ? <LoaderCircle className="animate-spin" /> : 'Save number'}
+        </Button>
+      </div>
+    )
+  }
   if (verified) {
     return (
       <p className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
