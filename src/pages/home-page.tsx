@@ -19,14 +19,12 @@ import { useAuth } from '@/features/auth/auth-context'
 import { CategoryItem } from '@/features/marketing/category-item'
 import { homePathForRole } from '@/lib/auth'
 import {
-  customerTestimonials,
   giftCategories,
   type GiftProduct,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
 import { ReelsStrip } from '@/features/reels/reels-strip'
-import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { GiftCard, GiftSearchBar } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
@@ -416,15 +414,6 @@ export function HomePage() {
             </div>
           </section>
         ) : null}
-
-        <section className={cn(storefrontFrameClass, 'pt-6 pb-16 lg:pb-20')}>
-          <SectionHeading title="What our customers say" align="center" marker="violet" />
-          <div className="grid gap-5 md:grid-cols-3">
-            {customerTestimonials.map((testimonial, index) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
-            ))}
-          </div>
-        </section>
       </main>
     </SiteLayout>
   )

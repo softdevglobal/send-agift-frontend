@@ -69,36 +69,6 @@ export const giftCategories: GiftCategory[] = [
   },
 ]
 
-export const customerTestimonials: Testimonial[] = [
-  {
-    id: 't1',
-    name: 'Amelia R.',
-    quote:
-      'I sent a birthday hamper across cities and tracked every step. It felt personal, not like another marketplace order.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-  },
-  {
-    id: 't2',
-    name: 'Jordan K.',
-    quote:
-      'Country-ready gift filters saved me. The points balance and competition entry made the whole experience fun.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-  },
-  {
-    id: 't3',
-    name: 'Priya S.',
-    quote:
-      'Beautiful packaging, clear delivery updates, and support that actually resolved a date change quickly.',
-    rating: 5,
-    avatar:
-      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=120&q=80',
-  },
-]
-
 export const sellerTestimonials: Testimonial[] = [
   {
     id: 's1',
