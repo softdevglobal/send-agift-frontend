@@ -96,7 +96,7 @@ export function SiteHeader() {
           <Button
             asChild
             variant="ghost"
-            className="hidden h-9 px-3 md:inline-flex"
+            className={cn('hidden h-9 px-3 md:inline-flex', isGuest && 'md:-order-2')}
           >
             <Link to="/reels">
               <Clapperboard className="size-4" />
@@ -164,7 +164,8 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            // For guests the cart sits left of Sign in / Sign up on desktop.
+            className={cn('relative', isGuest && 'md:-order-1')}
             asChild
             aria-label="Cart"
           >
