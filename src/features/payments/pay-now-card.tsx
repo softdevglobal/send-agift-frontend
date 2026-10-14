@@ -16,6 +16,8 @@ type PayNowCardProps = {
   currency: string
   /** Set when the customer came back from Stripe without paying. */
   cancelled?: boolean
+  /** A free gift: the gift line reads "Free", only the delivery is paid. */
+  freeGift?: boolean
 }
 
 /**
@@ -30,6 +32,7 @@ export function PayNowCard({
   total,
   currency,
   cancelled,
+  freeGift,
 }: PayNowCardProps) {
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +77,7 @@ export function PayNowCard({
       <dl className="mt-4 max-w-xs space-y-1 border-t border-border/60 pt-3 text-sm">
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Gifts</dt>
-          <dd>{formatPriceAmount(subtotal, currency)}</dd>
+          <dd>{freeGift ? 'Free' : formatPriceAmount(subtotal, currency)}</dd>
         </div>
         <div className="flex justify-between gap-3">
           <dt className="text-muted-foreground">Delivery</dt>

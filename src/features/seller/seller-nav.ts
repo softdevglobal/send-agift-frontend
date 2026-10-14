@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Boxes,
   Clapperboard,
   Coins,
   Gift,
@@ -33,6 +34,7 @@ export const sellerPrimaryNav: SellerNavItem[] = [
   { to: '/seller', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/seller/shops', label: 'Shops', icon: Store },
   { to: '/seller/products', label: 'Products', icon: Package },
+  { to: '/seller/inventory', label: 'Inventory', icon: Boxes },
   { to: '/seller/reels', label: 'Reels', icon: Clapperboard },
   { to: '/seller/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/seller/reviews', label: 'Reviews', icon: Star },

@@ -69,8 +69,8 @@ export function FreeGiftBanner({ className }: { className?: string }) {
         <span className="mt-0.5 block text-sm font-medium text-brand-ink/75">
           {isCustomer
             ? needsVerify
-              ? 'Verify your email and phone, then send it to someone. You pay nothing.'
-              : 'Send it to someone special. The gift and delivery are on the seller.'
+              ? 'Verify your email and phone, then send it to someone. The gift is free; you only pay delivery.'
+              : 'Send it to someone special. The gift is on the seller; you only pay delivery.'
             : 'Create an account and send one gift on us. No payment needed.'}
         </span>
       </span>

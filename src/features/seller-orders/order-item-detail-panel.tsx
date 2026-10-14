@@ -330,14 +330,13 @@ export function SellerOrderItemDetailPanel({
                 <div className="min-w-0">
                   <p className="text-sm font-extrabold">Free gift. You fund this.</p>
                   <p className="mt-0.5 text-sm text-brand-ink/75">
-                    The customer pays nothing.{' '}
+                    The customer pays only the delivery.{' '}
                     {formatPriceAmount(
-                      item.order.free_gift_cost ??
-                        parcelItemsTotal + (shopDelivery?.amount ?? 0),
+                      item.order.free_gift_cost ?? parcelItemsTotal,
                       currency,
                     )}{' '}
-                    (the gift and its delivery) comes out of your free gift
-                    budget when it is delivered.
+                    (the gift itself) comes out of your free gift budget when
+                    it is delivered.
                   </p>
                   <Link
                     to="/seller/free-gifts"

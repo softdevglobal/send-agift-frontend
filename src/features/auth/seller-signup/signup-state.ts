@@ -95,6 +95,8 @@ export type SignupState = {
 
   detailsConfirmed: boolean
   termsAccepted: boolean
+  /** Agrees to the free gift marketing budget SendAGift sets. Required. */
+  freeGiftBudgetAccepted: boolean
   marketingOptIn: boolean
 }
 
@@ -179,6 +181,7 @@ export function initialSignupState(): SignupState {
 
     detailsConfirmed: false,
     termsAccepted: false,
+    freeGiftBudgetAccepted: false,
     marketingOptIn: false,
   }
 }
@@ -326,6 +329,10 @@ export function validateStep(step: number, s: SignupState, ctx: StepContext): st
   if (step === 6) {
     push(!s.detailsConfirmed, 'Confirm your details are accurate.')
     push(!s.termsAccepted, 'Accept the seller terms and privacy notice.')
+    push(
+      !s.freeGiftBudgetAccepted,
+      'Agree to the marketing budget SendAGift sets for the free gift program.',
+    )
   }
 
   return [...new Set(errors)]
@@ -445,6 +452,7 @@ export function buildRegisterRequest(s: SignupState, country: Country): SellerRe
     },
 
     terms_accepted: s.termsAccepted,
+    accept_free_gift_budget: s.freeGiftBudgetAccepted,
     marketing_opt_in: s.marketingOptIn,
   }
 }
