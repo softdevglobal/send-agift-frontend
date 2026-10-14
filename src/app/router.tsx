@@ -68,6 +68,7 @@ import { SellerProfilePage } from '@/pages/seller-profile-page'
 import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
+import { ScrollToTop } from '@/app/scroll-to-top'
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -106,7 +107,9 @@ function RedirectOrder() {
 
 export function AppRouter() {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       {/* Storefront. The same pages for guests and signed-in customers. */}
       <Route path="/" element={<HomePage />} />
       <Route path="/products" element={<ProductsPage />} />
@@ -371,5 +374,6 @@ export function AppRouter() {
         <Route path="account" element={<AdminAccountPage />} />
       </Route>
     </Routes>
+    </>
   )
 }
