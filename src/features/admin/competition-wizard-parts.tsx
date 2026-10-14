@@ -136,7 +136,7 @@ export function EmptyHint({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-6 py-8 text-center">
-      <span className="grid size-12 place-items-center rounded-full bg-primary/10 text-primary">
+      <span className="grid size-12 place-items-center rounded-full bg-accent text-primary">
         <Icon className="size-6" />
       </span>
       <p className="text-sm font-semibold">{title}</p>
@@ -171,7 +171,7 @@ export function CountryCards({
         {countries.map((c) => (
           <div
             key={c.id}
-            className="group relative flex items-center gap-3 rounded-2xl bg-violet-50 p-3 ring-1 ring-violet-100"
+            className="group relative flex items-center gap-3 rounded-2xl bg-accent p-3 ring-1 ring-border"
           >
             <span className="text-3xl leading-none" aria-hidden>
               {flagOf(c.iso_code) || '🌐'}

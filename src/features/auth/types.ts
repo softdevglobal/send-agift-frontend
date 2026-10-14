@@ -8,9 +8,10 @@ export type LoginCopy = {
   switchPrompt: string
   switchLabel: string
   switchTo: string
-  registerHint: string
-  registerLabel: string
-  registerTo: string
+  // Admins cannot sign themselves up, so these are absent for the admin role.
+  registerHint?: string
+  registerLabel?: string
+  registerTo?: string
   panelAccent: string
   panelNote: string
 }

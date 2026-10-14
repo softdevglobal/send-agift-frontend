@@ -17,7 +17,7 @@ import { adminPanelClass } from '@/features/admin/admin-styles'
 import { ApiError, getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: string }> = {
+export const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: string }> = {
   customer_registration_enabled: {
     label: 'Customer registration',
     hint: 'Allow new customers to sign up in this market.',
@@ -68,12 +68,68 @@ const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: string }> 
   },
 }
 
-function flagsFromCapability(capability: CountryCapability): CountryCapabilityInput {
+export function flagsFromCapability(capability: CountryCapability): CountryCapabilityInput {
   const flags = { ...DEFAULT_COUNTRY_CAPABILITY_INPUT }
   for (const key of COUNTRY_CAPABILITY_FLAGS) {
     flags[key] = Boolean(capability[key])
   }
   return flags
+}
+
+/** Creates or updates a country's rules; a missing record is created on the fly. */
+export async function saveCountryCapabilities(
+  countryId: string,
+  body: CountryCapabilityInput,
+  exists: boolean,
+): Promise<CountryCapability> {
+  if (!exists) return createCountryCapabilities(countryId, body)
+  try {
+    return await updateCountryCapabilities(countryId, body)
+  } catch (err) {
+    if (!(err instanceof ApiError && err.status === 404)) throw err
+    return createCountryCapabilities(countryId, body)
+  }
+}
+
+/** The tick list of rules, shared by the country page and the create wizard. */
+export function CapabilityFlagList({
+  flags,
+  onToggle,
+  idPrefix = 'cap',
+  disabled = false,
+}: {
+  flags: CountryCapabilityInput
+  onToggle: (flag: CountryCapabilityFlag, enabled: boolean) => void
+  idPrefix?: string
+  disabled?: boolean
+}) {
+  return (
+    <ul className="space-y-2">
+      {COUNTRY_CAPABILITY_FLAGS.map((flag) => {
+        const copy = FLAG_COPY[flag]
+        return (
+          <li
+            key={flag}
+            className="flex items-start justify-between gap-3 rounded-xl border border-border/40 bg-surface/90 px-3.5 py-3"
+          >
+            <div className="min-w-0">
+              <Label htmlFor={`${idPrefix}-${flag}`} className="text-sm font-medium">
+                {copy.label}
+              </Label>
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{copy.hint}</p>
+            </div>
+            <Checkbox
+              id={`${idPrefix}-${flag}`}
+              checked={flags[flag]}
+              disabled={disabled}
+              onCheckedChange={(value) => onToggle(flag, value === true)}
+              className="mt-0.5"
+            />
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 type CountryCapabilitiesPanelProps = {
@@ -112,17 +168,7 @@ export function CountryCapabilitiesPanel({
     setSaving(true)
     try {
       const body: CountryCapabilityInput = { ...flags }
-      let saved: CountryCapability
-      if (capability) {
-        try {
-          saved = await updateCountryCapabilities(countryId, body)
-        } catch (err) {
-          if (!(err instanceof ApiError && err.status === 404)) throw err
-          saved = await createCountryCapabilities(countryId, body)
-        }
-      } else {
-        saved = await createCountryCapabilities(countryId, body)
-      }
+      const saved = await saveCountryCapabilities(countryId, body, Boolean(capability))
       setCapability(saved)
       setFlags(flagsFromCapability(saved))
       setNotice('Changes saved.')
@@ -158,30 +204,7 @@ export function CountryCapabilitiesPanel({
 
       <FormAlert error={error} notice={notice} />
 
-      <ul className="space-y-2">
-        {COUNTRY_CAPABILITY_FLAGS.map((flag) => {
-          const copy = FLAG_COPY[flag]
-          return (
-            <li
-              key={flag}
-              className="flex items-start justify-between gap-3 rounded-xl border border-border/40 bg-surface/90 px-3.5 py-3"
-            >
-              <div className="min-w-0">
-                <Label htmlFor={`cap-${flag}`} className="text-sm font-medium">
-                  {copy.label}
-                </Label>
-                <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{copy.hint}</p>
-              </div>
-              <Checkbox
-                id={`cap-${flag}`}
-                checked={flags[flag]}
-                onCheckedChange={(value) => toggle(flag, value === true)}
-                className="mt-0.5"
-              />
-            </li>
-          )
-        })}
-      </ul>
+      <CapabilityFlagList flags={flags} onToggle={toggle} />
 
       <Button
         type="button"

@@ -3,10 +3,10 @@ import { cn } from '@/lib/utils'
 
 const TONE_CLASS: Record<string, string> = {
   pending: 'bg-muted text-muted-foreground',
-  accepted: 'bg-primary/10 text-primary',
-  preparing: 'bg-primary/10 text-primary',
-  ready: 'bg-primary/10 text-primary',
-  dispatched: 'bg-primary/10 text-primary',
+  accepted: 'bg-accent text-primary',
+  preparing: 'bg-accent text-primary',
+  ready: 'bg-accent text-primary',
+  dispatched: 'bg-accent text-primary',
   delivered: 'bg-accent text-accent-foreground',
   cancelled: 'bg-destructive/10 text-destructive',
 }

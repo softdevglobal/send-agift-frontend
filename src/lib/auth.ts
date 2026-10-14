@@ -29,7 +29,6 @@ const AUTH_PAGES = [
   '/seller/login',
   '/seller/register',
   '/admin/login',
-  '/admin/register',
 ]
 
 export function isUserRole(value: string | null): value is UserRole {

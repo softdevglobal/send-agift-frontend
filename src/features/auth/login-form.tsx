@@ -11,7 +11,7 @@ import {
   Truck,
   type LucideIcon,
 } from 'lucide-react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin, type CodeLoginResult } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
@@ -23,7 +23,6 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/features/auth/auth-context'
 import { CodeLoginPanel } from '@/features/auth/code-login-panel'
 import { loginCopy } from '@/features/auth/copy'
@@ -95,7 +94,6 @@ async function loginWithCredentials(
 export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
   const { login, isAuthenticated, role: sessionRole } = useAuth()
-  const location = useLocation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   // Emails link here with the address filled in (e.g. a gift recipient's).
@@ -353,44 +351,19 @@ export function LoginForm({ role }: LoginFormProps) {
         </div>
       ) : null}
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">or</span>
-          <Separator className="flex-1" />
-        </div>
-
-        {role === 'customer' ? (
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="h-12 w-full rounded-full text-sm"
-          >
-            <Link to="/become-a-seller">Become a seller</Link>
-          </Button>
+      {/* Plain wording, not cards. The role switch lives in the page header. */}
+      <div className="text-center text-sm text-muted-foreground">
+        {copy.registerTo ? (
+          <p>
+            {copy.registerHint}{' '}
+            <Link
+              to={copy.registerTo}
+              className="font-semibold text-primary hover:underline"
+            >
+              {copy.registerLabel}
+            </Link>
+          </p>
         ) : null}
-
-        <p className="text-center text-sm text-muted-foreground">
-          {copy.registerHint}{' '}
-          <Link
-            to={copy.registerTo}
-            className="font-medium text-primary transition-colors hover:text-primary/80"
-          >
-            {copy.registerLabel}
-          </Link>
-        </p>
-
-        <p className="text-center text-sm text-muted-foreground">
-          {copy.switchPrompt}{' '}
-          <Link
-            to={copy.switchTo}
-            state={location.state}
-            className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-          >
-            {copy.switchLabel}
-          </Link>
-        </p>
       </div>
     </form>
   )

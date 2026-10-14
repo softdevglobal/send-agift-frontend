@@ -271,7 +271,7 @@ export function SellerOrderItemDetailPanel({
               ) : null}
 
               {rateable ? (
-                <div className="rounded-2xl border border-primary/25 bg-primary/5 p-3">
+                <div className="rounded-2xl border border-primary/25 bg-accent p-3">
                   <p className="text-sm font-medium">Deliver this gift</p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     Hand it over inside the shop's delivery zone. Mark delivered

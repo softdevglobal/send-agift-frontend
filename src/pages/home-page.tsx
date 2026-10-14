@@ -19,15 +19,12 @@ import { useAuth } from '@/features/auth/auth-context'
 import { CategoryItem } from '@/features/marketing/category-item'
 import { homePathForRole } from '@/lib/auth'
 import {
-  bestSellingGifts,
-  customerTestimonials,
   giftCategories,
   type GiftProduct,
 } from '@/features/marketing/data'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
 import { ReelsStrip } from '@/features/reels/reels-strip'
-import { TestimonialCard } from '@/features/marketing/testimonial-card'
 import { GiftCard, GiftSearchBar } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
@@ -90,8 +87,7 @@ export function HomePage() {
   const { isAuthenticated, role } = useAuth()
   const isGuest = !isAuthenticated
   const isCustomer = isAuthenticated && role === 'customer'
-  // Real published gifts take over this shelf; the sample set is only a
-  // placeholder for a store that has not published anything yet.
+  // The shelf shows real published gifts only, and hides until there are some.
   const [published, setPublished] = useState<GiftProduct[]>([])
 
   useEffect(() => {
@@ -127,7 +123,7 @@ export function HomePage() {
   }, [])
 
   const hasPublished = published.length > 0
-  const shelfGifts = hasPublished ? published.slice(0, 5) : bestSellingGifts
+  const shelfGifts = published.slice(0, 5)
 
   return (
     <SiteLayout>
@@ -313,22 +309,24 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className={cn(storefrontFrameClass, 'py-14 lg:py-20')}>
-          <SectionHeading
-            title={hasPublished ? 'Fresh from our sellers' : 'Best selling gifts'}
-            actionLabel="View all"
-            actionTo="/products"
-            marker="violet"
-          />
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-            {shelfGifts.map((product) => (
-              <GiftCard key={product.id} product={product} />
-            ))}
-          </div>
-        </section>
+        {hasPublished ? (
+          <section className={cn(storefrontFrameClass, 'py-14 lg:py-20')}>
+            <SectionHeading
+              title="Fresh from our sellers"
+              actionLabel="View all"
+              actionTo="/products"
+              marker="violet"
+            />
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
+              {shelfGifts.map((product) => (
+                <GiftCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {/* Two wide editorial tiles, the "what's trending" pair. */}
-        <section className={cn(storefrontFrameClass, 'pb-14 lg:pb-20')}>
+        <section className={cn(storefrontFrameClass, 'py-14 lg:py-20')}>
           <SectionHeading title="Everyone's favourite" />
           <div className="grid gap-6 md:grid-cols-2">
             {editorialTiles.map((tile) => (
@@ -416,15 +414,6 @@ export function HomePage() {
             </div>
           </section>
         ) : null}
-
-        <section className={cn(storefrontFrameClass, 'pt-6 pb-16 lg:pb-20')}>
-          <SectionHeading title="What our customers say" align="center" marker="violet" />
-          <div className="grid gap-5 md:grid-cols-3">
-            {customerTestimonials.map((testimonial, index) => (
-              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
-            ))}
-          </div>
-        </section>
       </main>
     </SiteLayout>
   )

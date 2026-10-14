@@ -110,7 +110,7 @@ export function ParcelTracking({
             'mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full',
             delivered
               ? 'bg-emerald-500/15 text-emerald-600'
-              : 'bg-primary/10 text-primary',
+              : 'bg-accent text-primary',
           )}
         >
           {delivered ? (

@@ -14,6 +14,7 @@ import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
 import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
 import { AdminCountriesPage } from '@/pages/admin-countries-page'
+import { AdminCountryDetailPage } from '@/pages/admin-country-detail-page'
 import { AdminCustomerDetailPage } from '@/pages/admin-customer-detail-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
 import { AdminPointPackagesPage } from '@/pages/admin-point-packages-page'
@@ -22,7 +23,6 @@ import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
-import { AdminRegisterPage } from '@/pages/admin-register-page'
 import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
@@ -282,7 +282,6 @@ export function AppRouter() {
           </GuestRoute>
         }
       />
-      <Route path="/admin/register" element={<AdminRegisterPage />} />
 
       <Route path="/seller/email/undo" element={<SellerEmailUndoPage />} />
       <Route
@@ -332,6 +331,7 @@ export function AppRouter() {
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
+        <Route path="countries/:countryId" element={<AdminCountryDetailPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}
         <Route
           path="games"

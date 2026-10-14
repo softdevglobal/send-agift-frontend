@@ -243,7 +243,7 @@ export function Notice({ icon, tone = 'neutral', children }: NoticeProps) {
       className={cn(
         'flex gap-3 rounded-xl px-3.5 py-3 text-sm leading-relaxed ring-1 [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0',
         tone === 'amber' && 'bg-amber-50 text-amber-900 ring-amber-200',
-        tone === 'green' && 'bg-primary/5 text-foreground ring-primary/20',
+        tone === 'green' && 'bg-accent text-foreground ring-primary/20',
         tone === 'neutral' && 'bg-muted/50 text-muted-foreground ring-border/60',
       )}
     >

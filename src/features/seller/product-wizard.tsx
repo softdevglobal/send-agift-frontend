@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicFile } from '@/api/media'
 import { PARCEL_DISTANCE_UNITS, PARCEL_MASS_UNITS } from '@/api/types'
+import { giftCategories } from '@/features/marketing/data'
 import {
   coverImageUrl,
   emptyForm,
@@ -47,6 +48,10 @@ import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { cn } from '@/lib/utils'
+
+function isCategoryId(tag: string) {
+  return giftCategories.some((item) => item.id === tag.toLowerCase())
+}
 
 type ProductWizardProps = {
   open: boolean
@@ -154,6 +159,7 @@ export function ProductWizard({
   const priceValid =
     form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
   const tags = useMemo(() => parseTags(form.occasion_tags), [form.occasion_tags])
+  const category = tags.map((tag) => tag.toLowerCase()).find(isCategoryId) ?? ''
   const coverUrl = coverImageUrl(form)
   const photoEntries = useMemo(
     () =>
@@ -368,7 +374,11 @@ export function ProductWizard({
       title: 'The gift',
       description: 'What you are listing, in the customer’s words.',
       icon: Package,
-      blockedReason: form.name.trim() ? null : 'Give the gift a name to continue.',
+      blockedReason: !form.name.trim()
+        ? 'Give the gift a name to continue.'
+        : !category
+          ? 'Choose a category to continue.'
+          : null,
       content: (
         <WizardFields>
           <WizardField label="Name" htmlFor="wizard-name" full>
@@ -407,16 +417,29 @@ export function ProductWizard({
             </select>
           </WizardField>
           <WizardField
-            label="Occasions"
-            htmlFor="wizard-tags"
-            hint="Comma separated. Birthday, anniversary…"
+            label="Category"
+            htmlFor="wizard-category"
+            hint="Where customers find this gift in the shop."
           >
-            <Input
-              id="wizard-tags"
-              value={form.occasion_tags}
-              onChange={(event) => update('occasion_tags', event.target.value)}
-              placeholder="birthday, thank you"
-            />
+            <select
+              id="wizard-category"
+              value={category}
+              onChange={(event) => {
+                // The storefront files a gift under its first tag, so the
+                // category goes first and any other tags stay after it.
+                const rest = tags.filter((tag) => !isCategoryId(tag))
+                const next = event.target.value
+                update('occasion_tags', (next ? [next, ...rest] : rest).join(', '))
+              }}
+              className={selectClassName}
+            >
+              <option value="">Choose a category</option>
+              {giftCategories.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
           </WizardField>
           <WizardField
             label="Link slug"
@@ -1033,6 +1056,10 @@ export function ProductWizard({
             <dl className="grid flex-1 gap-2 text-sm">
               <SummaryRow label="Shop" value={shopName} />
               <SummaryRow label="Type" value={form.product_type || 'gift'} />
+              <SummaryRow
+                label="Category"
+                value={giftCategories.find((item) => item.id === category)?.name ?? '-'}
+              />
               <SummaryRow label="Price" value={priceLabel} />
               <SummaryRow
                 label="Reward"

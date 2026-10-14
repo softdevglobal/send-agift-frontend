@@ -89,13 +89,14 @@ export function ReelsPage() {
         )}
       >
         {/* A quiet way back to the shelves, kept off the player itself. And
-            out of the way of the docked panel's close button. */}
-        {panelDocked ? null : (
+            out of the way of the docked panel's close button. Only over a
+            real feed: the empty and error states carry their own button. */}
+        {panelDocked || loading || error || reels.length === 0 ? null : (
           <Button
             asChild
             variant="outline"
             size="sm"
-            className="absolute top-2 right-3 z-20 hidden bg-background sm:inline-flex"
+            className="absolute top-5 right-7 z-20 hidden bg-background sm:inline-flex"
           >
             <Link to="/products">
               <Gift className="size-4" />

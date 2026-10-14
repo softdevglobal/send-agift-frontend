@@ -2,12 +2,12 @@ import { useState, type FormEvent } from 'react'
 import {
   Clapperboard,
   Gift,
+  Gem,
   Heart,
   Menu,
   MessageSquare,
   Search,
   ShoppingBag,
-  Store,
   X,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -39,6 +39,8 @@ export function SiteHeader() {
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
   const isGuest = !isAuthenticated
+  // Guests see the offer, customers claim it. Sellers and admins cannot.
+  const canClaimFreeGift = isGuest || isCustomer
   const activeCategory = new URLSearchParams(location.search).get('category')
   const path = location.pathname
 
@@ -94,10 +96,29 @@ export function SiteHeader() {
         </form>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          {canClaimFreeGift ? (
+            <Button
+              asChild
+              className={cn(
+                'h-9 gap-1.5 rounded-full bg-brand-teal px-2.5 font-bold text-brand-ink hover:bg-brand-teal/85 md:px-3.5',
+                isGuest && 'md:-order-3',
+              )}
+            >
+              <Link
+                to="/free-gift"
+                aria-label="Claim your free gift"
+                aria-current={isCurrent('/free-gift') ? 'page' : undefined}
+              >
+                <Gem className="size-4" />
+                <span className="hidden md:inline">Free gift</span>
+              </Link>
+            </Button>
+          ) : null}
+
           <Button
             asChild
             variant="ghost"
-            className="hidden h-9 px-3 md:inline-flex"
+            className={cn('hidden h-9 px-3 md:inline-flex', isGuest && 'md:-order-2')}
           >
             <Link to="/reels">
               <Clapperboard className="size-4" />
@@ -116,7 +137,14 @@ export function SiteHeader() {
                   Sign in
                 </Link>
               </Button>
-              <Button asChild className="h-9 px-3.5 sm:px-4">
+              {/* Phones get Sign in as the one solid button; Sign up is still
+                  in the menu. From md up it is Sign in (ghost) + Sign up. */}
+              <Button asChild className="h-9 px-3.5 sm:px-4 md:hidden">
+                <Link to="/login" state={loginState}>
+                  Sign in
+                </Link>
+              </Button>
+              <Button asChild className="hidden h-9 px-4 md:inline-flex">
                 <Link to="/register">Sign up</Link>
               </Button>
             </>
@@ -158,7 +186,8 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
-            className="relative"
+            // For guests the cart sits left of Sign in / Sign up on desktop.
+            className={cn('relative', isGuest && 'md:-order-1')}
             asChild
             aria-label="Cart"
           >
@@ -171,16 +200,6 @@ export function SiteHeader() {
               ) : null}
             </Link>
           </Button>
-
-          {role !== 'seller' ? (
-            <Button
-              asChild
-              variant="outline"
-              className="ml-1 hidden h-9 border-2 border-brand-ink px-3 md:inline-flex"
-            >
-              <Link to="/become-a-seller">Become a seller</Link>
-            </Button>
-          ) : null}
 
           <Button
             variant="ghost"
@@ -239,6 +258,21 @@ export function SiteHeader() {
               <Gift className="size-4" />
               Browse gifts
             </Link>
+
+            {canClaimFreeGift ? (
+              <Link
+                to="/free-gift"
+                onClick={closeMenu}
+                aria-current={isCurrent('/free-gift') ? 'page' : undefined}
+                className={menuRowClass(
+                  isCurrent('/free-gift'),
+                  isCurrent('/free-gift') ? undefined : 'bg-brand-teal/25 hover:bg-brand-teal/40',
+                )}
+              >
+                <Gem className="size-4" />
+                Claim your free gift
+              </Link>
+            ) : null}
 
             <Link
               to="/reels"
@@ -314,15 +348,6 @@ export function SiteHeader() {
                   </Link>
                 ))}
               </>
-            ) : null}
-
-            {role !== 'seller' ? (
-              <Button asChild variant="outline" className="mt-3">
-                <Link to="/become-a-seller" onClick={closeMenu}>
-                  <Store className="size-4" />
-                  Become a seller
-                </Link>
-              </Button>
             ) : null}
 
             {isAuthenticated ? (

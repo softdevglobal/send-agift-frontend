@@ -24,6 +24,7 @@ import {
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
+import { OccasionFilter } from '@/features/customer-commerce/occasion-filter'
 import { giftCategories } from '@/features/marketing/data'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { cn } from '@/lib/utils'
@@ -266,46 +267,52 @@ export function ProductsPage() {
         {/* What was asked for, still in hand. */}
         <DeliveryIntentBar className="mb-6" />
 
-        <div className="mb-6 space-y-4">
-
-          <div className="flex gap-2 overflow-x-auto pb-1">
+        {/* Desktop: every occasion as a box. Phones get the dropdown below. */}
+        <div className="mb-6 hidden gap-2 overflow-x-auto pb-1 md:flex">
+          <Button
+            type="button"
+            size="sm"
+            variant={category === 'all' ? 'default' : 'outline'}
+            className="h-9 shrink-0 border-2 px-4 data-[variant=outline]:border-brand-ink/15"
+            onClick={() => updateParam('category', 'all')}
+          >
+            All gifts
+          </Button>
+          {giftCategories.map((item) => (
             <Button
+              key={item.id}
               type="button"
               size="sm"
-              variant={category === 'all' ? 'default' : 'outline'}
+              variant={category === item.id ? 'default' : 'outline'}
               className="h-9 shrink-0 border-2 px-4 data-[variant=outline]:border-brand-ink/15"
-              onClick={() => updateParam('category', 'all')}
+              onClick={() => updateParam('category', item.id)}
             >
-              All gifts
+              {item.name}
             </Button>
-            {giftCategories.map((item) => (
-              <Button
-                key={item.id}
-                type="button"
-                size="sm"
-                variant={category === item.id ? 'default' : 'outline'}
-                className="h-9 shrink-0 border-2 px-4 data-[variant=outline]:border-brand-ink/15"
-                onClick={() => updateParam('category', item.id)}
-              >
-                {item.name}
-              </Button>
-            ))}
-          </div>
+          ))}
         </div>
 
-        <p className="mb-6 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-          {giftsLoading
-            ? 'Checking which gifts can be delivered there…'
-            : products.length === 0
-              ? `0 gifts${filteredByDelivery ? ' that can be delivered there' : ''}${
-                  query ? ` matching ‘${query}’` : ''
-                }`
-              : `${pageStart + 1}–${pageStart + visibleProducts.length} of ${products.length} gift${
-                  products.length === 1 ? '' : 's'
-                }${filteredByDelivery ? ' that can be delivered there' : ''}${
-                  query ? ` matching ‘${query}’` : ''
-                }`}
-        </p>
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <p className="min-w-0 flex-1 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
+            {giftsLoading
+              ? 'Checking which gifts can be delivered there…'
+              : products.length === 0
+                ? `0 gifts${filteredByDelivery ? ' that can be delivered there' : ''}${
+                    query ? ` matching ‘${query}’` : ''
+                  }`
+                : `${pageStart + 1}–${pageStart + visibleProducts.length} of ${products.length} gift${
+                    products.length === 1 ? '' : 's'
+                  }${filteredByDelivery ? ' that can be delivered there' : ''}${
+                    query ? ` matching ‘${query}’` : ''
+                  }`}
+          </p>
+          <OccasionFilter
+            categories={giftCategories}
+            value={category}
+            onChange={(next) => updateParam('category', next)}
+            className="shrink-0 md:hidden"
+          />
+        </div>
 
         {giftsLoading ? (
           <div

@@ -19,6 +19,7 @@ import {
   type ReelComment,
 } from '@/api/reelSocial'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { useAuth } from '@/features/auth/auth-context'
 import type { ReelPatch } from '@/features/reels/use-reel-feed'
@@ -571,12 +572,10 @@ function CommentComposer({
         {expanded ? (
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
             <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={anonymous}
                 disabled={sending}
-                onChange={(event) => setAnonymous(event.target.checked)}
-                className="size-4 accent-brand-violet"
+                onCheckedChange={(value) => setAnonymous(value === true)}
               />
               Post anonymously
             </label>
