@@ -317,7 +317,7 @@ export function SellerSignupWizard() {
         {step === 2 ? <AddressesStep {...stepProps} /> : null}
         {step === 3 ? <ShopStep {...stepProps} slugStatus={slugStatus} /> : null}
         {step === 4 ? <DeliveryStep {...stepProps} /> : null}
-        {step === 5 ? <VerificationStep /> : null}
+        {step === 5 ? <VerificationStep {...stepProps} /> : null}
         {step === 6 ? <ReviewStep {...stepProps} onEdit={goTo} /> : null}
 
         {submitError ? (

@@ -326,13 +326,16 @@ export function validateStep(step: number, s: SignupState, ctx: StepContext): st
     push(s.returnsPolicy.trim().length < 10, 'Describe your returns process in at least 10 characters.')
   }
 
-  if (step === 6) {
-    push(!s.detailsConfirmed, 'Confirm your details are accurate.')
-    push(!s.termsAccepted, 'Accept the seller terms and privacy notice.')
+  if (step === 5) {
     push(
       !s.freeGiftBudgetAccepted,
       'Agree to the marketing budget SendAGift sets for the free gift program.',
     )
+  }
+
+  if (step === 6) {
+    push(!s.detailsConfirmed, 'Confirm your details are accurate.')
+    push(!s.termsAccepted, 'Accept the seller terms and privacy notice.')
   }
 
   return [...new Set(errors)]

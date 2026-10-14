@@ -193,14 +193,6 @@ export function ReviewStep({
             disabled={disabled}
           />
           <CheckRow
-            id="signup-free-gift-budget"
-            checked={state.freeGiftBudgetAccepted}
-            onChange={(freeGiftBudgetAccepted) => update({ freeGiftBudgetAccepted })}
-            label="I agree to the free gift marketing budget that SendAGift sets for my shop."
-            hint="Customers send one free gift each. SendAGift sets your budget and you choose which products are offered. A gift costs your budget only when it is delivered, and you can pause it at any time."
-            disabled={disabled}
-          />
-          <CheckRow
             id="signup-marketing"
             checked={state.marketingOptIn}
             onChange={(marketingOptIn) => update({ marketingOptIn })}
