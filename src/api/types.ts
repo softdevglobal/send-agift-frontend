@@ -260,6 +260,8 @@ export type Shop = {
   pickup_enabled?: boolean
   /** Present on public shop reads. verified when an admin has accepted the business. */
   seller_verification_status?: string
+  /** Present on public shop reads: the seller's own profile photo. */
+  seller_image_url?: string
 }
 
 export type SellerDetails = Seller & {
@@ -374,6 +376,7 @@ export type ProductDetails = Product & {
     | 'customer_visible_location'
     | 'description'
     | 'seller_verification_status'
+    | 'seller_image_url'
   >
 }
 

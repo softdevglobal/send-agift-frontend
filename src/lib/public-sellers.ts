@@ -133,6 +133,7 @@ export function indexMarketplaceShops(shops: Shop[]) {
     if (existing) {
       sellers[sellerId] = {
         ...existing,
+        image_url: existing.image_url || shop.seller_image_url,
         shops: [...existing.shops.filter((item) => item.id !== shop.id), publicShop],
       }
     } else {
@@ -143,6 +144,8 @@ export function indexMarketplaceShops(shops: Shop[]) {
         email: '',
         seller_type: '',
         verification_status: shop.seller_verification_status || '',
+        // The seller's own profile photo, from the public shop read.
+        image_url: shop.seller_image_url,
         shops: [publicShop],
       }
     }

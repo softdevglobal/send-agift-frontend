@@ -94,6 +94,7 @@ function productFromSearch(shop: ShopGiftAvailability, gift: AvailabilityProduct
     created_at: '',
     updated_at: '',
     seller_verification_status: shop.seller_verification_status,
+    seller_image_url: shop.seller_image_url,
   }
   return catalogProductFromApi(product, shopCard)
 }

@@ -35,7 +35,6 @@ export function GiftCard({ product, href }: GiftCardProps) {
   const { addItem } = useCart()
   const to = href ?? `/products/${product.id}`
   const category = isCatalogProduct(product) ? categoryName(product.categoryId) : null
-  const description = isCatalogProduct(product) ? product.description.trim() : ''
   const sellerId = isCatalogProduct(product) ? product.sellerId || product.shopId : undefined
   const tradingName = isCatalogProduct(product) ? product.sellerTradingName : undefined
   const legalName = isCatalogProduct(product) ? product.sellerLegalName : undefined
@@ -108,11 +107,6 @@ export function GiftCard({ product, href }: GiftCardProps) {
           <Link to={to} className="hover:text-primary">
             <h3 className="line-clamp-2 text-sm leading-snug font-bold text-foreground sm:text-[15px]">{product.name}</h3>
           </Link>
-          {description ? (
-            <p className="hidden line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:block">
-              {description}
-            </p>
-          ) : null}
           <div className="flex items-baseline gap-2 pt-0.5">
             <span className="text-base font-extrabold tracking-tight sm:text-lg">{priceLabel(product)}</span>
             {product.compareAt ? (

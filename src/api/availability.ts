@@ -4,6 +4,8 @@ export type ShopGiftAvailability = {
   shop_id: string
   shop_name: string
   seller_verification_status?: string
+  /** The seller's own profile photo. */
+  seller_image_url?: string
   distance_km?: number
   max_km: number
   price_amount: number

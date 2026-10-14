@@ -89,7 +89,8 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     sellerLegalName: legalName || undefined,
     sellerTradingName: tradingName || undefined,
     sellerId: shop?.seller_id || published.seller_id || product.shop_id,
-    sellerImageUrl: shop?.image_url || sellerImageForPublished(published),
+    // The seller's own profile photo, never the shop's cover.
+    sellerImageUrl: shop?.seller_image_url || sellerImageForPublished(published),
     sellerEmail: published.seller_email,
     sellerPhone: published.seller_phone,
     sellerVerificationStatus: shop?.seller_verification_status,

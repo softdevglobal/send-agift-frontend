@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
   Clock,
-  Film,
   LoaderCircle,
   MessageSquare,
   Minus,
   PackageX,
+  Play,
   Plus,
   ShoppingBag,
 } from 'lucide-react'
@@ -103,6 +103,7 @@ export function ProductViewPage() {
               details.shop.description || mapped.shopDescription
           }
           mapped.sellerVerificationStatus = details.shop?.seller_verification_status
+          mapped.sellerImageUrl = details.shop?.seller_image_url || mapped.sellerImageUrl
           registerCatalogProducts([mapped])
           if (!cancelled) {
             setProduct(mapped)
@@ -210,9 +211,16 @@ export function ProductViewPage() {
   const description = product.description.trim()
   const category = categoryName(product.categoryId)
   const isCustomer = isAuthenticated && role === 'customer'
+  // Photos first, starting with the cover, then videos, so the page opens
+  // on the cover photo.
   const gallery: CatalogProductMedia[] =
     product.media && product.media.length > 0
-      ? product.media
+      ? [...product.media].sort(
+          (a, b) =>
+            Number(isVideoMedia(a)) - Number(isVideoMedia(b)) ||
+            Number(b.url === product.image) - Number(a.url === product.image) ||
+            a.position - b.position,
+        )
       : [
           {
             id: 'cover',
@@ -223,8 +231,18 @@ export function ProductViewPage() {
           },
         ]
   const current = gallery[Math.min(activeMedia, gallery.length - 1)] ?? gallery[0]
-  const currentIsVideo =
-    current?.assetType === 'video' || current?.mimeType.startsWith('video/')
+  const currentIsVideo = current ? isVideoMedia(current) : false
+  const thumbnails =
+    gallery.length > 1
+      ? gallery.map((item, index) => (
+          <MediaThumb
+            key={item.id}
+            item={item}
+            active={index === activeMedia}
+            onSelect={() => setActiveMedia(index)}
+          />
+        ))
+      : null
 
   function handleAdd() {
     addItem(gift.id, quantity)
@@ -237,13 +255,23 @@ export function ProductViewPage() {
         <BackLink to="/products" label="All gifts" className="mb-6" />
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <div className="relative overflow-hidden rounded-[1.75rem] bg-accent">
+          {/* Desktop: a column of thumbnails left of the main image. Phones:
+              one row under it. */}
+          <div className="space-y-3 lg:flex lg:items-start lg:gap-3 lg:space-y-0">
+            {thumbnails ? (
+              <div className="hidden w-20 shrink-0 flex-col gap-2 overflow-y-auto lg:flex lg:max-h-[min(100vh-10rem,40rem)] [&::-webkit-scrollbar]:hidden">
+                {thumbnails}
+              </div>
+            ) : null}
+            <div className="relative min-w-0 flex-1 overflow-hidden rounded-[1.75rem] bg-accent">
               {currentIsVideo ? (
+                // Videos play on their own, muted and looping, with no player bar.
                 <video
                   key={current.url}
                   src={current.url}
-                  controls
+                  autoPlay
+                  muted
+                  loop
                   playsInline
                   className="aspect-square w-full object-cover"
                 />
@@ -259,43 +287,8 @@ export function ProductViewPage() {
                 className="absolute top-3 right-3 z-10"
               />
             </div>
-            {gallery.length > 1 ? (
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {gallery.map((item, index) => {
-                  const video =
-                    item.assetType === 'video' || item.mimeType.startsWith('video/')
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => setActiveMedia(index)}
-                      className={cn(
-                        'relative size-16 shrink-0 overflow-hidden rounded-xl ring-1 transition-shadow',
-                        index === activeMedia
-                          ? 'ring-[3px] ring-brand-ink'
-                          : 'ring-border/50 hover:ring-border',
-                      )}
-                    >
-                      {video ? (
-                        <>
-                          <video
-                            src={item.url}
-                            muted
-                            playsInline
-                            preload="metadata"
-                            className="size-full object-cover"
-                          />
-                          <span className="absolute inset-0 grid place-items-center bg-black/25">
-                            <Film className="size-4 text-white" />
-                          </span>
-                        </>
-                      ) : (
-                        <img src={item.url} alt="" className="size-full object-cover" />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+            {thumbnails ? (
+              <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">{thumbnails}</div>
             ) : null}
           </div>
 
@@ -515,5 +508,54 @@ export function ProductViewPage() {
         ) : null}
       </main>
     </SiteLayout>
+  )
+}
+
+function isVideoMedia(item: CatalogProductMedia) {
+  return item.assetType === 'video' || item.mimeType.startsWith('video/')
+}
+
+/** One photo or video in the gallery strip. */
+function MediaThumb({
+  item,
+  active,
+  onSelect,
+}: {
+  item: CatalogProductMedia
+  active: boolean
+  onSelect: () => void
+}) {
+  const video = isVideoMedia(item)
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={video ? 'Show video' : 'Show photo'}
+      aria-pressed={active}
+      className={cn(
+        'relative aspect-square w-16 shrink-0 overflow-hidden rounded-lg bg-accent ring-1 transition-shadow lg:w-full',
+        active ? 'ring-[3px] ring-brand-ink' : 'ring-border/50 hover:ring-brand-ink/40',
+      )}
+    >
+      {video ? (
+        <>
+          <video
+            src={item.url}
+            muted
+            playsInline
+            preload="metadata"
+            className="size-full object-cover"
+          />
+          {/* A play triangle marks a video, as on big retail sites. */}
+          <span className="absolute inset-0 grid place-items-center bg-black/15">
+            <span className="flex size-7 items-center justify-center rounded-full bg-white/90 shadow-sm">
+              <Play className="ml-0.5 size-3.5 fill-brand-ink text-brand-ink" />
+            </span>
+          </span>
+        </>
+      ) : (
+        <img src={item.url} alt="" className="size-full object-cover" />
+      )}
+    </button>
   )
 }

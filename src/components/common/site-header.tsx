@@ -120,16 +120,6 @@ export function SiteHeader() {
             variant="ghost"
             className={cn('hidden h-9 px-3 md:inline-flex', isGuest && 'md:-order-2')}
           >
-            <Link to="/free-gift" aria-current={isCurrent('/free-gift') ? 'page' : undefined}>
-              <Gift className="size-4" />
-              Free gift
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="ghost"
-            className="hidden h-9 px-3 md:inline-flex"
-          >
             <Link to="/reels">
               <Clapperboard className="size-4" />
               Reels
@@ -283,16 +273,6 @@ export function SiteHeader() {
                 Claim your free gift
               </Link>
             ) : null}
-
-            <Link
-              to="/free-gift"
-              onClick={closeMenu}
-              aria-current={isCurrent('/free-gift') ? 'page' : undefined}
-              className={menuRowClass(isCurrent('/free-gift'))}
-            >
-              <Gift className="size-4" />
-              Free gift
-            </Link>
 
             <Link
               to="/reels"
