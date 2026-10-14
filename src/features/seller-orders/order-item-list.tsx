@@ -21,7 +21,7 @@ type SellerParcelGroup = {
   shopName: string
   recipientName: string
   orderStatus: SellerOrderItemSummary['order_status']
-  /** A free gift: this seller funds the item and its delivery. */
+  /** A free gift: this seller funds the item; the customer pays delivery. */
   freeGift: boolean
   deliveryDate: string
   items: SellerOrderItemSummary[]

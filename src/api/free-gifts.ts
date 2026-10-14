@@ -64,17 +64,69 @@ export type FreeGiftProgram = {
   budget_held: number
   budget_spent: number
   budget_remaining: number
+  /** The seller has agreed to the marketing budget SendAGift sets. */
+  seller_agreed: boolean
   terms_version?: string
   accepted_at?: string
   created_at: string
   updated_at: string
 }
 
+/**
+ * What a seller can change: turn their program on or pause it. The budget is
+ * set by SendAGift, so there is no amount here. `accept_terms` is only for a
+ * seller who registered before the agreement existed.
+ */
 export type FreeGiftProgramInput = {
+  /** Left out to only record the agreement. */
+  status?: 'active' | 'paused'
+  accept_terms?: boolean
+}
+
+/** What an admin sets for one seller: the marketing budget, and whether it is on. */
+export type AdminFreeGiftProgramInput = {
   budget_cap: number
   currency: string
   status: 'active' | 'paused'
-  accept_terms?: boolean
+}
+
+/** One free gift that was sent, as an admin reads it. Amounts are minor units. */
+export type AdminFreeGiftOrder = {
+  order_id: string
+  order_number: string
+  status: string
+  /** held (not delivered yet), spent (delivered) or released (cancelled). */
+  budget_status: 'held' | 'spent' | 'released' | 'none'
+  created_at: string
+  delivery_date: string
+  currency: string
+  /** What it cost the seller's budget: the product price. */
+  cost: number
+  product_amount: number
+  /** What the customer paid for delivery. */
+  delivery_amount: number
+  /** The delivery payment went through, or there was none to pay. */
+  delivery_paid: boolean
+  seller_id: string
+  seller_name: string
+  shop_name: string
+  customer_id: string
+  customer_name: string
+  customer_email: string
+  recipient_name?: string | null
+  recipient_city?: string | null
+  product_id: string
+  product_name: string
+  product_image_url?: string | null
+}
+
+/** Narrows the free gifts to what a shop can deliver to a place on a day. */
+export type FreeGiftFilter = {
+  country?: string
+  latitude?: number
+  longitude?: number
+  /** yyyy-mm-dd */
+  deliveryDate?: string
 }
 
 export type FreeGiftProduct = {
@@ -121,11 +173,19 @@ export function isFreeGiftDisabled(error: unknown): boolean {
 
 // ─── Public and customer ──────────────────────────────────────────────────
 
-export async function listFreeGiftOffers(country = '') {
-  const query = country ? `?country=${encodeURIComponent(country)}` : ''
-  const res = await api<{ items: FreeGiftOffer[] | null }>(`/free-gifts/products${query}`, {
-    auth: false,
-  })
+export async function listFreeGiftOffers(filter: FreeGiftFilter = {}) {
+  const params = new URLSearchParams()
+  if (filter.country) params.set('country', filter.country)
+  if (filter.latitude !== undefined && filter.longitude !== undefined) {
+    params.set('latitude', String(filter.latitude))
+    params.set('longitude', String(filter.longitude))
+  }
+  if (filter.deliveryDate) params.set('delivery_date', filter.deliveryDate)
+  const query = params.toString()
+  const res = await api<{ items: FreeGiftOffer[] | null }>(
+    `/free-gifts/products${query ? `?${query}` : ''}`,
+    { auth: false },
+  )
   return res.items ?? []
 }
 
@@ -180,6 +240,57 @@ export function removeFreeGiftProduct(productId: string) {
 export async function listFreeGiftPrograms() {
   const res = await api<{ items: AdminFreeGiftProgram[] | null }>('/admin/free-gifts')
   return res.items ?? []
+}
+
+/** Sets a seller's marketing budget and starts or pauses their program. */
+export function setAdminFreeGiftProgram(sellerId: string, body: AdminFreeGiftProgramInput) {
+  return api<FreeGiftProgram>(`/admin/free-gifts/sellers/${sellerId}/program`, {
+    method: 'PUT',
+    body,
+  })
+}
+
+/** Every free gift sent: seller, customer, recipient, product and cost. */
+export async function listAdminFreeGiftOrders(sellerId = '') {
+  const query = sellerId ? `?seller_id=${encodeURIComponent(sellerId)}` : ''
+  const res = await api<{ items: AdminFreeGiftOrder[] | null }>(`/admin/free-gifts/orders${query}`)
+  return res.items ?? []
+}
+
+/** The budget set for every seller in one country. `budget_cap` is per seller. */
+export type FreeGiftCountryBudget = {
+  country_id: string
+  country_name: string
+  currency: string
+  budget_cap: number
+  status: 'active' | 'paused'
+  updated_at: string
+  /** Sellers registered in the country, and how many have agreed. */
+  sellers: number
+  agreed: number
+}
+
+/** What setting a country budget did. Skipped sellers are counted, not failed. */
+export type FreeGiftCountryApply = {
+  budget: FreeGiftCountryBudget
+  applied: number
+  skipped_not_agreed: number
+  skipped_stopped: number
+  skipped_below_committed: number
+  skipped_currency_locked: number
+}
+
+export async function listFreeGiftCountryBudgets() {
+  const res = await api<{ items: FreeGiftCountryBudget[] | null }>('/admin/free-gifts/countries')
+  return res.items ?? []
+}
+
+/** One budget for every seller registered in a country. */
+export function setFreeGiftCountryBudget(countryId: string, body: AdminFreeGiftProgramInput) {
+  return api<FreeGiftCountryApply>(`/admin/free-gifts/countries/${countryId}`, {
+    method: 'PUT',
+    body,
+  })
 }
 
 /** The kill switch for one seller. Re-allowing leaves the program paused. */

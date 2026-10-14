@@ -263,7 +263,7 @@ export function CustomerOrderDetailPage() {
 
       <FormAlert error={error} notice={placedNotice} className="mb-5" />
 
-      {freeGift ? (
+      {freeGift && order.status !== "pending_payment" ? (
         <section className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl bg-brand-teal p-5 text-brand-ink sm:p-6">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-ink text-white">
             <Gift className="size-6" />
@@ -273,10 +273,12 @@ export function CustomerOrderDetailPage() {
               Free gift
             </p>
             <p className="font-poster text-xl tracking-tight sm:text-2xl">
-              This one is on the seller. You pay nothing.
+              {order.total_amount > 0
+                ? "The gift is on the seller. You paid for delivery."
+                : "This one is on the seller. You pay nothing."}
             </p>
             <p className="mt-1 text-sm font-medium text-brand-ink/75">
-              The gift and its delivery are paid for by the shop.
+              The gift itself is paid for by the shop.
             </p>
           </div>
         </section>
@@ -294,6 +296,7 @@ export function CustomerOrderDetailPage() {
             total={order.total_amount}
             currency={order.currency}
             cancelled={paymentCancelled}
+            freeGift={freeGift}
           />
         )
       ) : null}
@@ -503,8 +506,7 @@ export function CustomerOrderDetailPage() {
                   <dd>
                     -
                     {formatPriceAmount(
-                      order.free_gift_cost ??
-                        order.subtotal_amount + order.delivery_amount,
+                      order.free_gift_cost ?? order.subtotal_amount,
                       order.currency,
                     )}
                   </dd>
@@ -513,7 +515,7 @@ export function CustomerOrderDetailPage() {
               <div className="flex justify-between gap-3 border-t border-border/60 pt-2 font-medium">
                 <dt>Total</dt>
                 <dd>
-                  {freeGift
+                  {freeGift && order.total_amount === 0
                     ? "Free"
                     : formatPriceAmount(order.total_amount, order.currency)}
                 </dd>

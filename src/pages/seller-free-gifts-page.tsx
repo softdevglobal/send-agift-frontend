@@ -26,11 +26,9 @@ import {
 } from '@/api/free-gifts'
 import { listShopProducts, type Product } from '@/api/products'
 import { getSellerMe } from '@/api/sellers'
-import { CurrencySelect } from '@/components/common/currency-select'
 import { FormAlert } from '@/components/common/form-alert'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -51,7 +49,7 @@ import {
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName } from '@/lib/form-styles'
-import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
+import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 type ToastState = { message: string; variant: 'success' | 'error' }
@@ -178,12 +176,12 @@ export function SellerFreeGiftsPage() {
         <SellerPageHeader
           icon={Gift}
           title="Free gifts"
-          description="Offer a free first gift to new customers from a marketing budget you set."
+          description="Offer a free gift to customers from the marketing budget SendAGift sets for you."
         />
         <SellerEmptyState
           icon={Gift}
           title="Not open yet"
-          description="The free gift program is not switched on yet. You will be able to set a budget and choose products here when it opens."
+          description="The free gift program is not switched on yet. You will be able to choose products here when it opens."
         />
       </div>
     )
@@ -197,7 +195,7 @@ export function SellerFreeGiftsPage() {
         icon={Gift}
         tone="teal"
         title="Free gifts"
-        description="Every customer has one free gift to send. Set a marketing budget and choose which of your products they can send. You fund the gift and its delivery; the customer pays nothing."
+        description="Every customer has one free gift to send. SendAGift sets your marketing budget and you choose which of your products they can send. You fund the gift; the customer pays the delivery."
         action={
           <span
             className={cn(
@@ -243,16 +241,15 @@ export function SellerFreeGiftsPage() {
             tone="amber"
             label="Budget"
             value={formatPriceAmount(program.budget_cap, program.currency)}
-            hint="The most you will fund"
+            hint="Set by SendAGift"
           />
         </section>
       ) : null}
 
       {program ? (
-        <BudgetForm
+        <BudgetPanel
           key={program.updated_at ?? 'new'}
           program={program}
-          hasProducts={products.length > 0}
           onSaved={async (message) => {
             await refresh()
             setToast({ message, variant: 'success' })
@@ -281,7 +278,7 @@ export function SellerFreeGiftsPage() {
 
         {!hasProgram ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">
-            Set your budget above first. Then choose the products.
+            SendAGift has not set your budget yet. You can choose products once it is set.
           </p>
         ) : products.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">
@@ -388,14 +385,14 @@ export function SellerFreeGiftsPage() {
       <section className={cn(sellerPanelClass, 'p-5 text-sm leading-relaxed text-muted-foreground')}>
         <p>
           <span className="font-medium text-foreground">How it works.</span> Each free gift costs
-          you the product price plus its delivery. That amount is{' '}
+          you the product price; the customer pays the delivery. The price is{' '}
           <span className="font-medium text-foreground">held</span> the moment a customer orders,{' '}
           <span className="font-medium text-foreground">spent</span> when you mark it delivered, and
           given back if the customer cancels before you dispatch. When the remaining budget cannot
           cover a product, it stops being offered. A product is only offered while it is published
           and in stock, so keep stock up to date in{' '}
-          <Link to="/seller/products" className="font-medium text-primary hover:underline">
-            Products
+          <Link to="/seller/inventory" className="font-medium text-primary hover:underline">
+            Inventory
           </Link>
           . Free gift orders arrive in{' '}
           <Link to="/seller/orders" className="font-medium text-primary hover:underline">
@@ -438,115 +435,95 @@ export function SellerFreeGiftsPage() {
   )
 }
 
-function BudgetForm({
+/**
+ * The budget is set by SendAGift when the seller registers and agrees to it,
+ * so the seller sees it here but cannot change it. They can turn their free
+ * gifts on or pause them.
+ */
+function BudgetPanel({
   program,
-  hasProducts,
   onSaved,
 }: {
   program: FreeGiftProgram
-  hasProducts: boolean
   onSaved: (message: string) => void | Promise<void>
 }) {
-  const isNew = program.status === 'not_set'
+  const notSet = program.status === 'not_set'
   const stopped = program.status === 'stopped'
-  const committed = program.budget_held + program.budget_spent
-  // The currency is fixed once products or gifts depend on it.
-  const currencyLocked = !isNew && (hasProducts || committed > 0)
-
-  const [currency, setCurrency] = useState(isNew ? '' : program.currency)
-  const [amount, setAmount] = useState(
-    isNew ? '' : String(minorToMajor(program.budget_cap, program.currency)),
-  )
-  const [active, setActive] = useState(isNew ? true : program.status === 'active')
-  const [terms, setTerms] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const major = Number(amount)
-  const cap = currency && Number.isFinite(major) ? majorToMinor(major, currency) : 0
-  const belowCommitted = !isNew && cap > 0 && cap < committed
-  const valid = Boolean(currency) && cap > 0 && !belowCommitted && (!isNew || terms)
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    if (!valid) return
+  async function toggle(next: boolean) {
     setBusy(true)
     setError(null)
     try {
-      await setFreeGiftProgram({
-        budget_cap: cap,
-        currency,
-        status: active ? 'active' : 'paused',
-        ...(isNew ? { accept_terms: true } : {}),
-      })
-      await onSaved(
-        isNew
-          ? 'Budget set. Now choose your products.'
-          : active
-            ? 'Budget saved. Your free gifts are on.'
-            : 'Budget saved. Your free gifts are paused.',
-      )
+      await setFreeGiftProgram({ status: next ? 'active' : 'paused' })
+      await onSaved(next ? 'Your free gifts are on.' : 'Your free gifts are paused.')
     } catch (err) {
       setError(
         freeGiftErrorCode(err) === 'TERMS_REQUIRED'
-          ? 'Accept the program terms to set a budget.'
-          : getErrorMessage(err, 'Could not save your budget.'),
+          ? 'Agree to the free gift marketing budget to turn your free gifts on.'
+          : getErrorMessage(err, 'Could not change your free gifts.'),
       )
     } finally {
       setBusy(false)
     }
   }
 
-  return (
-    <form onSubmit={(event) => void submit(event)} className={cn(sellerPanelClass, 'space-y-5 p-5')}>
-      <div>
-        <h2 className="font-poster text-xl">{isNew ? 'Set your budget' : 'Your budget'}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The most you are willing to fund in free gifts. It is a limit, not a payment: nothing is
-          charged, you give away your own stock and deliver it.
-        </p>
-      </div>
+  async function agree() {
+    setBusy(true)
+    setError(null)
+    try {
+      await setFreeGiftProgram({ accept_terms: true })
+      await onSaved('Thanks. You have agreed to the free gift marketing budget.')
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not save your agreement.'))
+    } finally {
+      setBusy(false)
+    }
+  }
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="free-gift-currency">Currency</Label>
-          <CurrencySelect
-            id="free-gift-currency"
-            value={currency}
-            onChange={setCurrency}
-            disabled={currencyLocked || stopped}
-            required
-          />
-          <p className="text-xs text-muted-foreground">
-            {currencyLocked
-              ? 'Fixed while the program has products or gifts.'
-              : 'Only products priced in this currency can be offered.'}
+  // Sellers who registered before the agreement existed agree here.
+  const agreement = !program.seller_agreed ? (
+    <section className={cn(sellerPanelClass, 'space-y-3 border-2 border-amber-300 p-5')}>
+      <h2 className="font-poster text-xl">Agree to the free gift marketing budget</h2>
+      <p className="text-sm text-muted-foreground">
+        SendAGift sets the marketing budget for your free gifts, and you fund each gift's
+        product from it, and the customer pays the delivery. A gift only costs your budget when it is delivered, and you can pause at
+        any time. You need to agree before SendAGift can set your budget and you can turn free
+        gifts on.
+      </p>
+      <Button onClick={() => void agree()} disabled={busy}>
+        {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+        I agree to the marketing budget SendAGift sets
+      </Button>
+      <FormAlert error={error} />
+    </section>
+  ) : null
+
+  if (notSet) {
+    return (
+      <>
+        {agreement}
+        <section className={cn(sellerPanelClass, 'space-y-3 p-5')}>
+          <h2 className="font-poster text-xl">Waiting for your budget</h2>
+          <p className="text-sm text-muted-foreground">
+            SendAGift sets the marketing budget for your free gifts. Once it is set you will see
+            it here, choose which products customers can send, and switch your free gifts on.
+            {program.seller_agreed ? ' There is nothing you need to do until then.' : ''}
           </p>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="free-gift-budget">Budget{currency ? ` (${currency})` : ''}</Label>
-          <Input
-            id="free-gift-budget"
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="any"
-            value={amount}
-            disabled={stopped}
-            onChange={(event) => setAmount(event.target.value)}
-            placeholder="2500"
-          />
-          {belowCommitted ? (
-            <p className="text-xs font-medium text-destructive">
-              It cannot be lower than {formatPriceAmount(committed, program.currency)}, which is
-              already held and spent.
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              Covers each gift&rsquo;s price and its delivery.
-            </p>
-          )}
-        </div>
+        </section>
+      </>
+    )
+  }
+
+  return (
+    <section className={cn(sellerPanelClass, 'space-y-4 p-5')}>
+      <div>
+        <h2 className="font-poster text-xl">Your marketing budget</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Set by SendAGift: the most your shop funds in free gifts. It is a limit, not a payment.
+          Nothing is charged; you give away your own stock and deliver it.
+        </p>
       </div>
 
       <div className="flex items-center justify-between gap-4 rounded-lg border-2 border-brand-ink/10 px-4 py-3">
@@ -558,35 +535,22 @@ function BudgetForm({
             Turn off to pause. Gifts already confirmed are still fulfilled.
           </p>
         </div>
-        <Switch
-          id="free-gift-active"
-          checked={active}
-          disabled={stopped}
-          onCheckedChange={setActive}
-        />
+        {busy ? (
+          <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+        ) : (
+          <Switch
+            id="free-gift-active"
+            checked={program.status === 'active'}
+            disabled={stopped || !program.seller_agreed}
+            onCheckedChange={(next) => void toggle(next)}
+          />
+        )}
       </div>
 
-      {isNew ? (
-        <label className="flex items-start gap-3 text-sm">
-          <Checkbox
-            checked={terms}
-            onCheckedChange={(checked) => setTerms(checked === true)}
-            className="mt-0.5"
-          />
-          <span className="text-muted-foreground">
-            I agree to the free gift program terms: I fund each free gift and its delivery from
-            this budget, and I fulfil every free gift order confirmed for my shop.
-          </span>
-        </label>
-      ) : null}
+      {agreement}
 
       <FormAlert error={error} />
-
-      <Button type="submit" disabled={!valid || busy || stopped} className="h-11 px-5">
-        {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-        {isNew ? 'Set budget' : 'Save budget'}
-      </Button>
-    </form>
+    </section>
   )
 }
 

@@ -56,6 +56,7 @@ import { SellerInboxPage } from '@/pages/seller-inbox-page'
 import { SellerEmailUndoPage } from '@/pages/seller-email-undo-page'
 import { SellerForgotPasswordPage } from '@/pages/seller-forgot-password-page'
 import { SellerFreeGiftsPage } from '@/pages/seller-free-gifts-page'
+import { SellerInventoryPage } from '@/pages/seller-inventory-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
 import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
@@ -310,6 +311,7 @@ export function AppRouter() {
         <Route path="payouts" element={<SellerPayoutsPage />} />
         <Route path="points" element={<SellerPointsPage />} />
         <Route path="free-gifts" element={<SellerFreeGiftsPage />} />
+        <Route path="inventory" element={<SellerInventoryPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
         <Route path="inbox" element={<SellerInboxPage />} />
         <Route path="profile" element={<SellerProfilePage />} />

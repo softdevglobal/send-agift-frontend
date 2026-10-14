@@ -7,6 +7,7 @@ import {
   LoaderCircle,
   MapPin,
   Package,
+  UserPlus,
 } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
@@ -18,6 +19,7 @@ import {
   type Recipient,
   type RecipientDetails,
 } from '@/api/customers'
+import type { RecipientAddress } from '@/api/types'
 import {
   getFreeGiftStatus,
   isFreeGiftDisabled,
@@ -27,18 +29,20 @@ import {
   type FreeGiftRecipientReason,
   type FreeGiftStatus,
 } from '@/api/free-gifts'
+import { quoteDelivery } from '@/api/orders'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { GiftSearchBar } from '@/features/customer-commerce/gift-search-bar'
+import { useDeliveryIntent } from '@/features/customer-commerce/delivery-intent-context'
 import { VerifyPhoneCard } from '@/features/account/verify-phone-card'
 import { useAuth } from '@/features/auth/auth-context'
 import {
   CustomerEmptyState,
   CustomerPageHeader,
   customerPanelClass,
-  toDateInputValue,
 } from '@/features/customer-commerce'
+import { AddRecipientDialog } from '@/features/free-gift/add-recipient-dialog'
 import { VerifyEmailCard } from '@/features/free-gift/verify-email-card'
 import { getErrorMessage } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
@@ -63,6 +67,17 @@ function defaultAddress(recipient: RecipientDetails | null) {
   )
 }
 
+function addressLabel(address: RecipientAddress) {
+  return [address.label, address.line1, address.city].filter(Boolean).join(', ')
+}
+
+function formatDay(value: string) {
+  const d = new Date(`${value}T00:00:00`)
+  return Number.isNaN(d.getTime())
+    ? value
+    : d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
 /**
  * The free gift: pick a product, a recipient and a day, then confirm. Guests
  * see what is on offer; everything about eligibility comes from the API, and
@@ -76,8 +91,13 @@ export function FreeGiftPage() {
 
   const [offers, setOffers] = useState<FreeGiftOffer[]>([])
   const [disabled, setDisabled] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [offersReady, setOffersReady] = useState(false)
+  const [accountReady, setAccountReady] = useState(false)
+  const [offersBusy, setOffersBusy] = useState(false)
+  const loading = !(offersReady && accountReady)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [addressId, setAddressId] = useState('')
 
   const [status, setStatus] = useState<FreeGiftStatus | null>(null)
   const [me, setMe] = useState<CustomerDetails | null>(null)
@@ -88,23 +108,46 @@ export function FreeGiftPage() {
   const [recipient, setRecipient] = useState<RecipientDetails | null>(null)
   const [recipientCheck, setRecipientCheck] = useState<FreeGiftStatus['recipient'] | null>(null)
   const [checkingRecipient, setCheckingRecipient] = useState(false)
-  const [deliveryDate, setDeliveryDate] = useState('')
+  // Where and when come from the Find gifts bar, the same one the home page uses.
+  const { intent } = useDeliveryIntent()
+  const deliveryDate = intent?.date ?? ''
   const [message, setMessage] = useState('')
 
+  // What the customer pays: the delivery to this recipient, quoted before sending.
+  const [deliveryFee, setDeliveryFee] = useState<{ amount: number; currency: string } | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // One key for this confirm screen: a retry or a double click is one order.
   const [idempotencyKey] = useState(() => crypto.randomUUID())
 
+  // The address the gift is going to, and so which gifts can get there.
+  const address =
+    recipient?.addresses?.find((a) => a.id === addressId) ?? defaultAddress(recipient)
+  // An address searched in the bar wins; otherwise the recipient's own.
+  const searched =
+    typeof intent?.latitude === 'number' && typeof intent?.longitude === 'number'
+  const lat = searched ? (intent?.latitude ?? null) : (address?.latitude ?? null)
+  const lng = searched ? (intent?.longitude ?? null) : (address?.longitude ?? null)
+  const filtered = lat !== null && lng !== null
+  const filterCity = searched ? intent?.city || intent?.address : address?.city
+
   const loadOffers = useCallback(async () => {
     try {
-      setOffers(await listFreeGiftOffers())
+      setOffers(
+        await listFreeGiftOffers(
+          lat !== null && lng !== null
+            ? { latitude: lat, longitude: lng, deliveryDate: deliveryDate || undefined }
+            : {},
+        ),
+      )
       setDisabled(false)
+      setLoadError(null)
     } catch (err) {
       if (isFreeGiftDisabled(err)) setDisabled(true)
       else setLoadError(getErrorMessage(err, 'Could not load the free gifts.'))
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, lat, lng, deliveryDate])
 
   const loadAccount = useCallback(async () => {
     if (!isCustomer) return
@@ -125,14 +168,35 @@ export function FreeGiftPage() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
-    void Promise.all([loadOffers(), loadAccount()]).finally(() => {
-      if (!cancelled) setLoading(false)
+    void loadAccount().finally(() => {
+      if (!cancelled) setAccountReady(true)
     })
     return () => {
       cancelled = true
     }
-  }, [loadOffers, loadAccount])
+  }, [loadAccount])
+
+  // The list follows the address and the day, so a gift that cannot be
+  // delivered there is never shown.
+  useEffect(() => {
+    let cancelled = false
+    setOffersBusy(true)
+    void loadOffers().finally(() => {
+      if (cancelled) return
+      setOffersBusy(false)
+      setOffersReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [loadOffers])
+
+  // A gift that dropped out of the filtered list can no longer be picked.
+  useEffect(() => {
+    if (productId && offersReady && !offers.some((o) => o.product_id === productId)) {
+      setProductId('')
+    }
+  }, [offers, offersReady, productId])
 
   // Whether this recipient can receive one, and where it would be delivered.
   useEffect(() => {
@@ -162,11 +226,29 @@ export function FreeGiftPage() {
     }
   }, [recipientId])
 
+  useEffect(() => {
+    setDeliveryFee(null)
+    if (!isCustomer || !recipientId || !productId) return
+    let cancelled = false
+    quoteDelivery({
+      recipient_id: recipientId,
+      ...(deliveryDate ? { delivery_date: deliveryDate } : {}),
+      items: [{ product_id: productId, quantity: 1 }],
+    })
+      .then((quote) => {
+        if (cancelled || !quote.complete) return
+        setDeliveryFee({ amount: quote.amount, currency: quote.currency })
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [isCustomer, recipientId, productId, deliveryDate])
+
   const product = useMemo(
     () => offers.find((offer) => offer.product_id === productId) ?? null,
     [offers, productId],
   )
-  const address = defaultAddress(recipient)
   const recipientOk = Boolean(recipientCheck?.can_receive && address)
   const canSend =
     Boolean(status?.available) && Boolean(product) && recipientOk && Boolean(deliveryDate) && !sending
@@ -190,7 +272,7 @@ export function FreeGiftPage() {
         : 'This recipient cannot be sent a free gift.',
     )
   else if (recipient && !address) blockers.push('Add a delivery address for this recipient.')
-  if (!deliveryDate) blockers.push('Choose a delivery date.')
+  if (!deliveryDate) blockers.push('Choose an arrival day in the Find gifts bar above.')
 
   async function handleSend() {
     if (!product || !recipient || !address || !deliveryDate) return
@@ -255,7 +337,7 @@ export function FreeGiftPage() {
       <CustomerPageHeader
         eyebrow="Free gift"
         title="Send one gift, free"
-        description="Every SendAGift customer has one free gift to send to someone special. The seller pays for the gift and its delivery. You pay nothing."
+        description="Every SendAGift customer has one free gift to send to someone special. The seller pays for the gift. You only pay its delivery."
       />
 
       <FormAlert error={loadError} className="mb-5" />
@@ -363,21 +445,147 @@ export function FreeGiftPage() {
         </section>
       ) : null}
 
-      {offers.length === 0 ? (
-        <CustomerEmptyState
-          icon={Package}
-          title="No free gifts right now"
-          description="Sellers add and remove free gifts as their budgets allow. Check back soon. Your free gift stays yours until you send it."
-          action={
-            <Button asChild className="h-11 rounded-full px-5">
-              <Link to="/products">Browse all gifts</Link>
-            </Button>
-          }
-        />
-      ) : (
+        <GiftSearchBar navigateOnSubmit={false} finding={offersBusy} className="mb-8" />
+
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,1fr)]">
+          <div className="space-y-8">
+          {isCustomer && status && !used ? (
+            <section className={cn(customerPanelClass, 'space-y-4 p-5')}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-poster text-xl">1. Who is it for, and when?</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Choose who it is going to. The gifts below are only the ones a shop can deliver to
+                    the address you searched, or to their address, on the day you chose above.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-full px-4"
+                  onClick={() => setAddOpen(true)}
+                >
+                  <UserPlus className="size-4" />
+                  Add a recipient
+                </Button>
+              </div>
+
+              {recipients.length === 0 ? (
+                <p className="rounded-lg bg-accent/70 px-3 py-2 text-sm text-accent-foreground">
+                  You have no recipients yet. Add the person you want to send it to, with their
+                  email, phone number and delivery address.
+                </p>
+              ) : (
+                <div className="grid gap-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="free-gift-recipient">Recipient</Label>
+                    <select
+                      id="free-gift-recipient"
+                      value={recipientId}
+                      onChange={(event) => {
+                        setRecipientId(event.target.value)
+                        setAddressId('')
+                      }}
+                      className={selectClassName}
+                    >
+                      <option value="">Choose a recipient</option>
+                      {recipients.map((person) => (
+                        <option key={person.id} value={person.id}>
+                          {person.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {recipient && recipient.addresses.length > 1 ? (
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label htmlFor="free-gift-address">Deliver to</Label>
+                      <select
+                        id="free-gift-address"
+                        value={address?.id ?? ''}
+                        onChange={(event) => setAddressId(event.target.value)}
+                        className={selectClassName}
+                      >
+                        {recipient.addresses.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {addressLabel(a)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+              )}
+
+              {checkingRecipient ? (
+                <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <LoaderCircle className="size-4 animate-spin" /> Checking…
+                </p>
+              ) : recipientId && recipientCheck && !recipientCheck.can_receive ? (
+                <FormAlert
+                  error={
+                    recipientCheck.reason
+                      ? RECIPIENT_REASON[recipientCheck.reason]
+                      : 'This recipient cannot be sent a free gift.'
+                  }
+                />
+              ) : recipientId && recipient && !address ? (
+                <FormAlert error="This recipient has no delivery address yet. Add one so the shop knows where to deliver." />
+              ) : recipient && address ? (
+                <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <MapPin className="mt-0.5 size-4 shrink-0" />
+                  {[address.line1, address.line2, address.city, address.region, address.postal_code]
+                    .filter(Boolean)
+                    .join(', ')}
+                </p>
+              ) : null}
+              {recipient && address && !filtered ? (
+                <p className="text-xs text-muted-foreground">
+                  This address has no map position yet, so the list below is not narrowed to it. Edit
+                  the recipient in{' '}
+                  <Link to="/account/recipients" className="font-bold text-brand-violet hover:underline">
+                    your recipients
+                  </Link>{' '}
+                  and pick the address from the search.
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
           <section>
-            <h2 className="font-poster text-xl">1. Pick a gift</h2>
+            <h2 className="font-poster text-xl">
+              {isCustomer && status && !used ? '2. Pick a gift' : 'Pick a gift'}
+            </h2>
+            {filtered ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Showing gifts that can be delivered to {filterCity || 'this address'}
+                {deliveryDate ? ` on ${formatDay(deliveryDate)}` : ''}.
+              </p>
+            ) : null}
+            {offersBusy ? (
+              <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                <LoaderCircle className="size-4 animate-spin" /> Updating the list…
+              </p>
+            ) : null}
+            {offers.length === 0 && !offersBusy ? (
+              <div className="mt-4">
+                <CustomerEmptyState
+                  icon={Package}
+                  title={filtered ? 'No free gifts can get there' : 'No free gifts right now'}
+                  description={
+                    filtered
+                      ? `No shop can deliver a free gift to ${filterCity || 'that address'}${
+                          deliveryDate ? ` on ${formatDay(deliveryDate)}` : ''
+                        }. Try another day or another address.`
+                      : 'Sellers add and remove free gifts as their budgets allow. Check back soon. Your free gift stays yours until you send it.'
+                  }
+                  action={
+                    <Button asChild className="h-11 rounded-full px-5">
+                      <Link to="/products">Browse all gifts</Link>
+                    </Button>
+                  }
+                />
+              </div>
+            ) : null}
             <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
               {offers.map((offer) => {
                 const picked = offer.product_id === productId
@@ -434,83 +642,12 @@ export function FreeGiftPage() {
               })}
             </ul>
           </section>
+          </div>
 
           {isCustomer && status && !used ? (
             <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
               <section className={cn(customerPanelClass, 'space-y-4 p-5')}>
-                <h2 className="font-poster text-xl">2. Who is it for?</h2>
-                {recipients.length === 0 ? (
-                  <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground">
-                      Add the person you want to send it to, with their email, phone number and
-                      delivery address.
-                    </p>
-                    <Button asChild variant="outline" className="h-10 rounded-full px-4">
-                      <Link to="/account/recipients">Add a recipient</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="free-gift-recipient">Recipient</Label>
-                      <select
-                        id="free-gift-recipient"
-                        value={recipientId}
-                        onChange={(event) => setRecipientId(event.target.value)}
-                        className={selectClassName}
-                      >
-                        <option value="">Choose a recipient</option>
-                        {recipients.map((person) => (
-                          <option key={person.id} value={person.id}>
-                            {person.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {checkingRecipient ? (
-                      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <LoaderCircle className="size-4 animate-spin" /> Checking…
-                      </p>
-                    ) : recipientId && recipientCheck && !recipientCheck.can_receive ? (
-                      <FormAlert
-                        error={
-                          recipientCheck.reason
-                            ? RECIPIENT_REASON[recipientCheck.reason]
-                            : 'This recipient cannot be sent a free gift.'
-                        }
-                      />
-                    ) : recipientId && recipient && !address ? (
-                      <FormAlert error="This recipient has no delivery address yet. Add one so the shop knows where to deliver." />
-                    ) : recipient && address ? (
-                      <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <MapPin className="mt-0.5 size-4 shrink-0" />
-                        {[address.line1, address.line2, address.city, address.region, address.postal_code]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </p>
-                    ) : null}
-                    <Link
-                      to="/account/recipients"
-                      className="inline-block text-xs font-bold tracking-[0.06em] text-brand-violet uppercase underline-offset-4 hover:underline"
-                    >
-                      Add or edit recipients
-                    </Link>
-                  </>
-                )}
-              </section>
-
-              <section className={cn(customerPanelClass, 'space-y-4 p-5')}>
-                <h2 className="font-poster text-xl">3. When, and what to say</h2>
-                <div className="space-y-1.5">
-                  <Label htmlFor="free-gift-date">Delivery date</Label>
-                  <Input
-                    id="free-gift-date"
-                    type="date"
-                    min={toDateInputValue(new Date())}
-                    value={deliveryDate}
-                    onChange={(event) => setDeliveryDate(event.target.value)}
-                  />
-                </div>
+                <h2 className="font-poster text-xl">3. Say something nice</h2>
                 <div className="space-y-1.5">
                   <Label htmlFor="free-gift-message">Gift message (optional)</Label>
                   <textarea
@@ -536,12 +673,28 @@ export function FreeGiftPage() {
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
+                    <dt className="text-muted-foreground">Gift</dt>
+                    <dd className="font-medium text-brand-violet">Free</dd>
+                  </div>
+                  <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">Delivery</dt>
-                    <dd>Paid by the seller</dd>
+                    <dd>
+                      {deliveryFee
+                        ? deliveryFee.amount > 0
+                          ? formatPriceAmount(deliveryFee.amount, deliveryFee.currency)
+                          : 'Free'
+                        : 'Pick a recipient'}
+                    </dd>
                   </div>
                   <div className="flex justify-between gap-3 border-t border-border/60 pt-2 font-medium">
                     <dt>You pay</dt>
-                    <dd className="font-extrabold text-brand-violet">Free</dd>
+                    <dd className="font-extrabold text-brand-violet">
+                      {deliveryFee
+                        ? deliveryFee.amount > 0
+                          ? formatPriceAmount(deliveryFee.amount, deliveryFee.currency)
+                          : 'Free'
+                        : 'Delivery only'}
+                    </dd>
                   </div>
                 </dl>
                 <FormAlert error={error} />
@@ -572,20 +725,32 @@ export function FreeGiftPage() {
                   ) : (
                     <>
                       <Gift className="size-4" />
-                      Send my free gift
+                      {deliveryFee && deliveryFee.amount > 0
+                        ? 'Send and pay delivery'
+                        : 'Send my free gift'}
                     </>
                   )}
                 </Button>
                 <p className="text-xs leading-relaxed text-muted-foreground">
                   {status.available
-                    ? 'You have one free gift. Once it is sent it is used, unless you cancel it before the shop dispatches it.'
+                    ? 'You have one free gift. You pay only the delivery, on the next page. Once it is sent it is used, unless you cancel it before the shop dispatches it.'
                     : 'Finish the steps above to send your free gift.'}
                 </p>
               </section>
             </aside>
           ) : null}
         </div>
-      )}
+
+      <AddRecipientDialog
+        open={addOpen}
+        defaultCountryId={me?.country_id}
+        onOpenChange={setAddOpen}
+        onCreated={(created) => {
+          setRecipients((current) => [...current, created])
+          setAddressId('')
+          setRecipientId(created.id)
+        }}
+      />
     </div>
   )
 }
