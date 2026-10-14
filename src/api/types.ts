@@ -894,6 +894,8 @@ export type SellerDeliveryQuote = {
   estimated_delivery_date?: string
   /** Set when available is false (outside zones, or coordinates missing). */
   reason?: string
+  /** The same, for the UI: NO_ZONES, SHOP_NO_LOCATION, ADDRESS_NO_LOCATION, OUTSIDE_ZONE. */
+  reason_code?: 'NO_ZONES' | 'SHOP_NO_LOCATION' | 'ADDRESS_NO_LOCATION' | 'OUTSIDE_ZONE'
 }
 
 export type QuotePostalAddress = {
