@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import {
   Clapperboard,
   Gift,
+  Gem,
   Heart,
   Menu,
   MessageSquare,
@@ -38,6 +39,8 @@ export function SiteHeader() {
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
   const isGuest = !isAuthenticated
+  // Guests see the offer, customers claim it. Sellers and admins cannot.
+  const canClaimFreeGift = isGuest || isCustomer
   const activeCategory = new URLSearchParams(location.search).get('category')
   const path = location.pathname
 
@@ -93,6 +96,25 @@ export function SiteHeader() {
         </form>
 
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
+          {canClaimFreeGift ? (
+            <Button
+              asChild
+              className={cn(
+                'h-9 gap-1.5 rounded-full bg-brand-teal px-2.5 font-bold text-brand-ink hover:bg-brand-teal/85 md:px-3.5',
+                isGuest && 'md:-order-3',
+              )}
+            >
+              <Link
+                to="/free-gift"
+                aria-label="Claim your free gift"
+                aria-current={isCurrent('/free-gift') ? 'page' : undefined}
+              >
+                <Gem className="size-4" />
+                <span className="hidden md:inline">Free gift</span>
+              </Link>
+            </Button>
+          ) : null}
+
           <Button
             asChild
             variant="ghost"
@@ -236,6 +258,21 @@ export function SiteHeader() {
               <Gift className="size-4" />
               Browse gifts
             </Link>
+
+            {canClaimFreeGift ? (
+              <Link
+                to="/free-gift"
+                onClick={closeMenu}
+                aria-current={isCurrent('/free-gift') ? 'page' : undefined}
+                className={menuRowClass(
+                  isCurrent('/free-gift'),
+                  isCurrent('/free-gift') ? undefined : 'bg-brand-teal/25 hover:bg-brand-teal/40',
+                )}
+              >
+                <Gem className="size-4" />
+                Claim your free gift
+              </Link>
+            ) : null}
 
             <Link
               to="/reels"
