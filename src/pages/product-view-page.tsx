@@ -533,8 +533,8 @@ function MediaThumb({
       aria-label={video ? 'Show video' : 'Show photo'}
       aria-pressed={active}
       className={cn(
-        'relative aspect-square w-16 shrink-0 overflow-hidden rounded-lg bg-accent ring-1 transition-shadow lg:w-full',
-        active ? 'ring-[3px] ring-brand-ink' : 'ring-border/50 hover:ring-brand-ink/40',
+        'relative aspect-square w-16 shrink-0 overflow-hidden rounded-lg bg-accent transition-opacity lg:w-full',
+        active ? 'opacity-100' : 'opacity-70 hover:opacity-100',
       )}
     >
       {video ? (
@@ -547,7 +547,7 @@ function MediaThumb({
             className="size-full object-cover"
           />
           {/* A play triangle marks a video, as on big retail sites. */}
-          <span className="absolute inset-0 grid place-items-center bg-black/15">
+          <span className="absolute inset-0 grid place-items-center">
             <span className="flex size-7 items-center justify-center rounded-full bg-white/90 shadow-sm">
               <Play className="ml-0.5 size-3.5 fill-brand-ink text-brand-ink" />
             </span>
@@ -556,6 +556,14 @@ function MediaThumb({
       ) : (
         <img src={item.url} alt="" className="size-full object-cover" />
       )}
+      {/* Drawn over the photo, so the photo never hides it. */}
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute inset-0 rounded-lg ring-inset',
+          active ? 'ring-2 ring-brand-violet' : 'ring-1 ring-border/60',
+        )}
+      />
     </button>
   )
 }
