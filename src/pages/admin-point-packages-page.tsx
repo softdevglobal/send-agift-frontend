@@ -28,7 +28,7 @@ import { AdminEmptyState, AdminPageHeader } from '@/features/admin'
 import { formatPoints } from '@/features/points/format'
 import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
-import { cn } from '@/lib/utils'
+import { blankIfZero, cn } from '@/lib/utils'
 
 /** What a package works out at per point, against the base rate. */
 function valueLine(pkg: PointPackage, rate: PointsRate | null) {
@@ -252,7 +252,7 @@ function PackageDialog({
   const [name, setName] = useState(pkg?.name ?? '')
   const [description, setDescription] = useState(pkg?.description ?? '')
   const [points, setPoints] = useState(String(pkg?.points ?? ''))
-  const [bonus, setBonus] = useState(String(pkg?.bonus_points ?? 0))
+  const [bonus, setBonus] = useState(blankIfZero(pkg?.bonus_points))
   const [price, setPrice] = useState(pkg ? String(pkg.price_cents / 100) : '')
   const [badge, setBadge] = useState(pkg?.badge ?? '')
   const [sort, setSort] = useState(String(pkg?.sort_order ?? nextSort))

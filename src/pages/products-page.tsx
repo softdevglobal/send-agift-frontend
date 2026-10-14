@@ -21,6 +21,7 @@ import {
 } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
+  inCategory,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
@@ -45,7 +46,7 @@ function matchesFilters(
   const matchesCategory =
     !normalizedCategory ||
     normalizedCategory === 'all' ||
-    product.categoryId === normalizedCategory
+    inCategory(product, normalizedCategory)
   if (!matchesCategory) return false
   if (!normalizedQuery) return true
 
@@ -54,7 +55,7 @@ function matchesFilters(
     product.description ?? '',
     product.sellerName ?? '',
     product.shopName ?? '',
-    product.categoryId,
+    ...(product.categoryIds ?? [product.categoryId]),
   ]
     .join(' ')
     .toLowerCase()

@@ -67,6 +67,14 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
       url: item.cdn_url,
       mimeType: item.mime_type,
     }))
+  // A gift can be in several categories; known ones first, in the seller's order.
+  const categoryIds = [
+    ...new Set(
+      (product.occasion_tags ?? [])
+        .map((tag) => tag.trim().toLowerCase())
+        .filter((tag) => giftCategories.some((item) => item.id === tag)),
+    ),
+  ]
   const coverFromMedia = media.find(
     (item) => item.assetType === 'image' || item.mimeType.startsWith('image/'),
   )?.url
@@ -75,7 +83,8 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     name: product.name,
     price: minorToMajor(product.price_amount, product.currency),
     image: coverFromMedia || product.image_url || PLACEHOLDER_IMAGE,
-    categoryId: (product.occasion_tags?.[0] ?? '').toLowerCase(),
+    categoryId: categoryIds[0] ?? (product.occasion_tags?.[0] ?? '').toLowerCase(),
+    categoryIds,
     sellerName,
     sellerLegalName: legalName || undefined,
     sellerTradingName: tradingName || undefined,
@@ -165,7 +174,7 @@ export function filterCatalog({
     const matchesCategory =
       !normalizedCategory ||
       normalizedCategory === 'all' ||
-      product.categoryId === normalizedCategory
+      inCategory(product, normalizedCategory)
 
     if (!matchesCategory) return false
     if (!normalizedQuery) return true
@@ -185,4 +194,9 @@ export function filterCatalog({
 
 function categoryNameFromId(categoryId: string) {
   return giftCategories.find((item) => item.id === categoryId)?.name ?? ''
+}
+
+/** True when the gift is filed under this category, as any of its tags. */
+export function inCategory(product: CatalogProduct, category: string) {
+  return product.categoryId === category || (product.categoryIds ?? []).includes(category)
 }

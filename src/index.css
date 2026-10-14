@@ -231,6 +231,17 @@
 }
 
 @layer base {
+  /* Number fields are typed, never nudged: no up/down arrows anywhere. */
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

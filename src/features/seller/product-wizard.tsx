@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import { CurrencySelect } from '@/components/common/currency-select'
+import { MultiSelect } from '@/components/common/multi-select'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { uploadPublicFile } from '@/api/media'
@@ -47,7 +48,7 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
-import { cn } from '@/lib/utils'
+import { blankIfZero, cn } from '@/lib/utils'
 
 function isCategoryId(tag: string) {
   return giftCategories.some((item) => item.id === tag.toLowerCase())
@@ -159,7 +160,10 @@ export function ProductWizard({
   const priceValid =
     form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
   const tags = useMemo(() => parseTags(form.occasion_tags), [form.occasion_tags])
-  const category = tags.map((tag) => tag.toLowerCase()).find(isCategoryId) ?? ''
+  // Every category the gift is filed under, in the order they were picked.
+  const categories = [
+    ...new Set(tags.map((tag) => tag.toLowerCase()).filter(isCategoryId)),
+  ]
   const coverUrl = coverImageUrl(form)
   const photoEntries = useMemo(
     () =>
@@ -376,8 +380,8 @@ export function ProductWizard({
       icon: Package,
       blockedReason: !form.name.trim()
         ? 'Give the gift a name to continue.'
-        : !category
-          ? 'Choose a category to continue.'
+        : categories.length === 0
+          ? 'Choose at least one category to continue.'
           : null,
       content: (
         <WizardFields>
@@ -417,29 +421,22 @@ export function ProductWizard({
             </select>
           </WizardField>
           <WizardField
-            label="Category"
+            label="Categories"
             htmlFor="wizard-category"
-            hint="Where customers find this gift in the shop."
+            hint="Where customers find this gift in the shop. Pick every one that fits."
           >
-            <select
+            <MultiSelect
               id="wizard-category"
-              value={category}
-              onChange={(event) => {
-                // The storefront files a gift under its first tag, so the
-                // category goes first and any other tags stay after it.
+              placeholder="Choose categories"
+              options={giftCategories.map((item) => ({ value: item.id, label: item.name }))}
+              value={categories}
+              onChange={(next) => {
+                // Categories first, in the order picked (the first is the one
+                // shown on the gift card), any other tags after.
                 const rest = tags.filter((tag) => !isCategoryId(tag))
-                const next = event.target.value
-                update('occasion_tags', (next ? [next, ...rest] : rest).join(', '))
+                update('occasion_tags', [...next, ...rest].join(', '))
               }}
-              className={selectClassName}
-            >
-              <option value="">Choose a category</option>
-              {giftCategories.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            />
           </WizardField>
           <WizardField
             label="Link slug"
@@ -476,7 +473,7 @@ export function ProductWizard({
                 update('price_major', value)
                 // The reward follows the price until the seller sets their own.
                 if (!rewardEdited) {
-                  update('reward_points', String(suggestedRewardPoints(Number(value))))
+                  update('reward_points', blankIfZero(suggestedRewardPoints(Number(value))))
                 }
               }}
               placeholder="28.00"
@@ -508,7 +505,7 @@ export function ProductWizard({
                     className="font-medium text-primary hover:underline"
                     onClick={() => {
                       setRewardEdited(false)
-                      update('reward_points', String(suggestedReward))
+                      update('reward_points', blankIfZero(suggestedReward))
                     }}
                   >
                     Use the suggested {suggestedReward.toLocaleString()}
@@ -1057,8 +1054,12 @@ export function ProductWizard({
               <SummaryRow label="Shop" value={shopName} />
               <SummaryRow label="Type" value={form.product_type || 'gift'} />
               <SummaryRow
-                label="Category"
-                value={giftCategories.find((item) => item.id === category)?.name ?? '-'}
+                label={categories.length > 1 ? 'Categories' : 'Category'}
+                value={
+                  categories
+                    .map((id) => giftCategories.find((item) => item.id === id)?.name ?? id)
+                    .join(', ') || '-'
+                }
               />
               <SummaryRow label="Price" value={priceLabel} />
               <SummaryRow
