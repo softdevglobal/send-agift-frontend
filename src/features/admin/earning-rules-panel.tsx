@@ -10,7 +10,7 @@ import { adminPanelClass } from '@/features/admin/admin-styles'
 import { formatDate } from '@/features/admin/admin-utils'
 import { StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
-import { cn } from '@/lib/utils'
+import { blankIfZero, cn } from '@/lib/utils'
 
 /**
  * How customers earn points, per country: points per whole unit spent on a
@@ -103,8 +103,8 @@ function RuleRow({
   onError: (message: string) => void
 }) {
   const [enabled, setEnabled] = useState(rule.enabled)
-  const [perUnit, setPerUnit] = useState(String(rule.points_per_unit))
-  const [bonus, setBonus] = useState(String(rule.signup_bonus))
+  const [perUnit, setPerUnit] = useState(blankIfZero(rule.points_per_unit))
+  const [bonus, setBonus] = useState(blankIfZero(rule.signup_bonus))
   const [busy, setBusy] = useState(false)
   const dirty =
     enabled !== rule.enabled || Number(perUnit) !== rule.points_per_unit || Number(bonus) !== rule.signup_bonus

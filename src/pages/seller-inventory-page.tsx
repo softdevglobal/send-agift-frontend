@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Boxes, Gift, LoaderCircle, Package, PackageX, Search } from 'lucide-react'
+import { AlertTriangle, Boxes, Gift, LoaderCircle, Package, PackageX, Search, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import {
@@ -16,14 +16,14 @@ import { listSellerOrderItems } from '@/api/seller-orders'
 import { getSellerMe } from '@/api/sellers'
 import type { Inventory } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { SlidingToggle, type SlidingToggleOption } from '@/components/common/sliding-toggle'
 import { Toast } from '@/components/common/toast'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -36,7 +36,7 @@ import {
 } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
-import { cn } from '@/lib/utils'
+import { blankIfZero, cn } from '@/lib/utils'
 
 type Row = {
   product: Product
@@ -183,10 +183,19 @@ export function SellerInventoryPage() {
     )
   }
 
-  const filters: { id: Filter; label: string }[] = [
-    { id: 'all', label: 'All products' },
-    { id: 'attention', label: 'Needs attention' },
-    { id: 'free-gift', label: 'Free gifts' },
+  // How many products each filter holds, shown in the toggle.
+  const filters: SlidingToggleOption<Filter>[] = [
+    { id: 'all', label: 'All products', count: rows.length },
+    {
+      id: 'attention',
+      label: 'Needs attention',
+      count: rows.filter((row) => ['out', 'low', 'unset'].includes(stockState(row))).length,
+    },
+    {
+      id: 'free-gift',
+      label: 'Free gifts',
+      count: rows.filter((row) => row.freeGift !== null).length,
+    },
   ]
 
   return (
@@ -227,8 +236,10 @@ export function SellerInventoryPage() {
       </section>
 
       <section className={sellerPanelClass}>
-        <div className="flex flex-wrap items-center gap-3 border-b border-border/50 px-4 py-3 sm:px-5">
-          <div className="relative min-w-0 flex-1 basis-56">
+        {/* Search first, then the filters as one toggle under it, as on the
+            other pages. */}
+        <div className="space-y-3 border-b border-border/50 px-4 py-4 sm:px-5">
+          <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
@@ -238,23 +249,14 @@ export function SellerInventoryPage() {
               aria-label="Search inventory"
             />
           </div>
-          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter inventory">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                aria-pressed={filter === f.id}
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  'h-9 rounded-full border-2 px-3.5 text-xs font-bold transition-colors',
-                  filter === f.id
-                    ? 'border-brand-ink bg-brand-ink text-white'
-                    : 'border-brand-ink/15 hover:border-brand-ink',
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+          {/* On a phone the toggle scrolls on its own, never the page. */}
+          <div className="-mx-4 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:px-0">
+            <SlidingToggle
+              label="Filter inventory"
+              value={filter}
+              onChange={setFilter}
+              options={filters}
+            />
           </div>
         </div>
 
@@ -391,18 +393,19 @@ function StockDialog({
   useEffect(() => {
     if (!row) return
     setError(null)
-    setAvailable(String(row.inventory?.available_qty ?? 0))
-    setThreshold(String(row.inventory?.low_stock_threshold ?? 0))
+    // A field opens empty rather than showing 0; empty saves as 0.
+    setAvailable(blankIfZero(row.inventory?.available_qty))
+    setThreshold(blankIfZero(row.inventory?.low_stock_threshold))
   }, [row])
 
   const reserved = row?.inventory?.reserved_qty ?? 0
-  const availableNumber = Number(available)
-  const thresholdNumber = Number(threshold)
-  const availableValid =
-    available.trim() !== '' && Number.isInteger(availableNumber) && availableNumber >= 0
-  const thresholdValid =
-    threshold.trim() !== '' && Number.isInteger(thresholdNumber) && thresholdNumber >= 0
+  const availableNumber = available.trim() === '' ? 0 : Number(available)
+  const thresholdNumber = threshold.trim() === '' ? 0 : Number(threshold)
+  const availableValid = Number.isInteger(availableNumber) && availableNumber >= 0
+  const thresholdValid = Number.isInteger(thresholdNumber) && thresholdNumber >= 0
   const belowReserved = availableValid && availableNumber < reserved
+  const canSell = availableValid ? Math.max(availableNumber - reserved, 0) : 0
+  const willBeLow = availableValid && thresholdValid && thresholdNumber > 0 && canSell <= thresholdNumber
 
   async function submit() {
     if (!row || !availableValid || !thresholdValid || belowReserved) return
@@ -426,53 +429,86 @@ function StockDialog({
 
   return (
     <Dialog open={row !== null} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{row?.product.name}</DialogTitle>
-          <DialogDescription>
-            Set how many units you have in total. {reserved} are reserved for orders right now.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="inventory-available">Units in stock</Label>
-            <Input
-              id="inventory-available"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={available}
-              onChange={(event) => setAvailable(event.target.value)}
-            />
+      <DialogContent showCloseButton={false} className="gap-0 overflow-hidden p-0 sm:max-w-lg">
+        {/* Which gift this is, before any number is changed. */}
+        <div className="relative flex items-center gap-4 bg-brand-ink px-6 py-5 text-white">
+          <div className="size-14 shrink-0 overflow-hidden rounded-lg bg-white/10 ring-2 ring-white/15">
+            {row?.product.image_url ? (
+              <img src={row.product.image_url} alt="" className="size-full object-cover" />
+            ) : (
+              <div className="flex size-full items-center justify-center text-white/70">
+                <Package className="size-6" />
+              </div>
+            )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="inventory-threshold">Low stock alert at</Label>
-            <Input
-              id="inventory-threshold"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1}
-              value={threshold}
-              onChange={(event) => setThreshold(event.target.value)}
-            />
+          <div className="min-w-0 flex-1 pr-8">
+            <p className="text-[10px] font-bold tracking-[0.18em] text-brand-teal uppercase">
+              Update stock
+            </p>
+            <DialogTitle className="mt-1 truncate text-lg font-extrabold text-white">
+              {row?.product.name}
+            </DialogTitle>
+            <DialogDescription className="mt-0.5 truncate text-xs text-white/65">
+              {row?.shopName}
+            </DialogDescription>
           </div>
+          <DialogClose
+            disabled={busy}
+            className="absolute top-4 right-4 flex size-8 items-center justify-center rounded-md text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <X className="size-4" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
         </div>
-        {belowReserved ? (
-          <p className="text-xs font-medium text-destructive">
-            It cannot be lower than the {reserved} units reserved for orders.
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            The low stock alert shows a warning when what is left falls to this number.
-          </p>
-        )}
 
-        <FormAlert error={error} />
+        <div className="space-y-5 px-6 py-5">
+          {/* Where the stock stands now, and what saving would leave. */}
+          <dl className="grid grid-cols-3 gap-2">
+            <StockFact label="In stock" value={availableValid ? availableNumber : '-'} />
+            <StockFact label="Reserved" value={reserved} hint="Held by orders" />
+            <StockFact
+              label="Can sell"
+              value={canSell}
+              tone={belowReserved ? 'bad' : willBeLow ? 'warn' : 'good'}
+            />
+          </dl>
 
-        <DialogFooter>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="inventory-available">Units in stock</Label>
+              <UnitsInput
+                id="inventory-available"
+                value={available}
+                onChange={setAvailable}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">Everything you have, reserved included.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="inventory-threshold">Low stock alert at</Label>
+              <UnitsInput id="inventory-threshold" value={threshold} onChange={setThreshold} />
+              <p className="text-xs text-muted-foreground">Warn me when this many are left.</p>
+            </div>
+          </div>
+
+          {belowReserved ? (
+            <p className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm font-medium text-destructive">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              It cannot be lower than the {reserved} units already reserved for orders.
+            </p>
+          ) : willBeLow ? (
+            <p className="flex items-start gap-2 rounded-lg bg-amber-100 px-3 py-2.5 text-sm text-amber-950">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              {canSell === 0
+                ? 'This gift will show as sold out.'
+                : `Only ${canSell} left to sell, so it will show as low on stock.`}
+            </p>
+          ) : null}
+
+          <FormAlert error={error} />
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-brand-ink/10 bg-muted/40 px-6 py-4">
           <Button variant="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
@@ -481,10 +517,75 @@ function StockDialog({
             disabled={!availableValid || !thresholdValid || belowReserved || busy}
           >
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Save
+            Save stock
           </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** A whole-number field with a "units" suffix. Digits only, no spinner. */
+function UnitsInput({
+  id,
+  value,
+  onChange,
+  autoFocus,
+}: {
+  id: string
+  value: string
+  onChange: (next: string) => void
+  autoFocus?: boolean
+}) {
+  return (
+    <div className="relative">
+      <Input
+        id={id}
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        autoFocus={autoFocus}
+        placeholder="0"
+        value={value}
+        onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
+        className="pr-14 text-base font-semibold tabular-nums"
+      />
+      <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+        units
+      </span>
+    </div>
+  )
+}
+
+function StockFact({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string
+  value: number | string
+  hint?: string
+  tone?: 'good' | 'warn' | 'bad'
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-lg border px-3 py-2.5',
+        tone === 'bad'
+          ? 'border-destructive/30 bg-destructive/5'
+          : tone === 'warn'
+            ? 'border-amber-300 bg-amber-50'
+            : tone === 'good'
+              ? 'border-brand-teal/40 bg-brand-teal/10'
+              : 'border-brand-ink/10 bg-muted/40',
+      )}
+    >
+      <dt className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground uppercase">
+        {label}
+      </dt>
+      <dd className="mt-1 text-xl font-extrabold tabular-nums">{value}</dd>
+      {hint ? <p className="text-[11px] text-muted-foreground">{hint}</p> : null}
+    </div>
   )
 }

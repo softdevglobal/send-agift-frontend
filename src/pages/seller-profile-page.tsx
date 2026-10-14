@@ -464,7 +464,7 @@ export function SellerProfilePage() {
                   disabled={uploadingImage}
                   onClick={() => imageInputRef.current?.click()}
                   aria-label={imageUrl ? 'Change profile photo' : 'Upload profile photo'}
-                  className="relative rounded-full focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="relative rounded-[50%] focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {imageUrl ? (
                     <img
@@ -473,11 +473,13 @@ export function SellerProfilePage() {
                       className="size-[5.5rem] rounded-full object-cover sm:size-[6.25rem]"
                     />
                   ) : (
-                    <div className="flex size-[5.5rem] items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-foreground sm:size-[6.25rem]">
+                    // rounded-[50%], not rounded-full: the portal's box look squares
+                    // every rounded-full chip, and a square spills over the ring.
+                    <div className="flex size-[5.5rem] items-center justify-center rounded-[50%] bg-primary text-xl font-semibold text-primary-foreground sm:size-[6.25rem]">
                       {profile ? sellerInitials(profile) : 'S'}
                     </div>
                   )}
-                  <span className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full bg-card text-foreground shadow-sm ring-2 ring-background">
+                  <span className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-[50%] bg-card text-foreground shadow-sm ring-2 ring-background">
                     {uploadingImage ? (
                       <LoaderCircle className="size-3.5 animate-spin" />
                     ) : (

@@ -21,6 +21,7 @@ export {
   getCatalogProduct,
   listCatalogProductsForSeller,
   getCatalogSeller,
+  inCategory,
   registerCatalogProducts,
 } from './catalog'
 export { StarRating, StarRatingInput } from './star-rating'

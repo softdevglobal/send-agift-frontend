@@ -57,6 +57,8 @@ import {
   useDeliveryIntent,
   type DeliveryIntent,
 } from '@/features/customer-commerce/delivery-intent-context'
+import { DeliveryProblem } from '@/features/customer-commerce/delivery-problem'
+import { describeDeliveryProblem } from '@/features/customer-commerce/delivery-problem-copy'
 import { PhoneField } from '@/features/auth/phone-field'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
@@ -251,7 +253,7 @@ function formatStreetAddress(
 
 export function CheckoutPage() {
   const navigate = useNavigate()
-  const { lines, subtotal, clearCart, mixedCustomerType, cartCustomerType } = useCart()
+  const { lines, subtotal, clearCart, removeItem, mixedCustomerType, cartCustomerType } = useCart()
 
   const [countries, setCountries] = useState<Country[]>([])
   const [recipients, setRecipients] = useState<Recipient[]>([])
@@ -524,6 +526,26 @@ export function CheckoutPage() {
     quotedShops.some(
       (shop) => !shop.seller_delivery?.available,
     )
+  // The shops that cannot deliver here, named in the message at the top.
+  const blockedShops = quotedShops.filter((shop) => !shop.seller_delivery?.available)
+  const blockedSummary =
+    blockedShops.length === 1
+      ? `${describeDeliveryProblem(blockedShops[0].shop_name, blockedShops[0].seller_delivery ?? undefined).title}. See Delivery below for what you can do.`
+      : blockedShops.length > 1
+        ? `${blockedShops.length} shops in your cart can’t deliver to this address. See Delivery below for what you can do.`
+        : 'This address can’t be delivered to yet. See Delivery below.'
+
+  function chooseAnotherRecipient() {
+    const select = document.getElementById('checkout-recipient')
+    select?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    select?.focus()
+  }
+
+  function removeShopGifts(shopId: string) {
+    for (const line of lines) {
+      if (line.product.shopId === shopId) removeItem(line.product.id)
+    }
+  }
 
   const blocker = unorderable.length
     ? 'Your cart holds sample products that are not published by a seller. Remove them to check out.'
@@ -539,7 +561,7 @@ export function CheckoutPage() {
             ? 'Pin the delivery spot on the map so the shop can measure the distance.'
             : noDeliveryOptions
             ? shopsLackOptions
-              ? 'This address is outside the shop delivery zones, so this order cannot be placed.'
+              ? blockedSummary
               : 'Delivery for this order is not priced in the cart currency, so it cannot be placed.'
             : null
 
@@ -1385,13 +1407,16 @@ export function CheckoutPage() {
                             </button>
                           </li>
                         ) : shop.seller_delivery && !shop.seller_delivery.available ? (
-                          <li className="rounded-xl border border-dashed border-border/60 px-4 py-3 text-sm text-muted-foreground">
-                            Shop delivery is not available
-                            {shop.seller_delivery.reason
-                              ? `. ${shop.seller_delivery.reason}`
-                              : shop.seller_delivery.distance_km != null
-                                ? ` (${shop.seller_delivery.distance_km} km is outside the shop zones)`
-                                : '.'}
+                          <li>
+                            <DeliveryProblem
+                              shopName={shop.shop_name}
+                              option={shop.seller_delivery}
+                              onChangeRecipient={chooseAnotherRecipient}
+                              onRemoveShopGifts={() => removeShopGifts(shop.shop_id)}
+                              giftCount={
+                                lines.filter((line) => line.product.shopId === shop.shop_id).length
+                              }
+                            />
                           </li>
                         ) : null}
                       </ul>

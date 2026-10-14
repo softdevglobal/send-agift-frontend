@@ -19,7 +19,7 @@ import {
   type Recipient,
   type RecipientDetails,
 } from '@/api/customers'
-import type { RecipientAddress } from '@/api/types'
+import type { RecipientAddress, SellerDeliveryQuote } from '@/api/types'
 import {
   getFreeGiftStatus,
   isFreeGiftDisabled,
@@ -43,6 +43,7 @@ import {
   customerPanelClass,
 } from '@/features/customer-commerce'
 import { AddRecipientDialog } from '@/features/free-gift/add-recipient-dialog'
+import { DeliveryProblem } from '@/features/customer-commerce/delivery-problem'
 import { VerifyEmailCard } from '@/features/free-gift/verify-email-card'
 import { getErrorMessage } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
@@ -115,6 +116,11 @@ export function FreeGiftPage() {
 
   // What the customer pays: the delivery to this recipient, quoted before sending.
   const [deliveryFee, setDeliveryFee] = useState<{ amount: number; currency: string } | null>(null)
+  // The shop cannot deliver to this recipient, and why.
+  const [deliveryProblem, setDeliveryProblem] = useState<{
+    shopName: string
+    option: SellerDeliveryQuote | undefined
+  } | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // One key for this confirm screen: a retry or a double click is one order.
@@ -228,6 +234,7 @@ export function FreeGiftPage() {
 
   useEffect(() => {
     setDeliveryFee(null)
+    setDeliveryProblem(null)
     if (!isCustomer || !recipientId || !productId) return
     let cancelled = false
     quoteDelivery({
@@ -236,7 +243,15 @@ export function FreeGiftPage() {
       items: [{ product_id: productId, quantity: 1 }],
     })
       .then((quote) => {
-        if (cancelled || !quote.complete) return
+        if (cancelled) return
+        if (!quote.complete) {
+          const blocked = quote.shops?.find((shop) => !shop.seller_delivery?.available)
+          setDeliveryProblem({
+            shopName: blocked?.shop_name ?? '',
+            option: blocked?.seller_delivery ?? undefined,
+          })
+          return
+        }
         setDeliveryFee({ amount: quote.amount, currency: quote.currency })
       })
       .catch(() => undefined)
@@ -251,7 +266,12 @@ export function FreeGiftPage() {
   )
   const recipientOk = Boolean(recipientCheck?.can_receive && address)
   const canSend =
-    Boolean(status?.available) && Boolean(product) && recipientOk && Boolean(deliveryDate) && !sending
+    Boolean(status?.available) &&
+    Boolean(product) &&
+    recipientOk &&
+    Boolean(deliveryDate) &&
+    !deliveryProblem &&
+    !sending
 
   // Everything still standing between the customer and the button, in the
   // order they would fix it, so a disabled button always says why.
@@ -697,6 +717,17 @@ export function FreeGiftPage() {
                     </dd>
                   </div>
                 </dl>
+                {deliveryProblem ? (
+                  <DeliveryProblem
+                    shopName={deliveryProblem.shopName}
+                    option={deliveryProblem.option}
+                    onChangeRecipient={() => {
+                      const select = document.getElementById('free-gift-recipient')
+                      select?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      select?.focus()
+                    }}
+                  />
+                ) : null}
                 <FormAlert error={error} />
                 {!canSend && !sending && blockers.length > 0 ? (
                   <div

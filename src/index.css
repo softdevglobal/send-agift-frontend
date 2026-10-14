@@ -231,6 +231,17 @@
 }
 
 @layer base {
+  /* Number fields are typed, never nudged: no up/down arrows anywhere. */
+  input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }
@@ -318,9 +329,12 @@
     }
   }
 
+  /* Desktop: at least 8% of the screen free on each side of every customer
+     page. */
   @media (min-width: 1024px) {
     .storefront-frame {
-      padding-inline: 2rem;
+      max-width: none;
+      padding-inline: max(8vw, calc((100% - 90rem) / 2));
     }
   }
 }

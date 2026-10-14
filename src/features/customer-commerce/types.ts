@@ -3,7 +3,10 @@ import type { GiftProduct } from '@/features/marketing/data'
 export type CartCustomerType = 'personal' | 'corporate'
 
 export type CatalogProduct = GiftProduct & {
+  /** The first category, shown on the card and used for the breadcrumb. */
   categoryId: string
+  /** Every category the seller filed the gift under; filters match any. */
+  categoryIds?: string[]
   description: string
   sellerName: string
   sellerLegalName?: string

@@ -16,6 +16,7 @@ import {
 } from '@/api/types'
 import { optionalString } from '@/lib/form'
 import { majorToMinor, minorToMajor } from '@/lib/money'
+import { blankIfZero } from '@/lib/utils'
 
 /**
  * The shape of the product form, and the pure conversions between it and the
@@ -82,13 +83,13 @@ export const emptyForm: ProductFormState = {
   occasion_tags: '',
   customer_type_visibility: 'both',
   points_display_enabled: false,
-  reward_points: '0',
-  prep_minutes: '0',
+  reward_points: '',
+  prep_minutes: '',
   image_url: '',
   media: [],
-  available_qty: '0',
-  reserved_qty: '0',
-  low_stock_threshold: '0',
+  available_qty: '',
+  reserved_qty: '',
+  low_stock_threshold: '',
   unavailable_dates: '',
   parcel_length: '20',
   parcel_width: '15',
@@ -109,9 +110,10 @@ export function parseNonNegativeInt(value: string, fallback = 0): number {
 /** Split stored prep minutes into the hours and minutes shown in the form. */
 export function splitPrepMinutes(totalMinutes: string): { hours: string; minutes: string } {
   const total = parseNonNegativeInt(totalMinutes, 0)
+  // Empty rather than 0, so the fields open blank.
   return {
-    hours: String(Math.floor(total / 60)),
-    minutes: String(total % 60),
+    hours: blankIfZero(Math.floor(total / 60)),
+    minutes: blankIfZero(total % 60),
   }
 }
 
@@ -371,13 +373,13 @@ export function productToForm(product: Product, inventory?: InventoryInput): Pro
     occasion_tags: (product.occasion_tags ?? []).join(', '),
     customer_type_visibility: product.customer_type_visibility,
     points_display_enabled: product.points_display_enabled,
-    reward_points: String(product.reward_points ?? 0),
-    prep_minutes: String(product.prep_minutes ?? 0),
+    reward_points: blankIfZero(product.reward_points),
+    prep_minutes: blankIfZero(product.prep_minutes),
     image_url: imageUrl,
     media,
-    available_qty: String(inventory?.available_qty ?? 0),
-    reserved_qty: String(inventory?.reserved_qty ?? 0),
-    low_stock_threshold: String(inventory?.low_stock_threshold ?? 0),
+    available_qty: blankIfZero(inventory?.available_qty),
+    reserved_qty: blankIfZero(inventory?.reserved_qty),
+    low_stock_threshold: blankIfZero(inventory?.low_stock_threshold),
     unavailable_dates: (inventory?.unavailable_dates ?? []).join('\n'),
     parcel_length: parcel?.length?.trim() || emptyForm.parcel_length,
     parcel_width: parcel?.width?.trim() || emptyForm.parcel_width,

@@ -260,6 +260,8 @@ export type Shop = {
   pickup_enabled?: boolean
   /** Present on public shop reads. verified when an admin has accepted the business. */
   seller_verification_status?: string
+  /** Present on public shop reads: the seller's own profile photo. */
+  seller_image_url?: string
 }
 
 export type SellerDetails = Seller & {
@@ -374,6 +376,7 @@ export type ProductDetails = Product & {
     | 'customer_visible_location'
     | 'description'
     | 'seller_verification_status'
+    | 'seller_image_url'
   >
 }
 
@@ -891,6 +894,8 @@ export type SellerDeliveryQuote = {
   estimated_delivery_date?: string
   /** Set when available is false (outside zones, or coordinates missing). */
   reason?: string
+  /** The same, for the UI: NO_ZONES, SHOP_NO_LOCATION, ADDRESS_NO_LOCATION, OUTSIDE_ZONE. */
+  reason_code?: 'NO_ZONES' | 'SHOP_NO_LOCATION' | 'ADDRESS_NO_LOCATION' | 'OUTSIDE_ZONE'
 }
 
 export type QuotePostalAddress = {
