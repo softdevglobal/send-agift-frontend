@@ -111,7 +111,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
             <span className="text-base font-extrabold tracking-tight sm:text-lg">{priceLabel(product)}</span>
             {product.compareAt ? (
               <span className="text-sm text-muted-foreground line-through">
-                {formatMoney(product.compareAt)}
+                {formatMoney(product.compareAt, isCatalogProduct(product) ? product.currency : undefined)}
               </span>
             ) : null}
           </div>

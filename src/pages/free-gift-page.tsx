@@ -303,6 +303,7 @@ export function FreeGiftPage() {
         {
           product_id: product.product_id,
           recipient_id: recipient.id,
+          address_id: address.id,
           country_id: address.country_id || me?.country_id || '',
           delivery_date: deliveryDate,
           ...(message.trim() ? { gift_message: message.trim() } : {}),

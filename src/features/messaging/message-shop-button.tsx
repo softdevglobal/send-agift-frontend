@@ -118,7 +118,7 @@ export function MessageShopButton({
           className="gap-0 overflow-hidden p-0 sm:max-w-md"
           onCloseAutoFocus={(event) => event.preventDefault()}
         >
-          <DialogHeader className="border-b border-border/60 px-6 pt-6 pb-5">
+          <DialogHeader className="mx-0 mt-0 pb-5">
             <span className="mb-2 flex size-11 items-center justify-center rounded-xl bg-brand-violet text-white">
               <MessageSquare className="size-5" />
             </span>

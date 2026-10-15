@@ -46,6 +46,8 @@ export type FreeGiftStatus = {
 export type SendFreeGiftInput = {
   product_id: string
   recipient_id: string
+  /** One of the recipient's own addresses; the default is used when left out. */
+  address_id?: string
   country_id: string
   /** yyyy-mm-dd */
   delivery_date: string

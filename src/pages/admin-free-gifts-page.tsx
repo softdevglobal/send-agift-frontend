@@ -655,7 +655,14 @@ function CountryBudgetDialog({
           <select
             id="country-budget-country"
             value={countryId}
-            onChange={(event) => setCountryId(event.target.value)}
+            onChange={(event) => {
+              const id = event.target.value
+              setCountryId(id)
+              // The country's own currency is the sensible default; it can
+              // still be changed below.
+              const picked = countries.find((country) => country.id === id)
+              if (picked?.default_currency) setCurrency(picked.default_currency)
+            }}
             disabled={existing !== null}
             className={selectClassName}
           >
