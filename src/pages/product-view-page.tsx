@@ -311,7 +311,7 @@ export function ProductViewPage() {
               <p className="font-poster text-4xl text-brand-violet">{price}</p>
               {product.compareAt ? (
                 <p className="text-muted-foreground line-through">
-                  {formatMoney(product.compareAt)}
+                  {formatMoney(product.compareAt, product.currency)}
                 </p>
               ) : null}
             </div>

@@ -22,7 +22,7 @@ export function AccountLayout() {
         {/* minmax(0, 1fr) on phones too: an auto track grew to fit the
             sideways-scrolling nav strip and pushed every page off screen. */}
         <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[13rem_minmax(0,1fr)]">
-          <aside className="min-w-0 lg:sticky lg:top-24 lg:self-start">
+          <aside className="hidden min-w-0 lg:block lg:sticky lg:top-24 lg:self-start">
             <nav className="flex gap-4 overflow-x-auto pb-2 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-0">
               {accountNavGroups.map((group) => (
                 <div key={group.label} className="shrink-0 lg:shrink">

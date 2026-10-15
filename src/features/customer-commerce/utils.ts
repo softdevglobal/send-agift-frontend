@@ -1,7 +1,13 @@
 import { giftCategories } from '@/features/marketing/data'
+import { formatPriceAmount, majorToMinor } from '@/lib/money'
 
-export function formatMoney(value: number) {
-  return `$${value.toFixed(2)}`
+/**
+ * A price in major units (22.00), in the currency of the shop it comes from.
+ * Without a currency it falls back to a plain dollar sign.
+ */
+export function formatMoney(value: number, currency?: string) {
+  if (!currency) return `$${value.toFixed(2)}`
+  return formatPriceAmount(majorToMinor(value, currency), currency)
 }
 
 export function categoryName(categoryId: string) {

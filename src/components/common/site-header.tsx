@@ -24,7 +24,6 @@ import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { useCustomerMessages } from '@/features/messaging'
 import { returnToState } from '@/lib/auth'
-import { giftCategories } from '@/features/marketing/data'
 import { cn } from '@/lib/utils'
 
 export function SiteHeader() {
@@ -298,21 +297,6 @@ export function SiteHeader() {
                 </Button>
               </div>
             ) : null}
-
-            <p className="mt-4 px-3 text-[10px] font-medium tracking-[0.16em] text-muted-foreground uppercase">
-              Shop by occasion
-            </p>
-            {giftCategories.map((item) => (
-              <Link
-                key={item.id}
-                to={`/products?category=${item.id}`}
-                onClick={closeMenu}
-                aria-current={path === '/products' && activeCategory === item.id ? 'page' : undefined}
-                className={menuRowClass(path === '/products' && activeCategory === item.id, 'font-medium')}
-              >
-                {item.name}
-              </Link>
-            ))}
 
             {isCustomer ? (
               <>

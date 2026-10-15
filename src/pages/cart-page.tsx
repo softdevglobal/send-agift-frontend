@@ -23,6 +23,8 @@ export function CartPage() {
   const isCustomer = isAuthenticated && role === 'customer'
   const shops = cartShops(lines)
   const mixedShops = shops.length > 1
+  // One shop per order, so the first line's currency is the cart's.
+  const currency = lines[0]?.product.currency
 
   if (!lines.length) {
     return (
@@ -98,7 +100,7 @@ export function CartPage() {
                       {line.product.name}
                     </Link>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                      {formatMoney(line.product.price)} each
+                      {formatMoney(line.product.price, line.product.currency)} each
                     </p>
                     {line.product.shopName || line.product.sellerName ? (
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -107,7 +109,7 @@ export function CartPage() {
                       </p>
                     ) : null}
                   </div>
-                  <p className="text-sm font-medium">{formatMoney(line.lineTotal)}</p>
+                  <p className="text-sm font-medium">{formatMoney(line.lineTotal, line.product.currency)}</p>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <div className="inline-flex items-center rounded-full border border-border">
@@ -158,7 +160,7 @@ export function CartPage() {
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>
-              <dd>{formatMoney(subtotal)}</dd>
+              <dd>{formatMoney(subtotal, currency)}</dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
@@ -166,7 +168,7 @@ export function CartPage() {
             </div>
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 font-medium">
               <dt>Total</dt>
-              <dd>{formatMoney(total)}</dd>
+              <dd>{formatMoney(total, currency)}</dd>
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">

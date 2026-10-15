@@ -515,3 +515,33 @@
 .leaflet-container .delivery-range-tip::before {
   display: none;
 }
+
+/* Purple scrollbars inside every popup (dialogs, sheets), phone and desktop. */
+[data-slot="dialog-content"],
+[data-slot="dialog-content"] *,
+[data-slot="sheet-content"],
+[data-slot="sheet-content"] * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+[data-slot="dialog-content"] ::-webkit-scrollbar,
+[data-slot="dialog-content"]::-webkit-scrollbar,
+[data-slot="sheet-content"] ::-webkit-scrollbar,
+[data-slot="sheet-content"]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-slot="dialog-content"] ::-webkit-scrollbar-thumb,
+[data-slot="dialog-content"]::-webkit-scrollbar-thumb,
+[data-slot="sheet-content"] ::-webkit-scrollbar-thumb,
+[data-slot="sheet-content"]::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: var(--primary);
+}
+
+[data-slot="dialog-content"] ::-webkit-scrollbar-track,
+[data-slot="sheet-content"] ::-webkit-scrollbar-track {
+  background: transparent;
+}

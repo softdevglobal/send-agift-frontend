@@ -99,7 +99,7 @@ export function WizardDialog({
          * preview) used to make the popup jump between sizes as you clicked
          * Next. Now only the body below scrolls.
          */
-        className="account-box h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden border-2 border-brand-ink p-0 sm:max-w-4xl"
+        className="account-box h-[85svh] max-h-[46rem] w-[calc(100%-1.5rem)] max-w-4xl gap-0 overflow-hidden border-brand-ink/10 p-0 sm:max-w-4xl"
         onInteractOutside={(event) => {
           // Half-filled steps are easy to lose by a stray click; closing is
           // deliberate here (the X, Cancel, or Escape).
@@ -117,8 +117,8 @@ export function WizardDialog({
           />
 
           <div className="flex h-full min-h-0 flex-col">
-            <header className="border-b border-border/60 px-5 py-4 sm:px-7">
-              <p className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+            <header className="border-b border-brand-violet/15 bg-brand-violet/5 px-5 py-4 sm:px-7">
+              <p className="text-xs font-semibold tracking-[0.14em] text-brand-violet uppercase">
                 Step {safeIndex + 1} of {steps.length}
               </p>
               <DialogTitle className="mt-1 font-poster text-xl">
