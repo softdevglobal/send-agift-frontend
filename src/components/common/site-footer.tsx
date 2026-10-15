@@ -17,7 +17,7 @@ const quickLinks = [
 
 const serviceLinks = [
   { to: '/orders', label: 'Track order' },
-  { to: '/products', label: 'Returns & refunds' },
+  { to: '/legal', label: 'Terms & policies' },
   { to: '/account/points', label: 'Points & competitions' },
   { to: '/become-a-seller', label: 'Seller support' },
 ]

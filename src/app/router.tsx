@@ -26,6 +26,7 @@ import { AdminLoginPage } from '@/pages/admin-login-page'
 import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
+import { LegalIndexPage, PolicyPage } from '@/pages/legal-pages'
 import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
@@ -117,6 +118,11 @@ export function AppRouter() {
       <Route path="/reels" element={<ReelsPage />} />
       <Route path="/review/:token" element={<RedirectReview />} />
       <Route path="/become-a-seller" element={<BecomeSellerPage />} />
+      {/* Policies: public, linked from the footer and the app. */}
+      <Route path="/legal" element={<LegalIndexPage />} />
+      <Route path="/legal/:slug" element={<PolicyPage />} />
+      <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+      <Route path="/terms" element={<Navigate to="/legal/customer-terms" replace />} />
 
       <Route element={<PageLayout />}>
         <Route path="/sellers/:sellerId" element={<CustomerSellerPage />} />
