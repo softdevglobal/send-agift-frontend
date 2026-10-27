@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BadgeCheck, Crown, Gift, LoaderCircle, LogIn } from 'lucide-react'
+import { BadgeCheck, Crown, Gift, LoaderCircle, LogIn, Percent } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import {
@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/features/auth/auth-context'
 import { AvailabilityNotice } from '@/features/competition-points/availability-notice'
 import { formatMoney, newRequestKey } from '@/features/competition-points/format'
+import { formatBps } from '@/features/competition-points/use-member-discount'
 import { CustomerPageHeader } from '@/features/customer-commerce'
 import { getErrorMessage } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
@@ -36,7 +37,7 @@ export function MembershipPage() {
       <CustomerPageHeader
         eyebrow="Membership"
         title="SendAGift membership"
-        description="Gift benefits, and an extra competition points bonus after your first qualifying completed gift in each paid membership period."
+        description="Gift benefits and discounts, and an extra competition points bonus after your first qualifying completed gift in each paid membership period."
       />
       {signedIn ? (
         <Offers />
@@ -172,6 +173,12 @@ function OfferCard({
             {b}
           </li>
         ))}
+        {offer.member_discount_bps > 0 ? (
+          <li className="flex items-start gap-2">
+            <Percent className="mt-0.5 size-4 shrink-0 text-brand-violet" />
+            {formatBps(offer.member_discount_bps)} off the gift price on every order while you are a member.
+          </li>
+        ) : null}
         {offer.member_bonus_points > 0 ? (
           <li className="flex items-start gap-2">
             <BadgeCheck className="mt-0.5 size-4 shrink-0 text-brand-violet" />

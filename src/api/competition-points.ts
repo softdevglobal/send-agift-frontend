@@ -100,6 +100,11 @@ export type PlanOffer = {
   interval_count: number
   /** The extra award above ordinary gift points, after the first gift of each paid period. */
   member_bonus_points: number
+  /**
+   * Percentage off the gift price for members, in basis points (100 = 1%).
+   * Funded from SendAGift's commission; the seller's payout is unchanged.
+   */
+  member_discount_bps: number
   gift_benefits: string[]
   terms_version: string
   status: VersionStatus
@@ -200,6 +205,13 @@ export function joinMembership(offerId: string, renewalConsent: boolean, key: st
       headers: { 'Idempotency-Key': key },
     },
   )
+}
+
+export type MemberDiscount = { discount_bps: number; period_end?: string }
+
+/** The product discount the signed-in customer gets on a new order now. */
+export function getMemberDiscount() {
+  return api<MemberDiscount>('/customers/me/member-discount')
 }
 
 export function cancelMembership() {
@@ -415,6 +427,8 @@ export function getPublicCompetition(id: string) {
 const ADMIN = '/admin/competition-points'
 
 export type ReleaseSettings = {
+  /** SendAGift's commission per sale, in basis points: the most a member discount can be. */
+  platform_fee_bps: number
   hold_minutes: number
   restore_window_hours: number
   membership_provider: string
@@ -434,6 +448,7 @@ export type OfferInput = {
   interval_unit: IntervalUnit
   interval_count: number
   member_bonus_points: number
+  member_discount_bps: number
   gift_benefits: string[]
   terms_version: string
 }

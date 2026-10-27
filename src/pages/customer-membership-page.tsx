@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Receipt } from 'lucide-react'
+import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import {
@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMoney, nextActionLink } from '@/features/competition-points/format'
+import { formatBps } from '@/features/competition-points/use-member-discount'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { getErrorMessage } from '@/lib/api'
@@ -174,7 +175,18 @@ export function CustomerMembershipPage() {
             </div>
           </section>
 
-          <section className="grid gap-3 sm:grid-cols-3">
+          <section className={cn('grid gap-3 sm:grid-cols-2', offer && offer.member_discount_bps > 0 ? 'lg:grid-cols-4' : 'lg:grid-cols-3')}>
+            {offer && offer.member_discount_bps > 0 ? (
+              <Fact
+                icon={Percent}
+                label="Gift discount"
+                value={
+                  period
+                    ? `${formatBps(offer.member_discount_bps)} off every order until ${formatDate(period.period_end)}`
+                    : `${formatBps(offer.member_discount_bps)} off, while a period is paid`
+                }
+              />
+            ) : null}
             <Fact
               icon={CalendarClock}
               label="This period"

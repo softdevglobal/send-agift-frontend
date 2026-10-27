@@ -456,6 +456,14 @@ export function CustomerOrderDetailPage() {
                   {formatPriceAmount(order.subtotal_amount, order.currency)}
                 </dd>
               </div>
+              {(order.member_discount_amount ?? 0) > 0 ? (
+                <div className="flex justify-between gap-3 text-brand-violet">
+                  <dt>Member discount</dt>
+                  <dd>
+                    −{formatPriceAmount(order.member_discount_amount ?? 0, order.currency)}
+                  </dd>
+                </div>
+              ) : null}
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Delivery</dt>
                 <dd>

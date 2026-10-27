@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CalendarClock, Crown, Eye, Gift, LoaderCircle, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { CalendarClock, Crown, Eye, Gift, LoaderCircle, Pencil, Percent, Plus, Trash2, Wallet } from 'lucide-react'
 
 import {
   createOffer,
   createPolicy,
   deleteOffer,
   deletePolicy,
+  getCPSettings,
   listAdminOffers,
   listAdminPolicies,
   offerAction,
@@ -37,7 +38,6 @@ import {
   WizardDialog,
   WizardField,
   WizardFields,
-  WizardPreviewFrame,
   type WizardStep,
 } from '@/features/seller/wizard-dialog'
 import { cn } from '@/lib/utils'
@@ -88,17 +88,13 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <UnapprovedNote>
-          Prices, intervals and bonus quantities are owner decisions. A published version never changes; changing a
-          price creates a new version, and existing paid periods keep the version they were sold under.
-        </UnapprovedNote>
-        {canEdit ? (
+      {canEdit ? (
+        <div className="flex justify-end">
           <Button onClick={() => setEditing('new')} className="h-10 px-4">
             <Plus className="size-4" /> New membership package
           </Button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       <FormAlert error={error} notice={notice} />
       {items === null ? (
         <div className="flex justify-center py-10">
@@ -124,6 +120,11 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
                 <strong>{o.member_bonus_points.toLocaleString()}</strong> points after the first qualifying gift of each
                 paid period
               </p>
+              {o.member_discount_bps > 0 ? (
+                <p className="mt-1 text-sm">
+                  <strong>{bpsLabel(o.member_discount_bps)}</strong> off gifts for members
+                </p>
+              ) : null}
               {o.gift_benefits.length ? (
                 <p className="mt-1 text-xs text-muted-foreground">Benefits: {o.gift_benefits.join(' · ')}</p>
               ) : null}
@@ -207,6 +208,9 @@ function OfferDialog({
   const [unit, setUnit] = useState<IntervalUnit>('month')
   const [count, setCount] = useState('1')
   const [bonus, setBonus] = useState('')
+  const [discount, setDiscount] = useState('')
+  // SendAGift's commission per sale, which funds the member discount and so caps it.
+  const [feeBps, setFeeBps] = useState<number | null>(null)
   const [benefits, setBenefits] = useState('')
   const [terms, setTerms] = useState('v1')
   const [busy, setBusy] = useState(false)
@@ -225,11 +229,17 @@ function OfferDialog({
     setUnit(existing?.interval_unit ?? 'month')
     setCount(String(existing?.interval_count ?? 1))
     setBonus(existing ? String(existing.member_bonus_points) : '')
+    setDiscount(existing?.member_discount_bps ? String(existing.member_discount_bps / 100) : '')
     setBenefits((existing?.gift_benefits ?? []).join('\n'))
     setTerms(existing?.terms_version ?? 'v1')
+    getCPSettings()
+      .then((st) => setFeeBps(st.platform_fee_bps))
+      .catch(() => setFeeBps(null))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  const discountBps = Math.round((Number(discount) || 0) * 100)
+  const discountOverCap = feeBps !== null && discountBps > feeBps
   const intervalCount = Number(count) || 0
   const priceNumber = Number(price)
   const benefitList = benefits.split('\n').map((b) => b.trim()).filter(Boolean)
@@ -250,6 +260,7 @@ function OfferDialog({
       interval_unit: unit,
       interval_count: intervalCount || 1,
       member_bonus_points: bonusPoints,
+      member_discount_bps: discountBps,
       gift_benefits: benefitList,
       terms_version: terms.trim(),
     }
@@ -417,12 +428,24 @@ function OfferDialog({
     },
     {
       id: 'benefits',
-      title: 'Benefits & bonus',
-      description: 'What members get.',
+      title: 'Member perks',
+      description: 'Discount, bonus points and benefits.',
       icon: Gift,
-      blockedReason: null,
+      blockedReason: discountOverCap
+        ? feeBps && feeBps > 0
+          ? `The member discount can't be more than ${bpsLabel(feeBps)}, the commission that funds it.`
+          : 'Set the platform commission (STRIPE_PLATFORM_FEE_BPS) before offering a member discount.'
+        : null,
       content: (
         <div className="space-y-7">
+          <MemberDiscountCard
+            value={discount}
+            onChange={setDiscount}
+            feeBps={feeBps}
+            currency={currency}
+            over={discountOverCap}
+          />
+
           <section className="rounded-2xl border-2 border-brand-violet/25 bg-brand-violet/5 p-5">
             <div className="flex items-start gap-4">
               <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet text-white">
@@ -493,45 +516,118 @@ function OfferDialog({
       description: 'Check it before saving. It is saved as a draft.',
       icon: Eye,
       content: (
-        <WizardPreviewFrame caption="This is how customers will see it, once it is approved and published.">
-          <div className="-mx-5 -mt-5 mb-5 flex items-center justify-between gap-4 rounded-t-2xl bg-brand-ink px-5 py-5 text-white">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.18em] text-white/55 uppercase">
-                {country?.name ?? 'Country'}
-              </p>
-              <p className="font-poster text-2xl leading-tight">{name.trim() || 'Untitled package'}</p>
-            </div>
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet">
-              <Crown className="size-5" />
-            </span>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <div>
+            <p className="mb-2 text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
+              What customers will see
+            </p>
+            <article className="overflow-hidden rounded-[1.5rem] border-2 border-brand-ink/15 bg-card shadow-sm">
+              <div className="flex items-start justify-between gap-3 bg-brand-ink px-5 py-5 text-white">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.18em] text-white/55 uppercase">
+                    {country?.name ?? 'Country'}
+                  </p>
+                  <h3 className="mt-1 font-poster text-2xl leading-tight break-words">
+                    {name.trim() || 'Untitled package'}
+                  </h3>
+                </div>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet">
+                  <Crown className="size-5" />
+                </span>
+              </div>
+              <div className="space-y-4 px-5 py-5">
+                <p className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-poster text-4xl">{priceLine}</span>
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    {intervalCount ? billingLabel(unit, intervalCount) : ''}
+                  </span>
+                </p>
+                {description.trim() ? <p className="text-sm text-muted-foreground">{description.trim()}</p> : null}
+                <ul className="space-y-2 text-sm">
+                  {benefitList.map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <Gift className="mt-0.5 size-4 shrink-0 text-brand-teal" />
+                      {b}
+                    </li>
+                  ))}
+                  {discountBps > 0 ? (
+                    <li className="flex items-start gap-2">
+                      <Percent className="mt-0.5 size-4 shrink-0 text-brand-violet" />
+                      {bpsLabel(discountBps)} off the gift price on every order while you are a member.
+                    </li>
+                  ) : null}
+                  {bonusPoints > 0 ? (
+                    <li className="flex items-start gap-2">
+                      <Crown className="mt-0.5 size-4 shrink-0 text-brand-violet" />
+                      An additional {bonusPoints.toLocaleString()} competition points after your first qualifying
+                      completed gift in each paid membership period.
+                    </li>
+                  ) : null}
+                  {benefitList.length === 0 && bonusPoints === 0 && discountBps === 0 ? (
+                    <li className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
+                      This package lists no benefits and no bonus yet. Go back to add some.
+                    </li>
+                  ) : null}
+                </ul>
+                <div className="rounded-xl bg-accent/60 px-4 py-3 text-xs leading-relaxed text-brand-ink/80">
+                  Renews at <strong>{priceLine}</strong> {intervalCount ? billingLabel(unit, intervalCount) : ''} until
+                  cancelled. Benefits continue to the end of the period paid for.
+                </div>
+                <div className="flex h-11 items-center justify-center rounded-lg bg-brand-ink/90 text-sm font-bold tracking-wide text-white uppercase opacity-60">
+                  Join for {priceLine}
+                </div>
+              </div>
+            </article>
           </div>
-          <p className="flex items-baseline gap-2">
-            <span className="font-poster text-3xl">{priceLine}</span>
-            <span className="text-sm font-semibold text-muted-foreground">
-              {intervalCount ? billingLabel(unit, intervalCount) : ''}
-            </span>
-          </p>
-          {description.trim() ? <p className="mt-2 text-sm text-muted-foreground">{description.trim()}</p> : null}
-          <ul className="mt-4 space-y-1.5 text-sm">
-            {benefitList.map((b) => (
-              <li key={b} className="flex items-start gap-2">
-                <Gift className="mt-0.5 size-4 shrink-0 text-brand-teal" />
-                {b}
-              </li>
-            ))}
-            {bonusPoints > 0 ? (
-              <li className="flex items-start gap-2">
-                <Crown className="mt-0.5 size-4 shrink-0 text-brand-violet" />
-                An additional {bonusPoints.toLocaleString()} competition points after the first qualifying completed
-                gift in each paid membership period.
-              </li>
-            ) : null}
-          </ul>
-          <p className="mt-4 text-xs text-muted-foreground">
-            Tier {tier || '-'} · terms {terms || '-'} · nothing is sold until it is submitted and a different admin
-            approves it, and membership sales are approved for {country?.name ?? 'the country'}.
-          </p>
-        </WizardPreviewFrame>
+
+          <div className="space-y-5">
+            <section>
+              <p className="mb-2 text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">The details</p>
+              <dl className="divide-y divide-brand-ink/10 rounded-xl border border-brand-ink/15 bg-card text-sm">
+                {[
+                  ['Country', country ? `${country.name} (${currency})` : '-'],
+                  ['Tier code', tier.trim() || '-'],
+                  ['Price', priceLine],
+                  ['Renews', intervalCount ? billingLabel(unit, intervalCount) : '-'],
+                  ['Member discount', discountBps > 0 ? `${bpsLabel(discountBps)} off gifts` : 'None'],
+                  ['Member bonus', bonusPoints > 0 ? `${bonusPoints.toLocaleString()} points per paid period` : 'None'],
+                  ['Gift benefits', benefitList.length ? `${benefitList.length} listed` : 'None'],
+                  ['Terms version', terms.trim() || '-'],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between gap-4 px-4 py-2.5">
+                    <dt className="text-muted-foreground">{k}</dt>
+                    <dd className="text-right font-semibold">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+
+            <section>
+              <p className="mb-2 text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">What happens next</p>
+              <ol className="space-y-3 text-sm">
+                {[
+                  ['Saved as a draft', 'You can still edit or delete it.'],
+                  ['Submit for approval', 'From then on it can no longer be edited; a change means a new version.'],
+                  ['A different admin approves it', 'The admin who submitted it cannot approve it.'],
+                  [
+                    'On sale',
+                    `Customers in ${country?.name ?? 'the country'} see it once a membership sales approval exists there.`,
+                  ],
+                ].map(([title, text], i) => (
+                  <li key={title} className="flex items-start gap-3">
+                    <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-violet text-xs font-bold text-white">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="font-semibold">{title}.</span>{' '}
+                      <span className="text-muted-foreground">{text}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </div>
+        </div>
       ),
     },
   ]
@@ -886,6 +982,124 @@ function BenefitsEditor({ benefits, onChange }: { benefits: string[]; onChange: 
           ))}
         </div>
       ) : null}
+    </section>
+  )
+}
+
+/** 790 → "7.9%". */
+function bpsLabel(bps: number): string {
+  return `${Number((bps / 100).toFixed(2))}%`
+}
+
+/**
+ * The member product discount. It is paid for by SendAGift out of its own
+ * commission, so it can't be more than that and the seller is paid exactly as
+ * for any other customer.
+ */
+function MemberDiscountCard({
+  value,
+  onChange,
+  feeBps,
+  currency,
+  over,
+}: {
+  value: string
+  onChange: (v: string) => void
+  feeBps: number | null
+  currency: string
+  over: boolean
+}) {
+  const bps = Math.round((Number(value) || 0) * 100)
+  const presets = [0, 2, 5].filter((p) => feeBps === null || p * 100 <= feeBps)
+  const example = 100
+  const memberPays = example - (example * bps) / 10000
+  return (
+    <section className="rounded-2xl border-2 border-brand-teal/40 bg-brand-teal/10 p-5">
+      <div className="flex items-start gap-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-teal text-brand-ink">
+          <Percent className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <label htmlFor="of-discount" className="text-base font-semibold">
+            Member product discount
+          </label>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            A percentage off the gift price for members, on every order while their paid period lasts.
+          </p>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Input
+                id="of-discount"
+                inputMode="decimal"
+                value={value}
+                onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="0"
+                aria-invalid={over}
+                className="h-14 w-32 bg-background text-center font-poster text-3xl"
+              />
+              <span className="font-poster text-2xl text-muted-foreground">%</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => onChange(p === 0 ? '' : String(p))}
+                  className={cn(
+                    'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                    bps === p * 100
+                      ? 'border-brand-ink bg-brand-ink text-white'
+                      : 'border-brand-ink/15 bg-background hover:border-brand-ink',
+                  )}
+                >
+                  {p === 0 ? 'No discount' : `${p}%`}
+                </button>
+              ))}
+              {feeBps && feeBps > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onChange(String(feeBps / 100))}
+                  className={cn(
+                    'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                    bps === feeBps
+                      ? 'border-brand-ink bg-brand-ink text-white'
+                      : 'border-brand-ink/15 bg-background hover:border-brand-ink',
+                  )}
+                >
+                  Maximum ({bpsLabel(feeBps)})
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {feeBps === null ? (
+            <p className="mt-4 text-xs text-muted-foreground">Checking the platform commission…</p>
+          ) : feeBps <= 0 ? (
+            <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
+              The platform commission isn&apos;t set, so there is nothing to fund a discount from. Set{' '}
+              <code>STRIPE_PLATFORM_FEE_BPS</code> on the server (for 7.9% use 790) to offer one.
+            </p>
+          ) : over ? (
+            <p role="alert" className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              That&apos;s more than the {bpsLabel(feeBps)} commission that funds it. Choose {bpsLabel(feeBps)} or less.
+            </p>
+          ) : (
+            <p className="mt-4 rounded-lg bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+              Paid for by SendAGift out of its <strong className="text-foreground">{bpsLabel(feeBps)}</strong>{' '}
+              commission, up to that maximum. The seller still gets their full price less the usual commission; only
+              what the member pays goes down.
+              {bps > 0 ? (
+                <>
+                  {' '}
+                  On a {example.toFixed(2)} {currency} gift a member pays{' '}
+                  <strong className="text-foreground">{memberPays.toFixed(2)}</strong>, and SendAGift keeps{' '}
+                  {((example * (feeBps - bps)) / 10000).toFixed(2)} of its commission.
+                </>
+              ) : null}
+            </p>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

@@ -1,4 +1,4 @@
-import { Minus, Plus, ShoppingBag, Store, Trash2, TriangleAlert } from 'lucide-react'
+import { Crown, Minus, Plus, ShoppingBag, Store, Trash2, TriangleAlert } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -12,7 +12,13 @@ import {
   MIXED_SHOPS_MESSAGE,
   useCart,
 } from '@/features/customer-commerce'
+import {
+  formatBps,
+  memberDiscountMinor,
+  useMemberDiscountBps,
+} from '@/features/competition-points/use-member-discount'
 import { returnToState } from '@/lib/auth'
+import { minorToMajor } from '@/lib/money'
 import { cn } from '@/lib/utils'
 
 export function CartPage() {
@@ -25,6 +31,10 @@ export function CartPage() {
   const mixedShops = shops.length > 1
   // One shop per order, so the first line's currency is the cart's.
   const currency = lines[0]?.product.currency
+  // A member's saving, funded by SendAGift and taken off what they pay.
+  const memberBps = useMemberDiscountBps()
+  const memberSavingMinor = currency ? memberDiscountMinor(lines, currency, memberBps) : 0
+  const memberSaving = currency ? minorToMajor(memberSavingMinor, currency) : 0
 
   if (!lines.length) {
     return (
@@ -162,13 +172,22 @@ export function CartPage() {
               <dt className="text-muted-foreground">Subtotal</dt>
               <dd>{formatMoney(subtotal, currency)}</dd>
             </div>
+            {memberSavingMinor > 0 ? (
+              <div className="flex justify-between gap-4 text-brand-violet">
+                <dt className="flex items-center gap-1.5">
+                  <Crown className="size-3.5" />
+                  Member discount ({formatBps(memberBps)})
+                </dt>
+                <dd>−{formatMoney(memberSaving, currency)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
               <dd className="text-muted-foreground">Calculated at dispatch</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 font-medium">
               <dt>Total</dt>
-              <dd>{formatMoney(total, currency)}</dd>
+              <dd>{formatMoney(total - memberSaving, currency)}</dd>
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">

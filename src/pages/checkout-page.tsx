@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   Bike,
   CalendarDays,
+  Crown,
   Gift,
   LoaderCircle,
   MapPin,
@@ -67,6 +68,11 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { isUuid } from '@/lib/uuid'
 import { RewardBadge } from '@/features/points/reward-badge'
+import {
+  formatBps,
+  memberDiscountMinor,
+  useMemberDiscountBps,
+} from '@/features/competition-points/use-member-discount'
 import { cn } from '@/lib/utils'
 
 function blankRecipient(country = '') {
@@ -494,6 +500,9 @@ export function CheckoutPage() {
   const typeMismatch = Boolean(cartCustomerType && customerType !== cartCustomerType)
 
   const money = (major: number) => formatPriceAmount(majorToMinor(major, currency), currency)
+  // A member's saving, funded by SendAGift and taken off what they pay.
+  const memberBps = useMemberDiscountBps()
+  const memberSaving = memberDiscountMinor(lines, currency, memberBps)
 
   // Each shop is its own parcel. A selection only counts when it is quoted in
   // the cart currency. Otherwise the order cannot be placed.
@@ -1480,6 +1489,15 @@ export function CheckoutPage() {
               <dt className="text-muted-foreground">Subtotal</dt>
               <dd>{money(subtotal)}</dd>
             </div>
+            {memberSaving > 0 ? (
+              <div className="flex justify-between gap-4 text-brand-violet">
+                <dt className="flex items-center gap-1.5">
+                  <Crown className="size-3.5" />
+                  Member discount ({formatBps(memberBps)})
+                </dt>
+                <dd>−{formatPriceAmount(memberSaving, currency)}</dd>
+              </div>
+            ) : null}
 
             {quote?.shops?.map((shop) =>
               shop.from ? (
@@ -1545,10 +1563,10 @@ export function CheckoutPage() {
               <dd className="text-right">
                 {hasPricedDelivery
                   ? formatPriceAmount(
-                      majorToMinor(subtotal, currency) + selectedDeliveryAmount,
+                      majorToMinor(subtotal, currency) + selectedDeliveryAmount - memberSaving,
                       currency,
                     )
-                  : money(subtotal)}
+                  : formatPriceAmount(majorToMinor(subtotal, currency) - memberSaving, currency)}
               </dd>
             </div>
           </dl>
