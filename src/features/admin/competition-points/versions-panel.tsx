@@ -29,6 +29,7 @@ import {
   previewPolicy,
   updateOffer,
   updatePolicy,
+  type BonusTrigger,
   type IntervalUnit,
   type PlanOffer,
   type PolicyInput,
@@ -60,7 +61,7 @@ import {
 import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
 import { AdminEmptyState } from '@/features/admin'
-import { formatDate, formatMoney } from '@/features/competition-points/format'
+import { bonusWhen, formatDate, formatMoney } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
 import { getTokenSubject, isSuperAdmin } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
@@ -342,8 +343,10 @@ function OfferCard({
           <Perk icon={Crown} tone="bg-brand-violet/15 text-brand-violet" active={o.member_bonus_points > 0}>
             {o.member_bonus_points > 0 ? (
               <>
-                <strong>{o.member_bonus_points.toLocaleString()}</strong> bonus points after the first qualifying gift of
-                each paid period
+                <strong>{o.member_bonus_points.toLocaleString()}</strong> bonus points{' '}
+                {o.bonus_trigger === 'first_gift'
+                  ? 'after the first qualifying gift of each paid period'
+                  : 'with each paid period'}
               </>
             ) : (
               'No bonus points'
@@ -464,6 +467,7 @@ function OfferDialog({
   const [unit, setUnit] = useState<IntervalUnit>('month')
   const [count, setCount] = useState('1')
   const [bonus, setBonus] = useState('')
+  const [trigger, setTrigger] = useState<BonusTrigger>('payment')
   const [discount, setDiscount] = useState('')
   // SendAGift's commission per sale, which funds the member discount and so caps it.
   const [feeBps, setFeeBps] = useState<number | null>(null)
@@ -485,6 +489,7 @@ function OfferDialog({
     setUnit(existing?.interval_unit ?? 'month')
     setCount(String(existing?.interval_count ?? 1))
     setBonus(existing ? String(existing.member_bonus_points) : '')
+    setTrigger(existing?.bonus_trigger ?? 'payment')
     setDiscount(existing?.member_discount_bps ? String(existing.member_discount_bps / 100) : '')
     setBenefits((existing?.gift_benefits ?? []).join('\n'))
     setTerms(existing?.terms_version ?? 'v1')
@@ -516,6 +521,7 @@ function OfferDialog({
       interval_unit: unit,
       interval_count: intervalCount || 1,
       member_bonus_points: bonusPoints,
+      bonus_trigger: trigger,
       member_discount_bps: discountBps,
       gift_benefits: benefitList,
       terms_version: terms.trim(),
@@ -712,7 +718,7 @@ function OfferDialog({
                   Extra member bonus
                 </label>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Competition points added once per paid period, after the member&apos;s first qualifying delivered gift.
+                  Competition points added once per paid period. Unused points carry into the next period.
                 </p>
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
@@ -727,7 +733,7 @@ function OfferDialog({
                     <span className="text-sm font-semibold text-muted-foreground">points</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {[0, 50, 100, 250, 500].map((n) => (
+                    {[0, 100, 250, 500, 1000].map((n) => (
                       <button
                         key={n}
                         type="button"
@@ -744,8 +750,41 @@ function OfferDialog({
                     ))}
                   </div>
                 </div>
+                {bonusPoints > 0 ? (
+                  <div className="mt-4">
+                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Credited</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {(
+                        [
+                          ['payment', 'When the payment goes through', 'Each paid period adds the bonus at once.'],
+                          ['first_gift', 'After their first gift', 'Waits for the first delivered paid gift of the period.'],
+                        ] as const
+                      ).map(([value, title, body]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setTrigger(value)}
+                          className={cn(
+                            'rounded-xl border-2 bg-background px-3 py-2.5 text-left transition-colors',
+                            trigger === value ? 'border-brand-violet' : 'border-brand-ink/15 hover:border-brand-ink/40',
+                          )}
+                        >
+                          <span className="block text-sm font-semibold">{title}</span>
+                          <span className="block text-xs text-muted-foreground">{body}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 <p className="mt-4 rounded-lg bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                  {bonusPoints > 0 ? (
+                  {bonusPoints > 0 && trigger === 'payment' ? (
+                    <>
+                      Every time a member&apos;s payment goes through,{' '}
+                      <strong className="text-foreground">{bonusPoints.toLocaleString()} points</strong> are added. A
+                      member who keeps 200 and renews has {(200 + bonusPoints).toLocaleString()}. A refunded payment
+                      takes back what is unused.
+                    </>
+                  ) : bonusPoints > 0 ? (
                     <>
                       A member who sends their first gift of a period earns that gift&apos;s ordinary points{' '}
                       <strong className="text-foreground">plus {bonusPoints.toLocaleString()}</strong>. Every other gift
@@ -815,8 +854,8 @@ function OfferDialog({
                   {bonusPoints > 0 ? (
                     <li className="flex items-start gap-2">
                       <Crown className="mt-0.5 size-4 shrink-0 text-brand-violet" />
-                      An additional {bonusPoints.toLocaleString()} competition points after your first qualifying
-                      completed gift in each paid membership period.
+                      {bonusPoints.toLocaleString()} bonus competition points.{' '}
+                      {bonusWhen(trigger)}
                     </li>
                   ) : null}
                   {benefitList.length === 0 && bonusPoints === 0 && discountBps === 0 ? (
@@ -847,6 +886,9 @@ function OfferDialog({
                   ['Renews', intervalCount ? billingLabel(unit, intervalCount) : '-'],
                   ['Member discount', discountBps > 0 ? `${bpsLabel(discountBps)} off gifts` : 'None'],
                   ['Member bonus', bonusPoints > 0 ? `${bonusPoints.toLocaleString()} points per paid period` : 'None'],
+                  ...(bonusPoints > 0
+                    ? [['Bonus credited', trigger === 'payment' ? 'When the payment goes through' : 'After the first gift']]
+                    : []),
                   ['Gift benefits', benefitList.length ? `${benefitList.length} listed` : 'None'],
                   ['Terms version', terms.trim() || '-'],
                 ].map(([k, v]) => (

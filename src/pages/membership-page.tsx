@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/features/auth/auth-context'
 import { AvailabilityNotice } from '@/features/competition-points/availability-notice'
-import { formatMoney, newRequestKey } from '@/features/competition-points/format'
+import { bonusWhen, formatMoney, newRequestKey } from '@/features/competition-points/format'
 import { formatBps } from '@/features/competition-points/use-member-discount'
 import { CustomerPageHeader } from '@/features/customer-commerce'
 import { getErrorMessage } from '@/lib/api'
@@ -37,7 +37,7 @@ export function MembershipPage() {
       <CustomerPageHeader
         eyebrow="Membership"
         title="SendAGift membership"
-        description="Gift benefits and discounts, and an extra competition points bonus after your first qualifying completed gift in each paid membership period."
+        description="Gift discounts, benefits and bonus competition points with every paid membership period."
       />
       {signedIn ? (
         <Offers />
@@ -185,7 +185,7 @@ function OfferCard({
           {offer.member_bonus_points > 0 ? (
             <Perk icon={<BadgeCheck className="size-4" />} tone="bg-brand-teal/15 text-brand-teal">
               <strong className="block">+{offer.member_bonus_points.toLocaleString()} bonus competition points</strong>
-              After your first qualifying completed gift in each paid period.
+              {bonusWhen(offer.bonus_trigger)}
             </Perk>
           ) : null}
           {offer.gift_benefits.map((b) => (
@@ -246,9 +246,9 @@ function Perk({ icon, tone, children }: { icon: React.ReactNode; tone: string; c
 }
 
 const STEPS = [
-  { icon: Crown, title: 'Join', body: 'Pick a membership and pay securely. It renews until you cancel.' },
+  { icon: Crown, title: 'Join', body: "Pick a membership and pay securely. You're a member once the payment goes through." },
   { icon: Gift, title: 'Send a gift', body: 'Your member discount comes off the gift price at checkout.' },
-  { icon: BadgeCheck, title: 'Get your bonus', body: 'Once your first gift each period is delivered, the bonus points land.' },
+  { icon: BadgeCheck, title: 'Get your bonus', body: 'Bonus competition points land with each paid period and carry over.' },
 ]
 
 function HowItWorks() {

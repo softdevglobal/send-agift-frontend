@@ -1,4 +1,4 @@
-import type { LotSource, NextAction } from '@/api/competition-points'
+import type { BonusTrigger, LotSource, NextAction } from '@/api/competition-points'
 import { formatPriceAmount } from '@/lib/money'
 
 export const SOURCE_LABEL: Record<LotSource, string> = {
@@ -61,4 +61,11 @@ export function nextActionLink(action: NextAction | undefined): { to: string; la
 /** A fresh key for a request the server must not repeat. */
 export function newRequestKey(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`
+}
+
+/** When a membership's bonus is credited, in the customer's words. */
+export function bonusWhen(trigger: BonusTrigger | undefined): string {
+  return trigger === 'first_gift'
+    ? 'After your first qualifying completed gift in each paid period.'
+    : 'Added to your account as soon as each membership payment goes through. Unused points carry over.'
 }

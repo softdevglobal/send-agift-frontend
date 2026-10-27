@@ -85,6 +85,8 @@ export function getEligibility() {
 export type IntervalUnit = 'day' | 'week' | 'month' | 'year'
 export type VersionStatus = 'draft' | 'awaiting_approval' | 'published' | 'suspended' | 'retired'
 
+export type BonusTrigger = 'payment' | 'first_gift'
+
 export type PlanOffer = {
   id: string
   tier_code: string
@@ -98,8 +100,10 @@ export type PlanOffer = {
   price_minor: number
   interval_unit: IntervalUnit
   interval_count: number
-  /** The extra award above ordinary gift points, after the first gift of each paid period. */
+  /** The extra award above ordinary gift points, once per paid period. */
   member_bonus_points: number
+  /** When the bonus is credited: as soon as the period is paid for, or after its first qualifying gift. */
+  bonus_trigger: BonusTrigger
   /**
    * Percentage off the gift price for members, in basis points (100 = 1%).
    * Funded from SendAGift's commission; the seller's payout is unchanged.
@@ -448,6 +452,7 @@ export type OfferInput = {
   interval_unit: IntervalUnit
   interval_count: number
   member_bonus_points: number
+  bonus_trigger: BonusTrigger
   member_discount_bps: number
   gift_benefits: string[]
   terms_version: string

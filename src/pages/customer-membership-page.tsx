@@ -147,7 +147,7 @@ export function CustomerMembershipPage() {
         <CustomerEmptyState
           icon={Crown}
           title="You're not a member"
-          description="Members get gift benefits and an extra competition points bonus after their first qualifying gift each period."
+          description="Members get gift discounts, benefits and bonus competition points with each paid period."
           action={
             <Button asChild className="h-11 px-5">
               <Link to="/membership">See memberships</Link>
