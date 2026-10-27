@@ -7,8 +7,8 @@ import { OffersPanel } from '@/features/admin/competition-points/versions-panel'
 
 /**
  * Membership packages: each is one priced, versioned offer in one country.
- * A Super Admin drafts and submits it; a different Super Admin approves it,
- * which publishes it. It is only sold where membership sales are approved.
+ * A Super Admin creates it and publishes it directly. It is only sold where
+ * membership sales are approved.
  */
 export function AdminMembershipsPage() {
   const [countries, setCountries] = useState<Country[]>([])

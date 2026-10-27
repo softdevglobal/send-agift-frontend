@@ -48,7 +48,7 @@ import { getTokenSubject, isSuperAdmin } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { majorToMinor, minorToMajor } from '@/lib/money'
 
-import { versionActions } from './labels'
+import { offerActions, versionActions } from './labels'
 import { ActionButtons, Field, StatusPill, UnapprovedNote } from './shared'
 
 function useVersionActions(load: () => Promise<void>) {
@@ -101,7 +101,7 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
           <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : items.length === 0 ? (
-        <AdminEmptyState icon={Crown} title="No membership packages" description="Create a draft, submit it, and have another admin approve it." />
+        <AdminEmptyState icon={Crown} title="No membership packages" description="Create a package, then publish it to put it on sale." />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {items.map((o) => (
@@ -147,11 +147,19 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
                     </>
                   ) : null}
                   <ActionButtons
-                    actions={versionActions(o.status).filter(
+                    actions={offerActions(o.status).filter(
                       (a) => !(a.action === 'approve' && o.submitted_by_admin_id === me),
                     )}
                     busy={busy === o.id}
-                    onAction={(a) => run(o.id, `${o.name}: ${a.replaceAll('_', ' ')} done.`, () => offerAction(o.id, a as VersionAction))}
+                    onAction={(a) =>
+                      run(
+                        o.id,
+                        a === 'publish'
+                          ? `${o.name} is now on sale where memberships are approved.`
+                          : `${o.name}: ${a.replaceAll('_', ' ')} done.`,
+                        () => offerAction(o.id, a as VersionAction),
+                      )
+                    }
                   />
                   {o.status === 'awaiting_approval' && o.submitted_by_admin_id === me ? (
                     <span className="text-xs text-muted-foreground">Another admin must approve it.</span>
@@ -607,8 +615,7 @@ function OfferDialog({
               <ol className="space-y-3 text-sm">
                 {[
                   ['Saved as a draft', 'You can still edit or delete it.'],
-                  ['Submit for approval', 'From then on it can no longer be edited; a change means a new version.'],
-                  ['A different admin approves it', 'The admin who submitted it cannot approve it.'],
+                  ['Publish it', 'One click, no second approver. From then on it can no longer be edited; a change means a new version.'],
                   [
                     'On sale',
                     `Customers in ${country?.name ?? 'the country'} see it once a membership sales approval exists there.`,
@@ -637,7 +644,7 @@ function OfferDialog({
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title={existing ? `Edit ${existing.name} v${existing.version}` : 'New membership package'}
-      description="Price, renewal and what members get. Saved as a draft."
+      description="Price, renewal and what members get. Saved as a draft you can publish."
       steps={steps}
       onComplete={save}
       completeLabel="Save draft"

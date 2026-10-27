@@ -57,3 +57,13 @@ export const STOP_LABEL: Record<StopScope, string> = {
   payouts: 'Winner payouts',
   campaign_commitments: 'Seller campaign commitments',
 }
+
+/**
+ * What a Super Admin can do with a membership package. A draft is published
+ * directly, with no second approver; the submit-and-approve steps stay for
+ * reward policies.
+ */
+export function offerActions(status: VersionStatus): { action: VersionAction; label: string; danger?: boolean }[] {
+  if (status === 'draft') return [{ action: 'publish', label: 'Publish' }]
+  return versionActions(status)
+}

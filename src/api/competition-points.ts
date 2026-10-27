@@ -453,7 +453,7 @@ export type OfferInput = {
   terms_version: string
 }
 
-export type VersionAction = 'submit' | 'approve' | 'return_to_draft' | 'suspend' | 'resume' | 'retire'
+export type VersionAction = 'publish' | 'submit' | 'approve' | 'return_to_draft' | 'suspend' | 'resume' | 'retire'
 
 export const listAdminOffers = () => api<{ items: PlanOffer[] }>(`${ADMIN}/offers`).then((r) => r.items)
 export const createOffer = (body: OfferInput) =>
