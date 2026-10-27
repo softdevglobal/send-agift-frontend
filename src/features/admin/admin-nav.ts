@@ -1,5 +1,6 @@
 import {
   Coins,
+  Crown,
   Gamepad2,
   Gift,
   Globe2,
@@ -56,6 +57,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       { to: '/admin/points', label: 'Seller points', icon: Coins, end: true },
       { to: '/admin/points/packages', label: 'Point packages', icon: Package },
       { to: '/admin/free-gifts', label: 'Free gifts', icon: Gift },
+      { to: '/admin/memberships', label: 'Memberships', icon: Crown },
     ],
   },
   {

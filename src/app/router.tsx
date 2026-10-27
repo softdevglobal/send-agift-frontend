@@ -24,6 +24,7 @@ import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
+import { AdminMembershipsPage } from '@/pages/admin-memberships-page'
 import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
@@ -355,6 +356,7 @@ export function AppRouter() {
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="competition-points" element={<AdminCompetitionPointsPage />} />
+        <Route path="memberships" element={<AdminMembershipsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         <Route path="countries/:countryId" element={<AdminCountryDetailPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}

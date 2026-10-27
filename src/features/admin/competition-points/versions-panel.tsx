@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Crown, LoaderCircle, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
+import { CalendarClock, Crown, Eye, Gift, LoaderCircle, Pencil, Plus, Trash2, Wallet } from 'lucide-react'
 
 import {
   createOffer,
@@ -33,6 +33,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import {
+  WizardDialog,
+  WizardField,
+  WizardFields,
+  WizardPreviewFrame,
+  type WizardStep,
+} from '@/features/seller/wizard-dialog'
+import { cn } from '@/lib/utils'
 import { AdminEmptyState } from '@/features/admin'
 import { formatDate, formatMoney } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
@@ -87,7 +95,7 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
         </UnapprovedNote>
         {canEdit ? (
           <Button onClick={() => setEditing('new')} className="h-10 px-4">
-            <Plus className="size-4" /> New offer
+            <Plus className="size-4" /> New membership package
           </Button>
         ) : null}
       </div>
@@ -97,7 +105,7 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
           <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
         </div>
       ) : items.length === 0 ? (
-        <AdminEmptyState icon={Crown} title="No membership offers" description="Create a draft, submit it, and have another admin approve it." />
+        <AdminEmptyState icon={Crown} title="No membership packages" description="Create a draft, submit it, and have another admin approve it." />
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {items.map((o) => (
@@ -166,6 +174,18 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
   )
 }
 
+const INTERVAL_PRESETS: { label: string; unit: IntervalUnit; count: number }[] = [
+  { label: 'Every month', unit: 'month', count: 1 },
+  { label: 'Every 28 days', unit: 'day', count: 28 },
+  { label: 'Every 3 months', unit: 'month', count: 3 },
+  { label: 'Every year', unit: 'year', count: 1 },
+]
+
+function billingLabel(unit: IntervalUnit, count: number): string {
+  return count === 1 ? `every ${unit}` : `every ${count} ${unit}s`
+}
+
+/** A membership package, created in four steps and saved as a draft. */
 function OfferDialog({
   offer,
   countries,
@@ -210,12 +230,14 @@ function OfferDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  const intervalCount = Number(count) || 0
+  const priceNumber = Number(price)
+  const benefitList = benefits.split('\n').map((b) => b.trim()).filter(Boolean)
+  const bonusPoints = Number(bonus) || 0
+  const tierValid = /^[a-z0-9_-]{2,40}$/.test(tier.trim().toLowerCase())
+  const priceLine = priceNumber > 0 && currency ? formatMoney(majorToMinor(priceNumber, currency), currency) : '-'
+
   async function save() {
-    const major = Number(price)
-    if (!(major > 0) || !currency) {
-      setError('Set a price above zero.')
-      return
-    }
     setBusy(true)
     setError(null)
     const body = {
@@ -224,11 +246,11 @@ function OfferDialog({
       name: name.trim(),
       description: description.trim() || null,
       currency,
-      price_minor: majorToMinor(major, currency),
+      price_minor: majorToMinor(priceNumber, currency),
       interval_unit: unit,
-      interval_count: Number(count) || 1,
-      member_bonus_points: Number(bonus) || 0,
-      gift_benefits: benefits.split('\n').map((b) => b.trim()).filter(Boolean),
+      interval_count: intervalCount || 1,
+      member_bonus_points: bonusPoints,
+      gift_benefits: benefitList,
       terms_version: terms.trim(),
     }
     try {
@@ -236,74 +258,296 @@ function OfferDialog({
       else await createOffer(body)
       onSaved()
     } catch (err) {
-      setError(getErrorMessage(err, 'Could not save the offer.'))
+      setError(getErrorMessage(err, 'Could not save the package.'))
     } finally {
       setBusy(false)
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{existing ? `Edit ${existing.name} v${existing.version}` : 'New membership offer'}</DialogTitle>
-          <DialogDescription>A draft. Nothing is sold until it is submitted and another admin approves it.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Tier code" htmlFor="of-tier" hint="Same code across versions of one tier.">
-            <Input id="of-tier" value={tier} disabled={!!existing} onChange={(e) => setTier(e.target.value)} placeholder="plus" />
-          </Field>
-          <Field label="Country" htmlFor="of-country">
-            <select id="of-country" className={selectClassName} value={countryId} disabled={!!existing} onChange={(e) => setCountryId(e.target.value)}>
+  const steps: WizardStep[] = [
+    {
+      id: 'package',
+      title: 'The package',
+      description: 'Where it is sold, and what it is called.',
+      icon: Crown,
+      blockedReason: !countryId
+        ? 'Choose a country to continue.'
+        : !tierValid
+          ? 'Give it a tier code of 2 to 40 letters, digits, - or _ (for example plus).'
+          : name.trim().length < 2
+            ? 'Give the package a name to continue.'
+            : null,
+      content: (
+        <WizardFields>
+          <WizardField
+            label="Country"
+            htmlFor="of-country"
+            hint="One package per country: it is sold only where membership sales are approved."
+            full
+          >
+            <select
+              id="of-country"
+              className={selectClassName}
+              value={countryId}
+              disabled={!!existing}
+              onChange={(e) => setCountryId(e.target.value)}
+            >
               {countries.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {c.name} ({c.default_currency})
                 </option>
               ))}
             </select>
-          </Field>
-          <Field label="Name" htmlFor="of-name" className="sm:col-span-2">
-            <Input id="of-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="SendAGift Plus" />
-          </Field>
-          <Field label={`Price (${currency || 'currency'})`} htmlFor="of-price">
-            <Input id="of-price" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-          </Field>
-          <Field label="Renews every" htmlFor="of-count" hint="The true interval is shown to customers.">
-            <div className="flex gap-2">
-              <Input id="of-count" inputMode="numeric" className="w-20" value={count} onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))} />
-              <select className={selectClassName} value={unit} onChange={(e) => setUnit(e.target.value as IntervalUnit)}>
-                <option value="day">day(s)</option>
-                <option value="week">week(s)</option>
-                <option value="month">month(s)</option>
-                <option value="year">year(s)</option>
-              </select>
+          </WizardField>
+          <WizardField label="Name" htmlFor="of-name" hint="What customers see." full>
+            <Input
+              id="of-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="SendAGift Plus"
+              className="h-12 bg-surface text-base font-medium"
+            />
+          </WizardField>
+          <WizardField
+            label="Tier code"
+            htmlFor="of-tier"
+            hint="A short internal code, kept the same across later versions of this package."
+          >
+            <Input
+              id="of-tier"
+              value={tier}
+              disabled={!!existing}
+              onChange={(e) => setTier(e.target.value.toLowerCase())}
+              placeholder="plus"
+              className="h-11 bg-surface"
+            />
+          </WizardField>
+          <WizardField label="Terms version" htmlFor="of-terms" hint="Recorded with every sale.">
+            <Input id="of-terms" value={terms} onChange={(e) => setTerms(e.target.value)} className="h-11 bg-surface" />
+          </WizardField>
+          <WizardField label="Short description" htmlFor="of-desc" hint="Optional. One or two sentences." full>
+            <textarea
+              id="of-desc"
+              className={textareaClassName}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </WizardField>
+        </WizardFields>
+      ),
+    },
+    {
+      id: 'price',
+      title: 'Price & renewal',
+      description: 'What it costs and how often it renews.',
+      icon: CalendarClock,
+      blockedReason: !(priceNumber > 0)
+        ? 'Set a price above zero to continue.'
+        : !(intervalCount >= 1 && intervalCount <= 365)
+          ? 'Set how often it renews (1 to 365).'
+          : null,
+      content: (
+        <div className="space-y-6">
+          <WizardFields>
+            <WizardField label={`Price (${currency || 'currency'})`} htmlFor="of-price">
+              <Input
+                id="of-price"
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="9.99"
+                className="h-12 bg-surface text-lg font-semibold"
+              />
+            </WizardField>
+            <WizardField
+              label="Renews every"
+              htmlFor="of-count"
+              hint="Customers see exactly this interval, so a 28-day plan is never called monthly."
+            >
+              <div className="flex gap-2">
+                <Input
+                  id="of-count"
+                  inputMode="numeric"
+                  className="h-12 w-24 bg-surface"
+                  value={count}
+                  onChange={(e) => setCount(e.target.value.replace(/\D/g, ''))}
+                />
+                <select
+                  className={selectClassName}
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value as IntervalUnit)}
+                  aria-label="Interval unit"
+                >
+                  <option value="day">day(s)</option>
+                  <option value="week">week(s)</option>
+                  <option value="month">month(s)</option>
+                  <option value="year">year(s)</option>
+                </select>
+              </div>
+            </WizardField>
+          </WizardFields>
+          <div>
+            <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Quick picks</p>
+            <div className="flex flex-wrap gap-2">
+              {INTERVAL_PRESETS.map((p) => (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => {
+                    setUnit(p.unit)
+                    setCount(String(p.count))
+                  }}
+                  className={cn(
+                    'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                    unit === p.unit && intervalCount === p.count
+                      ? 'border-brand-ink bg-brand-ink text-white'
+                      : 'border-brand-ink/15 hover:border-brand-ink',
+                  )}
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
-          </Field>
-          <Field label="Extra member bonus (points)" htmlFor="of-bonus" hint="Above ordinary gift points, not the combined total." className="sm:col-span-2">
-            <Input id="of-bonus" inputMode="numeric" value={bonus} onChange={(e) => setBonus(e.target.value.replace(/\D/g, ''))} />
-          </Field>
-          <Field label="Gift benefits (one per line)" htmlFor="of-benefits" className="sm:col-span-2">
-            <textarea id="of-benefits" className={textareaClassName} value={benefits} onChange={(e) => setBenefits(e.target.value)} />
-          </Field>
-          <Field label="Description" htmlFor="of-desc" className="sm:col-span-2">
-            <textarea id="of-desc" className={textareaClassName} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </Field>
-          <Field label="Terms version" htmlFor="of-terms">
-            <Input id="of-terms" value={terms} onChange={(e) => setTerms(e.target.value)} />
-          </Field>
+          </div>
+          <p className="rounded-xl bg-accent/60 px-4 py-3 text-sm">
+            Customers will see: <strong>{priceLine}</strong> {intervalCount ? billingLabel(unit, intervalCount) : '-'}
+          </p>
         </div>
-        <FormAlert error={error} />
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={busy}>
-            {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Save draft
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      ),
+    },
+    {
+      id: 'benefits',
+      title: 'Benefits & bonus',
+      description: 'What members get.',
+      icon: Gift,
+      blockedReason: null,
+      content: (
+        <div className="space-y-7">
+          <section className="rounded-2xl border-2 border-brand-violet/25 bg-brand-violet/5 p-5">
+            <div className="flex items-start gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet text-white">
+                <Crown className="size-5" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <label htmlFor="of-bonus" className="text-base font-semibold">
+                  Extra member bonus
+                </label>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Competition points added once per paid period, after the member&apos;s first qualifying delivered gift.
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="of-bonus"
+                      inputMode="numeric"
+                      value={bonus}
+                      onChange={(e) => setBonus(e.target.value.replace(/\D/g, ''))}
+                      placeholder="0"
+                      className="h-14 w-36 bg-background text-center font-poster text-3xl"
+                    />
+                    <span className="text-sm font-semibold text-muted-foreground">points</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[0, 50, 100, 250, 500].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setBonus(String(n))}
+                        className={cn(
+                          'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
+                          bonusPoints === n
+                            ? 'border-brand-ink bg-brand-ink text-white'
+                            : 'border-brand-ink/15 bg-background hover:border-brand-ink',
+                        )}
+                      >
+                        {n === 0 ? 'No bonus' : n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-4 rounded-lg bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                  {bonusPoints > 0 ? (
+                    <>
+                      A member who sends their first gift of a period earns that gift&apos;s ordinary points{' '}
+                      <strong className="text-foreground">plus {bonusPoints.toLocaleString()}</strong>. Every other gift
+                      in the period earns ordinary points only. This is the extra amount, not the combined total.
+                    </>
+                  ) : (
+                    'No bonus: members get the gift benefits below, and gifts earn ordinary points like anyone else.'
+                  )}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <BenefitsEditor
+            benefits={benefitList}
+            onChange={(list) => setBenefits(list.join('\n'))}
+          />
+        </div>
+      ),
+    },
+    {
+      id: 'review',
+      title: 'Review',
+      description: 'Check it before saving. It is saved as a draft.',
+      icon: Eye,
+      content: (
+        <WizardPreviewFrame caption="This is how customers will see it, once it is approved and published.">
+          <div className="-mx-5 -mt-5 mb-5 flex items-center justify-between gap-4 rounded-t-2xl bg-brand-ink px-5 py-5 text-white">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold tracking-[0.18em] text-white/55 uppercase">
+                {country?.name ?? 'Country'}
+              </p>
+              <p className="font-poster text-2xl leading-tight">{name.trim() || 'Untitled package'}</p>
+            </div>
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet">
+              <Crown className="size-5" />
+            </span>
+          </div>
+          <p className="flex items-baseline gap-2">
+            <span className="font-poster text-3xl">{priceLine}</span>
+            <span className="text-sm font-semibold text-muted-foreground">
+              {intervalCount ? billingLabel(unit, intervalCount) : ''}
+            </span>
+          </p>
+          {description.trim() ? <p className="mt-2 text-sm text-muted-foreground">{description.trim()}</p> : null}
+          <ul className="mt-4 space-y-1.5 text-sm">
+            {benefitList.map((b) => (
+              <li key={b} className="flex items-start gap-2">
+                <Gift className="mt-0.5 size-4 shrink-0 text-brand-teal" />
+                {b}
+              </li>
+            ))}
+            {bonusPoints > 0 ? (
+              <li className="flex items-start gap-2">
+                <Crown className="mt-0.5 size-4 shrink-0 text-brand-violet" />
+                An additional {bonusPoints.toLocaleString()} competition points after the first qualifying completed
+                gift in each paid membership period.
+              </li>
+            ) : null}
+          </ul>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Tier {tier || '-'} · terms {terms || '-'} · nothing is sold until it is submitted and a different admin
+            approves it, and membership sales are approved for {country?.name ?? 'the country'}.
+          </p>
+        </WizardPreviewFrame>
+      ),
+    },
+  ]
+
+  return (
+    <WizardDialog
+      open={open}
+      onOpenChange={(o) => !o && onClose()}
+      title={existing ? `Edit ${existing.name} v${existing.version}` : 'New membership package'}
+      description="Price, renewal and what members get. Saved as a draft."
+      steps={steps}
+      onComplete={save}
+      completeLabel="Save draft"
+      completing={busy}
+      error={<FormAlert error={error} />}
+    />
   )
 }
 
@@ -543,5 +787,105 @@ function PolicyDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+const BENEFIT_SUGGESTIONS = [
+  'Free delivery on every gift',
+  'Priority support',
+  'Early access to new sellers',
+  'Birthday gift reminders',
+  'Exclusive member offers',
+]
+
+/** Benefits added one at a time, each on its own removable row. */
+function BenefitsEditor({ benefits, onChange }: { benefits: string[]; onChange: (list: string[]) => void }) {
+  const [draft, setDraft] = useState('')
+  const MAX = 10
+
+  function add(text: string) {
+    const clean = text.trim()
+    if (!clean || benefits.length >= MAX || benefits.some((b) => b.toLowerCase() === clean.toLowerCase())) return
+    onChange([...benefits, clean.slice(0, 160)])
+    setDraft('')
+  }
+
+  const unused = BENEFIT_SUGGESTIONS.filter((x) => !benefits.some((b) => b.toLowerCase() === x.toLowerCase()))
+
+  return (
+    <section>
+      <div className="flex items-baseline justify-between gap-3">
+        <label htmlFor="of-benefit-new" className="text-base font-semibold">
+          Gift benefits
+        </label>
+        <span className="text-xs text-muted-foreground">
+          {benefits.length} of {MAX}
+        </span>
+      </div>
+      <p className="mt-0.5 text-sm text-muted-foreground">Short lines shown on the membership page.</p>
+
+      {benefits.length > 0 ? (
+        <ul className="mt-3 space-y-2">
+          {benefits.map((b, i) => (
+            <li
+              key={`${b}-${i}`}
+              className="flex items-center gap-3 rounded-xl border-2 border-brand-ink/10 bg-card px-3.5 py-2.5 text-sm"
+            >
+              <Gift className="size-4 shrink-0 text-brand-teal" />
+              <span className="min-w-0 flex-1 break-words">{b}</span>
+              <button
+                type="button"
+                aria-label={`Remove ${b}`}
+                onClick={() => onChange(benefits.filter((_, j) => j !== i))}
+                className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 rounded-xl border-2 border-dashed border-brand-ink/15 px-4 py-5 text-center text-sm text-muted-foreground">
+          No benefits yet. Add one below, or tap a suggestion.
+        </p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <Input
+          id="of-benefit-new"
+          value={draft}
+          maxLength={160}
+          disabled={benefits.length >= MAX}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              add(draft)
+            }
+          }}
+          placeholder="e.g. Free delivery on every gift"
+          className="h-11 bg-surface"
+        />
+        <Button type="button" variant="outline" className="h-11 px-4" disabled={!draft.trim() || benefits.length >= MAX} onClick={() => add(draft)}>
+          <Plus className="size-4" />
+          Add
+        </Button>
+      </div>
+
+      {unused.length > 0 && benefits.length < MAX ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {unused.map((x) => (
+            <button
+              key={x}
+              type="button"
+              onClick={() => add(x)}
+              className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-brand-ink transition-colors hover:bg-brand-teal/40"
+            >
+              + {x}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </section>
   )
 }
