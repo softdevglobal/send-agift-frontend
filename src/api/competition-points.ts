@@ -470,6 +470,51 @@ export type OfferInput = {
 
 export type VersionAction = 'publish' | 'submit' | 'approve' | 'return_to_draft' | 'suspend' | 'resume' | 'retire'
 
+export type MemberRow = {
+  subscription_id: string
+  customer_id: string
+  display_name: string
+  email: string
+  country_name: string
+  offer_id: string
+  package_name: string
+  tier_code: string
+  offer_version: number
+  price_minor: number
+  currency: string
+  billing_label: string
+  status: 'active' | 'past_due' | 'cancelling' | 'cancelled' | 'expired'
+  /** They stopped renewing and keep their benefits to period_end. */
+  cancel_at_period_end: boolean
+  joined_at: string
+  period_end?: string
+  periods_paid: number
+  total_paid_minor: number
+}
+
+export type MemberPackageCount = {
+  tier_code: string
+  package_name: string
+  country_name: string
+  members: number
+}
+
+export type MembersList = { items: MemberRow[]; total: number; packages: MemberPackageCount[] }
+
+export type MemberQuery = {
+  state?: 'current' | 'ended' | 'all'
+  tier?: string
+  q?: string
+  limit?: number
+  offset?: number
+}
+
+export function listMembers(query: MemberQuery) {
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(query)) if (v !== undefined && v !== '') params.set(k, String(v))
+  return api<MembersList>(`${ADMIN}/members?${params.toString()}`)
+}
+
 export const listAdminOffers = () => api<{ items: PlanOffer[] }>(`${ADMIN}/offers`).then((r) => r.items)
 export const createOffer = (body: OfferInput) =>
   api<PlanOffer>(`${ADMIN}/offers`, { method: 'POST', body })

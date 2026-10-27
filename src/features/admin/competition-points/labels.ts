@@ -12,6 +12,10 @@ export const STATUS_TONE: Record<string, string> = {
   revoked: 'bg-red-100 text-red-900',
   open: 'bg-amber-100 text-amber-900',
   resolved: 'bg-muted text-muted-foreground',
+  past_due: 'bg-red-100 text-red-900',
+  cancelling: 'bg-amber-100 text-amber-900',
+  cancelled: 'bg-muted text-muted-foreground',
+  expired: 'bg-muted text-muted-foreground',
 }
 
 /** The status moves a versioned rule allows from where it is now. */
