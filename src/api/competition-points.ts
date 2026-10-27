@@ -218,6 +218,11 @@ export function getMemberDiscount() {
   return api<MemberDiscount>('/customers/me/member-discount')
 }
 
+/** After Stripe's checkout: confirms the payment with Stripe and returns the membership. */
+export function syncMembership() {
+  return api<MembershipStatus>('/customers/me/membership/sync', { method: 'POST' })
+}
+
 export function cancelMembership() {
   return api<MembershipStatus>('/customers/me/membership/cancel', { method: 'POST' })
 }

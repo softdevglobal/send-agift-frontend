@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   cancelMembership,
@@ -29,7 +29,8 @@ const SLOT_LABEL: Record<BonusSlot['status'], string> = {
 
 /** The customer's membership: the period in force, its bonus and the next charge. */
 export function CustomerMembershipPage() {
-  const [params, setParams] = useSearchParams()
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
   const [status, setStatus] = useState<MembershipStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -54,36 +55,18 @@ export function CustomerMembershipPage() {
     void load()
   }, [load])
 
-  // Back from the payment page: the webhook, not the redirect, activates the
-  // membership, so check a few times while it arrives.
+  // Back from an older checkout link: the points page confirms the payment
+  // and welcomes the member.
   useEffect(() => {
-    if (!returned) return
-    setNotice('Thanks. We are confirming your payment with the provider.')
-    let tries = 0
-    const timer = window.setInterval(async () => {
-      tries++
-      try {
-        const s = await getMembership()
-        setStatus(s)
-        if (s.state !== 'payment_pending' || tries >= 10) {
-          window.clearInterval(timer)
-          setNotice(s.state === 'payment_pending' ? 'Your payment is still being confirmed. Check back shortly.' : null)
-        }
-      } catch {
-        window.clearInterval(timer)
-      }
-    }, 3000)
-    return () => window.clearInterval(timer)
-  }, [returned])
+    if (returned) navigate('/account/competition-points?welcome=membership', { replace: true })
+  }, [returned, navigate])
 
   async function testPay() {
     setBusy(true)
     setError(null)
     try {
-      setStatus(await confirmTestPayment())
-      setNotice('Test payment confirmed.')
-      params.delete('test_checkout')
-      setParams(params, { replace: true })
+      await confirmTestPayment()
+      navigate('/account/competition-points?welcome=membership', { replace: true })
     } catch (err) {
       setError(refusalOf(err)?.message ?? getErrorMessage(err, 'Could not confirm the test payment.'))
     } finally {

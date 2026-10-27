@@ -16,6 +16,7 @@ import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { AvailabilityNotice } from '@/features/competition-points/availability-notice'
 import { formatDate, formatDateTime, SOURCE_LABEL } from '@/features/competition-points/format'
+import { MembershipWelcome } from '@/features/competition-points/membership-welcome'
 import { CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { formatPoints } from '@/features/points/format'
@@ -92,6 +93,7 @@ export function CustomerCompetitionPointsPage() {
           </Button>
         }
       />
+      <MembershipWelcome onConfirmed={() => void load()} />
       <FormAlert error={error} notice={notice} className="mb-4" />
 
       {earning && !earning.allowed ? (
