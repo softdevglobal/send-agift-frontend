@@ -37,7 +37,7 @@ export function MembershipPage() {
       <CustomerPageHeader
         eyebrow="Membership"
         title="SendAGift membership"
-        description="Gift discounts, benefits and bonus competition points with every paid membership period."
+        description="Gift discounts, benefits and bonus points with every paid membership period."
       />
       {signedIn ? (
         <Offers />
@@ -118,9 +118,9 @@ function Offers() {
       </div>
       {offers.length > 0 ? <HowItWorks /> : null}
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Competition points are separate from the points on your <Link to="/account/points" className="underline">My points</Link>{' '}
-        page. They cannot be transferred, withdrawn as cash or bought directly. Competition availability and point
-        conditions apply, and vary by location.
+        Bonus points are added to <Link to="/account/points" className="underline">My points</Link>, the same points
+        you earn from gifts and prizes. Points cannot be transferred or withdrawn as cash. Competition availability and
+        point conditions apply, and vary by location.
       </p>
     </div>
   )
@@ -184,7 +184,7 @@ function OfferCard({
           ) : null}
           {offer.member_bonus_points > 0 ? (
             <Perk icon={<BadgeCheck className="size-4" />} tone="bg-brand-teal/15 text-brand-teal">
-              <strong className="block">+{offer.member_bonus_points.toLocaleString()} bonus competition points</strong>
+              <strong className="block">+{offer.member_bonus_points.toLocaleString()} bonus points</strong>
               {bonusWhen(offer.bonus_trigger)}
             </Perk>
           ) : null}
@@ -248,7 +248,7 @@ function Perk({ icon, tone, children }: { icon: React.ReactNode; tone: string; c
 const STEPS = [
   { icon: Crown, title: 'Join', body: "Pick a membership and pay securely. You're a member once the payment goes through." },
   { icon: Gift, title: 'Send a gift', body: 'Your member discount comes off the gift price at checkout.' },
-  { icon: BadgeCheck, title: 'Get your bonus', body: 'Bonus competition points land with each paid period and carry over.' },
+  { icon: BadgeCheck, title: 'Get your bonus', body: 'Bonus points land in My points with each paid period and carry over.' },
 ]
 
 function HowItWorks() {

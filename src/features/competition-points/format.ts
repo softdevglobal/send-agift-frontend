@@ -48,7 +48,7 @@ export function nextActionLink(action: NextAction | undefined): { to: string; la
       return { to: '/orders', label: 'Track my gift' }
     case 'view_points':
     case 'view_earning_rules':
-      return { to: '/account/competition-points', label: 'My competition points' }
+      return { to: '/account/points', label: 'My points' }
     case 'view_competitions':
       return { to: '/competitions', label: 'See competitions' }
     case 'contact_support':
@@ -67,5 +67,5 @@ export function newRequestKey(prefix: string): string {
 export function bonusWhen(trigger: BonusTrigger | undefined): string {
   return trigger === 'first_gift'
     ? 'After your first qualifying completed gift in each paid period.'
-    : 'Added to your account as soon as each membership payment goes through. Unused points carry over.'
+    : 'Added to My points as soon as each membership payment goes through. Unused points carry over.'
 }

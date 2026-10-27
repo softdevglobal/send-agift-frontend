@@ -147,7 +147,7 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
           <DialogTitle className="mt-1 font-poster text-3xl text-white">{offer?.name ?? 'your membership'}</DialogTitle>
           {credited > 0 ? (
             <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-teal px-4 py-1.5 text-sm font-bold text-brand-ink">
-              +{credited.toLocaleString()} competition points added
+              +{credited.toLocaleString()} points added
             </p>
           ) : null}
         </div>
@@ -162,10 +162,10 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
             ) : null}
             {bonus > 0 ? (
               <Benefit icon={<BadgeCheck className="size-4" />} tone="bg-brand-teal/15 text-brand-teal">
-                <strong>{bonus.toLocaleString()} bonus competition points</strong>{' '}
+                <strong>{bonus.toLocaleString()} bonus points</strong>{' '}
                 {offer?.bonus_trigger === 'first_gift'
                   ? 'after your first delivered gift each period.'
-                  : 'every time your membership renews. Unused points carry over.'}
+                  : 'in My points every time your membership renews. Unused points carry over.'}
               </Benefit>
             ) : null}
             {(offer?.gift_benefits ?? []).map((b) => (

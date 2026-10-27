@@ -59,7 +59,7 @@ export function CustomerMembershipPage() {
   // Back from an older checkout link: the points page confirms the payment
   // and welcomes the member.
   useEffect(() => {
-    if (returned) navigate('/account/competition-points?welcome=membership', { replace: true })
+    if (returned) navigate('/account/points?welcome=membership', { replace: true })
   }, [returned, navigate])
 
   // While the payment is being confirmed, check again every few seconds; the
@@ -81,7 +81,7 @@ export function CustomerMembershipPage() {
     setError(null)
     try {
       await confirmTestPayment()
-      navigate('/account/competition-points?welcome=membership', { replace: true })
+      navigate('/account/points?welcome=membership', { replace: true })
     } catch (err) {
       setError(refusalOf(err)?.message ?? getErrorMessage(err, 'Could not confirm the test payment.'))
     } finally {
@@ -124,7 +124,7 @@ export function CustomerMembershipPage() {
         description="Your paid periods, your member bonus and your next renewal."
         action={
           <Button asChild variant="outline" className="h-10 px-4">
-            <Link to="/account/competition-points">Competition points</Link>
+            <Link to="/account/points">My points</Link>
           </Button>
         }
       />
@@ -146,7 +146,7 @@ export function CustomerMembershipPage() {
         <CustomerEmptyState
           icon={Crown}
           title="You're not a member"
-          description="Members get gift discounts, benefits and bonus competition points with each paid period."
+          description="Members get gift discounts, benefits and bonus points with each paid period."
           action={
             <Button asChild className="h-11 px-5">
               <Link to="/membership">See memberships</Link>

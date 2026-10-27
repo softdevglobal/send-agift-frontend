@@ -271,7 +271,7 @@ function Entry({ competition }: { competition: PublicCompetition }) {
         </p>
         <div className="mt-5 flex justify-center gap-3">
           <Button asChild variant="outline" className="h-10 px-4">
-            <Link to="/account/competition-points">My competition points</Link>
+            <Link to="/account/points">My points</Link>
           </Button>
           <Button
             className="h-10 px-4"

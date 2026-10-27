@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 
 import { PageLayout } from '@/components/common/page-layout'
 import { AccountLayout } from '@/features/account/account-layout'
@@ -34,7 +34,6 @@ import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CompetitionEntryPage } from '@/pages/competition-entry-page'
 import { CompetitionsPage } from '@/pages/competitions-page'
-import { CustomerCompetitionPointsPage } from '@/pages/customer-competition-points-page'
 import { CustomerMembershipPage } from '@/pages/customer-membership-page'
 import { MembershipPage } from '@/pages/membership-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
@@ -77,6 +76,13 @@ import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
 import { ScrollToTop } from '@/app/scroll-to-top'
+
+// Competition points are part of My points now; keep old links (and the
+// ?welcome=membership return) working.
+function RedirectToPoints() {
+  const { search } = useLocation()
+  return <Navigate to={`/account/points${search}`} replace />
+}
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -224,7 +230,7 @@ export function AppRouter() {
         <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="points" element={<CustomerPointsPage />} />
         <Route path="membership" element={<CustomerMembershipPage />} />
-        <Route path="competition-points" element={<CustomerCompetitionPointsPage />} />
+        <Route path="competition-points" element={<RedirectToPoints />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />

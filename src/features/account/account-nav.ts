@@ -5,7 +5,6 @@ import {
   Heart,
   History,
   MapPin,
-  Medal,
   PackageSearch,
   Star,
   Trophy,
@@ -80,12 +79,6 @@ export const accountNavGroups: AccountNavGroup[] = [
         label: 'Membership',
         icon: Crown,
         hint: 'Your plan, paid periods and member bonus',
-      },
-      {
-        to: '/account/competition-points',
-        label: 'Competition points',
-        icon: Medal,
-        hint: 'Points from completed gifts, held entries',
       },
       {
         to: '/competitions',
