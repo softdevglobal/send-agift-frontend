@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BadgeCheck, Crown, Gift, LoaderCircle, Percent } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
-import { syncMembership, type MembershipStatus } from '@/api/competition-points'
+import { getMembership, syncMembership, type MembershipStatus } from '@/api/competition-points'
 import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -12,13 +12,36 @@ import { formatBps } from '@/features/competition-points/use-member-discount'
 const TRIES = 10
 const EVERY_MS = 3000
 
+// Remembers, per browser, which paid period was already welcomed.
+function welcomedKey(s: MembershipStatus) {
+  return `sag:membership-welcomed:${s.current_period?.id ?? ''}`
+}
+
+function wasWelcomed(s: MembershipStatus) {
+  try {
+    return window.localStorage.getItem(welcomedKey(s)) === '1'
+  } catch {
+    return false
+  }
+}
+
+function markWelcomed(s: MembershipStatus) {
+  try {
+    window.localStorage.setItem(welcomedKey(s), '1')
+  } catch {
+    // Storage blocked: the welcome may show again, which is harmless.
+  }
+}
+
 /**
  * Back from the membership checkout (?welcome=membership): asks the server
  * to confirm the payment with Stripe, a few times while it settles, then
- * welcomes the new member with what they get. onConfirmed reloads the page
- * behind it, so the bonus shows in the balance.
+ * welcomes the new member with what they get. Without the return link (Stripe
+ * sent them elsewhere, or the webhook was late) it still welcomes them once,
+ * the first time a paid period is seen. onConfirmed reloads the page behind
+ * it, so the bonus shows in the balance.
  */
-export function MembershipWelcome({ onConfirmed }: { onConfirmed: () => void }) {
+export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void }) {
   const [params, setParams] = useSearchParams()
   const active = params.get('welcome') === 'membership'
   const [status, setStatus] = useState<MembershipStatus | null>(null)
@@ -36,7 +59,7 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed: () => void }) 
         if (s.current_period) {
           setStatus(s)
           setPhase('done')
-          onConfirmed()
+          onConfirmed?.()
           return
         }
       } catch {
@@ -54,10 +77,31 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed: () => void }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])
 
+  // Not back from checkout: welcome a paid period not welcomed yet.
+  useEffect(() => {
+    if (active) return
+    let cancelled = false
+    getMembership()
+      .then((s) => {
+        if (cancelled || !s.current_period || wasWelcomed(s)) return
+        setStatus(s)
+        setPhase('done')
+        onConfirmed?.()
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active])
+
   function close() {
+    if (status) markWelcomed(status)
     setPhase(null)
-    params.delete('welcome')
-    setParams(params, { replace: true })
+    if (params.has('welcome')) {
+      params.delete('welcome')
+      setParams(params, { replace: true })
+    }
   }
 
   if (!phase) return null

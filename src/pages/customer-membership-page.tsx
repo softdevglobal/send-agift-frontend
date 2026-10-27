@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMoney, nextActionLink } from '@/features/competition-points/format'
+import { MembershipWelcome } from '@/features/competition-points/membership-welcome'
 import { formatBps } from '@/features/competition-points/use-member-discount'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
@@ -60,6 +61,20 @@ export function CustomerMembershipPage() {
   useEffect(() => {
     if (returned) navigate('/account/competition-points?welcome=membership', { replace: true })
   }, [returned, navigate])
+
+  // While the payment is being confirmed, check again every few seconds; the
+  // server asks Stripe each time.
+  const pending = status?.state === 'payment_pending' && status.subscription?.provider === 'stripe'
+  useEffect(() => {
+    if (!pending) return
+    let tries = 0
+    const timer = window.setInterval(() => {
+      tries++
+      void load()
+      if (tries >= 10) window.clearInterval(timer)
+    }, 3000)
+    return () => window.clearInterval(timer)
+  }, [pending, load])
 
   async function testPay() {
     setBusy(true)
@@ -113,6 +128,7 @@ export function CustomerMembershipPage() {
           </Button>
         }
       />
+      <MembershipWelcome onConfirmed={() => void load()} />
       <FormAlert error={error} notice={notice} className="mb-4" />
 
       {testCheckout && sub?.provider === 'test' && sub.status === 'incomplete' ? (

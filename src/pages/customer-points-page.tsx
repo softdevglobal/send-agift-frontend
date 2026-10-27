@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Coins, Gamepad2, Gift, LoaderCircle, Send, ShoppingBag, Trophy } from 'lucide-react'
+import { ArrowRight, Coins, Crown, Gamepad2, Gift, LoaderCircle, Send, ShoppingBag, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import { getCompetitionPoints } from '@/api/competition-points'
 import { getMyPoints, type PointsWallet } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { Sparkle } from '@/components/common/storefront-decor'
@@ -85,6 +86,7 @@ export function CustomerPointsPage() {
         title="My points"
         description="Earn points when you buy gifts with a reward, when someone sends you points, and from prizes. Spend them to play games in the SendAGift app."
       />
+      <CompetitionPointsCard />
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -190,5 +192,45 @@ export function CustomerPointsPage() {
         </div>
       ) : null}
     </>
+  )
+}
+
+/**
+ * Competition points (member bonus, gift rewards) are a separate balance with
+ * their own page; this points the customer to it so the two aren't confused.
+ */
+function CompetitionPointsCard() {
+  const [available, setAvailable] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getCompetitionPoints()
+      .then((w) => !cancelled && setAvailable(w.available))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  if (!available) return null
+  return (
+    <Link
+      to="/account/competition-points"
+      className="mb-5 flex items-center gap-4 rounded-2xl border-2 border-brand-violet/25 bg-brand-violet/5 px-5 py-4 transition-colors hover:border-brand-violet"
+    >
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet text-white">
+        <Crown className="size-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-bold tracking-[0.14em] text-muted-foreground uppercase">
+          Competition points
+        </span>
+        <span className="block font-poster text-2xl">{formatPoints(available)}</span>
+        <span className="block text-xs text-muted-foreground">
+          Your member bonus and gift rewards, for skill competitions. A separate balance from the points below.
+        </span>
+      </span>
+      <ArrowRight className="size-5 shrink-0 text-brand-violet" />
+    </Link>
   )
 }
