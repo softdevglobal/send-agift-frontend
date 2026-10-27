@@ -78,7 +78,13 @@ type FormState = {
   win_odds: string
   prize_points: string
   quiz_questions: QuizQuestion[]
+  points_unit: 'legacy' | 'competition'
+  entry_cost_points: string
+  cp_sources: ('gift' | 'member_bonus' | 'sponsored' | 'compensation')[]
 }
+
+/** Games the website can play, so the only ones a competition-points round may use. */
+const WEB_PLAYABLE = new Set(['2048'])
 
 /** An ISO time as a `datetime-local` value in the admin's own time zone. */
 function toLocalInput(iso: string): string {
@@ -141,6 +147,9 @@ function fromCompetition(c: AdminCompetition): FormState {
     win_odds: c.win_odds ? String(c.win_odds) : '',
     prize_points: c.prize_points ? String(c.prize_points) : '',
     quiz_questions: c.quiz_questions ?? [],
+    points_unit: c.points_unit ?? 'legacy',
+    entry_cost_points: c.points_unit === 'competition' ? String(c.points_per_attempt) : '',
+    cp_sources: c.cp_allowed_sources?.length ? c.cp_allowed_sources : ['gift', 'member_bonus'],
   }
 }
 
@@ -170,6 +179,9 @@ const emptyForm: FormState = {
   win_odds: '',
   prize_points: '',
   quiz_questions: [],
+  points_unit: 'legacy',
+  entry_cost_points: '',
+  cp_sources: ['gift', 'member_bonus'],
 }
 
 /** The growth rule in words, e.g. "Starts at $100.00 and grows $1.00 a play up to $5,000.00 (4,900 plays)." */
@@ -305,6 +317,22 @@ export function CompetitionForm({
         return
       }
     }
+    const competitionPoints = form.points_unit === 'competition'
+    const entryCost = Number(form.entry_cost_points)
+    if (competitionPoints) {
+      if (!WEB_PLAYABLE.has(form.game_slug)) {
+        setError('Competition points can only be used for a skill game the website can play (2048).')
+        return
+      }
+      if (!(Number.isInteger(entryCost) && entryCost >= 1)) {
+        setError('Set the entry cost in competition points.')
+        return
+      }
+      if (form.cp_sources.length === 0) {
+        setError('Choose at least one kind of competition points the entry accepts.')
+        return
+      }
+    }
     const cents = (major: number | null) => (major === null || !currency ? null : majorToMinor(major, currency))
     const count = (raw: string) => (raw.trim() === '' ? null : Number(raw) || null)
     const input: CompetitionInput = {
@@ -334,6 +362,9 @@ export function CompetitionForm({
       min_plays_to_win: count(form.min_plays_to_win),
       win_odds: instant ? odds : null,
       quiz_questions: quiz ? questions : null,
+      points_unit: form.points_unit,
+      entry_cost_points: competitionPoints ? entryCost : null,
+      cp_allowed_sources: competitionPoints ? form.cp_sources : undefined,
       config_version: initial?.config_version,
     }
     setBusy(true)
@@ -392,7 +423,9 @@ export function CompetitionForm({
       '',
       `1. Who can enter: players living in ${where}.`,
       `2. When: opens ${fmt(startsAt)} and closes ${fmt(endsAt)} (${form.timezone || 'time zone'}).`,
-      `3. How to enter: each play costs ${game ? game.play_cost_points : '[points]'} points.`,
+      form.points_unit === 'competition'
+        ? `3. How to enter: on the SendAGift website, each entry costs ${form.entry_cost_points || '[points]'} competition points, reserved when you confirm and spent when your attempt starts.`
+        : `3. How to enter: each play costs ${game ? game.play_cost_points : '[points]'} points.`,
       `4. How the winner is chosen: ${how}`,
       `5. The prize: ${form.prize_description.trim() || '[prize]'}${prizeLabel !== '-' ? ` (${prizeLabel})` : ''}.`,
       '6. Claiming: winners are contacted in the app and must claim within 14 days, or the prize passes to the next eligible player.',
@@ -463,6 +496,18 @@ export function CompetitionForm({
                 </span>
               </p>
             </div>
+          ) : null}
+
+          {game && !chance ? (
+            <PointsUnitField
+              enabled={WEB_PLAYABLE.has(form.game_slug)}
+              unit={form.points_unit}
+              cost={form.entry_cost_points}
+              sources={form.cp_sources}
+              onUnit={(u) => set('points_unit', u)}
+              onCost={(v) => set('entry_cost_points', digitsOnly(v))}
+              onSources={(v) => set('cp_sources', v)}
+            />
           ) : null}
 
           {instantWinner ? (
@@ -827,5 +872,93 @@ function ReviewRow({ label, value, full }: { label: string; value: string; full?
       <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{label}</dt>
       <dd className="mt-1 font-medium">{value}</dd>
     </div>
+  )
+}
+
+const SOURCE_OPTIONS = [
+  { value: 'gift', label: 'Gift points' },
+  { value: 'member_bonus', label: 'Member bonus' },
+  { value: 'sponsored', label: 'Sponsored' },
+  { value: 'compensation', label: 'Compensation' },
+] as const
+
+/**
+ * What an entry costs: the game's legacy points price, or competition points
+ * at a price published for this contest. Competition points are only for
+ * skill games the website can play, and entry is on the website only.
+ */
+function PointsUnitField({
+  enabled,
+  unit,
+  cost,
+  sources,
+  onUnit,
+  onCost,
+  onSources,
+}: {
+  enabled: boolean
+  unit: FormState['points_unit']
+  cost: string
+  sources: FormState['cp_sources']
+  onUnit: (u: FormState['points_unit']) => void
+  onCost: (v: string) => void
+  onSources: (v: FormState['cp_sources']) => void
+}) {
+  return (
+    <WizardField
+      label="Paid with"
+      htmlFor="c-unit"
+      hint={
+        enabled
+          ? 'Competition points rounds are entered on the website only, and need a competition entry approval for each country.'
+          : 'Competition points need a skill game the website can play (2048).'
+      }
+    >
+      <div className="flex flex-wrap gap-2" id="c-unit">
+        {(['legacy', 'competition'] as const).map((u) => (
+          <button
+            key={u}
+            type="button"
+            disabled={u === 'competition' && !enabled}
+            onClick={() => onUnit(u)}
+            className={cn(
+              'rounded-lg border-2 px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50',
+              unit === u ? 'border-brand-ink bg-brand-ink text-white' : 'border-brand-ink/15',
+            )}
+          >
+            {u === 'legacy' ? 'Points (the game price)' : 'Competition points'}
+          </button>
+        ))}
+      </div>
+      {unit === 'competition' ? (
+        <div className="mt-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Input
+              inputMode="numeric"
+              value={cost}
+              onChange={(e) => onCost(e.target.value)}
+              placeholder="20"
+              className="h-11 w-32 bg-surface"
+              aria-label="Entry cost in competition points"
+            />
+            <span className="text-sm text-muted-foreground">competition points per entry</span>
+          </div>
+          <div className="flex flex-wrap gap-3 text-sm">
+            {SOURCE_OPTIONS.map((o) => (
+              <label key={o.value} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={sources.includes(o.value)}
+                  onChange={(e) =>
+                    onSources(e.target.checked ? [...sources, o.value] : sources.filter((s) => s !== o.value))
+                  }
+                />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </WizardField>
   )
 }

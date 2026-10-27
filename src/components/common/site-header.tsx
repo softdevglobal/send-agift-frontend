@@ -8,6 +8,7 @@ import {
   MessageSquare,
   Search,
   ShoppingBag,
+  Trophy,
   X,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
@@ -281,6 +282,16 @@ export function SiteHeader() {
             >
               <Clapperboard className="size-4" />
               Reels
+            </Link>
+
+            <Link
+              to="/competitions"
+              onClick={closeMenu}
+              aria-current={isCurrent('/competitions') ? 'page' : undefined}
+              className={menuRowClass(isCurrent('/competitions'))}
+            >
+              <Trophy className="size-4" />
+              Competitions
             </Link>
 
             {isGuest ? (

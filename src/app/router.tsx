@@ -10,6 +10,7 @@ import { AccountAddressesPage } from '@/pages/account-addresses-page'
 import { AdminAccountPage } from '@/pages/admin-account-page'
 import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCompetitionDetailPage } from '@/pages/admin-competition-detail-page'
+import { AdminCompetitionPointsPage } from '@/pages/admin-competition-points-page'
 import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
 import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
@@ -30,6 +31,11 @@ import { LegalIndexPage, PolicyPage } from '@/pages/legal-pages'
 import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
+import { CompetitionEntryPage } from '@/pages/competition-entry-page'
+import { CompetitionsPage } from '@/pages/competitions-page'
+import { CustomerCompetitionPointsPage } from '@/pages/customer-competition-points-page'
+import { CustomerMembershipPage } from '@/pages/customer-membership-page'
+import { MembershipPage } from '@/pages/membership-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
 import { EmailUndoPage } from '@/pages/email-undo-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
@@ -133,6 +139,11 @@ export function AppRouter() {
         <Route path="/cart" element={<CartPage />} />
         {/* Open to guests: they see what is on offer and are asked to sign in. */}
         <Route path="/free-gift" element={<FreeGiftPage />} />
+        {/* Competition points: offers and competitions are read by guests;
+            prices and entry need sign-in and the server's location checks. */}
+        <Route path="/membership" element={<MembershipPage />} />
+        <Route path="/competitions" element={<CompetitionsPage />} />
+        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
         <Route
           path="/checkout"
           element={
@@ -211,6 +222,8 @@ export function AppRouter() {
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="points" element={<CustomerPointsPage />} />
+        <Route path="membership" element={<CustomerMembershipPage />} />
+        <Route path="competition-points" element={<CustomerCompetitionPointsPage />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -341,6 +354,7 @@ export function AppRouter() {
         <Route path="points" element={<AdminPointsPage />} />
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
+        <Route path="competition-points" element={<AdminCompetitionPointsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         <Route path="countries/:countryId" element={<AdminCountryDetailPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}

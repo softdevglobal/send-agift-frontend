@@ -77,6 +77,7 @@ export function CustomerRegisterForm() {
   // Someone who chose Google or Facebook: the provider vouched for their
   // email, so only a country and phone are still needed.
   const [social, setSocial] = useState<SocialSignup | null>(() => socialFromState(location.state))
+  const [imageFailed, setImageFailed] = useState(false)
   const [codeSignup] = useState(() => codeSignupFromState(location.state))
   const [customerType, setCustomerType] = useState<CustomerTypeValue>('individual')
   const [displayName, setDisplayName] = useState(() => socialFromState(location.state)?.name ?? '')
@@ -225,8 +226,16 @@ export function CustomerRegisterForm() {
           id="social-signup-card"
           className="animate-fade-up flex items-center gap-3.5 rounded-2xl bg-accent p-4 ring-1 ring-primary/20"
         >
-          {social.image_url ? (
-            <img src={social.image_url} alt="" className="size-12 shrink-0 rounded-full object-cover ring-2 ring-background" />
+          {social.image_url && !imageFailed ? (
+            // Google's image host refuses requests that carry another site as
+            // the referrer, so none is sent. If it still fails, the initial shows.
+            <img
+              src={social.image_url}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={() => setImageFailed(true)}
+              className="size-12 shrink-0 rounded-full object-cover ring-2 ring-background"
+            />
           ) : (
             <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground">
               {(social.name || social.email).charAt(0).toUpperCase()}

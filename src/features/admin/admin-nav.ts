@@ -4,6 +4,7 @@ import {
   Gift,
   Globe2,
   LayoutDashboard,
+  Medal,
   MessageSquare,
   Package,
   ShieldCheck,
@@ -62,6 +63,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/games', label: 'Games & scores', icon: Gamepad2 },
       { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
+      { to: '/admin/competition-points', label: 'Competition points', icon: Medal },
     ],
   },
   {
