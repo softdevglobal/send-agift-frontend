@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock, LoaderCircle, Trophy } from 'lucide-react'
+import { CalendarClock, LoaderCircle, Smartphone, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { listEntryCompetitions, type PublicCompetition } from '@/api/competition-points'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { formatDateTime, formatMoney } from '@/features/competition-points/format'
+import { PlayInApp } from '@/features/competition-points/play-in-app'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { formatPoints } from '@/features/points/format'
 import { getErrorMessage } from '@/lib/api'
 
 /**
- * Skill competitions entered with competition points. The best verified
- * score wins; nothing is decided by chance. Availability depends on where
- * the entrant lives and is checked before any points are used.
+ * The skill competitions open to the customer, with what each pays. The
+ * server lists the ones for their country. Games are played in the mobile
+ * app, so every card says so; nothing here starts a game.
  */
 export function CompetitionsPage() {
   const [items, setItems] = useState<PublicCompetition[] | null>(null)
@@ -26,12 +27,13 @@ export function CompetitionsPage() {
   }, [])
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
+    <>
       <CustomerPageHeader
         eyebrow="Competitions"
         title="Skill competitions"
-        description="Enter with competition points from your completed gifts. The highest verified score wins. Availability varies by location."
+        description="The competitions open to you. The highest verified score wins. Availability varies by location."
       />
+      <PlayInApp className="mb-6" />
       <FormAlert error={error} />
       {items === null && !error ? (
         <div className="flex justify-center py-16">
@@ -41,7 +43,7 @@ export function CompetitionsPage() {
         <CustomerEmptyState
           icon={Trophy}
           title="No competitions open right now"
-          description="Keep sending gifts: completed gifts earn competition points for the next one."
+          description="There is nothing open for your location at the moment. Check back soon."
           action={
             <Button asChild className="h-11 px-5">
               <Link to="/products">Send a gift</Link>
@@ -57,7 +59,7 @@ export function CompetitionsPage() {
               className="group flex flex-col rounded-[1.75rem] border-2 border-brand-ink/15 bg-card p-6 transition-colors hover:border-brand-ink"
             >
               <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">
-                {c.game_name} · {c.status}
+                {c.game_name} · {c.status === 'live' ? 'open now' : 'opens soon'}
               </p>
               <h2 className="mt-1 font-poster text-2xl group-hover:underline">{c.title}</h2>
               <p className="mt-3 text-sm">
@@ -69,16 +71,21 @@ export function CompetitionsPage() {
               <p className="mt-1 text-sm text-muted-foreground">{c.prize_description}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span className="rounded-lg bg-accent px-2 py-1 font-semibold text-brand-ink">
-                  {formatPoints(c.points_per_attempt)} points per entry
+                  {formatPoints(c.points_per_attempt)} points per play
                 </span>
                 <span className="flex items-center gap-1">
-                  <CalendarClock className="size-3.5" /> closes {formatDateTime(c.ends_at)}
+                  <CalendarClock className="size-3.5" />
+                  {c.status === 'live' ? 'closes' : 'opens'} {formatDateTime(c.status === 'live' ? c.ends_at : c.starts_at)}
                 </span>
               </div>
+              <p className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-brand-violet">
+                <Smartphone className="size-3.5" />
+                Play in the SendAGift app
+              </p>
             </Link>
           ))}
         </div>
       )}
-    </main>
+    </>
   )
 }

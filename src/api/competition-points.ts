@@ -422,9 +422,14 @@ export type PublicCompetition = {
   countries: { id: string; name: string; iso_code: string }[]
 }
 
+/**
+ * The competitions open to the signed-in customer (the server lists those for
+ * their country): the ones playing now or about to open, which are what the
+ * mobile app offers too.
+ */
 export async function listEntryCompetitions() {
   const res = await api<{ items: PublicCompetition[] }>('/competitions')
-  return res.items.filter((c) => c.points_unit === 'competition')
+  return res.items.filter((c) => c.points_unit === 'legacy' && (c.status === 'live' || c.status === 'scheduled'))
 }
 
 export function getPublicCompetition(id: string) {

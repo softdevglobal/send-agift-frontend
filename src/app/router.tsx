@@ -84,6 +84,13 @@ function RedirectToPoints() {
   return <Navigate to={`/account/points${search}`} replace />
 }
 
+// Competitions are open to guests, but a signed-in customer gets the same side
+// menu as the rest of their account.
+function CustomerAwareLayout() {
+  const { isAuthenticated, role } = useAuth()
+  return isAuthenticated && role === 'customer' ? <AccountLayout /> : <PageLayout />
+}
+
 function RedirectProduct() {
   const { productId } = useParams()
   return <Navigate to={`/products/${productId}`} replace />
@@ -149,8 +156,6 @@ export function AppRouter() {
         {/* Competition points: offers and competitions are read by guests;
             prices and entry need sign-in and the server's location checks. */}
         <Route path="/membership" element={<MembershipPage />} />
-        <Route path="/competitions" element={<CompetitionsPage />} />
-        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
         <Route
           path="/checkout"
           element={
@@ -167,6 +172,11 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
+      </Route>
+
+      <Route element={<CustomerAwareLayout />}>
+        <Route path="/competitions" element={<CompetitionsPage />} />
+        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
       </Route>
 
       <Route

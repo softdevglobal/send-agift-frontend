@@ -84,7 +84,7 @@ export const accountNavGroups: AccountNavGroup[] = [
         to: '/competitions',
         label: 'Competitions',
         icon: Trophy,
-        hint: 'Skill competitions you can enter',
+        hint: 'Open competitions; play them in the app',
       },
     ],
   },
