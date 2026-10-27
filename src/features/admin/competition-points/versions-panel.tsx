@@ -1,5 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
-import { CalendarClock, Crown, Eye, Gift, LoaderCircle, Pencil, Percent, Plus, Trash2, Wallet } from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import {
+  Archive,
+  CalendarClock,
+  Crown,
+  Eye,
+  Gift,
+  LoaderCircle,
+  PauseCircle,
+  Pencil,
+  Percent,
+  PlayCircle,
+  Plus,
+  Rocket,
+  Trash2,
+  Wallet,
+} from 'lucide-react'
 
 import {
   createOffer,
@@ -20,8 +35,10 @@ import {
   type PolicyPreview,
   type RewardPolicy,
   type VersionAction,
+  type VersionStatus,
 } from '@/api/competition-points'
 import type { Country } from '@/api/types'
+import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -40,6 +57,7 @@ import {
   WizardFields,
   type WizardStep,
 } from '@/features/seller/wizard-dialog'
+import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
 import { AdminEmptyState } from '@/features/admin'
 import { formatDate, formatMoney } from '@/features/competition-points/format'
@@ -74,9 +92,79 @@ function useVersionActions(load: () => Promise<void>) {
 
 // ─── Membership offers ────────────────────────────────────────────────────
 
+type PendingAction = { offer: PlanOffer; action: VersionAction | 'delete' }
+
+/** What each change does, said plainly before it is made. */
+function confirmCopy(
+  offer: PlanOffer,
+  action: PendingAction['action'],
+  replaced: PlanOffer | undefined,
+): { title: string; description: string; label: string; tone: 'danger' | 'default' } {
+  const where = offer.country_name ?? 'its country'
+  switch (action) {
+    case 'publish':
+    case 'approve':
+      return {
+        title: `Publish ${offer.name}?`,
+        description: `It goes on sale in ${where} straight away, wherever membership sales are approved. Once published it can't be edited: a change means a new version.${
+          replaced
+            ? ` It replaces version ${replaced.version}, which is retired. Members on version ${replaced.version} keep its price and benefits until their paid period ends.`
+            : ''
+        }`,
+        label: 'Publish',
+        tone: 'default',
+      }
+    case 'suspend':
+      return {
+        title: `Suspend ${offer.name}?`,
+        description: `New members can't join it while it is suspended. People who are already members keep their benefits to the end of the period they paid for. You can resume it any time.`,
+        label: 'Suspend',
+        tone: 'danger',
+      }
+    case 'resume':
+      return {
+        title: `Resume ${offer.name}?`,
+        description: `It goes back on sale in ${where} straight away.`,
+        label: 'Resume',
+        tone: 'default',
+      }
+    case 'retire':
+      return {
+        title: `Retire ${offer.name}?`,
+        description: `It's taken off sale for good and can't be put back: to sell it again you would create a new version. Current members keep their benefits to the end of the period they paid for.`,
+        label: 'Retire',
+        tone: 'danger',
+      }
+    case 'return_to_draft':
+      return {
+        title: `Return ${offer.name} to draft?`,
+        description: 'It can be edited again before it is published.',
+        label: 'Return to draft',
+        tone: 'default',
+      }
+    case 'delete':
+      return {
+        title: `Delete ${offer.name}?`,
+        description: 'This draft is removed for good. Nothing has been sold on it.',
+        label: 'Delete',
+        tone: 'danger',
+      }
+    default:
+      return { title: `${offer.name}`, description: 'Continue?', label: 'Continue', tone: 'default' }
+  }
+}
+
+const GROUPS: { id: string; title: string; hint: string; statuses: VersionStatus[] }[] = [
+  { id: 'live', title: 'On sale', hint: 'Customers can join these now, where memberships are approved.', statuses: ['published'] },
+  { id: 'paused', title: 'Paused', hint: 'Suspended: not on sale, and can be resumed.', statuses: ['suspended'] },
+  { id: 'drafts', title: 'Drafts', hint: 'Not on sale yet. Edit them, then publish.', statuses: ['draft', 'awaiting_approval'] },
+  { id: 'retired', title: 'Retired', hint: 'Off sale for good. Existing members keep what they bought.', statuses: ['retired'] },
+]
+
 export function OffersPanel({ countries }: { countries: Country[] }) {
   const [items, setItems] = useState<PlanOffer[] | null>(null)
   const [editing, setEditing] = useState<PlanOffer | 'new' | null>(null)
+  const [pending, setPending] = useState<PendingAction | null>(null)
   const me = getTokenSubject()
   const canEdit = isSuperAdmin()
   const load = useCallback(async () => setItems(await listAdminOffers()), [])
@@ -86,8 +174,38 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
     load().catch((err) => setError(getErrorMessage(err, 'Could not load offers.')))
   }, [load, setError])
 
+  const replaced =
+    pending && (pending.action === 'publish' || pending.action === 'approve')
+      ? items?.find(
+          (x) =>
+            x.id !== pending.offer.id &&
+            x.tier_code === pending.offer.tier_code &&
+            x.country_id === pending.offer.country_id &&
+            x.status === 'published',
+        )
+      : undefined
+
+  async function confirm() {
+    if (!pending) return
+    const { offer, action } = pending
+    const label =
+      action === 'delete'
+        ? 'Draft deleted.'
+        : action === 'publish' || action === 'approve'
+          ? `${offer.name} is now on sale where memberships are approved.`
+          : action === 'suspend'
+            ? `${offer.name} is suspended.`
+            : action === 'resume'
+              ? `${offer.name} is back on sale.`
+              : action === 'retire'
+                ? `${offer.name} is retired.`
+                : `${offer.name} is back to a draft.`
+    await run(offer.id, label, () => (action === 'delete' ? deleteOffer(offer.id) : offerAction(offer.id, action)))
+    setPending(null)
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {canEdit ? (
         <div className="flex justify-end">
           <Button onClick={() => setEditing('new')} className="h-10 px-4">
@@ -103,73 +221,47 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
       ) : items.length === 0 ? (
         <AdminEmptyState icon={Crown} title="No membership packages" description="Create a package, then publish it to put it on sale." />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {items.map((o) => (
-            <article key={o.id} className="rounded-xl border-2 border-brand-ink/15 bg-card p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">
-                    {o.country_name} · {o.tier_code} v{o.version}
-                  </p>
-                  <h3 className="mt-1 font-poster text-2xl">{o.name}</h3>
-                </div>
-                <StatusPill status={o.status} />
+        GROUPS.map((group) => {
+          const list = items.filter((o) => group.statuses.includes(o.status))
+          if (list.length === 0) return null
+          return (
+            <section key={group.id}>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-3">
+                <h2 className="font-poster text-xl">
+                  {group.title} <span className="text-muted-foreground">({list.length})</span>
+                </h2>
+                <p className="text-sm text-muted-foreground">{group.hint}</p>
               </div>
-              <p className="mt-2 text-sm">
-                <strong>{formatMoney(o.price_minor, o.currency)}</strong> {o.billing_label} · extra bonus{' '}
-                <strong>{o.member_bonus_points.toLocaleString()}</strong> points after the first qualifying gift of each
-                paid period
-              </p>
-              {o.member_discount_bps > 0 ? (
-                <p className="mt-1 text-sm">
-                  <strong>{bpsLabel(o.member_discount_bps)}</strong> off gifts for members
-                </p>
-              ) : null}
-              {o.gift_benefits.length ? (
-                <p className="mt-1 text-xs text-muted-foreground">Benefits: {o.gift_benefits.join(' · ')}</p>
-              ) : null}
-              {o.published_at ? <p className="mt-1 text-xs text-muted-foreground">Published {formatDate(o.published_at)}</p> : null}
-              {canEdit ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  {o.status === 'draft' ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(o)}>
-                        <Pencil className="size-3.5" /> Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        disabled={busy === o.id}
-                        onClick={() => run(o.id, 'Draft deleted.', () => deleteOffer(o.id))}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </>
-                  ) : null}
-                  <ActionButtons
-                    actions={offerActions(o.status).filter(
-                      (a) => !(a.action === 'approve' && o.submitted_by_admin_id === me),
-                    )}
+              <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+                {list.map((o) => (
+                  <OfferCard
+                    key={o.id}
+                    offer={o}
+                    iso={countries.find((c) => c.id === o.country_id)?.iso_code}
+                    canEdit={canEdit}
+                    mine={o.submitted_by_admin_id === me}
                     busy={busy === o.id}
-                    onAction={(a) =>
-                      run(
-                        o.id,
-                        a === 'publish'
-                          ? `${o.name} is now on sale where memberships are approved.`
-                          : `${o.name}: ${a.replaceAll('_', ' ')} done.`,
-                        () => offerAction(o.id, a as VersionAction),
-                      )
-                    }
+                    onEdit={() => setEditing(o)}
+                    onAction={(action) => setPending({ offer: o, action })}
                   />
-                  {o.status === 'awaiting_approval' && o.submitted_by_admin_id === me ? (
-                    <span className="text-xs text-muted-foreground">Another admin must approve it.</span>
-                  ) : null}
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
+                ))}
+              </div>
+            </section>
+          )
+        })
       )}
+
+      {pending ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => !open && setPending(null)}
+          {...confirmCopy(pending.offer, pending.action, replaced)}
+          confirmLabel={confirmCopy(pending.offer, pending.action, replaced).label}
+          onConfirm={confirm}
+          busy={busy === pending.offer.id}
+        />
+      ) : null}
+
       <OfferDialog
         offer={editing}
         countries={countries}
@@ -180,6 +272,162 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
         }}
       />
     </div>
+  )
+}
+
+const ACTION_ICON: Partial<Record<VersionAction | 'delete', typeof Rocket>> = {
+  publish: Rocket,
+  approve: Rocket,
+  suspend: PauseCircle,
+  resume: PlayCircle,
+  retire: Archive,
+}
+
+/** One membership package: what it costs, what members get, and what can be done with it. */
+function OfferCard({
+  offer: o,
+  iso,
+  canEdit,
+  mine,
+  busy,
+  onEdit,
+  onAction,
+}: {
+  offer: PlanOffer
+  iso: string | undefined
+  canEdit: boolean
+  mine: boolean
+  busy: boolean
+  onEdit: () => void
+  onAction: (action: VersionAction | 'delete') => void
+}) {
+  const live = o.status === 'published'
+  const actions = offerActions(o.status).filter((a) => !(a.action === 'approve' && mine))
+  return (
+    <article
+      className={cn(
+        'flex flex-col overflow-hidden rounded-2xl border-2 bg-card',
+        live ? 'border-emerald-500/50' : 'border-brand-ink/15',
+        o.status === 'retired' && 'opacity-75',
+      )}
+    >
+      <header className="flex items-start justify-between gap-3 bg-brand-ink px-5 py-4 text-white">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-[10px] font-bold tracking-[0.18em] text-white/60 uppercase">
+            <span className="text-sm leading-none tracking-normal">{flagOf(iso)}</span>
+            {o.country_name} · {o.tier_code} · v{o.version}
+          </p>
+          <h3 className="mt-1 font-poster text-2xl leading-tight break-words">{o.name}</h3>
+        </div>
+        <StatusPill status={o.status} />
+      </header>
+
+      <div className="flex-1 space-y-4 px-5 py-5">
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className="font-poster text-4xl">{formatMoney(o.price_minor, o.currency)}</span>
+          <span className="text-sm font-semibold text-muted-foreground">{o.billing_label}</span>
+        </p>
+        {o.description ? <p className="text-sm text-muted-foreground">{o.description}</p> : null}
+
+        <ul className="space-y-2.5 text-sm">
+          <Perk icon={Percent} tone="bg-brand-teal/25 text-brand-ink" active={o.member_discount_bps > 0}>
+            {o.member_discount_bps > 0 ? (
+              <>
+                <strong>{bpsLabel(o.member_discount_bps)}</strong> off gifts for members
+              </>
+            ) : (
+              'No gift discount'
+            )}
+          </Perk>
+          <Perk icon={Crown} tone="bg-brand-violet/15 text-brand-violet" active={o.member_bonus_points > 0}>
+            {o.member_bonus_points > 0 ? (
+              <>
+                <strong>{o.member_bonus_points.toLocaleString()}</strong> bonus points after the first qualifying gift of
+                each paid period
+              </>
+            ) : (
+              'No bonus points'
+            )}
+          </Perk>
+        </ul>
+
+        {o.gift_benefits.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {o.gift_benefits.map((b) => (
+              <span key={b} className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-xs font-semibold">
+                <Gift className="size-3 text-brand-teal" />
+                {b}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-ink/10 bg-muted/30 px-5 py-3">
+        <p className="text-xs text-muted-foreground">
+          {o.published_at ? `Published ${formatDate(o.published_at)}` : `Created ${formatDate(o.created_at)}`}
+        </p>
+        {canEdit ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {o.status === 'draft' ? (
+              <>
+                <Button size="sm" variant="outline" disabled={busy} onClick={onEdit}>
+                  <Pencil className="size-3.5" /> Edit
+                </Button>
+                <Button
+                  size="icon-sm"
+                  variant="destructive"
+                  aria-label={`Delete ${o.name}`}
+                  disabled={busy}
+                  onClick={() => onAction('delete')}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </>
+            ) : null}
+            {actions.map((a) => {
+              const Icon = ACTION_ICON[a.action]
+              return (
+                <Button
+                  key={a.action}
+                  size="sm"
+                  variant={a.danger ? 'destructive' : a.action === 'publish' || a.action === 'approve' ? 'default' : 'outline'}
+                  disabled={busy}
+                  onClick={() => onAction(a.action)}
+                >
+                  {Icon ? <Icon className="size-3.5" /> : null}
+                  {a.label}
+                </Button>
+              )
+            })}
+            {o.status === 'awaiting_approval' && mine ? (
+              <span className="text-xs text-muted-foreground">Another admin must approve it.</span>
+            ) : null}
+          </div>
+        ) : null}
+      </footer>
+    </article>
+  )
+}
+
+function Perk({
+  icon: Icon,
+  tone,
+  active,
+  children,
+}: {
+  icon: typeof Percent
+  tone: string
+  active: boolean
+  children: ReactNode
+}) {
+  return (
+    <li className={cn('flex items-start gap-3', !active && 'text-muted-foreground')}>
+      <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-lg', active ? tone : 'bg-muted')}>
+        <Icon className="size-3.5" />
+      </span>
+      <span className="pt-0.5">{children}</span>
+    </li>
   )
 }
 
