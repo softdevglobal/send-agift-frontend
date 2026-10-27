@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input'
 import { AdminEmptyState } from '@/features/admin'
 import { formatDate } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
-import { getTokenSubject, isSuperAdmin } from '@/lib/auth'
+import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { OPERATION_LABEL } from './labels'
@@ -50,7 +50,6 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const me = getTokenSubject()
   const canEdit = isSuperAdmin()
 
   const load = useCallback(async () => {
@@ -147,18 +146,14 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     {canEdit && a.status === 'pending' ? (
-                      a.requested_by_admin_id === me ? (
-                        <span className="text-xs text-muted-foreground">Needs another admin</span>
-                      ) : (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" disabled={busy === a.id} onClick={() => act(a, 'approve')}>
-                            Approve
-                          </Button>
-                          <Button size="sm" variant="outline" disabled={busy === a.id} onClick={() => act(a, 'reject')}>
-                            Reject
-                          </Button>
-                        </div>
-                      )
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" disabled={busy === a.id} onClick={() => act(a, 'approve')}>
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="outline" disabled={busy === a.id} onClick={() => act(a, 'reject')}>
+                          Reject
+                        </Button>
+                      </div>
                     ) : canEdit && a.status === 'active' ? (
                       <Button size="sm" variant="destructive" disabled={busy === a.id} onClick={() => act(a, 'revoke')}>
                         Revoke
@@ -176,9 +171,9 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
         open={creating}
         onOpenChange={setCreating}
         countries={countries}
-        onSaved={async () => {
+        onSaved={async (approvedNow) => {
           setCreating(false)
-          setNotice('Approval recorded. A different admin must approve it before it takes effect.')
+          setNotice(approvedNow ? 'Approved. It takes effect now.' : 'Approval recorded. It takes effect once it is approved.')
           await load()
         }}
       />
@@ -195,7 +190,7 @@ function ApprovalDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
   countries: Country[]
-  onSaved: () => void
+  onSaved: (approvedNow: boolean) => void
 }) {
   const [operation, setOperation] = useState<ApprovalOperation>('gift_points_earning')
   const [countryId, setCountryId] = useState('')
@@ -206,6 +201,8 @@ function ApprovalDialog({
   const [evidence, setEvidence] = useState('')
   const [notes, setNotes] = useState('')
   const [expires, setExpires] = useState('')
+  // A Super Admin approves it as they record it; untick to leave it pending.
+  const [approveNow, setApproveNow] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const needsProvider = NEEDS_PROVIDER.includes(operation)
@@ -242,8 +239,9 @@ function ApprovalDialog({
         notes: notes.trim() || null,
         effective_from: null,
         expires_at: new Date(`${expires}T23:59:59`).toISOString(),
+        approve_now: approveNow,
       })
-      onSaved()
+      onSaved(approveNow)
     } catch (err) {
       setError(getErrorMessage(err, 'Could not record the approval.'))
     } finally {
@@ -257,7 +255,7 @@ function ApprovalDialog({
         <DialogHeader>
           <DialogTitle>Record an approval</DialogTitle>
           <DialogDescription>
-            Reference the advice, provider acceptance or review that supports it. A second admin approves it.
+            Reference the advice, provider acceptance or review that supports it.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -317,6 +315,18 @@ function ApprovalDialog({
           <Field label="Notes" htmlFor="ap-notes" className="sm:col-span-2">
             <textarea id="ap-notes" className={textareaClassName} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </Field>
+          <label className="flex items-start gap-3 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={approveNow}
+              onChange={(e) => setApproveNow(e.target.checked)}
+            />
+            <span>
+              <strong>Approve it now.</strong> It takes effect immediately. Untick to leave it pending for someone to
+              approve later.
+            </span>
+          </label>
         </div>
         <FormAlert error={error} />
         <DialogFooter>
@@ -325,7 +335,7 @@ function ApprovalDialog({
           </Button>
           <Button onClick={save} disabled={busy}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Record
+            {approveNow ? 'Record & approve' : 'Record'}
           </Button>
         </DialogFooter>
       </DialogContent>

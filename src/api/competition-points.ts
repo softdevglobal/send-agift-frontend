@@ -564,6 +564,8 @@ export type ApprovalInput = {
   notes: string | null
   effective_from: string | null
   expires_at: string
+  /** Record and approve in one step (a Super Admin). */
+  approve_now?: boolean
 }
 
 export const listApprovals = () =>
