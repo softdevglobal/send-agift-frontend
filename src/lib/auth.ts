@@ -97,12 +97,14 @@ export function clearSession(): void {
 }
 
 /**
- * Only a superadmin may change prize economics or pay out (Progressive Prize
- * spec §2); other admins see the same pages read-only. The server enforces
- * this. The check here only hides buttons that would be refused.
+ * There is one admin role, so every admin may change prize economics, pay
+ * out and manage memberships. Accounts that were still "superadmin" are
+ * treated the same. The server enforces access; this only decides which
+ * buttons to show. The name is kept so the many screens that call it
+ * need no change.
  */
 export function isSuperAdmin(): boolean {
-  return getRole() === 'superadmin'
+  return isAdminRole(getRole())
 }
 
 export function isAdminRole(role: UserRole | null): boolean {
