@@ -32,6 +32,7 @@ import {
   rememberOwnComment,
 } from '@/lib/own-reel-comments'
 import { cn } from '@/lib/utils'
+import { ProfileImage } from '@/components/common/profile-image'
 
 const PAGE_SIZE = 20
 /** Mirrors the API: bodies over 1000 characters are rejected. */
@@ -717,11 +718,11 @@ function Avatar({
 
   if (imageUrl) {
     return (
-      <img
+      <ProfileImage
         src={imageUrl}
-        alt=""
         className={cn(sizeClass, 'shrink-0 rounded-full object-cover')}
         loading="lazy"
+        fallback={<Avatar name={name} anonymous={anonymous} size={size} />}
       />
     )
   }

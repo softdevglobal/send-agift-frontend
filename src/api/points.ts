@@ -19,6 +19,8 @@ export type PointsEntryType =
   | 'points_purchase'
   | 'reward_funding'
   | 'reward_funding_return'
+  | 'member_bonus'
+  | 'member_bonus_reversal'
 
 /** The kind of change, as a person reads their history. */
 export type PointsCategory =
@@ -65,6 +67,8 @@ export type PointsTotals = {
   from_purchases: number
   from_gifts: number
   from_prizes: number
+  /** Membership bonuses, net of any taken back after a refund. */
+  from_membership: number
   spent_on_games: number
   sent_as_gifts: number
 }
@@ -135,6 +139,8 @@ export const POINTS_ENTRY_LABEL: Record<PointsEntryType, string> = {
   points_purchase: 'Bought',
   reward_funding: 'Reward paid',
   reward_funding_return: 'Reward returned',
+  member_bonus: 'Membership bonus',
+  member_bonus_reversal: 'Membership refunded',
 }
 
 export const POINTS_CATEGORY_LABEL: Record<PointsCategory, string> = {

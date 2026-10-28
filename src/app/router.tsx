@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useParams } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
 
 import { PageLayout } from '@/components/common/page-layout'
 import { AccountLayout } from '@/features/account/account-layout'
@@ -10,6 +10,7 @@ import { AccountAddressesPage } from '@/pages/account-addresses-page'
 import { AdminAccountPage } from '@/pages/admin-account-page'
 import { AdminAdminsPage } from '@/pages/admin-admins-page'
 import { AdminCompetitionDetailPage } from '@/pages/admin-competition-detail-page'
+import { AdminCompetitionPointsPage } from '@/pages/admin-competition-points-page'
 import { AdminCompetitionsPage } from '@/pages/admin-competitions-page'
 import { AdminGameDetailPage } from '@/pages/admin-game-detail-page'
 import { AdminGamesPage } from '@/pages/admin-games-page'
@@ -23,6 +24,7 @@ import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
 import { AdminLoginPage } from '@/pages/admin-login-page'
+import { AdminMembershipsPage } from '@/pages/admin-memberships-page'
 import { AdminSellerDetailPage } from '@/pages/admin-seller-detail-page'
 import { AdminSellersPage } from '@/pages/admin-sellers-page'
 import { BecomeSellerPage } from '@/pages/become-seller-page'
@@ -30,6 +32,10 @@ import { LegalIndexPage, PolicyPage } from '@/pages/legal-pages'
 import { CartPage } from '@/pages/cart-page'
 import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
+import { CompetitionEntryPage } from '@/pages/competition-entry-page'
+import { CompetitionsPage } from '@/pages/competitions-page'
+import { CustomerMembershipPage } from '@/pages/customer-membership-page'
+import { MembershipPage } from '@/pages/membership-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
 import { EmailUndoPage } from '@/pages/email-undo-page'
 import { ForgotPasswordPage } from '@/pages/forgot-password-page'
@@ -70,6 +76,20 @@ import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
 import { ScrollToTop } from '@/app/scroll-to-top'
+
+// Competition points are part of My points now; keep old links (and the
+// ?welcome=membership return) working.
+function RedirectToPoints() {
+  const { search } = useLocation()
+  return <Navigate to={`/account/points${search}`} replace />
+}
+
+// Competitions are open to guests, but a signed-in customer gets the same side
+// menu as the rest of their account.
+function CustomerAwareLayout() {
+  const { isAuthenticated, role } = useAuth()
+  return isAuthenticated && role === 'customer' ? <AccountLayout /> : <PageLayout />
+}
 
 function RedirectProduct() {
   const { productId } = useParams()
@@ -133,6 +153,9 @@ export function AppRouter() {
         <Route path="/cart" element={<CartPage />} />
         {/* Open to guests: they see what is on offer and are asked to sign in. */}
         <Route path="/free-gift" element={<FreeGiftPage />} />
+        {/* Competition points: offers and competitions are read by guests;
+            prices and entry need sign-in and the server's location checks. */}
+        <Route path="/membership" element={<MembershipPage />} />
         <Route
           path="/checkout"
           element={
@@ -149,6 +172,11 @@ export function AppRouter() {
             </ProtectedRoute>
           }
         />
+      </Route>
+
+      <Route element={<CustomerAwareLayout />}>
+        <Route path="/competitions" element={<CompetitionsPage />} />
+        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
       </Route>
 
       <Route
@@ -211,6 +239,8 @@ export function AppRouter() {
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
         <Route path="points" element={<CustomerPointsPage />} />
+        <Route path="membership" element={<CustomerMembershipPage />} />
+        <Route path="competition-points" element={<RedirectToPoints />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -341,6 +371,8 @@ export function AppRouter() {
         <Route path="points" element={<AdminPointsPage />} />
         <Route path="points/packages" element={<AdminPointPackagesPage />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
+        <Route path="competition-points" element={<AdminCompetitionPointsPage />} />
+        <Route path="memberships" element={<AdminMembershipsPage />} />
         <Route path="countries" element={<AdminCountriesPage />} />
         <Route path="countries/:countryId" element={<AdminCountryDetailPage />} />
         {/* Games and competitions: any signed-in admin; actions are audited. */}

@@ -30,6 +30,7 @@ import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
+import { ProfileImage } from '@/components/common/profile-image'
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
@@ -203,13 +204,15 @@ export function CustomerProfilePage() {
                 className="group relative size-20 shrink-0 overflow-hidden rounded-2xl bg-brand-violet"
                 aria-label={imageUrl ? 'Change photo' : 'Add a photo'}
               >
-                {imageUrl ? (
-                  <img src={imageUrl} alt="" className="size-full object-cover" />
-                ) : (
-                  <span className="flex size-full items-center justify-center font-poster text-3xl text-white">
-                    {(displayName || profile?.email || '?').trim().charAt(0).toUpperCase()}
-                  </span>
-                )}
+                <ProfileImage
+                  src={imageUrl}
+                  className="size-full object-cover"
+                  fallback={
+                    <span className="flex size-full items-center justify-center font-poster text-3xl text-white">
+                      {(displayName || profile?.email || '?').trim().charAt(0).toUpperCase()}
+                    </span>
+                  }
+                />
                 <span className="absolute inset-0 flex items-center justify-center bg-foreground/45 text-white opacity-0 transition-opacity group-hover:opacity-100">
                   {uploadingPhoto ? <LoaderCircle className="size-5 animate-spin" /> : <Camera className="size-5" />}
                 </span>

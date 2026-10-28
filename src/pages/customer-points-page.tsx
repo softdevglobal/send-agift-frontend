@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Coins, Gamepad2, Gift, LoaderCircle, Send, ShoppingBag, Trophy } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Coins, Crown, Gamepad2, Gift, LoaderCircle, Send, ShoppingBag, Trophy } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { getMyPoints, type PointsWallet } from '@/api/points'
 import { FormAlert } from '@/components/common/form-alert'
 import { Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
+import { MembershipWelcome } from '@/features/competition-points/membership-welcome'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { formatPoints } from '@/features/points/format'
@@ -26,6 +27,12 @@ export function CustomerPointsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
+
+  const load = useCallback(() => {
+    getMyPoints()
+      .then(setWallet)
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +60,12 @@ export function CustomerPointsPage() {
 
   const totals = wallet?.totals
   const tiles = [
+    {
+      label: 'Member bonus',
+      value: totals?.from_membership ?? 0,
+      icon: Crown,
+      tone: 'bg-brand-violet/15 text-brand-violet',
+    },
     {
       label: 'From purchases',
       value: totals?.from_purchases ?? 0,
@@ -83,8 +96,9 @@ export function CustomerPointsPage() {
     <>
       <CustomerPageHeader
         title="My points"
-        description="Earn points when you buy gifts with a reward, when someone sends you points, and from prizes. Spend them to play games in the SendAGift app."
+        description="Earn points from your membership, when you buy gifts with a reward, when someone sends you points, and from prizes. Spend them to play games and enter competitions."
       />
+      <MembershipWelcome onConfirmed={load} />
 
       {loading ? (
         <div className="flex justify-center py-20">
@@ -117,7 +131,7 @@ export function CustomerPointsPage() {
             </div>
           </section>
 
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {tiles.map((tile) => (
               <div key={tile.label} className={cn(customerPanelClass, 'p-4')}>
                 <span

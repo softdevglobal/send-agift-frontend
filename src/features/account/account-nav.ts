@@ -1,11 +1,13 @@
 import {
   Coins,
+  Crown,
   Gift,
   Heart,
   History,
   MapPin,
   PackageSearch,
   Star,
+  Trophy,
   User,
   Users,
   type LucideIcon,
@@ -66,6 +68,23 @@ export const accountNavGroups: AccountNavGroup[] = [
         label: 'My points',
         icon: Coins,
         hint: 'Balance and points history',
+      },
+    ],
+  },
+  {
+    label: 'Competitions',
+    items: [
+      {
+        to: '/account/membership',
+        label: 'Membership',
+        icon: Crown,
+        hint: 'Your plan, paid periods and member bonus',
+      },
+      {
+        to: '/competitions',
+        label: 'Competitions',
+        icon: Trophy,
+        hint: 'Open competitions; play them in the app',
       },
     ],
   },

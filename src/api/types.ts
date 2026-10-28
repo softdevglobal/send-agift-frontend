@@ -545,6 +545,8 @@ export type Order = {
   subtotal_amount: number
   delivery_amount: number
   total_amount: number
+  /** What a member saved on the items, already taken off `total_amount`. */
+  member_discount_amount?: number
   currency: string
   gift_message?: string | null
   media_greeting_id?: string | null

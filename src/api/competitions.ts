@@ -111,6 +111,9 @@ export type AdminCompetition = {
   config_version: number
   paused_at?: string
   closed_at?: string
+  /** `competition`: entered with competition points through a reserved entry. */
+  points_unit?: 'legacy' | 'competition'
+  cp_allowed_sources?: ('gift' | 'member_bonus' | 'sponsored' | 'compensation')[]
 }
 
 /** One quiz question as the server keeps it, answer included. */
@@ -159,6 +162,11 @@ export type CompetitionInput = {
   /** Points prizes only: credited to each winner when validated. */
   prize_points: number | null
   quiz_questions: QuizQuestion[] | null
+  /** `competition` makes entry cost competition points (skill games on the website only). */
+  points_unit?: 'legacy' | 'competition'
+  /** The published cost of one entry, for a competition-points round. */
+  entry_cost_points?: number | null
+  cp_allowed_sources?: ('gift' | 'member_bonus' | 'sponsored' | 'compensation')[]
   /** The version being edited; a stale save is refused. */
   config_version?: number
 }
