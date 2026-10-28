@@ -223,6 +223,11 @@ export function syncMembership() {
   return api<MembershipStatus>('/customers/me/membership/sync', { method: 'POST' })
 }
 
+/** Turns renewal back on for a membership set to end. */
+export function resumeMembership() {
+  return api<MembershipStatus>('/customers/me/membership/resume', { method: 'POST' })
+}
+
 export function cancelMembership() {
   return api<MembershipStatus>('/customers/me/membership/cancel', { method: 'POST' })
 }

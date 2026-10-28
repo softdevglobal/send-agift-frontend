@@ -126,14 +126,17 @@ function Offers() {
   )
 }
 
-function OfferCard({
+export function OfferCard({
   offer,
   canBuy,
   onJoined,
+  note,
 }: {
   offer: PlanOffer
   canBuy: boolean
   onJoined: (url: string, provider: string) => void
+  /** Why joining is not possible right now, shown under the button. */
+  note?: string
 }) {
   const [consent, setConsent] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -230,6 +233,7 @@ function OfferCard({
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Crown className="size-4" />}
             Join for {price}
           </Button>
+          {note ? <p className="mt-2 text-center text-xs text-muted-foreground">{note}</p> : null}
         </div>
       </div>
     </article>

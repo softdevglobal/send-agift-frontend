@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt } from 'lucide-react'
+import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt, RotateCcw } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
   cancelMembership,
   confirmTestPayment,
   getMembership,
+  getMembershipOffers,
   refusalOf,
+  resumeMembership,
   type BonusSlot,
+  type MembershipOffers,
   type MembershipStatus,
 } from '@/api/competition-points'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
@@ -20,6 +23,7 @@ import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-comm
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { OfferCard } from '@/pages/membership-page'
 
 const SLOT_LABEL: Record<BonusSlot['status'], string> = {
   unawarded: 'Ready to unlock',
@@ -89,6 +93,19 @@ export function CustomerMembershipPage() {
     }
   }
 
+  async function resume() {
+    setBusy(true)
+    setError(null)
+    try {
+      setStatus(await resumeMembership())
+      setNotice('Renewal is back on. Your membership continues and renews as before.')
+    } catch (err) {
+      setError(refusalOf(err)?.message ?? getErrorMessage(err, 'Could not turn renewal back on.'))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function cancel() {
     setBusy(true)
     setError(null)
@@ -116,6 +133,7 @@ export function CustomerMembershipPage() {
   const period = status?.current_period
   const action = nextActionLink(status?.next_action)
   const canCancel = sub && ['active', 'past_due', 'incomplete'].includes(sub.status) && !sub.cancel_at_period_end
+  const canResume = sub && ['active', 'cancelling'].includes(sub.status) && sub.cancel_at_period_end
 
   return (
     <>
@@ -227,8 +245,21 @@ export function CustomerMembershipPage() {
                   Cancel renewal
                 </Button>
               ) : null}
+              {canResume ? (
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <Button className="h-10 px-4" onClick={resume} disabled={busy}>
+                    {busy ? <LoaderCircle className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+                    Turn renewal back on
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Keeps your membership going after {formatDate(sub?.current_period_end)}.
+                  </span>
+                </div>
+              ) : null}
             </section>
           ) : null}
+
+          <OtherPackages status={status} />
 
           {status.periods.length > 0 ? (
             <section className={cn(customerPanelClass, 'divide-y divide-brand-ink/10')}>
@@ -274,5 +305,56 @@ function Fact({ icon: Icon, label, value }: { icon: typeof Crown; label: string;
         <p className="mt-1 text-sm font-semibold">{value}</p>
       </div>
     </div>
+  )
+}
+
+/**
+ * The other packages on sale where the customer lives. A member sees them
+ * too; they can join another once their current membership has ended.
+ */
+function OtherPackages({ status }: { status: MembershipStatus }) {
+  const [data, setData] = useState<MembershipOffers | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getMembershipOffers()
+      .then((d) => !cancelled && setData(d))
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const current = status.offer?.tier_code
+  const others = data?.offers.filter((o) => o.tier_code !== current) ?? []
+  if (others.length === 0) return null
+
+  const sub = status.subscription
+  const live = sub && ['incomplete', 'active', 'past_due', 'cancelling'].includes(sub.status)
+  const note = live
+    ? sub.cancel_at_period_end && sub.current_period_end
+      ? `You can join this after your current membership ends on ${formatDate(sub.current_period_end)}.`
+      : 'You can join this after your current membership ends. Cancel its renewal first.'
+    : undefined
+
+  return (
+    <section>
+      <h2 className="mb-1 font-poster text-2xl">Other packages</h2>
+      <p className="mb-4 text-sm text-muted-foreground">More memberships on sale where you live.</p>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {others.map((o) => (
+          <OfferCard
+            key={o.id}
+            offer={o}
+            canBuy={!live && Boolean(data?.decision.allowed)}
+            note={note}
+            onJoined={(url, provider) => {
+              if (provider === 'test') window.location.assign(new URL(url).pathname + new URL(url).search)
+              else window.location.assign(url)
+            }}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
