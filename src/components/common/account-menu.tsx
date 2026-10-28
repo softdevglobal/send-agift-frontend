@@ -11,6 +11,7 @@ import { customerDisplayName, customerFirstName, customerInitials } from '@/feat
 import { useCustomerMessages } from '@/features/messaging'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { ProfileImage } from '@/components/common/profile-image'
 
 type AccountMenuProps = {
   /** Icon-only trigger for the compact header row. */
@@ -100,8 +101,12 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
             className="absolute top-1 left-5 size-2 rounded-full bg-[var(--brand-teal)] ring-2 ring-background"
           />
         ) : null}
-        {isCustomer && profile?.image_url ? (
-          <img src={profile.image_url} alt="" className="size-6 rounded-md object-cover" />
+        {isCustomer ? (
+          <ProfileImage
+            src={profile?.image_url}
+            className="size-6 rounded-md object-cover"
+            fallback={<User className="size-4.5" />}
+          />
         ) : (
           <User className="size-4.5" />
         )}
@@ -125,17 +130,15 @@ export function AccountMenu({ compact = false, className }: AccountMenuProps) {
           {isCustomer ? (
             <>
               <div className="flex shrink-0 items-center gap-3 bg-brand-violet px-4 py-3.5 text-white">
-                {profile?.image_url ? (
-                  <img
-                    src={profile.image_url}
-                    alt=""
-                    className="size-10 rounded-lg object-cover ring-2 ring-white"
-                  />
-                ) : (
-                  <span className="flex size-10 items-center justify-center rounded-lg bg-white text-xs font-extrabold text-brand-ink">
-                    {customerInitials(profile)}
-                  </span>
-                )}
+                <ProfileImage
+                  src={profile?.image_url}
+                  className="size-10 rounded-lg object-cover ring-2 ring-white"
+                  fallback={
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white text-xs font-extrabold text-brand-ink">
+                      {customerInitials(profile)}
+                    </span>
+                  }
+                />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-extrabold">{greeting}</p>
                   {profile?.email ? (

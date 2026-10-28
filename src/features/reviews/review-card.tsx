@@ -5,6 +5,7 @@ import type { ProductReview } from '@/api/reviews'
 import { StarMeter } from '@/features/reviews/star-rating'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { ProfileImage } from '@/components/common/profile-image'
 
 function formatDate(iso: string): string {
   const date = new Date(iso)
@@ -170,17 +171,15 @@ export function ReviewCard({
       {context ? <div className="mb-3">{context}</div> : null}
 
       <div className="flex items-start gap-3">
-        {avatar ? (
-          <img
-            src={avatar}
-            alt=""
-            className="size-9 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-primary">
-            {initials(name)}
-          </span>
-        )}
+        <ProfileImage
+          src={avatar}
+          className="size-9 shrink-0 rounded-full object-cover"
+          fallback={
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold text-primary">
+              {initials(name)}
+            </span>
+          }
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
