@@ -24,10 +24,8 @@ export const CHAT_PAGE_SIZE = 50
 
 export type ChatViewerRole = ParticipantRole
 
-/** Superadmins chat as admins. The API treats them the same way. */
 export function chatViewerRole(role: UserRole | null): ChatViewerRole | null {
-  if (role === 'customer' || role === 'seller') return role
-  if (role === 'admin' || role === 'superadmin') return 'admin'
+  if (role === 'customer' || role === 'seller' || role === 'admin') return role
   return null
 }
 

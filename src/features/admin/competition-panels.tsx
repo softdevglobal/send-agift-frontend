@@ -149,7 +149,7 @@ export function ReserveCard({
       ) : null}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          {editable ? 'Only funded reserves let a competition be published.' : 'Only a super admin can fund the reserve.'}
+          {editable ? 'Only funded reserves let a competition be published.' : 'The reserve is locked once the competition starts.'}
         </p>
         <Button
           type="button"

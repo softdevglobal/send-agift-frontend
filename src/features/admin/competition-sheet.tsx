@@ -27,7 +27,6 @@ import {
 import { Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { flagOf } from '@/lib/country-options'
-import { isSuperAdmin } from '@/lib/auth'
 import { formatPriceAmount } from '@/lib/money'
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -62,7 +61,6 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
-  const superadmin = isSuperAdmin()
 
   const load = useCallback(async (competitionId: string) => {
     setComp(await getAdminCompetition(competitionId))
@@ -120,7 +118,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const status = comp?.effective_status
   const editable =
     !!comp && (comp.status === 'draft' || (comp.status === 'scheduled' && new Date(comp.starts_at) > new Date()))
-  const canEdit = editable && (superadmin || comp?.status === 'draft')
+  const canEdit = editable
   const isDraft = comp?.status === 'draft'
   const blocked = (comp?.schedule_blockers.length ?? 0) > 0
 
@@ -259,7 +257,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   <ReserveCard
                     key={comp.updated_at}
                     comp={comp}
-                    editable={superadmin}
+                    editable
                     run={run}
                   />
                 ) : comp.prize_reserve ? (
@@ -286,9 +284,6 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
               </div>
 
               <footer className="shrink-0 space-y-3 border-t border-border/60 bg-card px-6 py-4">
-                {isDraft && !superadmin ? (
-                  <p className="text-xs text-muted-foreground">A super admin funds the reserve and publishes it.</p>
-                ) : null}
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="ml-auto flex flex-wrap justify-end gap-2">
                     {canEdit ? (
@@ -307,14 +302,8 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                       <Button
                         type="button"
                         className="h-10 rounded-full px-5"
-                        title={
-                          !superadmin
-                            ? 'Only a super admin can publish'
-                            : blocked
-                              ? 'Finish the steps listed above first'
-                              : undefined
-                        }
-                        disabled={!superadmin || busy !== null || blocked}
+                        title={blocked ? 'Finish the steps listed above first' : undefined}
+                        disabled={busy !== null || blocked}
                         onClick={() =>
                           run(
                             'schedule',

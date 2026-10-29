@@ -24,7 +24,7 @@ export function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
     const loginTo =
       roles.includes('seller') && roles.length === 1
         ? '/seller/login'
-        : roles.some((item) => item === 'admin' || item === 'superadmin') &&
+        : roles.includes('admin') &&
             !roles.includes('customer') &&
             !roles.includes('seller')
           ? '/admin/login'

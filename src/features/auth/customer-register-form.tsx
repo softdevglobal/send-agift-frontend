@@ -87,6 +87,8 @@ export function CustomerRegisterForm() {
       : '',
   )
   const [countryId, setCountryId] = useState('')
+  // The phone's calling code follows this.
+  const [countryIso, setCountryIso] = useState('')
   const [phone, setPhone] = useState(() =>
     codeSignupFromState(location.state)?.channel === 'sms'
       ? codeSignupFromState(location.state)!.destination
@@ -341,6 +343,7 @@ export function CustomerRegisterForm() {
           id="customer-country"
           value={countryId}
           onChange={handleCountryChange}
+          onCountrySelected={(country) => setCountryIso(country?.iso_code ?? '')}
           disabled={isSubmitting}
         />
 
@@ -350,6 +353,7 @@ export function CustomerRegisterForm() {
               id="customer-phone"
               value={phone}
               onChange={setPhone}
+              country={countryIso}
               disabled={isSubmitting || codeSignup?.channel === 'sms'}
               required
             />

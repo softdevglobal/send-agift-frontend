@@ -1,6 +1,5 @@
 const USER_ROLES = [
   'admin',
-  'superadmin',
   'customer',
   'seller',
 ] as const
@@ -16,7 +15,7 @@ const ROLE_KEY = 'sag.role'
 
 /** Areas that belong to a single role. Never send another role into them. */
 const ROLE_AREAS: Record<string, UserRole[]> = {
-  '/admin': ['admin', 'superadmin'],
+  '/admin': ['admin'],
   '/seller': ['seller'],
   '/account': ['customer'],
   '/checkout': ['customer'],
@@ -96,17 +95,8 @@ export function clearSession(): void {
   sessionStorage.removeItem(ROLE_KEY)
 }
 
-/**
- * Only a superadmin may change prize economics or pay out (Progressive Prize
- * spec §2); other admins see the same pages read-only. The server enforces
- * this. The check here only hides buttons that would be refused.
- */
-export function isSuperAdmin(): boolean {
-  return getRole() === 'superadmin'
-}
-
 export function isAdminRole(role: UserRole | null): boolean {
-  return role === 'admin' || role === 'superadmin'
+  return role === 'admin'
 }
 
 export function homePathForRole(role: UserRole): string {

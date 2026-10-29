@@ -2,7 +2,6 @@ import type { Admin } from '@/api/admin'
 import type { UserRole } from '@/lib/auth'
 
 export function adminRoleLabel(role: UserRole | null): string {
-  if (role === 'superadmin') return 'Superadmin'
   if (role === 'admin') return 'Administrator'
   return 'Staff'
 }

@@ -9,7 +9,7 @@ import { contactRoles } from '@/features/auth/seller-signup/options'
 import type { StepProps } from '@/features/auth/seller-signup/steps/step-props'
 import { selectClassName } from '@/lib/form-styles'
 
-export function ContactStep({ state, update, disabled }: StepProps) {
+export function ContactStep({ state, update, country, disabled }: StepProps) {
   const [showPassword, setShowPassword] = useState(false)
 
   return (
@@ -87,6 +87,7 @@ export function ContactStep({ state, update, disabled }: StepProps) {
             id="signup-phone"
             value={state.phone}
             onChange={(phone) => update({ phone })}
+            country={country?.iso_code}
             disabled={disabled}
           />
         </Field>

@@ -29,7 +29,6 @@ import { Label } from '@/components/ui/label'
 import { AdminEmptyState, AdminPageHeader, formatDate } from '@/features/admin'
 import { Loading, ReasonDialog, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
-import { isSuperAdmin } from '@/lib/auth'
 import { cn } from '@/lib/utils'
 
 const tabs: { id: PointsPurchaseStatus | ''; label: string }[] = [
@@ -49,7 +48,7 @@ const statusTone = {
 
 /**
  * Sellers' points purchases. Points are only credited once a payment is
- * confirmed. By the provider's webhook, or here by a Super Admin who has
+ * confirmed. By the provider's webhook, or here by an admin who has
  * seen the money arrive. Both are audited.
  */
 export function AdminPointsPage() {
@@ -63,7 +62,6 @@ export function AdminPointsPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<PointsPurchase | null>(null)
   const [failing, setFailing] = useState<PointsPurchase | null>(null)
-  const canAct = isSuperAdmin()
   const pages = usePagedList(items, TABLE_PAGE_SIZE, tab)
 
   const load = useCallback(async () => {
@@ -89,7 +87,7 @@ export function AdminPointsPage() {
   }, [load])
 
   // The Actions column only earns its space while something can be actioned.
-  const showActions = canAct && pages.visible.some((p) => p.status === 'pending')
+  const showActions = pages.visible.some((p) => p.status === 'pending')
 
   const counts = {
     pending: all.filter((p) => p.status === 'pending').length,
@@ -211,7 +209,7 @@ export function AdminPointsPage() {
                 {p.failure_reason ? (
                   <p className="text-xs text-muted-foreground">{p.failure_reason}</p>
                 ) : null}
-                {canAct && p.status === 'pending' ? (
+                {p.status === 'pending' ? (
                   <div className="flex gap-2">
                     <Button size="sm" className="h-9 flex-1" onClick={() => setConfirming(p)}>
                       <CheckCircle2 className="size-3.5" />
@@ -291,7 +289,7 @@ export function AdminPointsPage() {
                   </td>
                   {showActions ? (
                     <td className="px-5 py-3 text-right whitespace-nowrap">
-                      {canAct && p.status === 'pending' ? (
+                      {p.status === 'pending' ? (
                         <div className="inline-flex gap-1.5">
                           <Button size="sm" className="h-8" onClick={() => setConfirming(p)}>
                             <CheckCircle2 className="size-3.5" />

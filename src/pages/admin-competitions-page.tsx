@@ -36,7 +36,7 @@ const filters: { value: CompetitionStatus | 'all'; label: string }[] = [
   { value: 'cancelled', label: 'Cancelled' },
 ]
 
-/** Superadmin: skill competitions, from draft to winners. */
+/** Skill competitions, from draft to winners. */
 export function AdminCompetitionsPage() {
   const [competitions, setCompetitions] = useState<AdminCompetition[]>([])
   const [games, setGames] = useState<AdminGameSummary[]>([])

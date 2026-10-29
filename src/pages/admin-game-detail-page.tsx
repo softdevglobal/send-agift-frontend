@@ -39,7 +39,7 @@ const filters: { value: ScoreStatus | ''; label: string }[] = [
   { value: 'rejected', label: 'Rejected' },
 ]
 
-/** Superadmin: one game's full leaderboard and its anti-cheat review queue. */
+/** One game's full leaderboard and its anti-cheat review queue. */
 export function AdminGameDetailPage() {
   const { slug = '' } = useParams()
   const [board, setBoard] = useState<AdminGameLeaderboard | null>(null)

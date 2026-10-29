@@ -45,6 +45,8 @@ type Form = {
   longitude: number | null
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const emptyForm = (countryId: string): Form => ({
   name: '',
   email: '',
@@ -66,6 +68,7 @@ const emptyForm = (countryId: string): Form => ({
  */
 export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, onCreated }: Props) {
   const [countries, setCountries] = useState<Country[]>([])
+  const [countriesFailed, setCountriesFailed] = useState(false)
   const [form, setForm] = useState<Form>(() => emptyForm(defaultCountryId))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -84,16 +87,40 @@ export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, 
       .then((list) => {
         if (cancelled) return
         setCountries(list)
+        setCountriesFailed(list.length === 0)
         setForm((current) => (current.country_id ? current : { ...current, country_id: list[0]?.id ?? '' }))
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (!cancelled) setCountriesFailed(true)
+      })
     return () => {
       cancelled = true
     }
   }, [open, countries.length])
 
   function set<K extends keyof Form>(key: K, value: Form[K]) {
-    setForm((current) => ({ ...current, [key]: value }))
+    setForm((current) => {
+      const next = { ...current, [key]: value }
+      if (key === 'country_id' && value !== current.country_id) {
+        // The address typed so far belongs to the old country.
+        return {
+          ...next,
+          line1: '',
+          line2: '',
+          city: '',
+          region: '',
+          postal_code: '',
+          latitude: null,
+          longitude: null,
+        }
+      }
+      if (key === 'line1' || key === 'city') {
+        // A typed change to the street or city moves the address, so the old
+        // position no longer fits. Picking a search result sets it again.
+        return { ...next, latitude: null, longitude: null }
+      }
+      return next
+    })
   }
 
   function applyPlace(place: PlaceDetails) {
@@ -114,7 +141,7 @@ export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, 
   const located = form.latitude !== null && form.longitude !== null
   const valid =
     form.name.trim() !== '' &&
-    form.email.includes('@') &&
+    EMAIL_PATTERN.test(form.email.trim()) &&
     form.phone.trim() !== '' &&
     form.country_id !== '' &&
     form.line1.trim() !== '' &&
@@ -188,7 +215,12 @@ export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, 
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="fg-recipient-phone">Phone</Label>
-              <PhoneField id="fg-recipient-phone" value={form.phone} onChange={(v) => set('phone', v)} />
+              <PhoneField
+                id="fg-recipient-phone"
+                value={form.phone}
+                onChange={(v) => set('phone', v)}
+                country={countryCode}
+              />
             </div>
           </div>
 
@@ -199,14 +231,20 @@ export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, 
               value={form.country_id}
               onChange={(event) => set('country_id', event.target.value)}
               className={selectClassName}
+              disabled={countriesFailed}
             >
-              <option value="">Select country</option>
+              <option value="">{countriesFailed ? 'Countries unavailable' : 'Select country'}</option>
               {countries.map((country) => (
                 <option key={country.id} value={country.id}>
                   {countryOptionLabel(country)}
                 </option>
               ))}
             </select>
+            {countriesFailed ? (
+              <p className="text-xs text-destructive">
+                Could not load countries. Close this and try again.
+              </p>
+            ) : null}
           </div>
 
           <AddressAutocomplete

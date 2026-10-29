@@ -624,7 +624,7 @@ export type ApprovalInput = {
   notes: string | null
   effective_from: string | null
   expires_at: string
-  /** Record and approve in one step (a Super Admin). */
+  /** Record and approve in one step (an admin). */
   approve_now?: boolean
 }
 

@@ -315,7 +315,7 @@ export function syncPointsPurchase(id: string) {
 
 // ─── Point packages ───────────────────────────────────────────────────────
 
-/** A ready-made bundle of points, set up by a Super Admin. */
+/** A ready-made bundle of points, set up by an admin. */
 export type PointPackage = {
   id: string
   name: string
@@ -360,12 +360,12 @@ export async function listAdminPointPackages() {
   return { items: res.items ?? [], rate: res.rate }
 }
 
-/** Super Admin only (with a fresh password confirmation). */
+/** Admin only (with a fresh password confirmation). */
 export function createPointPackage(body: PointPackageInput) {
   return api<PointPackage>('/admin/points/packages', { method: 'POST', body })
 }
 
-/** Super Admin only (with a fresh password confirmation). */
+/** Admin only (with a fresh password confirmation). */
 export function updatePointPackage(id: string, body: PointPackageInput) {
   return api<PointPackage>(`/admin/points/packages/${id}`, { method: 'PUT', body })
 }

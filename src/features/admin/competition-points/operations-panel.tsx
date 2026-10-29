@@ -27,7 +27,6 @@ import { AdminEmptyState } from '@/features/admin'
 import { formatDateTime } from '@/features/competition-points/format'
 import { formatPoints } from '@/features/points/format'
 import { getErrorMessage } from '@/lib/api'
-import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName } from '@/lib/form-styles'
 
 import { STOP_LABEL } from './labels'
@@ -90,11 +89,9 @@ export function OverviewPanel() {
             <Button variant="outline" size="sm" disabled={busy !== null} onClick={() => act('recon', async () => setRecon(await reconcileCP()))}>
               <ClipboardCheck className="size-3.5" /> Check now
             </Button>
-            {isSuperAdmin() ? (
-              <Button size="sm" disabled={busy !== null} onClick={() => act('run', async () => setRun(await runCPJob()))}>
-                <Play className="size-3.5" /> Run the job once
-              </Button>
-            ) : null}
+            <Button size="sm" disabled={busy !== null} onClick={() => act('run', async () => setRun(await runCPJob()))}>
+              <Play className="size-3.5" /> Run the job once
+            </Button>
           </div>
         </div>
         {recon ? (
@@ -165,7 +162,6 @@ export function StopsPanel({ countries }: { countries: Country[] }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const canEdit = isSuperAdmin()
 
   const load = useCallback(async () => {
     try {
@@ -223,35 +219,33 @@ export function StopsPanel({ countries }: { countries: Country[] }) {
         A stop refuses new affected actions on the server at once. Refunds and existing obligations carry on.
       </p>
       <FormAlert error={error} notice={notice} />
-      {canEdit ? (
-        <section className="grid gap-3 rounded-xl border-2 border-destructive/25 bg-card p-4 sm:grid-cols-[1fr_1fr_2fr_auto] sm:items-end">
-          <Field label="Stop" htmlFor="st-scope">
-            <select id="st-scope" className={selectClassName} value={scope} onChange={(e) => setScope(e.target.value as StopScope)}>
-              {Object.entries(STOP_LABEL).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Where" htmlFor="st-country">
-            <select id="st-country" className={selectClassName} value={countryId} onChange={(e) => setCountryId(e.target.value)}>
-              <option value="">Everywhere</option>
-              {countries.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Reason" htmlFor="st-reason">
-            <Input id="st-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="What happened" />
-          </Field>
-          <Button variant="destructive" className="h-11" disabled={busy} onClick={activate}>
-            <OctagonX className="size-4" /> Stop now
-          </Button>
-        </section>
-      ) : null}
+      <section className="grid gap-3 rounded-xl border-2 border-destructive/25 bg-card p-4 sm:grid-cols-[1fr_1fr_2fr_auto] sm:items-end">
+        <Field label="Stop" htmlFor="st-scope">
+          <select id="st-scope" className={selectClassName} value={scope} onChange={(e) => setScope(e.target.value as StopScope)}>
+            {Object.entries(STOP_LABEL).map(([v, l]) => (
+              <option key={v} value={v}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Where" htmlFor="st-country">
+          <select id="st-country" className={selectClassName} value={countryId} onChange={(e) => setCountryId(e.target.value)}>
+            <option value="">Everywhere</option>
+            {countries.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Reason" htmlFor="st-reason">
+          <Input id="st-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="What happened" />
+        </Field>
+        <Button variant="destructive" className="h-11" disabled={busy} onClick={activate}>
+          <OctagonX className="size-4" /> Stop now
+        </Button>
+      </section>
       {items === null ? (
         <div className="flex justify-center py-10">
           <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
@@ -272,7 +266,7 @@ export function StopsPanel({ countries }: { countries: Country[] }) {
                   {s.lifted_at ? ` · lifted ${formatDateTime(s.lifted_at)}: ${s.lift_reason}` : ''}
                 </p>
               </div>
-              {!s.lifted_at && canEdit ? (
+              {!s.lifted_at ? (
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => lift(s)}>
                   Lift
                 </Button>
@@ -299,7 +293,6 @@ export function CasesPanel() {
   const [items, setItems] = useState<ReviewCase[] | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const canEdit = isSuperAdmin()
 
   const load = useCallback(async () => {
     try {
@@ -352,7 +345,7 @@ export function CasesPanel() {
                 <pre className="mt-1 max-w-full overflow-x-auto text-xs text-muted-foreground">{JSON.stringify(c.detail)}</pre>
                 {c.resolution ? <p className="mt-1">Decision: {c.resolution}</p> : null}
               </div>
-              {c.status === 'open' && canEdit ? (
+              {c.status === 'open' ? (
                 <Button size="sm" variant="outline" disabled={busy === c.id} onClick={() => resolve(c)}>
                   Resolve
                 </Button>

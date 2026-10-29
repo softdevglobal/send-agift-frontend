@@ -22,8 +22,7 @@ type Tab = (typeof TABS)[number]['id']
 
 /**
  * Competition points (handover v4): approvals, reward policies, membership
- * offers, emergency stops and review cases. Every admin can see them; a
- * Super Admin changes them, and each protected change needs a second admin.
+ * offers, emergency stops and review cases. Admins can see and change them.
  */
 export function AdminCompetitionPointsPage() {
   const [params, setParams] = useSearchParams()

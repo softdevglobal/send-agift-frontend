@@ -74,7 +74,7 @@ function Section({ title, icon, action, children }: { title: string; icon: React
   )
 }
 
-/** The Super Admin dashboard cards (spec §10.1). */
+/** The admin dashboard cards (spec §10.1). */
 export function PrizeDashboard({
   comp,
   analytics,
@@ -442,7 +442,7 @@ export function DrawPanel({ draw }: { draw: PrizeDraw }) {
   )
 }
 
-/** Recent plays, with the void tool for Super Admins. */
+/** Recent plays, with the void tool for admins. */
 export function PlaysPanel({
   comp,
   plays,

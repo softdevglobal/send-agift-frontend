@@ -270,29 +270,28 @@ export function CustomerProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="profile-country">Country</Label>
-                {countries.length > 0 ? (
-                  <select
-                    id="profile-country"
-                    value={countryId}
-                    onChange={(event) => setCountryId(event.target.value)}
-                    className={selectClassName}
-                    required
-                  >
-                    {countries.map((country) => (
-                      <option key={country.id} value={country.id}>
-                        {countryOptionLabel(country)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <Input
-                    id="profile-country"
-                    value={countryId}
-                    onChange={(event) => setCountryId(event.target.value)}
-                    className="h-11 bg-surface px-3 font-mono text-sm"
-                    required
-                  />
-                )}
+                <select
+                  id="profile-country"
+                  value={countries.length > 0 ? countryId : ''}
+                  onChange={(event) => setCountryId(event.target.value)}
+                  className={selectClassName}
+                  disabled={countries.length === 0}
+                  required
+                >
+                  {countries.length === 0 ? (
+                    <option value="">Countries unavailable</option>
+                  ) : null}
+                  {countries.map((country) => (
+                    <option key={country.id} value={country.id}>
+                      {countryOptionLabel(country)}
+                    </option>
+                  ))}
+                </select>
+                {countries.length === 0 ? (
+                  <p className="text-xs text-destructive">
+                    Could not load countries. Refresh the page to try again.
+                  </p>
+                ) : null}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-type">Customer type</Label>
@@ -328,7 +327,12 @@ export function CustomerProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="profile-phone">Phone</Label>
-                <PhoneField id="profile-phone" value={phone} onChange={setPhone} />
+                <PhoneField
+                  id="profile-phone"
+                  value={phone}
+                  onChange={setPhone}
+                  country={countries.find((country) => country.id === countryId)?.iso_code}
+                />
                 <VerifyPhoneCard
                   phone={profile?.phone ?? ''}
                   unsaved={phone.trim() !== (profile?.phone ?? '').trim()}

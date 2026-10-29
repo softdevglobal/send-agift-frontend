@@ -63,7 +63,7 @@ export const STOP_LABEL: Record<StopScope, string> = {
 }
 
 /**
- * What a Super Admin can do with a membership package. A draft is published
+ * What an admin can do with a membership package. A draft is published
  * directly, with no second approver; the submit-and-approve steps stay for
  * reward policies.
  */

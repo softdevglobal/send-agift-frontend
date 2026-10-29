@@ -63,7 +63,7 @@ import { cn } from '@/lib/utils'
 import { AdminEmptyState } from '@/features/admin'
 import { bonusWhen, formatDate, formatMoney } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
-import { getTokenSubject, isSuperAdmin } from '@/lib/auth'
+import { getTokenSubject } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { majorToMinor, minorToMajor } from '@/lib/money'
 
@@ -167,7 +167,6 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
   const [editing, setEditing] = useState<PlanOffer | 'new' | null>(null)
   const [pending, setPending] = useState<PendingAction | null>(null)
   const me = getTokenSubject()
-  const canEdit = isSuperAdmin()
   const load = useCallback(async () => setItems(await listAdminOffers()), [])
   const { busy, error, notice, run, setError } = useVersionActions(load)
 
@@ -207,13 +206,11 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
 
   return (
     <div className="space-y-6">
-      {canEdit ? (
-        <div className="flex justify-end">
-          <Button onClick={() => setEditing('new')} className="h-10 px-4">
-            <Plus className="size-4" /> New membership package
-          </Button>
-        </div>
-      ) : null}
+      <div className="flex justify-end">
+        <Button onClick={() => setEditing('new')} className="h-10 px-4">
+          <Plus className="size-4" /> New membership package
+        </Button>
+      </div>
       <FormAlert error={error} notice={notice} />
       {items === null ? (
         <div className="flex justify-center py-10">
@@ -239,7 +236,6 @@ export function OffersPanel({ countries }: { countries: Country[] }) {
                     key={o.id}
                     offer={o}
                     iso={countries.find((c) => c.id === o.country_id)?.iso_code}
-                    canEdit={canEdit}
                     mine={o.submitted_by_admin_id === me}
                     busy={busy === o.id}
                     onEdit={() => setEditing(o)}
@@ -288,7 +284,6 @@ const ACTION_ICON: Partial<Record<VersionAction | 'delete', typeof Rocket>> = {
 function OfferCard({
   offer: o,
   iso,
-  canEdit,
   mine,
   busy,
   onEdit,
@@ -296,7 +291,6 @@ function OfferCard({
 }: {
   offer: PlanOffer
   iso: string | undefined
-  canEdit: boolean
   mine: boolean
   busy: boolean
   onEdit: () => void
@@ -370,44 +364,42 @@ function OfferCard({
         <p className="text-xs text-muted-foreground">
           {o.published_at ? `Published ${formatDate(o.published_at)}` : `Created ${formatDate(o.created_at)}`}
         </p>
-        {canEdit ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {o.status === 'draft' ? (
-              <>
-                <Button size="sm" variant="outline" disabled={busy} onClick={onEdit}>
-                  <Pencil className="size-3.5" /> Edit
-                </Button>
-                <Button
-                  size="icon-sm"
-                  variant="destructive"
-                  aria-label={`Delete ${o.name}`}
-                  disabled={busy}
-                  onClick={() => onAction('delete')}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </>
-            ) : null}
-            {actions.map((a) => {
-              const Icon = ACTION_ICON[a.action]
-              return (
-                <Button
-                  key={a.action}
-                  size="sm"
-                  variant={a.danger ? 'destructive' : a.action === 'publish' || a.action === 'approve' ? 'default' : 'outline'}
-                  disabled={busy}
-                  onClick={() => onAction(a.action)}
-                >
-                  {Icon ? <Icon className="size-3.5" /> : null}
-                  {a.label}
-                </Button>
-              )
-            })}
-            {o.status === 'awaiting_approval' && mine ? (
-              <span className="text-xs text-muted-foreground">Another admin must approve it.</span>
-            ) : null}
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {o.status === 'draft' ? (
+            <>
+              <Button size="sm" variant="outline" disabled={busy} onClick={onEdit}>
+                <Pencil className="size-3.5" /> Edit
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="destructive"
+                aria-label={`Delete ${o.name}`}
+                disabled={busy}
+                onClick={() => onAction('delete')}
+              >
+                <Trash2 className="size-3.5" />
+              </Button>
+            </>
+          ) : null}
+          {actions.map((a) => {
+            const Icon = ACTION_ICON[a.action]
+            return (
+              <Button
+                key={a.action}
+                size="sm"
+                variant={a.danger ? 'destructive' : a.action === 'publish' || a.action === 'approve' ? 'default' : 'outline'}
+                disabled={busy}
+                onClick={() => onAction(a.action)}
+              >
+                {Icon ? <Icon className="size-3.5" /> : null}
+                {a.label}
+              </Button>
+            )
+          })}
+          {o.status === 'awaiting_approval' && mine ? (
+            <span className="text-xs text-muted-foreground">Another admin must approve it.</span>
+          ) : null}
+        </div>
       </footer>
     </article>
   )
@@ -963,7 +955,6 @@ export function PoliciesPanel({ countries }: { countries: Country[] }) {
   const [items, setItems] = useState<RewardPolicy[] | null>(null)
   const [editing, setEditing] = useState<RewardPolicy | 'new' | null>(null)
   const me = getTokenSubject()
-  const canEdit = isSuperAdmin()
   const load = useCallback(async () => setItems(await listAdminPolicies()), [])
   const { busy, error, notice, run, setError } = useVersionActions(load)
 
@@ -978,11 +969,9 @@ export function PoliciesPanel({ countries }: { countries: Country[] }) {
           A gift earns under the version that was in force when it was paid for. Rewards are released when the gift is
           delivered. The point formula and expiry are owner decisions.
         </UnapprovedNote>
-        {canEdit ? (
-          <Button onClick={() => setEditing('new')} className="h-10 px-4">
-            <Plus className="size-4" /> New policy
-          </Button>
-        ) : null}
+        <Button onClick={() => setEditing('new')} className="h-10 px-4">
+          <Plus className="size-4" /> New policy
+        </Button>
       </div>
       <FormAlert error={error} notice={notice} />
       {items === null ? (
@@ -1001,25 +990,23 @@ export function PoliciesPanel({ countries }: { countries: Country[] }) {
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">{describePolicy(p)}</p>
               </div>
-              {canEdit ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {p.status === 'draft' ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
-                        <Pencil className="size-3.5" /> Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" disabled={busy === p.id} onClick={() => run(p.id, 'Draft deleted.', () => deletePolicy(p.id))}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </>
-                  ) : null}
-                  <ActionButtons
-                    actions={versionActions(p.status).filter((a) => !(a.action === 'approve' && p.submitted_by_admin_id === me))}
-                    busy={busy === p.id}
-                    onAction={(a) => run(p.id, `Version ${p.version}: ${a.replaceAll('_', ' ')} done.`, () => policyAction(p.id, a as VersionAction))}
-                  />
-                </div>
-              ) : null}
+              <div className="flex flex-wrap items-center gap-2">
+                {p.status === 'draft' ? (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
+                      <Pencil className="size-3.5" /> Edit
+                    </Button>
+                    <Button size="sm" variant="destructive" disabled={busy === p.id} onClick={() => run(p.id, 'Draft deleted.', () => deletePolicy(p.id))}>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </>
+                ) : null}
+                <ActionButtons
+                  actions={versionActions(p.status).filter((a) => !(a.action === 'approve' && p.submitted_by_admin_id === me))}
+                  busy={busy === p.id}
+                  onAction={(a) => run(p.id, `Version ${p.version}: ${a.replaceAll('_', ' ')} done.`, () => policyAction(p.id, a as VersionAction))}
+                />
+              </div>
             </article>
           ))}
         </div>

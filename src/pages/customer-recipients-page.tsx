@@ -337,7 +337,27 @@ export function CustomerRecipientsPage() {
     key: K,
     value: AddressFormState[K],
   ) {
-    setAddressForm((current) => ({ ...current, [key]: value }))
+    setAddressForm((current) => {
+      const next = { ...current, [key]: value }
+      if (key === 'country_id' && value !== current.country_id) {
+        // The address typed so far belongs to the old country.
+        return {
+          ...next,
+          line1: '',
+          line2: '',
+          city: '',
+          region: '',
+          postal_code: '',
+          latitude: null,
+          longitude: null,
+        }
+      }
+      if (key === 'line1' || key === 'city') {
+        // A typed change to the street or city moves the address, so the old pin no longer fits.
+        return { ...next, latitude: null, longitude: null }
+      }
+      return next
+    })
   }
 
   /** Fills the address form from a Google place. Country stays the one selected above. */
@@ -769,7 +789,14 @@ export function CustomerRecipientsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="recipient-phone">Phone</Label>
-                  <PhoneField id="recipient-phone" value={phone} onChange={setPhone} />
+                  <PhoneField
+                    id="recipient-phone"
+                    value={phone}
+                    onChange={setPhone}
+                    country={
+                      countries.find((country) => country.id === addressForm.country_id)?.iso_code
+                    }
+                  />
                 </div>
 
                 {editingId && details?.addresses.length ? (
@@ -1065,28 +1092,27 @@ function AddressFields({
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="space-y-2 sm:col-span-2">
         <Label htmlFor={`${idPrefix}-addr-country`}>Country</Label>
-        {countries.length > 0 ? (
-          <select
-            id={`${idPrefix}-addr-country`}
-            value={form.country_id}
-            onChange={(event) => onChange('country_id', event.target.value)}
-            className={selectClassName}
-          >
-            <option value="">Select country</option>
-            {countries.map((country) => (
-              <option key={country.id} value={country.id}>
-                {countryOptionLabel(country)}
-              </option>
-            ))}
-          </select>
-        ) : (
-          <Input
-            id={`${idPrefix}-addr-country`}
-            value={form.country_id}
-            onChange={(event) => onChange('country_id', event.target.value)}
-            className="h-11 bg-surface px-3 font-mono text-sm"
-          />
-        )}
+        <select
+          id={`${idPrefix}-addr-country`}
+          value={countries.length > 0 ? form.country_id : ''}
+          onChange={(event) => onChange('country_id', event.target.value)}
+          className={selectClassName}
+          disabled={countries.length === 0}
+        >
+          <option value="">
+            {countries.length > 0 ? 'Select country' : 'Countries unavailable'}
+          </option>
+          {countries.map((country) => (
+            <option key={country.id} value={country.id}>
+              {countryOptionLabel(country)}
+            </option>
+          ))}
+        </select>
+        {countries.length === 0 ? (
+          <p className="text-xs text-destructive">
+            Could not load countries. Refresh the page to try again.
+          </p>
+        ) : null}
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${idPrefix}-addr-label`}>Label</Label>

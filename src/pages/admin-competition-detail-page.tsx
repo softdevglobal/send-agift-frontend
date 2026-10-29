@@ -95,11 +95,9 @@ import {
   VoidPlayDialog,
 } from '@/features/admin/prize-panels'
 import { prizeMoney, useLivePrize } from '@/features/admin/prize-live'
-import { isSuperAdmin } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
-import { cn } from '@/lib/utils'
 
 type DetailTab = 'leaderboard' | 'winners' | 'setup' | 'money' | 'plays'
 
@@ -135,7 +133,7 @@ function winnerTone(status: CompetitionWinner['status']) {
   return 'bad' as const
 }
 
-/** Superadmin: one competition end to end. Setup, operations, review, winners. */
+/** One competition end to end. Setup, operations, review, winners. */
 export function AdminCompetitionDetailPage() {
   const { id = '' } = useParams()
   const [comp, setComp] = useState<AdminCompetition | null>(null)
@@ -172,7 +170,6 @@ export function AdminCompetitionDetailPage() {
   const [adjustOpen, setAdjustOpen] = useState(false)
   const [settleOpen, setSettleOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
-  const superadmin = isSuperAdmin()
   const queuePages = usePagedList(queue, TABLE_PAGE_SIZE, id)
   const winnerPages = usePagedList(winners, TABLE_PAGE_SIZE, id)
   const boardPages = usePagedList(board.slice(3), TABLE_PAGE_SIZE, id)
@@ -231,7 +228,7 @@ export function AdminCompetitionDetailPage() {
 
   const status = comp.effective_status
   const editable = comp.status === 'draft' || (comp.status === 'scheduled' && new Date(comp.starts_at) > new Date())
-  const canCancel = superadmin && status !== 'finalised' && status !== 'cancelled'
+  const canCancel = status !== 'finalised' && status !== 'cancelled'
   const unpaid = winners.some((w) => w.status === 'validated' && w.settlement_status === 'pending')
   const chance = comp.game_type === 'chance'
   const closedish = status === 'closed' || status === 'frozen'
@@ -259,9 +256,8 @@ export function AdminCompetitionDetailPage() {
         comp={comp}
         status={status}
         livePrizeCents={live?.current_prize_cents}
-        // Any admin edits a draft; a published one is a superadmin's call.
-        onEdit={editable && (superadmin || comp.status === 'draft') ? () => setEditing(true) : undefined}
-        editNote={editable ? 'Only a superadmin can edit it now' : 'Rules are locked once it starts'}
+        onEdit={editable ? () => setEditing(true) : undefined}
+        editNote="Rules are locked once it starts"
       />
 
       <FormAlert error={error} notice={notice} className="mb-5" />
@@ -354,12 +350,12 @@ export function AdminCompetitionDetailPage() {
         {status !== 'draft' ? <PrizeDashboard comp={comp} analytics={analytics} live={live} /> : null}
 
         {status !== 'cancelled' && (editable || comp.prize_reserve) ? (
-          <ReserveCard key={comp.updated_at} comp={comp} editable={editable && superadmin} run={run} />
+          <ReserveCard key={comp.updated_at} comp={comp} editable={editable} run={run} />
         ) : null}
 
         <Panel title="Actions" icon={<Gavel className="size-5 text-primary" />}>
           <div className="flex flex-wrap gap-2">
-            {superadmin && status === 'live' ? (
+            {status === 'live' ? (
               <Button
                 type="button"
                 variant="outline"
@@ -382,7 +378,7 @@ export function AdminCompetitionDetailPage() {
                 Pause
               </Button>
             ) : null}
-            {superadmin && status === 'paused' ? (
+            {status === 'paused' ? (
               <Button
                 type="button"
                 className="h-10"
@@ -394,7 +390,7 @@ export function AdminCompetitionDetailPage() {
                 Resume
               </Button>
             ) : null}
-            {superadmin && (status === 'live' || status === 'paused') ? (
+            {status === 'live' || status === 'paused' ? (
               <Button
                 type="button"
                 variant="outline"
@@ -417,7 +413,7 @@ export function AdminCompetitionDetailPage() {
                 Close now
               </Button>
             ) : null}
-            {superadmin && status === 'finalised' && unpaid ? (
+            {status === 'finalised' && unpaid ? (
               <Button type="button" className="h-10" disabled={busy !== null} onClick={() => setSettleOpen(true)}>
                 <Wallet className="size-4" />
                 Record payout
@@ -427,14 +423,8 @@ export function AdminCompetitionDetailPage() {
               <Button
                 type="button"
                 className="h-10"
-                title={
-                  !superadmin
-                    ? 'Only a super admin can publish'
-                    : comp.schedule_blockers.length > 0
-                      ? 'Finish the steps listed below first'
-                      : undefined
-                }
-                disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
+                title={comp.schedule_blockers.length > 0 ? 'Finish the steps listed below first' : undefined}
+                disabled={busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() =>
                   setConfirming({
                     key: 'schedule',
@@ -474,7 +464,7 @@ export function AdminCompetitionDetailPage() {
                 Freeze leaderboard
               </Button>
             ) : null}
-            {superadmin && closedish && comp.winner_method === 'draw' ? (
+            {closedish && comp.winner_method === 'draw' ? (
               <Button
                 type="button"
                 className="h-10"
@@ -496,7 +486,7 @@ export function AdminCompetitionDetailPage() {
                 Run the draw
               </Button>
             ) : null}
-            {superadmin && ((status === 'frozen' && !chance) || (closedish && comp.winner_method === 'instant')) ? (
+            {(status === 'frozen' && !chance) || (closedish && comp.winner_method === 'instant') ? (
               <Button
                 type="button"
                 className="h-10"
@@ -542,7 +532,6 @@ export function AdminCompetitionDetailPage() {
           <p className="mt-3 text-xs text-muted-foreground">
             {status === 'draft' &&
               'Publishing checks that competitions are enabled in every chosen country, the rules are written and the funded reserve covers the most the prize can reach. It then sends a push notification to every player in those countries.'}
-            {status === 'draft' && !superadmin && ' A super admin funds the reserve and publishes it.'}
             {status === 'paused' && 'Paused: new plays are refused. Plays already started can still be finished and scored.'}
             {status === 'scheduled' && 'It opens automatically at its start time.'}
             {status === 'live' && 'Scores are coming in. It closes automatically at its end time.'}
@@ -577,7 +566,7 @@ export function AdminCompetitionDetailPage() {
             ledger={ledger}
             busy={busy !== null}
             onAdjust={
-              superadmin && ['scheduled', 'live', 'paused', 'closed', 'frozen'].includes(status)
+              ['scheduled', 'live', 'paused', 'closed', 'frozen'].includes(status)
                 ? () => setAdjustOpen(true)
                 : undefined
             }
@@ -592,7 +581,7 @@ export function AdminCompetitionDetailPage() {
 
         {tab === 'plays' ? (
           <>
-        <PlaysPanel comp={comp} plays={plays} onVoid={superadmin ? setVoiding : undefined} />
+        <PlaysPanel comp={comp} plays={plays} onVoid={setVoiding} />
 
         {draw ? <DrawPanel draw={draw} /> : null}
 
@@ -696,7 +685,7 @@ export function AdminCompetitionDetailPage() {
                         Claim {expired ? 'expired' : claim.status} · due {formatDate(claim.claim_deadline_at)}
                       </StatusPill>
                     ) : null}
-                    <div className={cn('ml-auto flex flex-wrap gap-2', !superadmin && 'hidden')}>
+                    <div className="ml-auto flex flex-wrap gap-2">
                       {w.status === 'pending_validation' ? (
                         <Button
                           type="button"

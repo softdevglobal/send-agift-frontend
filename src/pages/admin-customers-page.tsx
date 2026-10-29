@@ -27,11 +27,10 @@ import { OrderStatusBadge } from '@/features/customer-commerce/order-tracking'
 import { formatPriceAmount } from '@/lib/money'
 import { Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
-import { isSuperAdmin } from '@/lib/auth'
 import { textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
-/** Customers and their points wallets. Grants and deductions are Super Admin only. */
+/** Customers and their points wallets. Admins can grant and deduct points. */
 export function AdminCustomersPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<CustomerPointsSummary[]>([])
@@ -249,47 +248,45 @@ function WalletSheet({
               ))}
             </div>
 
-            {isSuperAdmin() ? (
-              <div className="space-y-3 rounded-2xl p-4 ring-1 ring-border/60">
-                <p className="text-sm font-semibold">Adjust points</p>
-                <div className="grid grid-cols-[120px_1fr] gap-3">
-                  <select
-                    aria-label="Direction"
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    value={direction}
-                    onChange={(e) => setDirection(e.target.value as 'grant' | 'deduct')}
-                  >
-                    <option value="grant">Grant</option>
-                    <option value="deduct">Deduct</option>
-                  </select>
-                  <Input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Points"
-                    aria-label="Points"
-                    className="h-10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="points-reason">Reason</Label>
-                  <textarea
-                    id="points-reason"
-                    className={textareaClassName}
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="e.g. goodwill credit for a delayed order"
-                  />
-                </div>
-                <FormAlert error={error} notice={notice} />
-                <Button type="button" className="h-10 w-full" disabled={busy} onClick={submit}>
-                  {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                  {direction === 'grant' ? 'Grant points' : 'Deduct points'}
-                </Button>
+            <div className="space-y-3 rounded-2xl p-4 ring-1 ring-border/60">
+              <p className="text-sm font-semibold">Adjust points</p>
+              <div className="grid grid-cols-[120px_1fr] gap-3">
+                <select
+                  aria-label="Direction"
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                  value={direction}
+                  onChange={(e) => setDirection(e.target.value as 'grant' | 'deduct')}
+                >
+                  <option value="grant">Grant</option>
+                  <option value="deduct">Deduct</option>
+                </select>
+                <Input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="Points"
+                  aria-label="Points"
+                  className="h-10"
+                />
               </div>
-            ) : null}
+              <div className="space-y-2">
+                <Label htmlFor="points-reason">Reason</Label>
+                <textarea
+                  id="points-reason"
+                  className={textareaClassName}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder="e.g. goodwill credit for a delayed order"
+                />
+              </div>
+              <FormAlert error={error} notice={notice} />
+              <Button type="button" className="h-10 w-full" disabled={busy} onClick={submit}>
+                {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {direction === 'grant' ? 'Grant points' : 'Deduct points'}
+              </Button>
+            </div>
 
             <div>
               <p className="mb-2 text-sm font-semibold">History</p>

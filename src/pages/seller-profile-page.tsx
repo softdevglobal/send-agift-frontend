@@ -197,6 +197,27 @@ export function SellerProfilePage() {
     setLongitude(fields.longitude)
   }
 
+  /** A typed change to the street or city moves the address, so the old pin no longer fits. */
+  function clearPin() {
+    setLatitude(null)
+    setLongitude(null)
+  }
+
+  /**
+   * An address being typed belongs to the old country, so a new country
+   * clears it rather than saving it under the wrong one.
+   */
+  function changeCountry(id: string) {
+    if (id === countryId) return
+    setCountryId(id)
+    setLine1('')
+    setLine2('')
+    setCity('')
+    setRegion('')
+    setPostalCode('')
+    clearPin()
+  }
+
   const load = useCallback(async () => {
     const [me, countryList] = await Promise.all([getSellerMe(), listCountries()])
     publishSellerToMarketplace(me)
@@ -563,29 +584,28 @@ export function SellerProfilePage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="seller-country">Country</Label>
-                    {countries.length > 0 ? (
-                      <select
-                        id="seller-country"
-                        value={countryId}
-                        onChange={(event) => setCountryId(event.target.value)}
-                        className={selectClassName}
-                        required
-                      >
-                        {countries.map((country) => (
-                          <option key={country.id} value={country.id}>
-                            {countryOptionLabel(country)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <Input
-                        id="seller-country"
-                        value={countryId}
-                        onChange={(event) => setCountryId(event.target.value)}
-                        className="h-11 bg-surface px-3 font-mono text-sm"
-                        required
-                      />
-                    )}
+                    <select
+                      id="seller-country"
+                      value={countries.length > 0 ? countryId : ''}
+                      onChange={(event) => changeCountry(event.target.value)}
+                      className={selectClassName}
+                      disabled={countries.length === 0}
+                      required
+                    >
+                      {countries.length === 0 ? (
+                        <option value="">Countries unavailable</option>
+                      ) : null}
+                      {countries.map((country) => (
+                        <option key={country.id} value={country.id}>
+                          {countryOptionLabel(country)}
+                        </option>
+                      ))}
+                    </select>
+                    {countries.length === 0 ? (
+                      <p className="text-xs text-destructive">
+                        Could not load countries. Refresh the page to try again.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="seller-type">Seller type</Label>
@@ -631,7 +651,12 @@ export function SellerProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="seller-phone">Phone</Label>
-                    <PhoneField id="seller-phone" value={phone} onChange={setPhone} />
+                    <PhoneField
+                      id="seller-phone"
+                      value={phone}
+                      onChange={setPhone}
+                      country={countryCode}
+                    />
                   </div>
                 </div>
                 <SaveButton status={profileStatus}>Save profile</SaveButton>
@@ -820,7 +845,10 @@ export function SellerProfilePage() {
                       <Input
                         id="s-addr-line1"
                         value={line1}
-                        onChange={(event) => setLine1(event.target.value)}
+                        onChange={(event) => {
+                          setLine1(event.target.value)
+                          clearPin()
+                        }}
                         className="h-11 bg-card px-3"
                         placeholder="Street address"
                         required
@@ -845,7 +873,10 @@ export function SellerProfilePage() {
                         <Input
                           id="s-addr-city"
                           value={city}
-                          onChange={(event) => setCity(event.target.value)}
+                          onChange={(event) => {
+                            setCity(event.target.value)
+                            clearPin()
+                          }}
                           className="h-11 bg-card px-3"
                           required
                         />

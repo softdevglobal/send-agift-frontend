@@ -11,6 +11,7 @@ import { shopCategories, signupSteps } from '@/features/auth/seller-signup/optio
 import {
   buildRegisterRequest,
   clearDraft,
+  emptyAddress,
   initialSignupState,
   loadDraft,
   publicLocationText,
@@ -124,6 +125,21 @@ export function SellerSignupWizard() {
         // Follow the new country unless the seller picked a time zone themselves.
         if (chosen && (!current.timezone || current.timezone === previous?.default_timezone)) {
           next.timezone = chosen.default_timezone
+        }
+        if (current.countryId) {
+          // Addresses typed for the old country can't be saved under the new one.
+          next.registered = { ...emptyAddress }
+          next.pickup = { ...emptyAddress }
+          next.returns = { ...emptyAddress }
+          // Tax rows that followed the business country move with it.
+          next.taxes = next.taxes.map((tax) =>
+            tax.country_id === current.countryId ? { ...tax, country_id: patch.countryId! } : tax,
+          )
+        }
+        // Delivery prices were typed in the old currency. Keeping the numbers
+        // would turn LKR 500 into CAD 500, so clear them to be entered again.
+        if (previous && chosen && previous.default_currency !== chosen.default_currency) {
+          next.bands = next.bands.map((band) => ({ ...band, price_major: '' }))
         }
       }
       return next

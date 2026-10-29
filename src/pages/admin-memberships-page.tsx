@@ -15,7 +15,7 @@ const TABS = [
 
 /**
  * Membership packages, and who is on them. A package is one priced, versioned
- * offer in one country; a Super Admin creates it and publishes it directly.
+ * offer in one country; an admin creates it and publishes it directly.
  * The Members tab lists the customers who have paid for one.
  */
 export function AdminMembershipsPage() {

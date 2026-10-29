@@ -27,7 +27,6 @@ import { Switch } from '@/components/ui/switch'
 import { AdminEmptyState, AdminPageHeader } from '@/features/admin'
 import { formatPoints } from '@/features/points/format'
 import { getErrorMessage } from '@/lib/api'
-import { isSuperAdmin } from '@/lib/auth'
 import { blankIfZero, cn } from '@/lib/utils'
 
 /** What a package works out at per point, against the base rate. */
@@ -44,9 +43,9 @@ function valueLine(pkg: PointPackage, rate: PointsRate | null) {
 }
 
 /**
- * The point packages sellers pick from when they buy points. Every admin can
- * see them; only a Super Admin can add, change or switch one off, and each
- * change asks for their password again and is audited.
+ * The point packages sellers pick from when they buy points. Admins can add,
+ * change or switch one off; each change asks for their password again and is
+ * audited.
  */
 export function AdminPointPackagesPage() {
   const [items, setItems] = useState<PointPackage[]>([])
@@ -56,7 +55,6 @@ export function AdminPointPackagesPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [editing, setEditing] = useState<PointPackage | 'new' | null>(null)
   const [toggling, setToggling] = useState<string | null>(null)
-  const canEdit = isSuperAdmin()
 
   const load = useCallback(async () => {
     try {
@@ -100,12 +98,10 @@ export function AdminPointPackagesPage() {
           rate ? `. Base rate ${describeRate(rate)}` : ''
         }. ${onSale} on sale.`}
         action={
-          canEdit ? (
-            <Button onClick={() => setEditing('new')} className="h-11 px-5">
-              <Plus className="size-4" />
-              New package
-            </Button>
-          ) : null
+          <Button onClick={() => setEditing('new')} className="h-11 px-5">
+            <Plus className="size-4" />
+            New package
+          </Button>
         }
       />
 
@@ -175,36 +171,28 @@ export function AdminPointPackagesPage() {
                   <p className="text-lg font-bold">{formatCents(pkg.price_cents, pkg.currency)}</p>
                   <p className="text-xs text-muted-foreground">{valueLine(pkg, rate)}</p>
                 </div>
-                {canEdit ? (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={pkg.is_active}
-                      disabled={toggling === pkg.id}
-                      onCheckedChange={() => void toggle(pkg)}
-                      aria-label={pkg.is_active ? `Take ${pkg.name} off sale` : `Put ${pkg.name} on sale`}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 rounded-full px-3"
-                      onClick={() => setEditing(pkg)}
-                    >
-                      <Pencil className="size-3.5" />
-                      Edit
-                    </Button>
-                  </div>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={pkg.is_active}
+                    disabled={toggling === pkg.id}
+                    onCheckedChange={() => void toggle(pkg)}
+                    aria-label={pkg.is_active ? `Take ${pkg.name} off sale` : `Put ${pkg.name} on sale`}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-full px-3"
+                    onClick={() => setEditing(pkg)}
+                  >
+                    <Pencil className="size-3.5" />
+                    Edit
+                  </Button>
+                </div>
               </div>
             </article>
           ))}
         </div>
       )}
-
-      {!canEdit ? (
-        <p className="mt-5 text-sm text-muted-foreground">
-          Only a Super Admin can add or change packages.
-        </p>
-      ) : null}
 
       {editing ? (
         <PackageDialog

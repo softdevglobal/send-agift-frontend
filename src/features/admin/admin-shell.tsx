@@ -34,7 +34,6 @@ function AdminNavLinks({
   unreadMessages: number
   role: UserRole | null
 }) {
-  // Some sections (games and competitions) are for superadmins only.
   const groups = adminNavGroups
     .map((group) => ({
       ...group,

@@ -173,7 +173,7 @@ function GamePreview({ game, onClose }: { game: AdminGameSummary | null; onClose
   )
 }
 
-/** Superadmin: every game, who plays, and who holds the best verified score. */
+/** Every game, who plays, and who holds the best verified score. */
 export function AdminGamesPage() {
   const [allGames, setGames] = useState<AdminGameSummary[]>([])
   // Only games customers play on their own. Chance games and quizzes are

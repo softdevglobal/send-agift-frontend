@@ -26,7 +26,6 @@ import { Input } from '@/components/ui/input'
 import { AdminEmptyState } from '@/features/admin'
 import { formatDate } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
-import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { OPERATION_LABEL } from './labels'
@@ -50,7 +49,6 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
-  const canEdit = isSuperAdmin()
 
   const load = useCallback(async () => {
     try {
@@ -92,12 +90,10 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
           Missing, expired or revoked approval means unavailable: there is no global default. A connected payment
           account does not by itself approve every operation on it.
         </p>
-        {canEdit ? (
-          <Button onClick={() => setCreating(true)} className="h-10 px-4">
-            <Plus className="size-4" />
-            Record approval
-          </Button>
-        ) : null}
+        <Button onClick={() => setCreating(true)} className="h-10 px-4">
+          <Plus className="size-4" />
+          Record approval
+        </Button>
       </div>
       <FormAlert error={error} notice={notice} />
       {items === null ? (
@@ -145,7 +141,7 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
                     <StatusPill status={a.status} label={a.status === 'active' && !a.current ? 'not in window' : a.status} />
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    {canEdit && a.status === 'pending' ? (
+                    {a.status === 'pending' ? (
                       <div className="flex justify-end gap-2">
                         <Button size="sm" disabled={busy === a.id} onClick={() => act(a, 'approve')}>
                           Approve
@@ -154,7 +150,7 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
                           Reject
                         </Button>
                       </div>
-                    ) : canEdit && a.status === 'active' ? (
+                    ) : a.status === 'active' ? (
                       <Button size="sm" variant="destructive" disabled={busy === a.id} onClick={() => act(a, 'revoke')}>
                         Revoke
                       </Button>
@@ -201,7 +197,7 @@ function ApprovalDialog({
   const [evidence, setEvidence] = useState('')
   const [notes, setNotes] = useState('')
   const [expires, setExpires] = useState('')
-  // A Super Admin approves it as they record it; untick to leave it pending.
+  // Approved as it is recorded; untick to leave it pending.
   const [approveNow, setApproveNow] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)

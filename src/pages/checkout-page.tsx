@@ -527,6 +527,10 @@ export function CheckoutPage() {
     )
   const shipToAddress =
     recipientDetails && recipientDetails.id === recipientId ? defaultAddress(recipientDetails) : null
+  // The order ships where the recipient's address is, so that address decides
+  // the country. The picker below is only used while no address is chosen.
+  const deliveryCountryId = shipToAddress?.country_id || countryId
+  const deliveryCountryLocked = Boolean(shipToAddress?.country_id)
   const needsPin = Boolean(recipientId) && shipToAddress != null && !hasPoint(shipToAddress)
   const awaitingDeliveryQuote = Boolean(recipientId) && !needsPin && !quoteSettled
   const noDeliveryOptions = Boolean(recipientId) && quoteSettled && !hasChargeableDelivery
@@ -745,7 +749,7 @@ export function CheckoutPage() {
 
       const order = await createOrder({
         ...(recipientId ? { recipient_id: recipientId } : {}),
-        country_id: countryId,
+        country_id: deliveryCountryId,
         customer_type: customerType,
         delivery_date: deliveryDate,
         ...(giftMessage.trim() ? { gift_message: giftMessage.trim() } : {}),
@@ -888,6 +892,12 @@ export function CheckoutPage() {
                         onChange={(phone) =>
                           setNewRecipient((current) => ({ ...current, phone }))
                         }
+                        country={
+                          countries.find(
+                            (country) =>
+                              country.id === (newRecipient.country_id || countryId),
+                          )?.iso_code
+                        }
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -919,10 +929,22 @@ export function CheckoutPage() {
                         id="checkout-new-country"
                         value={newRecipient.country_id || countryId}
                         onChange={(event) =>
-                          setNewRecipient((current) => ({
-                            ...current,
-                            country_id: event.target.value,
-                          }))
+                          setNewRecipient((current) =>
+                            event.target.value === (current.country_id || countryId)
+                              ? current
+                              : {
+                                  // The address typed so far belongs to the old country.
+                                  ...current,
+                                  country_id: event.target.value,
+                                  line1: '',
+                                  line2: '',
+                                  city: '',
+                                  region: '',
+                                  postal_code: '',
+                                  latitude: null,
+                                  longitude: null,
+                                },
+                          )
                         }
                         className={selectClassName}
                       >
@@ -984,6 +1006,9 @@ export function CheckoutPage() {
                           setNewRecipient((current) => ({
                             ...current,
                             line1: event.target.value,
+                            // The street moved, so the old pin no longer fits.
+                            latitude: null,
+                            longitude: null,
                           }))
                         }
                         className="h-11 bg-surface px-3"
@@ -1012,6 +1037,9 @@ export function CheckoutPage() {
                           setNewRecipient((current) => ({
                             ...current,
                             city: event.target.value,
+                            // The city moved, so the old pin no longer fits.
+                            latitude: null,
+                            longitude: null,
                           }))
                         }
                         className="h-11 bg-surface px-3"
@@ -1206,31 +1234,32 @@ export function CheckoutPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="checkout-country">Delivery country</Label>
-                {countries.length ? (
-                  <select
-                    id="checkout-country"
-                    value={countryId}
-                    onChange={(event) => setCountryId(event.target.value)}
-                    className={selectClassName}
-                    required
-                  >
-                    <option value="">Select a country</option>
-                    {countries.map((country) => (
-                      <option key={country.id} value={country.id}>
-                        {countryOptionLabel(country)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <Input
-                    id="checkout-country"
-                    value={countryId}
-                    onChange={(event) => setCountryId(event.target.value)}
-                    className="h-11 bg-surface px-3"
-                    placeholder="Country id"
-                    required
-                  />
-                )}
+                <select
+                  id="checkout-country"
+                  value={countries.length ? deliveryCountryId : ''}
+                  onChange={(event) => setCountryId(event.target.value)}
+                  className={selectClassName}
+                  disabled={deliveryCountryLocked || countries.length === 0}
+                  required
+                >
+                  <option value="">
+                    {countries.length ? 'Select a country' : 'Countries unavailable'}
+                  </option>
+                  {countries.map((country) => (
+                    <option key={country.id} value={country.id}>
+                      {countryOptionLabel(country)}
+                    </option>
+                  ))}
+                </select>
+                {countries.length === 0 ? (
+                  <p className="text-xs text-destructive">
+                    Could not load countries. Refresh the page to try again.
+                  </p>
+                ) : deliveryCountryLocked ? (
+                  <p className="text-xs text-muted-foreground">
+                    Set by the recipient’s address.
+                  </p>
+                ) : null}
               </div>
 
               {intent?.address ? (
