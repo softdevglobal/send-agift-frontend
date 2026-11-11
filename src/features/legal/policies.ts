@@ -1,3 +1,5 @@
+import { privacyPolicy } from './privacy-policy'
+
 /**
  * SendAGift's policies, as drafted on 14 October 2026. The text is kept
  * exactly as written; anything in [SQUARE BRACKETS] is a value still to be
@@ -32,102 +34,7 @@ export type Policy = {
 }
 
 export const policies: Policy[] = [
-  {
-    slug: 'privacy',
-    docId: 'PRIV-01',
-    title: 'Privacy Policy',
-    summary: 'What personal information we collect, why, who receives it and your choices.',
-    audience: 'customer',
-    version: '0.1 draft',
-    status: 'Not for publication until every bracketed field is completed and reviewed',
-    updated: '14 October 2026',
-    effective: '[DATE AFTER APPROVAL]',
-    intro: [
-      'This policy explains how [OPERATOR LEGAL NAME] collects, uses, stores and shares personal information when you use SendAGift, including gifts, marketplace orders, seller onboarding, delivery, customer support and promotion eligibility. It applies in [COUNTRIES/REGIONS]. [COUNTRY-SPECIFIC NOTICE OR LINK].',
-    ],
-    sections: [
-      {
-        heading: 'Who operates SendAGift',
-        blocks: [
-          'SendAGift is operated by [OPERATOR LEGAL NAME], registered in [JURISDICTION] at [REGISTERED ADDRESS]. Contact us about privacy at [PRIVACY CONTACT NAME/ROLE, EMAIL, POSTAL ADDRESS]. For customer support, use [SUPPORT EMAIL/PHONE/FORM]. In [MARKET], the marketplace is operated by [ENTITY] and the product seller is [SELLER LEGAL NAME SHOWN ON PRODUCT/ORDER]. Our legal role for each transaction is [OPERATOR ROLE FOR THIS MARKET].',
-        ],
-      },
-      {
-        heading: 'Information we collect',
-        blocks: [
-          'Depending on the service you use, we may collect:',
-          {
-            list: [
-              'account and contact details: [ACTUAL FIELDS, e.g. name, email, phone, account identifiers];',
-              'order and gift details: sender, recipient, chosen product, message if supported, status, receipt/claim activity, support history and transaction records;',
-              'delivery information: recipient name, phone, delivery address, instructions and delivery/tracking events;',
-              'eligibility and safety information: the minimum name, phone and address signals needed to enforce the one-gift-per-sender/recipient rule, prevent self-gifting and review ambiguous duplicates;',
-              'seller information: legal/registered name, business location, contact, required registration/tax/importer details, listings, stock, fulfilment status and accepted agreement/budget terms;',
-              'technical/security information: [ACTUAL LOGS, DEVICE/APP EVENTS, SECURITY SIGNALS AND RETENTION].',
-            ],
-          },
-          'We do not use a shared address alone as proof that two people are the same person or acted improperly. If an eligibility match needs review, we restrict access, explain the next step and provide a way to correct or appeal it.',
-        ],
-      },
-      {
-        heading: 'Information supplied by someone else',
-        blocks: [
-          "A sender may enter a recipient's name, phone number, email or delivery address to send a gift. Before submitting those details, the sender must confirm they are authorized to share them for this gift. We use those details to notify the recipient, arrange delivery, provide support, apply approved eligibility rules and meet legal or safety duties. The recipient's active receipt confirmation is recorded separately after delivery. We send the recipient a prompt service notice that explains the source and purpose. This does not sign the recipient up for marketing.",
-        ],
-      },
-      {
-        heading: 'Why we use information',
-        blocks: [
-          'We use information only for the purposes that apply to the feature and market: create and fulfil the order; send service notices; verify account/claim steps if enabled; check eligibility and prevent abuse; manage seller budgets and inventory; respond to questions, complaints, returns, refunds and safety matters; secure the service; meet legal/accounting obligations; and [LIST ANY ANALYTICS OR OTHER PURPOSES ACTUALLY USED]. We do not add a recipient to promotional messages because someone sent them a gift.',
-        ],
-      },
-      {
-        heading: 'Who receives information',
-        blocks: [
-          'Information may be shared only as needed with:',
-          {
-            list: [
-              'the seller of the selected product and the delivery provider for fulfilment and delivery;',
-              '[PAYMENT PROVIDER] for payment, refund and reconciliation, if applicable;',
-              '[HOSTING/EMAIL/SMS/OTP/SUPPORT/ANALYTICS/OTHER PROCESSORS ACTUALLY USED];',
-              'regulators, courts or other parties when required by law, or when necessary to protect safety, rights or the service.',
-            ],
-          },
-          'The recipient countries/locations of our processors are [LIST ACTUAL COUNTRIES, INCLUDING REMOTE SUPPORT ACCESS IF APPLICABLE]. If a provider changes, we will update this policy as required before or when the change applies. Sellers may use recipient information only for fulfilment, delivery, safety and support for that order; they must not use it for their own marketing, upload it to a general CRM or disclose it onward for unrelated purposes.',
-        ],
-      },
-      {
-        heading: 'Marketing choices',
-        blocks: [
-          'Service notices about gift confirmation, delivery, security, support or refunds are not marketing. We send direct marketing only when the required permission exists for that person, channel and purpose. Sender and recipient choices are separate. Marketing boxes are optional and unchecked by default. You can withdraw consent or unsubscribe using the link/instructions in the message or contact [MARKETING CONTACT]. We keep a minimal suppression record so we can respect your opt-out.',
-        ],
-      },
-      {
-        heading: 'Storage and security',
-        blocks: [
-          'We use [ACTUAL SECURITY CONTROLS, ACCESS RESTRICTIONS, ENCRYPTION AND INCIDENT PROCESS]. We retain each category for [SPECIFIC PERIOD OR EVENT-BASED SCHEDULE], then securely delete or de-identify it unless a longer period is required for a stated legal obligation, dispute or safety matter. The retention schedule is [LINK/CONTACT].',
-        ],
-      },
-      {
-        heading: 'Your choices and requests',
-        blocks: [
-          "You can request access to or correction of information, ask about a decision or matching signal, withdraw optional marketing consent, or raise a privacy complaint by contacting [PRIVACY CONTACT]. We will [HOW REQUESTS ARE HANDLED AND RESPONSE TIME], and if you are not satisfied, you may contact [RELEVANT REGULATOR/EXTERNAL COMPLAINT BODY FOR EACH MARKET]. Identity checks may be used to protect your information. We will not reveal another person's account, order or address when answering a request.",
-        ],
-      },
-      {
-        heading: 'Children and restricted products',
-        blocks: [
-          '[MINIMUM AGE AND CHILD-DATA PROCESS FOR THIS MARKET]. Do not use SendAGift to list regulated products that are disabled for your country.',
-        ],
-      },
-      {
-        heading: 'Changes and contact',
-        blocks: [
-          'We may update this policy when services or data practices change. We will publish the new version, date and material change summary at [PRIVACY URL] and obtain any fresh notice or acceptance required. Version [CURRENT VERSION]. Contact [PRIVACY CONTACT].',
-        ],
-      },
-    ],
-  },
+  privacyPolicy,
   {
     slug: 'customer-terms',
     docId: 'CUST-01',
