@@ -1,7 +1,10 @@
+import { customerTerms } from './customer-terms'
+import { courierTerms, partnerAddenda, partnerTerms, sellerTerms, supplierTerms } from './partner-terms'
 import { privacyPolicy } from './privacy-policy'
 
 /**
- * SendAGift's policies, as drafted on 14 October 2026. The text is kept
+ * SendAGift's policies. The customer and partner terms are the drafts of
+ * 11 November 2026; the others were drafted on 14 October 2026. The text is kept
  * exactly as written; anything in [SQUARE BRACKETS] is a value still to be
  * filled in, and the page shows it highlighted until it is.
  *
@@ -35,76 +38,7 @@ export type Policy = {
 
 export const policies: Policy[] = [
   privacyPolicy,
-  {
-    slug: 'customer-terms',
-    docId: 'CUST-01',
-    title: 'Marketplace Customer Terms',
-    summary: 'The terms for browsing, ordering, sending and receiving gifts on SendAGift.',
-    audience: 'customer',
-    version: '0.1 draft',
-    status: 'Not for publication until every bracketed field is completed and reviewed',
-    updated: '14 October 2026',
-    effective: '[DATE AFTER APPROVAL]',
-    intro: [
-      'These terms apply when you use SendAGift to browse products, send or receive a gift, place an order, or contact support. “We”, “us” and “SendAGift” means [OPERATOR LEGAL NAME AND LEGAL ROLE]. “Seller” means the legal seller named on the product and order page. Your order confirmation will identify the seller and the party responsible for fulfilment, payment and support.',
-    ],
-    sections: [
-      {
-        heading: 'Before you order',
-        blocks: [
-          'Product pages must identify the seller, product, quantity, total price, any mandatory charge, delivery payer, preparation time, delivery estimate/date, delivery location, cancellation route and return/refund summary. The checkout summary controls the amount due; we will not add an undisclosed fee after you confirm. If an order is described as free, the recipient price and any delivery or mandatory amount payable by the sender/customer must be stated clearly before the sender confirms. The recipient is not charged to receive the gift.',
-        ],
-      },
-      {
-        heading: 'Orders and fulfilment',
-        blocks: [
-          'The seller is responsible for [SELLER RESPONSIBILITIES FOR THIS MARKET]. SendAGift is responsible for [SENDAGIFT RESPONSIBILITIES FOR THIS MARKET]. We send the recipient a delivery/service notification using [CHANNELS]. After delivery, the recipient must actively confirm receipt through [CONFIRMATION METHOD]. This confirmation is separate from the notification and from any optional review. An estimated delivery date is an estimate unless the order page clearly labels it as guaranteed. If a seller cannot fulfil, we will explain the available lawful remedy and contact route.',
-        ],
-      },
-      {
-        heading: 'Gifts',
-        blocks: [
-          'A sender must enter accurate recipient details and confirm they are authorized to share those details for this gift. The recipient gets a service notification and may [ACCEPT/DECLINE/CLAIM PROCESS]. [RECIPIENT APP REQUIREMENT AND CONTACT-VERIFICATION METHOD]. A gift does not create marketing consent. Free-gift eligibility is governed by the specific promotion terms shown before submission. Sender and recipient limits are separate, but the applicable program window and reset terms must appear in those promotion terms.',
-        ],
-      },
-      {
-        heading: 'Eligibility and fair review',
-        blocks: [
-          "We may use the minimum name, phone and delivery-address information reasonably needed to apply the promotion terms. If we pause a claim to review eligibility, we will tell you how to request correction or appeal. The review process is described at [ELIGIBILITY REVIEW/PRIVACY LINK]. We will not disclose another person's account or order details.",
-        ],
-      },
-      {
-        heading: 'Cancellation, returns and refunds',
-        blocks: [
-          "The order-specific Returns, Refunds and Cancellations Policy and applicable seller terms explain the process. Your statutory rights are not limited by these terms, a free or discounted item, or the seller's funding or accounting arrangements. We will not refuse a remedy required by law. See [RETURNS POLICY URL].",
-        ],
-      },
-      {
-        heading: 'Marketing and reviews',
-        blocks: [
-          'Service communications about claim status, delivery, safety, support, cancellation or refund are separate from marketing. We send marketing only under the applicable permission for the person and channel. You may opt out as described in the message. Reviews are voluntary and do not affect eligibility, delivery, support, refund or recovery. You may leave honest feedback or skip it.',
-        ],
-      },
-      {
-        heading: 'Complaints and safety',
-        blocks: [
-          'Contact [SUPPORT CONTACT] for order questions and [GRIEVANCE OFFICER NAME/CONTACT/ADDRESS, IF REQUIRED] for a formal complaint. For an unsafe or recalled product, use [PRODUCT SAFETY REPORT ROUTE]. We will explain the complaint owner and next step; applicable law controls any response deadline.',
-        ],
-      },
-      {
-        heading: 'Other terms',
-        blocks: [
-          'We may suspend access for safety or legal reasons and will explain how to appeal where appropriate. Nothing in these terms excludes a right or remedy that cannot be excluded by law. If a term is unenforceable, the remaining terms continue to the extent allowed. Governing law and dispute forum: [GOVERNING LAW AND DISPUTE TERMS FOR THIS MARKET].',
-        ],
-      },
-      {
-        heading: 'Contact and version',
-        blocks: [
-          'SendAGift operator: [LEGAL NAME, REGISTERED ADDRESS AND CONTACT]. Current version: [VERSION]. Effective: [DATE]. Previous version: [ARCHIVE URL].',
-        ],
-      },
-    ],
-  },
+  customerTerms,
   {
     slug: 'delivery',
     docId: 'DEL-01',
@@ -381,88 +315,11 @@ export const policies: Policy[] = [
       },
     ],
   },
-  {
-    slug: 'seller-agreement',
-    docId: 'SELL-01',
-    title: 'Seller Agreement and Onboarding Acceptance',
-    summary: 'What sellers agree to: listings, customer care, free-gift offers, data and safety.',
-    audience: 'seller',
-    version: '0.1 draft',
-    status: 'Not for seller acceptance until every bracketed field is completed and reviewed',
-    updated: '14 October 2026',
-    effective: '[DATE AFTER APPROVAL]',
-    intro: [
-      'This agreement is between [OPERATOR LEGAL NAME, ADDRESS] (“SendAGift”) and the seller identified below (“Seller”). It supplements the seller\'s listing and order terms for [MARKETS]. It does not reduce obligations imposed by applicable law.',
-      {
-        fields: [
-          ['Seller legal/registered name', '[NAME]'],
-          ['Registered/business address', '[ADDRESS]'],
-          ['Registration/tax/importer details required in market', '[ID/COUNTRY]'],
-          ['Authorized representative', '[NAME, TITLE, EMAIL]'],
-          ['Customer-facing support/grievance contact', '[CONTACT]'],
-          ['Products/SKUs/territories covered', '[LIST]'],
-          ['Effective date/version', '[DATE / VERSION]'],
-        ],
-      },
-    ],
-    sections: [
-      {
-        heading: 'Seller responsibilities',
-        blocks: [
-          "Seller will provide accurate product, price, origin/importer, safety, stock, preparation, delivery, charge, warranty and return information required in each market. Seller will not offer illegal, counterfeit, unsafe, recalled, misleading or unauthorized products. Seller will fulfil accepted orders at the confirmed terms, promptly update stock/delay status, provide lawful remedies, cooperate with complaints and recalls, and keep required order/refund records. Seller will not alter a confirmed order's price or delivery terms without the customer's approval and any legally required process.",
-        ],
-      },
-      {
-        heading: 'Customer care and consumer rights',
-        blocks: [
-          "Seller will respond to SendAGift's case notices within [RESPONSE TARGET], identify the order owner and provide delivery/refund evidence. Seller will not refuse a legal repair, replacement, refund, cancellation, return or other remedy because an item was free, the seller paid a promotional budget, the customer left a negative review, or the seller's cap is exhausted. Market-specific complaint/grievance requirements: [MARKET-SPECIFIC GRIEVANCE REQUIREMENTS].",
-        ],
-      },
-      {
-        heading: 'Free-gift offer and fulfilment',
-        blocks: [
-          'Seller opts into only the following offer: [SKU, one-unit quantity, regions, start/end, stock cap]. Preparation band: [BAND]. Delivery band/date: [BAND/DATE]. Delivery payer and mandatory charges: [DELIVERY PAYER AND CHARGES]. No substitution without [RECIPIENT CONSENT PROCESS]. Seller may pause future reservations through [CONTROL]; pausing does not cancel an already valid reservation. The recipient will not be charged to receive the gift. Seller must not collect an undisclosed amount from the sender/customer or change the confirmed order total.',
-        ],
-      },
-      {
-        heading: 'Seller budget and funding',
-        blocks: [
-          'A separate Seller Marketing Budget Acceptance records [CAP/CURRENCY], [FUNDING SOURCE: CASH/POINTS/OTHER], period, cost categories, authorization and acceptance version. The cap applies only to this seller and these offers; it is not shared across sellers or countries. No automatic debit, recurring charge or automatic replenishment is authorized by this agreement. The seller must affirmatively approve any additional amount under a new version before it applies. New reservations stop when the available cap is reached. A valid existing reservation is honored under the disclosed terms.',
-        ],
-      },
-      {
-        heading: 'Personal information and security',
-        blocks: [
-          "Seller may use recipient information only for the covered order's fulfilment, delivery, product safety and support, plus legally required recordkeeping. Seller must not use it for its own marketing, add it to general CRM lists, profile the recipient for unrelated purposes or disclose it to an unapproved third party. Seller will restrict staff access, protect data using [SECURITY CONTROLS], use only approved delivery subcontractors, promptly notify [OPERATOR INCIDENT CONTACT] of suspected loss or misuse, assist with access/correction/complaint requests, and delete or return data when fulfilment/support and legal retention permit under [SCHEDULE].",
-        ],
-      },
-      {
-        heading: 'Product safety, reporting and cooperation',
-        blocks: [
-          'Seller will immediately notify [SAFETY CONTACT] of a recall, injury, safety complaint, suspected counterfeit or regulatory contact. Seller will stop listing affected items, preserve relevant records and follow the approved customer-notification/remedy plan. SendAGift may pause a listing or seller for safety, compliance or fraud review, with a reasoned case and an appeal route where appropriate.',
-        ],
-      },
-      {
-        heading: 'Fees, records and settlement',
-        blocks: [
-          'Platform fees, taxes, settlement cycle, invoicing, refunds, chargebacks and service recovery are set out in [SELLER COMMERCIAL SCHEDULE]. Seller will reconcile budget holds, commitments, releases and refunds through [LEDGER/STATEMENT PROCESS]. No off-platform amount may be charged to a customer unless disclosed and lawfully accepted.',
-        ],
-      },
-      {
-        heading: 'Term, suspension and disputes',
-        blocks: [
-          'Term: [START/END/RENEWAL]. Suspension/termination: [NOTICE, IMMEDIATE SAFETY EXCEPTIONS, HANDLING OF ACCEPTED ORDERS]. Governing law/dispute forum: [GOVERNING LAW AND DISPUTE TERMS]. Nothing here excludes rights that cannot be excluded.',
-        ],
-      },
-      {
-        heading: 'Acceptance',
-        blocks: [
-          'By selecting the separate unchecked acceptance box and submitting, the authorized representative confirms they have authority to bind the seller, reviewed this exact version and agree to it for the listed seller, SKUs, territories and period. This acceptance is recorded with seller ID, representative, time, version, document hash and selected offer. The seller agreement does not replace the separate budget authorization or marketing consent.',
-          { checkbox: 'I accept Seller Agreement version [VERSION] for the seller and offer scope above.' },
-        ],
-      },
-    ],
-  },
+  partnerTerms,
+  sellerTerms,
+  supplierTerms,
+  courierTerms,
+  partnerAddenda,
   {
     slug: 'seller-budget',
     docId: 'BUDGET-01',
@@ -568,6 +425,6 @@ export function policyBySlug(slug: string | undefined) {
 
 export const audienceLabels: Record<PolicyAudience, string> = {
   customer: 'For customers',
-  seller: 'For sellers',
+  seller: 'For partners: sellers, suppliers and couriers',
   notice: 'Notices and consent wording',
 }
