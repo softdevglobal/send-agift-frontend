@@ -66,7 +66,8 @@ function Filled({ text }: { text: string }) {
 }
 
 function hasPlaceholders(policy: Policy) {
-  return JSON.stringify(policy).includes('[')
+  // Array brackets are part of JSON structure, not unfinished policy fields.
+  return /\[[^[\]"]+\]/.test(JSON.stringify(policy))
 }
 
 function Block({ block }: { block: PolicyBlock }) {
@@ -342,6 +343,17 @@ export function PolicyPage() {
 
           <article className="max-w-3xl space-y-6">
             <DraftNotice policy={policy} />
+            {policy.slug === 'privacy' ? (
+              <aside aria-label="Privacy and account deletion" className="space-y-3 rounded-2xl bg-brand-teal/15 p-6">
+                <h2 className="font-poster text-2xl">Privacy help and account deletion</h2>
+                <p>Request deletion of your SendAGift account and associated data by email. You do not need to install the app.</p>
+                <div className="flex flex-wrap gap-4 font-semibold">
+                  <a className="underline underline-offset-4" href="mailto:support@sendagift.win?subject=Delete%20my%20SendAGift%20account">Request account deletion</a>
+                  <a className="underline underline-offset-4" href="#section-1">Read the deletion steps and retained-data details</a>
+                  <a className="underline underline-offset-4" href="mailto:support@sendagift.win">Contact privacy support</a>
+                </div>
+              </aside>
+            ) : null}
             {policy.intro.length ? (
               <div className="space-y-4 rounded-2xl bg-brand-violet/5 p-6 text-lg sm:p-7">
                 {policy.intro.map((block, index) => (

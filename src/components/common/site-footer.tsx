@@ -117,8 +117,8 @@ export function SiteFooter() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold">Email support</p>
-                  <a href="mailto:support@sendagift.com" className={footerLinkClass}>
-                    support@sendagift.com
+                  <a href="mailto:support@sendagift.win" className={footerLinkClass}>
+                    support@sendagift.win
                   </a>
                 </div>
               </li>
