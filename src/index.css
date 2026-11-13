@@ -231,6 +231,16 @@
 }
 
 @layer base {
+  /* Text boxes grow with what is typed instead of scrolling inside
+     themselves. Their min-height stays the starting size; a box can opt out
+     with data-autosize="off". Browsers without field-sizing get the same
+     from src/lib/autosize-textareas.ts. */
+  @supports (field-sizing: content) {
+    textarea:not([data-autosize='off']) {
+      field-sizing: content;
+    }
+  }
+
   /* Number fields are typed, never nudged: no up/down arrows anywhere. */
   input[type='number'] {
     -moz-appearance: textfield;
