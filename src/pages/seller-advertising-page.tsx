@@ -1,5 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, Bell, LoaderCircle, Megaphone, Receipt, Ticket, X } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Award,
+  Bell,
+  Crown,
+  Gift,
+  LoaderCircle,
+  Medal,
+  Megaphone,
+  Plus,
+  Receipt,
+  Search,
+  Ticket,
+  X,
+} from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import {
@@ -22,9 +37,9 @@ import { listShopProducts, type Product } from '@/api/products'
 import { getSellerMe } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SellerEmptyState, SellerPageHeader, sellerPanelClass } from '@/features/seller'
 import { getErrorMessage } from '@/lib/api'
-import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
 const number = new Intl.NumberFormat()
@@ -326,6 +341,8 @@ function PurchaseCard({
     return slots
   }, [p])
   const [slots, setSlots] = useState<string[]>(saved)
+  /** The level whose product is being chosen, if any. */
+  const [picking, setPicking] = useState<number | null>(null)
   useEffect(() => setSlots(saved), [saved])
   const dirty = slots.join('|') !== saved.join('|')
 
@@ -435,87 +452,154 @@ function PurchaseCard({
       </div>
 
       <div className="border-t border-border/60 px-5 py-5">
-        <h3 className="text-sm font-bold">Promoted products</h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          One product per priority level. The higher the level, the higher it is listed and the more a customer earns
-          for buying it. Use the arrows to reorder.
-        </p>
-        <ol className="mt-4 space-y-2">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-bold">Promoted products</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              One product per level. The higher the level, the higher it is listed and the more a customer earns for
+              buying it.
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-brand-violet/10 px-3 py-1 text-xs font-bold whitespace-nowrap text-brand-violet">
+            {slots.filter(Boolean).length} of {slots.length} filled
+          </span>
+        </div>
+        <ol className="mt-4 space-y-2.5">
           {slots.map((id, i) => {
             const award = p.level_entries[i]
             const stats = id ? granted.get(id) : undefined
+            const product = id ? catalog.find((prod) => prod.id === id) : undefined
+            const rank = SLOT_RANKS[i] ?? OTHER_SLOT_RANK
+            const RankIcon = rank.icon
+            const name = levelName(i + 1, p.product_slots, p.level_names)
             return (
-              <li key={i} className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-brand-ink/10 px-3 py-3">
-                <div className="w-28 shrink-0">
-                  <p className="text-sm font-bold">{levelName(i + 1, p.product_slots, p.level_names)}</p>
-                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Ticket className="size-3.5" />
-                    {entriesLabel(award)}
-                  </p>
+              <li
+                key={i}
+                className={cn(
+                  // Phone: level and controls on top, the product full width below.
+                  // Wider: one row, level | product | stats and controls.
+                  'flex flex-wrap items-center gap-x-3 gap-y-2.5 rounded-2xl border-2 p-3 transition sm:flex-nowrap',
+                  id ? 'border-brand-ink/10 bg-surface' : 'border-dashed border-brand-ink/20 bg-muted/30',
+                )}
+              >
+                {/* The level: its rank and what it earns. */}
+                <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5 sm:w-52 sm:flex-none sm:shrink-0">
+                  <span className={cn('grid size-11 shrink-0 place-items-center rounded-xl', rank.badge)}>
+                    <RankIcon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">{name}</p>
+                    <p className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-brand-teal/15 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-brand-ink">
+                      <Ticket className="size-3" />
+                      {entriesLabel(award)}
+                    </p>
+                  </div>
                 </div>
-                <select
-                  aria-label={`Product for ${levelName(i + 1, p.product_slots, p.level_names)} priority`}
-                  className={cn(selectClassName, 'min-w-0 flex-1')}
-                  value={id}
-                  onChange={(e) => {
-                    const next = [...slots]
-                    // A product sits in one level only.
-                    const at = next.indexOf(e.target.value)
-                    if (e.target.value && at >= 0) next[at] = ''
-                    next[i] = e.target.value
-                    setSlots(next)
-                  }}
+
+                {/* The product in it, or a place to choose one. */}
+                <button
+                  type="button"
+                  onClick={() => setPicking(i)}
+                  aria-label={product ? `Change the product for ${name}` : `Choose a product for ${name}`}
+                  className={cn(
+                    'order-3 flex min-w-0 basis-full items-center gap-3 rounded-xl px-2 py-1.5 text-left transition sm:order-2 sm:basis-auto sm:flex-1',
+                    product
+                      ? 'bg-muted/40 hover:bg-accent sm:bg-transparent'
+                      : 'justify-center bg-brand-violet/5 py-3 text-brand-violet hover:bg-brand-violet/10 sm:bg-transparent',
+                  )}
                 >
-                  <option value="">No product</option>
-                  {catalog.map((prod) => {
-                    const other = promotedElsewhere.get(prod.id)
-                    return (
-                      <option key={prod.id} value={prod.id} disabled={!!other && other !== p.id}>
-                        {prod.name}
-                        {other && other !== p.id ? ' (in another package)' : ''}
-                      </option>
-                    )
-                  })}
-                </select>
-                <div className="w-36 shrink-0 text-xs text-muted-foreground">
-                  {stats ? (
+                  {product ? (
                     <>
-                      <strong className="text-foreground">{number.format(stats.entries_granted)}</strong> entries given ·{' '}
-                      {number.format(stats.orders_count)} {stats.orders_count === 1 ? 'sale' : 'sales'}
+                      <ProductThumb product={product} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{product.name}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {formatCents(product.price_amount, product.currency)} · tap to change
+                        </span>
+                        {/* On a phone the numbers sit here, under the product. */}
+                        <span className="mt-0.5 block text-xs text-muted-foreground sm:hidden">
+                          {stats
+                            ? `${number.format(stats.entries_granted)} entries given · ${number.format(stats.orders_count)} ${stats.orders_count === 1 ? 'sale' : 'sales'}`
+                            : 'No sales yet'}
+                        </span>
+                      </span>
                     </>
                   ) : (
-                    'Nothing given yet'
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <Plus className="size-4" />
+                      Choose a product
+                    </span>
                   )}
-                </div>
-                <div className="flex gap-1">
-                  <Button variant="outline" size="icon" className="size-9" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
-                    <ArrowUp className="size-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-9"
-                    aria-label="Move down"
-                    disabled={i === slots.length - 1}
-                    onClick={() => move(i, 1)}
-                  >
-                    <ArrowDown className="size-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-9"
-                    aria-label="Remove product"
-                    disabled={!id}
-                    onClick={() => setSlots(slots.map((s, k) => (k === i ? '' : s)))}
-                  >
-                    <X className="size-4" />
-                  </Button>
+                </button>
+
+                {/* How it is doing, and moving it. */}
+                <div className="order-2 flex shrink-0 items-center gap-3 sm:order-3">
+                  {stats ? (
+                    <div className="hidden text-right text-xs whitespace-nowrap sm:block">
+                      <p className="font-bold">{number.format(stats.entries_granted)} entries</p>
+                      <p className="text-muted-foreground">
+                        {number.format(stats.orders_count)} {stats.orders_count === 1 ? 'sale' : 'sales'}
+                      </p>
+                    </div>
+                  ) : id ? (
+                    <p className="hidden text-xs whitespace-nowrap text-muted-foreground sm:block">No sales yet</p>
+                  ) : null}
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="icon" className="size-8 rounded-full" aria-label="Move up" disabled={i === 0} onClick={() => move(i, -1)}>
+                      <ArrowUp className="size-3.5" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-8 rounded-full"
+                      aria-label="Move down"
+                      disabled={i === slots.length - 1}
+                      onClick={() => move(i, 1)}
+                    >
+                      <ArrowDown className="size-3.5" />
+                    </Button>
+                    {id ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 rounded-full"
+                        aria-label="Remove product"
+                        onClick={() => setSlots(slots.map((s, k) => (k === i ? '' : s)))}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </li>
             )
           })}
         </ol>
+        {picking !== null ? (
+          <ProductPicker
+            title={`Product for ${levelName(picking + 1, p.product_slots, p.level_names)}`}
+            catalog={catalog}
+            current={slots[picking]}
+            levelOf={(productId) => {
+              const at = slots.indexOf(productId)
+              return at >= 0 && at !== picking ? levelName(at + 1, p.product_slots, p.level_names) : null
+            }}
+            elsewhere={(productId) => {
+              const other = promotedElsewhere.get(productId)
+              return !!other && other !== p.id
+            }}
+            onPick={(productId) => {
+              const next = [...slots]
+              // A product sits in one level only: picking it here frees its old level.
+              const at = next.indexOf(productId)
+              if (at >= 0) next[at] = ''
+              next[picking] = productId
+              setSlots(next)
+              setPicking(null)
+            }}
+            onClose={() => setPicking(null)}
+          />
+        ) : null}
         {catalog.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">You have no published products to promote yet.</p>
         ) : null}
@@ -547,5 +631,119 @@ function PurchaseCard({
         ) : null}
       </div>
     </section>
+  )
+}
+
+
+/** Rank looks for the levels: crown, medal, ribbon, then tickets. */
+const SLOT_RANKS = [
+  { icon: Crown, badge: 'bg-amber-400 text-brand-ink' },
+  { icon: Medal, badge: 'bg-slate-300 text-brand-ink' },
+  { icon: Award, badge: 'bg-orange-300 text-brand-ink' },
+]
+const OTHER_SLOT_RANK = { icon: Ticket, badge: 'bg-brand-violet/15 text-brand-violet' }
+
+/** A product's photo, or a gift icon when it has none. */
+function ProductThumb({ product, className }: { product: Product; className?: string }) {
+  const url =
+    product.image_url ||
+    [...(product.media ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .find((m) => m.asset_type === 'image' || m.mime_type.startsWith('image/'))?.cdn_url
+  return (
+    <span className={cn('grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg bg-muted', className)}>
+      {url ? (
+        <img src={url} alt="" className="size-full object-cover" loading="lazy" />
+      ) : (
+        <Gift className="size-5 text-muted-foreground" />
+      )}
+    </span>
+  )
+}
+
+/**
+ * Choosing a product for a level: the seller's published products with
+ * their photos, searchable. One already at another level moves here; one
+ * promoted by another package cannot be picked.
+ */
+function ProductPicker({
+  title,
+  catalog,
+  current,
+  levelOf,
+  elsewhere,
+  onPick,
+  onClose,
+}: {
+  title: string
+  catalog: Product[]
+  current: string
+  levelOf: (productId: string) => string | null
+  elsewhere: (productId: string) => boolean
+  onPick: (productId: string) => void
+  onClose: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const shown = catalog.filter((prod) => prod.name.toLowerCase().includes(query.trim().toLowerCase()))
+  return (
+    <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-poster text-2xl">{title}</DialogTitle>
+        </DialogHeader>
+        <label className="relative block">
+          <span className="sr-only">Search your products</span>
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search your products"
+            className="h-10 w-full rounded-lg border border-input bg-surface pr-3 pl-9 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </label>
+        <ul className="-mx-1 max-h-[55vh] space-y-1 overflow-y-auto px-1">
+          {shown.length === 0 ? (
+            <li className="py-8 text-center text-sm text-muted-foreground">
+              {catalog.length === 0 ? 'You have no published products yet.' : 'No product matches that.'}
+            </li>
+          ) : (
+            shown.map((prod) => {
+              const blocked = elsewhere(prod.id)
+              const at = levelOf(prod.id)
+              const chosen = prod.id === current
+              return (
+                <li key={prod.id}>
+                  <button
+                    type="button"
+                    disabled={blocked}
+                    onClick={() => onPick(prod.id)}
+                    className={cn(
+                      'flex w-full items-center gap-3 rounded-xl border-2 p-2 text-left transition',
+                      chosen ? 'border-brand-violet bg-brand-violet/5' : 'border-transparent hover:bg-accent',
+                      blocked && 'cursor-not-allowed opacity-50 hover:bg-transparent',
+                    )}
+                  >
+                    <ProductThumb product={prod} className="size-11" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold">{prod.name}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatCents(prod.price_amount, prod.currency)}
+                        {blocked ? ' · in another package' : at ? ` · now at ${at}, moves here` : ''}
+                      </span>
+                    </span>
+                    {chosen ? (
+                      <span className="rounded-full bg-brand-violet px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+                        Chosen
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              )
+            })
+          )}
+        </ul>
+      </DialogContent>
+    </Dialog>
   )
 }
