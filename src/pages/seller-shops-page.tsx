@@ -71,6 +71,7 @@ import { publishSellerToMarketplace } from '@/lib/published-catalog'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor, minorToMajor } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { TimePicker } from '@/components/common/time-picker'
 
 /** Shop covers are cropped to a wide banner so the card grid stays even. */
 const COVER_ASPECT = 16 / 9
@@ -1020,18 +1021,15 @@ export function SellerShopsPage() {
                     Same day
                   </Button>
                   {sameDay ? (
-                    <div className="w-32 space-y-1">
+                    <div className="w-36 space-y-1">
                       <Label htmlFor={`zone-cutoff-${index}`}>Cutoff</Label>
-                      <Input
+                      <TimePicker
                         id={`zone-cutoff-${index}`}
-                        type="time"
                         value={zone.cutoff_time}
-                        onChange={(event) =>
+                        onChange={(cutoff_time) =>
                           setZoneDrafts((current) =>
                             current.map((row, rowIndex) =>
-                              rowIndex === index
-                                ? { ...row, cutoff_time: event.target.value }
-                                : row,
+                              rowIndex === index ? { ...row, cutoff_time } : row,
                             ),
                           )
                         }
