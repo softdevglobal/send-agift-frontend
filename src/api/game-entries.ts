@@ -26,6 +26,19 @@ export async function listStates(countryId: string) {
   return res.items ?? []
 }
 
+/**
+ * Turns a state picked from Google Places into one of ours, adding it to the
+ * country's list the first time. The answer's id is what sign-up and
+ * PUT /customers/me/state take as state_id.
+ */
+export function resolveState(countryId: string, placeId: string) {
+  return api<State>('/states/resolve', {
+    method: 'POST',
+    body: { country_id: countryId, place_id: placeId },
+    auth: false,
+  })
+}
+
 export type CustomerState = {
   country_id: string
   state: State | null
