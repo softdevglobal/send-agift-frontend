@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
+import { Globe2, LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import { listCountries } from '@/api/countries'
 import {
   createState,
   deleteState,
+  importStates,
   getGamesControl,
   liftJurisdiction,
   listAdminStates,
@@ -668,10 +669,27 @@ function StatesPanel({ countries }: { countries: Country[] }) {
             ))}
           </select>
         </div>
-        <p className="max-w-xl pb-2 text-sm text-muted-foreground">
-          Customers in this country choose from this list when they sign up. A country with no states here asks for
-          none.
+        <p className="max-w-xl flex-1 pb-2 text-sm text-muted-foreground">
+          Customers choose from this list when they sign up. It is fetched from Google the first time a customer
+          needs it; import again to pick up any that are missing.
         </p>
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 px-4"
+            disabled={busy || !countryId}
+            onClick={() =>
+              void run('States imported from Google.', async () => {
+                const { total } = await importStates(countryId)
+                return total
+              })
+            }
+          >
+            {busy ? <LoaderCircle className="size-4 animate-spin" /> : <Globe2 className="size-4" />}
+            Import from Google
+          </Button>
+        ) : null}
       </div>
       <FormAlert error={error} notice={notice} className="mb-4" />
 

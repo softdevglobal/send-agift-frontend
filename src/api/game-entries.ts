@@ -393,6 +393,9 @@ export const createState = (body: StateInput) => api<State>('/admin/states', { m
 export const updateState = (id: string, body: StateInput) =>
   api<State>(`/admin/states/${id}`, { method: 'PUT', body })
 export const deleteState = (id: string) => api<{ ok: boolean }>(`/admin/states/${id}`, { method: 'DELETE' })
+/** Fetches a country's states from Google and adds the missing ones. */
+export const importStates = (countryId: string) =>
+  api<{ total: number }>(`/admin/countries/${countryId}/states/import`, { method: 'POST' })
 
 // ─── Admin: customers and review ───────────────────────────────────
 
