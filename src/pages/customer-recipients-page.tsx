@@ -773,7 +773,7 @@ export function CustomerRecipientsPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="recipient-phone">Phone</Label>
-                  <PhoneField id="recipient-phone" value={phone} onChange={setPhone} />
+                  <PhoneField id="recipient-phone" value={phone} onChange={setPhone} countryId={addressForm.country_id} />
                 </div>
 
                 {editingId && details?.addresses.length ? (

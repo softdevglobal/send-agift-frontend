@@ -333,7 +333,7 @@ export function CustomerProfilePage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="profile-phone">Phone</Label>
-                <PhoneField id="profile-phone" value={phone} onChange={setPhone} />
+                <PhoneField id="profile-phone" value={phone} onChange={setPhone} countryId={countryId} />
                 <VerifyPhoneCard
                   phone={profile?.phone ?? ''}
                   unsaved={phone.trim() !== (profile?.phone ?? '').trim()}

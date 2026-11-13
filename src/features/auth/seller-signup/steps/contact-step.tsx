@@ -85,6 +85,7 @@ export function ContactStep({ state, update, disabled }: StepProps) {
         >
           <PhoneField
             id="signup-phone"
+            countryId={state.countryId}
             value={state.phone}
             onChange={(phone) => update({ phone })}
             disabled={disabled}

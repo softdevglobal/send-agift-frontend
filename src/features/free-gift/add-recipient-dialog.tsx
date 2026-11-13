@@ -188,7 +188,7 @@ export function AddRecipientDialog({ open, defaultCountryId = '', onOpenChange, 
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="fg-recipient-phone">Phone</Label>
-              <PhoneField id="fg-recipient-phone" value={form.phone} onChange={(v) => set('phone', v)} />
+              <PhoneField id="fg-recipient-phone" value={form.phone} onChange={(v) => set('phone', v)} countryId={form.country_id} />
             </div>
           </div>
 

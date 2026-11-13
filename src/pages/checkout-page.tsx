@@ -898,6 +898,7 @@ export function CheckoutPage() {
                       <Label htmlFor="checkout-new-phone">Phone</Label>
                       <PhoneField
                         id="checkout-new-phone"
+                        countryId={newRecipient.country_id || countryId}
                         value={newRecipient.phone}
                         onChange={(phone) =>
                           setNewRecipient((current) => ({ ...current, phone }))

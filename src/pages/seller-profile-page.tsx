@@ -631,7 +631,7 @@ export function SellerProfilePage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="seller-phone">Phone</Label>
-                    <PhoneField id="seller-phone" value={phone} onChange={setPhone} />
+                    <PhoneField id="seller-phone" value={phone} onChange={setPhone} countryId={countryId} />
                   </div>
                 </div>
                 <SaveButton status={profileStatus}>Save profile</SaveButton>

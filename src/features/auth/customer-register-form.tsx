@@ -366,6 +366,7 @@ export function CustomerRegisterForm() {
           <Field id="customer-phone" label="Phone number">
             <PhoneField
               id="customer-phone"
+              countryId={countryId}
               value={phone}
               onChange={setPhone}
               disabled={isSubmitting || codeSignup?.channel === 'sms'}
