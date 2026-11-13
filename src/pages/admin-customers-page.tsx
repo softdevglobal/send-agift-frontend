@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Coins, Eye, LoaderCircle, Search, Users } from 'lucide-react'
+import { Ticket, Eye, LoaderCircle, Search, Users } from 'lucide-react'
 
 import { getAdminCustomer, type AdminCustomerRecord } from '@/api/admin'
 import {
-  POINTS_ENTRY_LABEL,
-  adjustCustomerPoints,
-  getCustomerPoints,
+  adjustCustomerGameEntries,
+  getCustomerGameEntries,
   searchCustomers,
-  type CustomerPointsSummary,
-  type PointsWallet,
-} from '@/api/points'
+  type CustomerEntriesSummary,
+  type GameEntriesWallet,
+} from '@/api/game-entries'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import { Button } from '@/components/ui/button'
@@ -31,15 +30,15 @@ import { isSuperAdmin } from '@/lib/auth'
 import { textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 
-/** Customers and their points wallets. Grants and deductions are Super Admin only. */
+/** Customers and their game entries. Grants and deductions are Super Admin only. */
 export function AdminCustomersPage() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<CustomerPointsSummary[]>([])
+  const [results, setResults] = useState<CustomerEntriesSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selected, setSelected] = useState<CustomerPointsSummary | null>(null)
+  const [selected, setSelected] = useState<CustomerEntriesSummary | null>(null)
   /** The customer open in the preview panel. */
-  const [viewing, setViewing] = useState<CustomerPointsSummary | null>(null)
+  const [viewing, setViewing] = useState<CustomerEntriesSummary | null>(null)
   const customers = usePagedList(results, TABLE_PAGE_SIZE, query)
 
   useEffect(() => {
@@ -68,7 +67,7 @@ export function AdminCustomersPage() {
     <>
       <AdminPageHeader
         title="Customers"
-        description="Open a customer to see their account, addresses, recipients, saved gifts, and orders. Points stay on this list."
+        description="Open a customer to see their account, addresses, recipients, saved gifts, and orders. Game entries stay on this list."
       />
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -117,10 +116,10 @@ export function AdminCustomersPage() {
               <button
                 type="button"
                 onClick={() => setSelected(c)}
-                title="Points wallet"
+                title="Game entries"
                 className="flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1.5 text-sm font-bold tabular-nums text-amber-950 transition-colors hover:bg-amber-300"
               >
-                <Coins className="size-4" />
+                <Ticket className="size-4" />
                 {c.balance.toLocaleString()}
               </button>
               <button
@@ -178,10 +177,10 @@ function WalletSheet({
   customer,
   onBalance,
 }: {
-  customer: CustomerPointsSummary
+  customer: CustomerEntriesSummary
   onBalance: (balance: number) => void
 }) {
-  const [wallet, setWallet] = useState<PointsWallet | null>(null)
+  const [wallet, setWallet] = useState<GameEntriesWallet | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [direction, setDirection] = useState<'grant' | 'deduct'>('grant')
@@ -192,20 +191,20 @@ function WalletSheet({
   const [key, setKey] = useState(() => crypto.randomUUID())
 
   useEffect(() => {
-    getCustomerPoints(customer.customer_id)
+    getCustomerGameEntries(customer.customer_id)
       .then(setWallet)
-      .catch((err) => setError(getErrorMessage(err, 'Could not load points.')))
+      .catch((err) => setError(getErrorMessage(err, 'Could not load game entries.')))
   }, [customer.customer_id])
 
   async function submit() {
     const n = Math.trunc(Number(amount))
-    if (!(n > 0)) return setError('Enter a whole number of points above zero.')
+    if (!(n > 0)) return setError('Enter a whole number of game entries above zero.')
     if (!reason.trim()) return setError('A reason is required. It is kept with the entry.')
     setBusy(true)
     setError(null)
     setNotice(null)
     try {
-      const updated = await adjustCustomerPoints(customer.customer_id, {
+      const updated = await adjustCustomerGameEntries(customer.customer_id, {
         amount: direction === 'grant' ? n : -n,
         reason: reason.trim(),
         idempotency_key: key,
@@ -215,7 +214,7 @@ function WalletSheet({
       setAmount('')
       setReason('')
       setKey(crypto.randomUUID())
-      setNotice(direction === 'grant' ? `Granted ${n} points.` : `Deducted ${n} points.`)
+      setNotice(direction === 'grant' ? `Granted ${n} game entries.` : `Deducted ${n} game entries.`)
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -239,8 +238,8 @@ function WalletSheet({
             <div className="grid grid-cols-3 gap-3">
               {[
                 ['Balance', wallet.balance],
-                ['Earned', wallet.lifetime_earned],
-                ['Spent', wallet.lifetime_spent],
+                ['Earned', wallet.totals.earned],
+                ['Used', wallet.totals.spent],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl bg-muted/40 px-4 py-3 ring-1 ring-border/50">
                   <p className="text-[11px] font-medium tracking-[0.12em] text-muted-foreground uppercase">{label}</p>
@@ -251,7 +250,7 @@ function WalletSheet({
 
             {isSuperAdmin() ? (
               <div className="space-y-3 rounded-2xl p-4 ring-1 ring-border/60">
-                <p className="text-sm font-semibold">Adjust points</p>
+                <p className="text-sm font-semibold">Adjust game entries</p>
                 <div className="grid grid-cols-[120px_1fr] gap-3">
                   <select
                     aria-label="Direction"
@@ -268,52 +267,52 @@ function WalletSheet({
                     step={1}
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
-                    placeholder="Points"
-                    aria-label="Points"
+                    placeholder="Entries"
+                    aria-label="Game entries"
                     className="h-10"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="points-reason">Reason</Label>
+                  <Label htmlFor="entries-reason">Reason</Label>
                   <textarea
-                    id="points-reason"
+                    id="entries-reason"
                     className={textareaClassName}
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
-                    placeholder="e.g. goodwill credit for a delayed order"
+                    placeholder="e.g. correction after a support review"
                   />
                 </div>
                 <FormAlert error={error} notice={notice} />
                 <Button type="button" className="h-10 w-full" disabled={busy} onClick={submit}>
                   {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                  {direction === 'grant' ? 'Grant points' : 'Deduct points'}
+                  {direction === 'grant' ? 'Grant entries' : 'Deduct entries'}
                 </Button>
               </div>
             ) : null}
 
             <div>
               <p className="mb-2 text-sm font-semibold">History</p>
-              {wallet.entries.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No points activity yet.</p>
+              {wallet.history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No game entries activity yet.</p>
               ) : (
                 <ul className="divide-y divide-border/40">
-                  {wallet.entries.map((e) => (
+                  {wallet.history.map((e) => (
                     <li key={e.id} className="flex items-start gap-3 py-2.5 text-sm">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium">{e.description || POINTS_ENTRY_LABEL[e.entry_type]}</p>
+                        <p className="font-medium">{e.description}</p>
                         <p className="truncate text-xs text-muted-foreground" title={e.reason}>
-                          {POINTS_ENTRY_LABEL[e.entry_type] ?? e.entry_type} · {formatDate(e.created_at)}
+                          {e.entry_type.replaceAll('_', ' ')} · {formatDate(e.created_at)}
                           {e.reason && e.reason !== e.description ? ` · ${e.reason}` : ''}
                         </p>
                       </div>
                       <p
                         className={cn(
                           'font-semibold tabular-nums',
-                          e.amount_delta < 0 ? 'text-red-700' : 'text-emerald-700',
+                          e.delta < 0 ? 'text-red-700' : 'text-emerald-700',
                         )}
                       >
-                        {e.amount_delta > 0 ? '+' : ''}
-                        {e.amount_delta.toLocaleString()}
+                        {e.delta > 0 ? '+' : ''}
+                        {e.delta.toLocaleString()}
                       </p>
                       <p className="w-16 text-right text-xs text-muted-foreground tabular-nums">
                         = {e.balance_after.toLocaleString()}
@@ -348,7 +347,7 @@ function CustomerPreview({
   onClose,
   onOpenWallet,
 }: {
-  customer: CustomerPointsSummary | null
+  customer: CustomerEntriesSummary | null
   onClose: () => void
   onOpenWallet: () => void
 }) {
@@ -388,8 +387,8 @@ function CustomerPreview({
           <>
             <StatusPill tone={customer.status === 'active' ? 'good' : 'warn'}>{customer.status}</StatusPill>
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950">
-              <Coins className="size-3" />
-              {customer.balance.toLocaleString()} pts
+              <Ticket className="size-3" />
+              {customer.balance.toLocaleString()} entries
             </span>
           </>
         ) : null
@@ -398,8 +397,8 @@ function CustomerPreview({
       actions={
         customer ? (
           <Button type="button" variant="outline" className="h-10 px-4" onClick={onOpenWallet}>
-            <Coins className="size-4" />
-            Points wallet
+            <Ticket className="size-4" />
+            Game entries
           </Button>
         ) : null
       }
@@ -421,7 +420,8 @@ function CustomerPreview({
               { label: 'Country', value: customer.country_name },
               { label: 'Type', value: record?.customer_type },
               { label: 'Joined', value: formatDate(customer.created_at) },
-              { label: 'Points', value: customer.balance.toLocaleString() },
+              { label: 'State', value: customer.state_name ?? 'Not given' },
+              { label: 'Game entries', value: customer.balance.toLocaleString() },
             ]}
           />
           <FormAlert error={error} />

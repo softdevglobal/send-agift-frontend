@@ -28,7 +28,7 @@ import {
   sellerSetupSteps,
   SellerStat,
 } from '@/features/seller'
-import { PointsLowAlert } from '@/features/seller/points-low-alert'
+import { AdvertisingAlert } from '@/features/seller/advertising-alert'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -209,7 +209,7 @@ export function SellerDashboardPage() {
         </div>
       </section>
 
-      <PointsLowAlert />
+      <AdvertisingAlert />
 
       <QuickNav />
 

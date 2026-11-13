@@ -104,7 +104,8 @@ export function catalogProductFromApi(product: Product, shop?: Shop): CatalogPro
     currency: product.currency,
     priceAmount: product.price_amount,
     media: media.length ? media : undefined,
-    rewardPoints: product.reward_points ?? 0,
+    gameEntries: product.game_entries ?? 0,
+    sponsored: product.sponsored ?? false,
     stockLeft: typeof product.stock_left === 'number' ? product.stock_left : undefined,
   }
 }
@@ -159,6 +160,17 @@ export function getCatalogProduct(id: string) {
     return mapped
   }
   return catalogProducts.find((product) => product.id === id) ?? null
+}
+
+/**
+ * Promoted products first, keeping the order they came in otherwise. A
+ * stable sort, so search, filters and paging keep the same order.
+ */
+export function sponsoredFirst<T extends { sponsored?: boolean }>(list: T[]): T[] {
+  return list
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => Number(!!b.item.sponsored) - Number(!!a.item.sponsored) || a.index - b.index)
+    .map(({ item }) => item)
 }
 
 export function filterCatalog({

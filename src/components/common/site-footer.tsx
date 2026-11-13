@@ -18,7 +18,7 @@ const quickLinks = [
 const serviceLinks = [
   { to: '/orders', label: 'Track order' },
   { to: '/legal', label: 'Terms & policies' },
-  { to: '/account/points', label: 'Points & competitions' },
+  { to: '/competitions', label: 'Games & competitions' },
   { to: '/become-a-seller', label: 'Seller support' },
 ]
 
@@ -49,7 +49,7 @@ export function SiteFooter() {
             community
           </h2>
           <p className="max-w-md text-sm text-white/80 sm:text-base">
-            Earn points on every gift, save the ones you love, and track each
+            Save the gifts you love, add a personal message, and track each
             delivery to their door.
           </p>
           <Button
@@ -77,7 +77,7 @@ export function SiteFooter() {
               <BrandLogo imgClassName="h-14" />
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
-              A social gifting marketplace with trusted delivery, points, and
+              A social gifting marketplace with trusted delivery and
               optional skill competitions.
             </p>
           </div>
@@ -129,7 +129,7 @@ export function SiteFooter() {
                 <div>
                   <p className="text-sm font-semibold">Always available</p>
                   <p className="text-sm text-white/60">
-                    Help for orders, points, and competitions.
+                    Help for orders, payments, and competitions.
                   </p>
                 </div>
               </li>
@@ -156,7 +156,7 @@ export function SiteFooter() {
             )}
           >
             <p>© {new Date().getFullYear()} SendAgift. All rights reserved.</p>
-            <p>Delivery · Payments · Points</p>
+            <p>Delivery · Payments · Support</p>
           </div>
         </div>
       </div>

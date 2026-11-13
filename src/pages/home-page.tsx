@@ -56,7 +56,7 @@ const homeFeatures = [
   {
     icon: Headphones,
     title: '24/7 Support',
-    description: 'Help for orders, points, and competitions.',
+    description: 'Help for orders, payments, and competitions.',
   },
 ]
 
@@ -281,8 +281,8 @@ export function HomePage() {
                 up to 50% off
               </h2>
               <p className="max-w-md text-base leading-relaxed font-medium text-brand-ink/75">
-                Seasonal hampers, keepsakes, and wellness gifts, with bonus
-                points on eligible checkouts.
+                Seasonal hampers, keepsakes, and wellness gifts from
+                local sellers.
               </p>
               <p className="text-sm font-extrabold tracking-wide">
                 *While stocks last, selected sellers only

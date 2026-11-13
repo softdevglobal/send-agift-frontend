@@ -1,5 +1,5 @@
 import {
-  Coins,
+  Ticket,
   Crown,
   Gift,
   Heart,
@@ -64,10 +64,10 @@ export const accountNavGroups: AccountNavGroup[] = [
         hint: 'Ratings you left on delivered gifts',
       },
       {
-        to: '/account/points',
-        label: 'My points',
-        icon: Coins,
-        hint: 'Balance and points history',
+        to: '/account/game-entries',
+        label: 'Game entries',
+        icon: Ticket,
+        hint: 'Your entries and where they came from',
       },
     ],
   },

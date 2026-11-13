@@ -70,15 +70,6 @@ export function ReserveCard({
     )
   }
 
-  if (comp.prize_type === 'points') {
-    return (
-      <Panel title="Prize reserve" icon={<Wallet className="size-5 text-emerald-600" />}>
-        <p className="text-sm text-muted-foreground">
-          Points prizes are credited by the platform, so no money reserve is needed.
-        </p>
-      </Panel>
-    )
-  }
 
   const value = Number(amount)
   const minor = currency && amount ? majorToMinor(value, currency) : 0

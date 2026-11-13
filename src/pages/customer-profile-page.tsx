@@ -31,6 +31,7 @@ import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { ProfileImage } from '@/components/common/profile-image'
+import { StateCard } from '@/features/game-entries/state-card'
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
@@ -407,6 +408,8 @@ export function CustomerProfilePage() {
           />
 
           <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
+
+          <StateCard />
 
           <section className="rounded-2xl border border-destructive/40 bg-card p-6">
             <h2 className="font-poster text-xl">Delete account</h2>

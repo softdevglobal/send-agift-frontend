@@ -24,8 +24,8 @@ export const COUNTRY_CAPABILITY_FLAGS = [
   'domestic_delivery_enabled',
   'international_delivery_enabled',
   'memberships_enabled',
-  'points_earning_enabled',
-  'points_usage_enabled',
+  'entries_earning_enabled',
+  'entries_usage_enabled',
   'skill_competitions_enabled',
   'progressive_prizes_enabled',
   'chance_games_enabled',
@@ -43,8 +43,8 @@ export const DEFAULT_COUNTRY_CAPABILITY_INPUT: CountryCapabilityInput = {
   domestic_delivery_enabled: true,
   international_delivery_enabled: true,
   memberships_enabled: true,
-  points_earning_enabled: true,
-  points_usage_enabled: true,
+  entries_earning_enabled: true,
+  entries_usage_enabled: true,
   skill_competitions_enabled: false,
   progressive_prizes_enabled: false,
   chance_games_enabled: false,
@@ -201,7 +201,6 @@ export type ReceivedGift = {
   order_number: string
   sender_name: string
   gift_message?: string
-  gift_points: number
   delivered_at: string
   items: ReceivedGiftItem[]
 }
@@ -310,12 +309,14 @@ export type Product = {
   status: ProductStatus
   occasion_tags: string[]
   customer_type_visibility: CustomerTypeVisibility
-  points_display_enabled: boolean
+  /** True while the product is on a seller's promoted (advertising) list. */
+  sponsored?: boolean
   /**
-   * Points a customer earns per unit bought, paid from the seller's points on
-   * delivery. On public reads it is 0 when the seller can't currently fund it.
+   * Game entries one purchase of this product earns right now: its level's
+   * award while the seller's package has budget and games are on. 0 otherwise.
+   * The customer's own region decides at checkout; see getEntryOffers.
    */
-  reward_points?: number
+  game_entries?: number
   prep_minutes: number
   created_at: string
   updated_at: string
@@ -397,9 +398,6 @@ export type ProductInput = {
   status?: ProductStatus
   occasion_tags?: string[]
   customer_type_visibility?: CustomerTypeVisibility
-  points_display_enabled?: boolean
-  /** Points a customer earns per unit bought (0–1,000,000). */
-  reward_points?: number
   prep_minutes?: number
   /** Optional. API sets this from the first image in `media` when omitted. */
   image_url?: string | null
@@ -550,9 +548,6 @@ export type Order = {
   currency: string
   gift_message?: string | null
   media_greeting_id?: string | null
-  /** Points the sender attached to the gift. */
-  gift_points?: number
-  gift_points_status?: GiftPointsStatus
   /**
    * A free gift has `total_amount` 0: the seller funds `free_gift_cost` (item
    * plus delivery) from their free gift budget.
@@ -566,14 +561,11 @@ export type Order = {
 export type OrderKind = 'paid' | 'free_gift'
 
 /**
- * Where points attached to a gift are: taken from the sender (held), reached
- * the recipient's account (delivered), came back (returned), or were taken
- * back after a refund (reversed).
+ * Where a line's game entries are: promised and waiting for the payment
+ * (reserved), granted, released (the order was never paid), or taken back
+ * after a refund or cancellation (reversed).
  */
-export type GiftPointsStatus = 'none' | 'held' | 'delivered' | 'returned' | 'reversed'
-
-/** Where a line's reward points are. */
-export type RewardStatus = 'none' | 'reserved' | 'awarded' | 'released' | 'reversed'
+export type EntriesStatus = 'none' | 'reserved' | 'granted' | 'released' | 'reversed'
 
 /**
  * What a customer may see of a shipment: who is carrying the parcel and how to
@@ -602,10 +594,9 @@ export type OrderItem = {
   unit_amount: number
   total_amount: number
   fulfilment_status: FulfilmentStatus
-  /** The product's reward as sold: points per unit, the line total, and where they are. */
-  reward_points_per_unit?: number
-  reward_points?: number
-  reward_status?: RewardStatus
+  /** Game entries this line earns, and where they are. */
+  game_entries?: number
+  entries_status?: EntriesStatus
   created_at: string
   updated_at: string
   /** Present once the line has shipped. */
@@ -992,11 +983,6 @@ export type CreateOrderInput = {
   /** Quoted rates from POST /shipping/quote. Optional but preferred when present. */
   shipping_quotes?: OrderShippingQuote[]
   items: OrderItemInput[]
-  /**
-   * Points from the customer's balance to send with the gift. Needs a
-   * recipient with an email; they reach that person's account on delivery.
-   */
-  gift_points?: number
 }
 
 /** @deprecated Use CreateOrderInput */

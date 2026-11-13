@@ -54,10 +54,7 @@ export function CompetitionHero({
   const ends = new Date(comp.ends_at).getTime()
   const open = status === 'live' || status === 'paused'
 
-  const prize =
-    comp.prize_type === 'points'
-      ? `${(comp.prize_points ?? 0).toLocaleString()} pts`
-      : prizeMoney(
+  const prize = prizeMoney(
           comp.final_prize_cents ?? livePrizeCents ?? (comp.status === 'draft' ? comp.start_prize_cents : comp.current_prize_cents),
           comp.prize_currency,
         )
@@ -230,7 +227,7 @@ export function CompetitionStats({ comp, livePlays }: { comp: AdminCompetition; 
         icon={Gamepad2}
         label="Plays"
         value={(livePlays ?? comp.eligible_play_count).toLocaleString()}
-        hint={comp.points_per_attempt ? `${comp.points_per_attempt} pts each` : 'Free to play'}
+        hint={comp.entries_per_attempt ? `${comp.entries_per_attempt} ${comp.entries_per_attempt === 1 ? 'entry' : 'entries'} each` : 'Free to play'}
         tone="bg-violet-600"
       />
       <StatTile

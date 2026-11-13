@@ -1,6 +1,5 @@
 import {
   Boxes,
-  Coins,
   Eye,
   Film,
   GripVertical,
@@ -13,7 +12,6 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import { listCountries, type Country } from '@/api/countries'
 import { CurrencySelect } from '@/components/common/currency-select'
@@ -32,7 +30,6 @@ import {
   MAX_PRODUCT_MEDIA,
   parcelComplete,
   parseTags,
-  suggestedRewardPoints,
   splitPrepMinutes,
   toProductInput,
   type ProductFormMedia,
@@ -48,7 +45,7 @@ import {
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
-import { blankIfZero, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 function isCategoryId(tag: string) {
   return giftCategories.some((item) => item.id === tag.toLowerCase())
@@ -93,11 +90,6 @@ export function ProductWizard({
   onSubmit,
 }: ProductWizardProps) {
   const [form, setForm] = useState<ProductFormState>(initialForm ?? emptyForm)
-  // Once the seller types their own reward, the price stops filling it in. A
-  // gift that already has one keeps it.
-  const [rewardEdited, setRewardEdited] = useState(
-    () => Number(initialForm?.reward_points ?? 0) > 0,
-  )
   const [uploadingKind, setUploadingKind] = useState<'photo' | 'video' | null>(null)
   const [uploadProgress, setUploadProgress] = useState({ completed: 0, total: 0 })
   const [saving, setSaving] = useState(false)
@@ -113,7 +105,6 @@ export function ProductWizard({
   useEffect(() => {
     if (open) {
       setForm(initialForm ?? emptyForm)
-      setRewardEdited(Number(initialForm?.reward_points ?? 0) > 0)
       setError(null)
       setUploadingKind(null)
       setUploadProgress({ completed: 0, total: 0 })
@@ -156,7 +147,6 @@ export function ProductWizard({
   }
 
   const priceMajor = Number(form.price_major)
-  const suggestedReward = suggestedRewardPoints(priceMajor)
   const priceValid =
     form.price_major.trim() !== '' && Number.isFinite(priceMajor) && priceMajor >= 0
   const tags = useMemo(() => parseTags(form.occasion_tags), [form.occasion_tags])
@@ -471,10 +461,6 @@ export function ProductWizard({
               onChange={(event) => {
                 const value = event.target.value
                 update('price_major', value)
-                // The reward follows the price until the seller sets their own.
-                if (!rewardEdited) {
-                  update('reward_points', blankIfZero(suggestedRewardPoints(Number(value))))
-                }
               }}
               placeholder="28.00"
             />
@@ -487,49 +473,6 @@ export function ProductWizard({
               countries={shopCountry ? [shopCountry] : undefined}
               disabled={Boolean(shopCountry)}
             />
-          </WizardField>
-          <WizardField
-            label="Reward points"
-            htmlFor="wizard-reward-points"
-            full
-            hint={
-              <>
-                Points a customer earns for each one bought, paid from your{' '}
-                <Link to="/seller/points" className="font-medium text-primary hover:underline">
-                  points balance
-                </Link>{' '}
-                when they order.{' '}
-                {rewardEdited && suggestedReward !== Number(form.reward_points) ? (
-                  <button
-                    type="button"
-                    className="font-medium text-primary hover:underline"
-                    onClick={() => {
-                      setRewardEdited(false)
-                      update('reward_points', blankIfZero(suggestedReward))
-                    }}
-                  >
-                    Use the suggested {suggestedReward.toLocaleString()}
-                  </button>
-                ) : (
-                  <>Filled in as 10% of the price back. Change it to anything, or 0 for none.</>
-                )}
-              </>
-            }
-          >
-            <div className="relative">
-              <Coins className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-[oklch(0.6_0.13_75)]" />
-              <Input
-                id="wizard-reward-points"
-                inputMode="numeric"
-                value={form.reward_points}
-                onChange={(event) => {
-                  setRewardEdited(true)
-                  update('reward_points', event.target.value.replace(/[^0-9]/g, ''))
-                }}
-                placeholder="0"
-                className="pl-9"
-              />
-            </div>
           </WizardField>
           <WizardField
             label="Sold to"
@@ -1062,14 +1005,6 @@ export function ProductWizard({
                 }
               />
               <SummaryRow label="Price" value={priceLabel} />
-              <SummaryRow
-                label="Reward"
-                value={
-                  Number(form.reward_points) > 0
-                    ? `${Number(form.reward_points).toLocaleString()} points each`
-                    : 'None'
-                }
-              />
               <SummaryRow
                 label="Sold to"
                 value={

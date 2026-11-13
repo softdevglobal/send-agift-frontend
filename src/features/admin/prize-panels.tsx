@@ -98,11 +98,7 @@ export function PrizeDashboard({
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           label={comp.final_prize_cents !== undefined ? 'Final prize' : 'Current prize'}
-          value={
-            comp.prize_type === 'points'
-              ? `${(comp.prize_points ?? 0).toLocaleString()} pts each`
-              : prizeMoney(comp.final_prize_cents ?? current, cur)
-          }
+          value={prizeMoney(comp.final_prize_cents ?? current, cur)}
           hint={capped ? 'Maximum reached' : comp.prize_growth_enabled ? `+${prizeMoney(comp.increment_per_play_cents, cur)} a play` : 'Fixed'}
         />
         <Card label="Starting prize" value={prizeMoney(comp.start_prize_cents, cur)} />
@@ -115,9 +111,9 @@ export function PrizeDashboard({
           hint={analytics ? `${Math.round(analytics.repeat_play_rate * 100)}% played again` : undefined}
         />
         <Card
-          label="Points consumed"
-          value={(analytics?.net_points_consumed ?? 0).toLocaleString()}
-          hint={analytics?.points_refunded ? `${analytics.points_refunded.toLocaleString()} refunded` : undefined}
+          label="Game entries used"
+          value={(analytics?.net_entries_consumed ?? 0).toLocaleString()}
+          hint={analytics?.entries_refunded ? `${analytics.entries_refunded.toLocaleString()} refunded` : undefined}
         />
         <Card
           label="Reconciliation"
@@ -150,7 +146,7 @@ export function PrizeDashboard({
 }
 
 const REJECTION_LABEL: Record<string, string> = {
-  INSUFFICIENT_POINTS: 'Not enough points',
+  INSUFFICIENT_ENTRIES: 'Not enough game entries',
   PLAY_LIMIT_REACHED: 'Play limit reached',
   GAME_NOT_ACTIVE: 'Round not active',
   OUTSIDE_GAME_WINDOW: 'Outside the window',
@@ -463,7 +459,7 @@ export function PlaysPanel({
           <thead className="sticky top-0 bg-card">
             <tr className="border-b border-border/60 text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
               <th className="py-2 pr-3 font-medium">Player</th>
-              <th className="py-2 pr-3 text-right font-medium">Points</th>
+              <th className="py-2 pr-3 text-right font-medium">Entries</th>
               <th className="py-2 pr-3 text-right font-medium">Added</th>
               <th className="py-2 pr-3 text-right font-medium">Result</th>
               <th className="py-2 pr-3 font-medium">Status</th>
@@ -478,7 +474,7 @@ export function PlaysPanel({
                   {p.display_name || p.customer_id.slice(0, 8)}
                   <span className="block text-xs text-muted-foreground">play #{p.attempt_number}</span>
                 </td>
-                <td className="py-2 pr-3 text-right tabular-nums">{p.points_spent}</td>
+                <td className="py-2 pr-3 text-right tabular-nums">{p.entries_spent}</td>
                 <td className="py-2 pr-3 text-right tabular-nums">
                   {p.prize_increment_cents ? prizeMoney(p.prize_increment_cents, cur) : '-'}
                 </td>
@@ -650,7 +646,7 @@ export function VoidPlayDialog({
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={refund} onCheckedChange={(value) => setRefund(value === true)} />
-            Refund its {play?.points_spent ?? 0} points
+            Refund its {play?.entries_spent ?? 0} game entries
           </label>
           <label className="flex items-center gap-2 text-sm">
             <Checkbox checked={reverse} onCheckedChange={(value) => setReverse(value === true)} />
@@ -683,7 +679,7 @@ export function VoidPlayDialog({
               if (!play) return
               if (!reason.trim()) return setError('A reason is required.')
               return submit(async () => {
-                await voidPlay(comp.id, play.id, { reason: reason.trim(), refund_points: refund, reverse_prize: reverse })
+                await voidPlay(comp.id, play.id, { reason: reason.trim(), refund_entries: refund, reverse_prize: reverse })
                 setReason('')
                 await onDone('Play voided.')
               })

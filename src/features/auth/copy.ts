@@ -5,7 +5,7 @@ export const loginCopy: Record<AuthRole, LoginCopy> = {
     roleLabel: 'Customer',
     headline: 'Gifts that arrive with intention.',
     supporting:
-      'Discover country-ready gifts, track every delivery, and earn points along the way.',
+      'Discover country-ready gifts, and track every delivery to the door.',
     submitLabel: 'Sign in',
     switchPrompt: 'Selling on SendAgift?',
     switchLabel: 'Seller sign in',

@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/features/auth/auth-context'
 import { AvailabilityNotice } from '@/features/competition-points/availability-notice'
-import { bonusWhen, formatMoney, newRequestKey } from '@/features/competition-points/format'
+import { formatMoney, newRequestKey } from '@/features/competition-points/format'
 import { formatBps } from '@/features/competition-points/use-member-discount'
 import { CustomerPageHeader } from '@/features/customer-commerce'
 import { getErrorMessage } from '@/lib/api'
@@ -118,9 +118,8 @@ function Offers() {
       </div>
       {offers.length > 0 ? <HowItWorks /> : null}
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Bonus points are added to <Link to="/account/points" className="underline">My points</Link>, the same points
-        you earn from gifts and prizes. Points cannot be transferred or withdrawn as cash. Competition availability and
-        point conditions apply, and vary by location.
+        A membership gives a discount and benefits on the gifts you send. It does not include game entries. You can
+        cancel renewal at any time from My membership.
       </p>
     </div>
   )
@@ -183,12 +182,6 @@ export function OfferCard({
             <Perk icon={<Percent className="size-4" />} tone="bg-brand-violet/10 text-brand-violet">
               <strong className="block">{formatBps(offer.member_discount_bps)} off every gift</strong>
               On the gift price of every order while you are a member.
-            </Perk>
-          ) : null}
-          {offer.member_bonus_points > 0 ? (
-            <Perk icon={<BadgeCheck className="size-4" />} tone="bg-brand-teal/15 text-brand-teal">
-              <strong className="block">+{offer.member_bonus_points.toLocaleString()} bonus points</strong>
-              {bonusWhen(offer.bonus_trigger)}
             </Perk>
           ) : null}
           {offer.gift_benefits.map((b) => (

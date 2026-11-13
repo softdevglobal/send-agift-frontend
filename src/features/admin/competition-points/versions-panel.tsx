@@ -13,28 +13,17 @@ import {
   Plus,
   Rocket,
   Trash2,
-  Wallet,
 } from 'lucide-react'
 
 import {
   createOffer,
-  createPolicy,
   deleteOffer,
-  deletePolicy,
   getCPSettings,
   listAdminOffers,
-  listAdminPolicies,
   offerAction,
-  policyAction,
-  previewPolicy,
   updateOffer,
-  updatePolicy,
-  type BonusTrigger,
   type IntervalUnit,
   type PlanOffer,
-  type PolicyInput,
-  type PolicyPreview,
-  type RewardPolicy,
   type VersionAction,
   type VersionStatus,
 } from '@/api/competition-points'
@@ -42,15 +31,6 @@ import type { Country } from '@/api/types'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
 import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import {
   WizardDialog,
@@ -61,14 +41,14 @@ import {
 import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
 import { AdminEmptyState } from '@/features/admin'
-import { bonusWhen, formatDate, formatMoney } from '@/features/competition-points/format'
+import { formatDate, formatMoney } from '@/features/competition-points/format'
 import { getErrorMessage } from '@/lib/api'
 import { getTokenSubject, isSuperAdmin } from '@/lib/auth'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { majorToMinor, minorToMajor } from '@/lib/money'
 
-import { offerActions, versionActions } from './labels'
-import { ActionButtons, Field, StatusPill, UnapprovedNote } from './shared'
+import { offerActions } from './labels'
+import { StatusPill } from './shared'
 
 function useVersionActions(load: () => Promise<void>) {
   const [busy, setBusy] = useState<string | null>(null)
@@ -340,18 +320,6 @@ function OfferCard({
               'No gift discount'
             )}
           </Perk>
-          <Perk icon={Crown} tone="bg-brand-violet/15 text-brand-violet" active={o.member_bonus_points > 0}>
-            {o.member_bonus_points > 0 ? (
-              <>
-                <strong>{o.member_bonus_points.toLocaleString()}</strong> bonus points{' '}
-                {o.bonus_trigger === 'first_gift'
-                  ? 'after the first qualifying gift of each paid period'
-                  : 'with each paid period'}
-              </>
-            ) : (
-              'No bonus points'
-            )}
-          </Perk>
         </ul>
 
         {o.gift_benefits.length > 0 ? (
@@ -466,8 +434,6 @@ function OfferDialog({
   const [price, setPrice] = useState('')
   const [unit, setUnit] = useState<IntervalUnit>('month')
   const [count, setCount] = useState('1')
-  const [bonus, setBonus] = useState('')
-  const [trigger, setTrigger] = useState<BonusTrigger>('payment')
   const [discount, setDiscount] = useState('')
   // SendAGift's commission per sale, which funds the member discount and so caps it.
   const [feeBps, setFeeBps] = useState<number | null>(null)
@@ -488,8 +454,6 @@ function OfferDialog({
     setPrice(existing ? String(minorToMajor(existing.price_minor, existing.currency)) : '')
     setUnit(existing?.interval_unit ?? 'month')
     setCount(String(existing?.interval_count ?? 1))
-    setBonus(existing ? String(existing.member_bonus_points) : '')
-    setTrigger(existing?.bonus_trigger ?? 'payment')
     setDiscount(existing?.member_discount_bps ? String(existing.member_discount_bps / 100) : '')
     setBenefits((existing?.gift_benefits ?? []).join('\n'))
     setTerms(existing?.terms_version ?? 'v1')
@@ -504,7 +468,6 @@ function OfferDialog({
   const intervalCount = Number(count) || 0
   const priceNumber = Number(price)
   const benefitList = benefits.split('\n').map((b) => b.trim()).filter(Boolean)
-  const bonusPoints = Number(bonus) || 0
   const tierValid = /^[a-z0-9_-]{2,40}$/.test(tier.trim().toLowerCase())
   const priceLine = priceNumber > 0 && currency ? formatMoney(majorToMinor(priceNumber, currency), currency) : '-'
 
@@ -520,8 +483,6 @@ function OfferDialog({
       price_minor: majorToMinor(priceNumber, currency),
       interval_unit: unit,
       interval_count: intervalCount || 1,
-      member_bonus_points: bonusPoints,
-      bonus_trigger: trigger,
       member_discount_bps: discountBps,
       gift_benefits: benefitList,
       terms_version: terms.trim(),
@@ -691,7 +652,7 @@ function OfferDialog({
     {
       id: 'benefits',
       title: 'Member perks',
-      description: 'Discount, bonus points and benefits.',
+      description: 'Discount and benefits.',
       icon: Gift,
       blockedReason: discountOverCap
         ? feeBps && feeBps > 0
@@ -707,96 +668,6 @@ function OfferDialog({
             currency={currency}
             over={discountOverCap}
           />
-
-          <section className="rounded-2xl border-2 border-brand-violet/25 bg-brand-violet/5 p-5">
-            <div className="flex items-start gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-violet text-white">
-                <Crown className="size-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <label htmlFor="of-bonus" className="text-base font-semibold">
-                  Extra member bonus
-                </label>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Competition points added once per paid period. Unused points carry into the next period.
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="of-bonus"
-                      inputMode="numeric"
-                      value={bonus}
-                      onChange={(e) => setBonus(e.target.value.replace(/\D/g, ''))}
-                      placeholder="0"
-                      className="h-14 w-36 bg-background text-center font-poster text-3xl"
-                    />
-                    <span className="text-sm font-semibold text-muted-foreground">points</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {[0, 100, 250, 500, 1000].map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setBonus(String(n))}
-                        className={cn(
-                          'rounded-full border-2 px-3 py-1.5 text-sm font-semibold transition-colors',
-                          bonusPoints === n
-                            ? 'border-brand-ink bg-brand-ink text-white'
-                            : 'border-brand-ink/15 bg-background hover:border-brand-ink',
-                        )}
-                      >
-                        {n === 0 ? 'No bonus' : n}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {bonusPoints > 0 ? (
-                  <div className="mt-4">
-                    <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Credited</p>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      {(
-                        [
-                          ['payment', 'When the payment goes through', 'Each paid period adds the bonus at once.'],
-                          ['first_gift', 'After their first gift', 'Waits for the first delivered paid gift of the period.'],
-                        ] as const
-                      ).map(([value, title, body]) => (
-                        <button
-                          key={value}
-                          type="button"
-                          onClick={() => setTrigger(value)}
-                          className={cn(
-                            'rounded-xl border-2 bg-background px-3 py-2.5 text-left transition-colors',
-                            trigger === value ? 'border-brand-violet' : 'border-brand-ink/15 hover:border-brand-ink/40',
-                          )}
-                        >
-                          <span className="block text-sm font-semibold">{title}</span>
-                          <span className="block text-xs text-muted-foreground">{body}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-                <p className="mt-4 rounded-lg bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                  {bonusPoints > 0 && trigger === 'payment' ? (
-                    <>
-                      Every time a member&apos;s payment goes through,{' '}
-                      <strong className="text-foreground">{bonusPoints.toLocaleString()} points</strong> are added. A
-                      member who keeps 200 and renews has {(200 + bonusPoints).toLocaleString()}. A refunded payment
-                      takes back what is unused.
-                    </>
-                  ) : bonusPoints > 0 ? (
-                    <>
-                      A member who sends their first gift of a period earns that gift&apos;s ordinary points{' '}
-                      <strong className="text-foreground">plus {bonusPoints.toLocaleString()}</strong>. Every other gift
-                      in the period earns ordinary points only. This is the extra amount, not the combined total.
-                    </>
-                  ) : (
-                    'No bonus: members get the gift benefits below, and gifts earn ordinary points like anyone else.'
-                  )}
-                </p>
-              </div>
-            </div>
-          </section>
 
           <BenefitsEditor
             benefits={benefitList}
@@ -851,16 +722,9 @@ function OfferDialog({
                       {bpsLabel(discountBps)} off the gift price on every order while you are a member.
                     </li>
                   ) : null}
-                  {bonusPoints > 0 ? (
-                    <li className="flex items-start gap-2">
-                      <Crown className="mt-0.5 size-4 shrink-0 text-brand-violet" />
-                      {bonusPoints.toLocaleString()} bonus competition points.{' '}
-                      {bonusWhen(trigger)}
-                    </li>
-                  ) : null}
-                  {benefitList.length === 0 && bonusPoints === 0 && discountBps === 0 ? (
+                  {benefitList.length === 0 && discountBps === 0 ? (
                     <li className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-950 ring-1 ring-amber-200">
-                      This package lists no benefits and no bonus yet. Go back to add some.
+                      This package lists no benefits yet. Go back to add some.
                     </li>
                   ) : null}
                 </ul>
@@ -885,10 +749,6 @@ function OfferDialog({
                   ['Price', priceLine],
                   ['Renews', intervalCount ? billingLabel(unit, intervalCount) : '-'],
                   ['Member discount', discountBps > 0 ? `${bpsLabel(discountBps)} off gifts` : 'None'],
-                  ['Member bonus', bonusPoints > 0 ? `${bonusPoints.toLocaleString()} points per paid period` : 'None'],
-                  ...(bonusPoints > 0
-                    ? [['Bonus credited', trigger === 'payment' ? 'When the payment goes through' : 'After the first gift']]
-                    : []),
                   ['Gift benefits', benefitList.length ? `${benefitList.length} listed` : 'None'],
                   ['Terms version', terms.trim() || '-'],
                 ].map(([k, v]) => (
@@ -941,245 +801,6 @@ function OfferDialog({
       completing={busy}
       error={<FormAlert error={error} />}
     />
-  )
-}
-
-// ─── Reward policies ──────────────────────────────────────────────────────
-
-function describePolicy(p: RewardPolicy) {
-  const base =
-    p.base_mode === 'fixed'
-      ? `${p.base_fixed_points.toLocaleString()} points per qualifying gift`
-      : `${p.base_points_per_unit} point(s) per whole ${p.currency ?? 'unit'} spent`
-  const parts = [base]
-  if (p.base_cap_points) parts.push(`capped at ${p.base_cap_points.toLocaleString()}`)
-  if (p.min_eligible_minor > 0) parts.push(`minimum ${formatMoney(p.min_eligible_minor, p.currency)}`)
-  parts.push(p.expiry_days ? `expire after ${p.expiry_days} days` : 'no expiry')
-  if (p.exclude_free_gifts) parts.push('free gifts excluded')
-  return parts.join(' · ')
-}
-
-export function PoliciesPanel({ countries }: { countries: Country[] }) {
-  const [items, setItems] = useState<RewardPolicy[] | null>(null)
-  const [editing, setEditing] = useState<RewardPolicy | 'new' | null>(null)
-  const me = getTokenSubject()
-  const canEdit = isSuperAdmin()
-  const load = useCallback(async () => setItems(await listAdminPolicies()), [])
-  const { busy, error, notice, run, setError } = useVersionActions(load)
-
-  useEffect(() => {
-    load().catch((err) => setError(getErrorMessage(err, 'Could not load reward policies.')))
-  }, [load, setError])
-
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <UnapprovedNote>
-          A gift earns under the version that was in force when it was paid for. Rewards are released when the gift is
-          delivered. The point formula and expiry are owner decisions.
-        </UnapprovedNote>
-        {canEdit ? (
-          <Button onClick={() => setEditing('new')} className="h-10 px-4">
-            <Plus className="size-4" /> New policy
-          </Button>
-        ) : null}
-      </div>
-      <FormAlert error={error} notice={notice} />
-      {items === null ? (
-        <div className="flex justify-center py-10">
-          <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : items.length === 0 ? (
-        <AdminEmptyState icon={Wallet} title="No reward policies" description="Without a published policy, gifts earn no competition points." />
-      ) : (
-        <div className="space-y-2">
-          {items.map((p) => (
-            <article key={p.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border-2 border-brand-ink/15 bg-card px-4 py-3">
-              <div>
-                <p className="font-semibold">
-                  {p.country_name} · version {p.version} <StatusPill status={p.status} />
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{describePolicy(p)}</p>
-              </div>
-              {canEdit ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  {p.status === 'draft' ? (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(p)}>
-                        <Pencil className="size-3.5" /> Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" disabled={busy === p.id} onClick={() => run(p.id, 'Draft deleted.', () => deletePolicy(p.id))}>
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </>
-                  ) : null}
-                  <ActionButtons
-                    actions={versionActions(p.status).filter((a) => !(a.action === 'approve' && p.submitted_by_admin_id === me))}
-                    busy={busy === p.id}
-                    onAction={(a) => run(p.id, `Version ${p.version}: ${a.replaceAll('_', ' ')} done.`, () => policyAction(p.id, a as VersionAction))}
-                  />
-                </div>
-              ) : null}
-            </article>
-          ))}
-        </div>
-      )}
-      <PolicyDialog
-        policy={editing}
-        countries={countries}
-        onClose={() => setEditing(null)}
-        onSaved={async () => {
-          setEditing(null)
-          await load()
-        }}
-      />
-    </div>
-  )
-}
-
-function PolicyDialog({
-  policy,
-  countries,
-  onClose,
-  onSaved,
-}: {
-  policy: RewardPolicy | 'new' | null
-  countries: Country[]
-  onClose: () => void
-  onSaved: () => void
-}) {
-  const open = policy !== null
-  const existing = policy && policy !== 'new' ? policy : null
-  const [countryId, setCountryId] = useState('')
-  const [mode, setMode] = useState<'fixed' | 'per_currency_unit'>('fixed')
-  const [fixed, setFixed] = useState('')
-  const [perUnit, setPerUnit] = useState('')
-  const [min, setMin] = useState('')
-  const [cap, setCap] = useState('')
-  const [expiry, setExpiry] = useState('')
-  const [exclude, setExclude] = useState(true)
-  const [preview, setPreview] = useState<PolicyPreview | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const currency = countries.find((c) => c.id === countryId)?.default_currency ?? ''
-
-  useEffect(() => {
-    if (!open) return
-    setError(null)
-    setPreview(null)
-    setCountryId(existing?.country_id ?? countries[0]?.id ?? '')
-    setMode(existing?.base_mode ?? 'fixed')
-    setFixed(existing?.base_fixed_points ? String(existing.base_fixed_points) : '')
-    setPerUnit(existing?.base_points_per_unit ? String(existing.base_points_per_unit) : '')
-    setMin(existing?.min_eligible_minor ? String(minorToMajor(existing.min_eligible_minor, existing.currency ?? 'USD')) : '')
-    setCap(existing?.base_cap_points ? String(existing.base_cap_points) : '')
-    setExpiry(existing?.expiry_days ? String(existing.expiry_days) : '')
-    setExclude(existing?.exclude_free_gifts ?? true)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  function body(): PolicyInput {
-    return {
-      country_id: countryId,
-      base_mode: mode,
-      base_fixed_points: Number(fixed) || 0,
-      base_points_per_unit: Number(perUnit) || 0,
-      min_eligible_minor: min && currency ? majorToMinor(Number(min), currency) : 0,
-      base_cap_points: cap ? Number(cap) : null,
-      expiry_days: expiry ? Number(expiry) : null,
-      exclude_free_gifts: exclude,
-    }
-  }
-
-  async function runPreview() {
-    try {
-      setPreview(await previewPolicy(body(), currency ? majorToMinor(50, currency) : 5000, 100, currency || 'USD'))
-      setError(null)
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not preview.'))
-    }
-  }
-
-  async function save() {
-    setBusy(true)
-    setError(null)
-    try {
-      if (existing) await updatePolicy(existing.id, body())
-      else await createPolicy(body())
-      onSaved()
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not save the policy.'))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{existing ? `Edit version ${existing.version}` : 'New reward policy'}</DialogTitle>
-          <DialogDescription>How one qualifying gift earns ordinary competition points in a country.</DialogDescription>
-        </DialogHeader>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Country" htmlFor="rp-country" className="sm:col-span-2">
-            <select id="rp-country" className={selectClassName} value={countryId} disabled={!!existing} onChange={(e) => setCountryId(e.target.value)}>
-              {countries.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Award" htmlFor="rp-mode">
-            <select id="rp-mode" className={selectClassName} value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}>
-              <option value="fixed">Fixed per gift</option>
-              <option value="per_currency_unit">Per whole currency unit</option>
-            </select>
-          </Field>
-          {mode === 'fixed' ? (
-            <Field label="Points per gift" htmlFor="rp-fixed">
-              <Input id="rp-fixed" inputMode="numeric" value={fixed} onChange={(e) => setFixed(e.target.value.replace(/\D/g, ''))} />
-            </Field>
-          ) : (
-            <Field label={`Points per ${currency || 'unit'}`} htmlFor="rp-unit">
-              <Input id="rp-unit" inputMode="numeric" value={perUnit} onChange={(e) => setPerUnit(e.target.value.replace(/\D/g, ''))} />
-            </Field>
-          )}
-          <Field label={`Minimum spend (${currency || 'currency'})`} htmlFor="rp-min" hint="Items only, delivery excluded.">
-            <Input id="rp-min" inputMode="decimal" value={min} onChange={(e) => setMin(e.target.value)} placeholder="0" />
-          </Field>
-          <Field label="Cap per gift (points)" htmlFor="rp-cap">
-            <Input id="rp-cap" inputMode="numeric" value={cap} onChange={(e) => setCap(e.target.value.replace(/\D/g, ''))} placeholder="None" />
-          </Field>
-          <Field label="Points expire after (days)" htmlFor="rp-exp" hint="Disclosed before purchase.">
-            <Input id="rp-exp" inputMode="numeric" value={expiry} onChange={(e) => setExpiry(e.target.value.replace(/\D/g, ''))} placeholder="Never" />
-          </Field>
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <Checkbox checked={exclude} onCheckedChange={(v) => setExclude(v === true)} />
-            Free gifts don&apos;t qualify
-          </label>
-        </div>
-        {preview ? (
-          <p className="rounded-lg bg-accent/60 px-3 py-2 text-sm">
-            A {formatMoney(preview.eligible_minor, currency || 'USD')} gift{' '}
-            {preview.qualifies
-              ? `earns ${preview.base_points} points; a member's first gift of a period with a 100-point bonus earns ${preview.member_first_gift_total}.`
-              : 'does not qualify.'}
-          </p>
-        ) : null}
-        <FormAlert error={error} />
-        <DialogFooter>
-          <Button variant="outline" onClick={runPreview}>
-            Preview
-          </Button>
-          <Button onClick={save} disabled={busy}>
-            {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Save draft
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
 

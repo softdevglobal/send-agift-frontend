@@ -6,12 +6,12 @@ export const privacyPolicy: Policy = {
   title: 'Privacy Policy',
   summary: 'How SendAGift handles personal information, and how to request access, correction or account deletion.',
   audience: 'customer',
-  version: '1.1',
+  version: '1.2',
   status: 'Published',
-  updated: '11 November 2026',
-  effective: '11 November 2026',
+  updated: '13 November 2026',
+  effective: '13 November 2026',
   intro: [
-    'This policy applies to the SendAGift app and sendagift.win website, published by Soft Dev Global. It explains the information used for accounts, gift shopping, delivery, payments, messaging, reviews, games, points and competitions, where those features are available. Contact support@sendagift.win for privacy questions or requests.',
+    'This policy applies to the SendAGift app and sendagift.win website, published by Soft Dev Global. It explains the information used for accounts, gift shopping, delivery, payments, messaging, reviews, advertising packages, game entries, games and competitions, where those features are available. Contact support@sendagift.win for privacy questions or requests.',
   ],
   sections: [
     {
@@ -19,7 +19,7 @@ export const privacyPolicy: Policy = {
       blocks: [
         'To request deletion of your SendAGift account and associated personal data without installing the app, email support@sendagift.win with the subject "Delete my SendAGift account". Send the request from your registered email address and identify the account. Never send your password, payment-card details or verification codes. If you cannot access that email address, contact the same support address for help verifying ownership.',
         'You can also use the Delete account option in the app’s Account screen or your profile on the website. The self-service flow requires active deliveries to be completed or resolved first. You can still contact support to initiate a deletion request while an order is active; we will explain any information needed to complete delivery, cancellation, a refund or another outstanding obligation.',
-        'The account-deletion process removes or anonymises profile contact details, the profile-image reference, date of birth and login credentials, and removes saved addresses, recipients, saved gifts, push-device registrations and linked sign-in identities. It invalidates existing account sessions. Transaction, payment and points records may remain for accounting, dispute resolution, security and fraud prevention. Public contributions, support conversations, uploaded files and provider-held records may require additional handling: include them in your request so support can identify the associated data and explain any necessary retention. Deleting the app alone does not delete your account.',
+        'The account-deletion process removes or anonymises profile contact details, the profile-image reference, date of birth and login credentials, and removes saved addresses, recipients, saved gifts, push-device registrations and linked sign-in identities. It invalidates existing account sessions. Transaction, payment and game entries records, and records of the retired points programme, may remain for accounting, dispute resolution, security and fraud prevention. Public contributions, support conversations, uploaded files and provider-held records may require additional handling: include them in your request so support can identify the associated data and explain any necessary retention. Deleting the app alone does not delete your account.',
       ],
     },
     {
@@ -27,12 +27,12 @@ export const privacyPolicy: Policy = {
       blocks: [
         {
           list: [
-            'Account information: name or display name, email address, phone number, account identifiers, verification status, profile photo and date of birth when you provide them. Passwords are stored as hashes. A sign-in provider supplies account identifiers and profile information when you choose that sign-in method.',
+            'Account information: name or display name, email address, phone number, country and the state or region you tell us you live in, account identifiers, verification status, profile photo and date of birth when you provide them. Passwords are stored as hashes. A sign-in provider supplies account identifiers and profile information when you choose that sign-in method.',
             'Gift and delivery information: products, cart and saved items, sender and recipient details, delivery addresses and any supplied map coordinates, gift messages, delivery instructions, order status and tracking events.',
-            'Transactions and rewards: purchase amounts, currencies, payment and refund references, membership status, points balances and ledger entries, game attempts and scores, competition entries, results and prize records.',
+            'Transactions and rewards: purchase amounts, currencies, payment and refund references, membership status, game entries balances and history, game attempts and scores, competition entries, results and prize records. Balances from the retired points programme are kept, unchanged, until they are settled.',
             'Content and support: reviews, ratings, comments, messages, attachments and photos you choose to upload. Public reviews, comments and leaderboards can show the display information associated with your contribution; an anonymous display option does not prevent the service from retaining an account association.',
             'Technical information: network addresses used to serve and protect requests, authentication and security events, guest identifiers, notification tokens, device platform and information needed to operate the service and investigate errors.',
-            'Seller information: business and contact details, registration identifiers, listings, fulfilment information and payment-provider onboarding information supplied through seller services on the website.',
+            'Seller information: business and contact details, registration identifiers, listings, fulfilment information, advertising package purchases and the products promoted with them, and payment-provider onboarding information supplied through seller services on the website.',
           ],
         },
       ],
@@ -46,7 +46,7 @@ export const privacyPolicy: Policy = {
     {
       heading: 'How we use information',
       blocks: [
-        'We use information to operate accounts and sign-in, display and fulfil orders, process payments and refunds, manage deliveries and recipients, provide messaging and customer support, publish contributions you choose to share, and administer available memberships, points, games and competitions. We also use necessary information to secure the service, prevent abuse, enforce eligibility rules, investigate complaints and comply with applicable obligations.',
+        'We use information to operate accounts and sign-in, display and fulfil orders, process payments and refunds, manage deliveries and recipients, provide messaging and customer support, publish contributions you choose to share, and administer available memberships, advertising packages, game entries, games and competitions. Your country, state or region and age decide whether games and game entries are available to you; we do not work out your state from your network address. We also use necessary information to secure the service, prevent abuse, enforce eligibility rules, investigate complaints and comply with applicable obligations.',
         'Information required to complete an order or secure an account is necessary for those services. Optional profile details, content uploads and notification permission can be declined, although the related feature may then be unavailable. Where applicable law requires a legal basis, processing is connected to providing the requested service, meeting legal obligations, protecting legitimate operational and security interests, or consent for optional processing that requires it.',
       ],
     },

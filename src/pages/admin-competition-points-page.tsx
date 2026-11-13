@@ -5,29 +5,24 @@ import { listCountries } from '@/api/countries'
 import type { Country } from '@/api/types'
 import { AdminPageHeader } from '@/features/admin'
 import { ApprovalsPanel } from '@/features/admin/competition-points/approvals-panel'
-import { CasesPanel, OverviewPanel, StopsPanel } from '@/features/admin/competition-points/operations-panel'
-import { OffersPanel, PoliciesPanel } from '@/features/admin/competition-points/versions-panel'
+import { StopsPanel } from '@/features/admin/competition-points/stops-panel'
 import { cn } from '@/lib/utils'
 
 const TABS = [
-  { id: 'overview', label: 'Overview' },
   { id: 'approvals', label: 'Approvals' },
-  { id: 'policies', label: 'Reward policies' },
-  { id: 'offers', label: 'Memberships' },
   { id: 'stops', label: 'Emergency stops' },
-  { id: 'cases', label: 'Review cases' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
 
 /**
- * Competition points (handover v4): approvals, reward policies, membership
- * offers, emergency stops and review cases. Every admin can see them; a
- * Super Admin changes them, and each protected change needs a second admin.
+ * Where memberships may be sold and renewed: an approval record per
+ * country, and the emergency stops. Games and game entries have their own
+ * switches under Games control.
  */
 export function AdminCompetitionPointsPage() {
   const [params, setParams] = useSearchParams()
-  const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'overview') as Tab
+  const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'approvals') as Tab
   const [countries, setCountries] = useState<Country[]>([])
 
   useEffect(() => {
@@ -39,8 +34,8 @@ export function AdminCompetitionPointsPage() {
   return (
     <>
       <AdminPageHeader
-        title="Competition points"
-        description="Gift points, the member bonus and competition entry. Nothing is offered anywhere until an approval record covers it."
+        title="Membership approvals"
+        description="Memberships are sold in a country only while an approval record covers it."
       />
       <nav className="mb-5 flex gap-1 overflow-x-auto border-b border-brand-ink/15">
         {TABS.map((t) => (
@@ -57,12 +52,8 @@ export function AdminCompetitionPointsPage() {
           </button>
         ))}
       </nav>
-      {tab === 'overview' ? <OverviewPanel /> : null}
       {tab === 'approvals' ? <ApprovalsPanel countries={countries} /> : null}
-      {tab === 'policies' ? <PoliciesPanel countries={countries} /> : null}
-      {tab === 'offers' ? <OffersPanel countries={countries} /> : null}
       {tab === 'stops' ? <StopsPanel countries={countries} /> : null}
-      {tab === 'cases' ? <CasesPanel /> : null}
     </>
   )
 }

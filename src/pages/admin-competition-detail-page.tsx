@@ -307,9 +307,7 @@ export function AdminCompetitionDetailPage() {
                 <>
                   {comp.prize_description}
                   <span className="block text-xs font-normal text-muted-foreground">
-                    {comp.prize_type === 'points'
-                      ? `${(comp.prize_points ?? 0).toLocaleString()} points each`
-                      : comp.prize_growth_enabled
+                    {comp.prize_growth_enabled
                         ? `${prizeMoney(comp.start_prize_cents, comp.prize_currency)} + ${prizeMoney(comp.increment_per_play_cents, comp.prize_currency)}/play, max ${prizeMoney(comp.max_prize_cents, comp.prize_currency)}`
                         : prizeMoney(comp.start_prize_cents, comp.prize_currency)}{' '}
                     · {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
@@ -322,7 +320,7 @@ export function AdminCompetitionDetailPage() {
               value={
                 <>
                   {comp.max_attempts_per_customer ? `${comp.max_attempts_per_customer} plays` : 'No play limit'} ·{' '}
-                  {comp.points_per_attempt} pts each
+                  {comp.entries_per_attempt} {comp.entries_per_attempt === 1 ? 'entry' : 'entries'} each
                   <span className="block text-xs font-normal text-muted-foreground">
                     {comp.daily_play_limit ? `${comp.daily_play_limit}/day · ` : ''}
                     {comp.min_plays_to_win ? `${comp.min_plays_to_win} to win · ` : ''}
@@ -680,12 +678,7 @@ export function AdminCompetitionDetailPage() {
                       </p>
                     </div>
                     <StatusPill tone={winnerTone(w.status)}>{scoreStatusLabel(w.status)}</StatusPill>
-                    {comp.prize_type === 'points' ? (
-                      <StatusPill tone={w.status === 'validated' ? 'good' : 'info'}>
-                        {(comp.prize_points ?? 0).toLocaleString()} pts ·{' '}
-                        {w.status === 'validated' ? 'credited' : 'on validation'}
-                      </StatusPill>
-                    ) : w.prize_value_cents !== undefined ? (
+                    {w.prize_value_cents !== undefined ? (
                       <StatusPill tone={w.settlement_status === 'settled' ? 'good' : 'info'}>
                         {prizeMoney(w.prize_value_cents, comp.prize_currency)} ·{' '}
                         {w.settlement_status === 'settled' ? 'paid' : w.settlement_status === 'pending' ? 'unpaid' : 'n/a'}

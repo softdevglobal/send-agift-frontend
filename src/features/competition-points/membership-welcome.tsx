@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BadgeCheck, Crown, Gift, LoaderCircle, Percent } from 'lucide-react'
+import { Crown, Gift, LoaderCircle, Percent } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { getMembership, syncMembership, type MembershipStatus } from '@/api/competition-points'
@@ -39,7 +39,7 @@ function markWelcomed(s: MembershipStatus) {
  * welcomes the new member with what they get. Without the return link (Stripe
  * sent them elsewhere, or the webhook was late) it still welcomes them once,
  * the first time a paid period is seen. onConfirmed reloads the page behind
- * it, so the bonus shows in the balance.
+ * it, so the paid period shows.
  */
 export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void }) {
   const [params, setParams] = useSearchParams()
@@ -117,7 +117,7 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
           <>
             <Crown className="size-4 shrink-0 text-brand-violet" />
             <span className="flex-1">
-              Your payment is still being confirmed. Your bonus points appear here as soon as it is.
+              Your payment is still being confirmed. Your membership shows here as soon as it is.
             </span>
             <Button size="sm" variant="outline" onClick={close}>
               OK
@@ -129,9 +129,6 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
   }
 
   const offer = status?.offer
-  const slot = status?.current_period?.bonus_slot
-  const credited = slot && (slot.status === 'awarded' || slot.status === 'restored') ? slot.bonus_points : 0
-  const bonus = offer?.member_bonus_points ?? 0
 
   return (
     <Dialog open onOpenChange={(open) => !open && close()}>
@@ -145,11 +142,6 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
           </span>
           <p className="mt-4 text-[10px] font-bold tracking-[0.18em] text-white/60 uppercase">Welcome to</p>
           <DialogTitle className="mt-1 font-poster text-3xl text-white">{offer?.name ?? 'your membership'}</DialogTitle>
-          {credited > 0 ? (
-            <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-teal px-4 py-1.5 text-sm font-bold text-brand-ink">
-              +{credited.toLocaleString()} points added
-            </p>
-          ) : null}
         </div>
 
         <div className="space-y-4 px-6 py-6">
@@ -158,14 +150,6 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
             {offer && offer.member_discount_bps > 0 ? (
               <Benefit icon={<Percent className="size-4" />} tone="bg-brand-violet/10 text-brand-violet">
                 <strong>{formatBps(offer.member_discount_bps)} off every gift</strong>, taken off at checkout.
-              </Benefit>
-            ) : null}
-            {bonus > 0 ? (
-              <Benefit icon={<BadgeCheck className="size-4" />} tone="bg-brand-teal/15 text-brand-teal">
-                <strong>{bonus.toLocaleString()} bonus points</strong>{' '}
-                {offer?.bonus_trigger === 'first_gift'
-                  ? 'after your first delivered gift each period.'
-                  : 'in My points every time your membership renews. Unused points carry over.'}
               </Benefit>
             ) : null}
             {(offer?.gift_benefits ?? []).map((b) => (
@@ -182,7 +166,7 @@ export function MembershipWelcome({ onConfirmed }: { onConfirmed?: () => void })
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button className="h-11 flex-1" onClick={close}>
-              See my points
+              See my membership
             </Button>
             <Button asChild variant="outline" className="h-11 flex-1">
               <Link to="/products" onClick={close}>

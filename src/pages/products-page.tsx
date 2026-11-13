@@ -21,6 +21,7 @@ import {
 } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
+  sponsoredFirst,
   inCategory,
   registerCatalogProducts,
 } from '@/features/customer-commerce/catalog'
@@ -75,7 +76,6 @@ function productFromSearch(shop: ShopGiftAvailability, gift: AvailabilityProduct
     status: 'published',
     occasion_tags: gift.occasion_tags ?? [],
     customer_type_visibility: 'both',
-    points_display_enabled: false,
     prep_minutes: 0,
     created_at: '',
     updated_at: '',
@@ -196,7 +196,7 @@ export function ProductsPage() {
   }, [hasDestination, destinationLat, destinationLng, arrivalDate, searchGeneration])
 
   const products = useMemo(
-    () => catalog.filter((product) => matchesFilters(product, { query, category })),
+    () => sponsoredFirst(catalog.filter((product) => matchesFilters(product, { query, category }))),
     [catalog, category, query],
   )
   const filteredByDelivery = hasDestination

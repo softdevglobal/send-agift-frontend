@@ -42,13 +42,13 @@ export const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: str
     label: 'Memberships',
     hint: 'Membership plans are available in this market.',
   },
-  points_earning_enabled: {
-    label: 'Points earning',
-    hint: 'Customers can earn loyalty points.',
+  entries_earning_enabled: {
+    label: 'Game entries earning',
+    hint: 'Allowed in this country. Earning also needs Games control switched on for the state.',
   },
-  points_usage_enabled: {
-    label: 'Points usage',
-    hint: 'Customers can spend loyalty points.',
+  entries_usage_enabled: {
+    label: 'Game entries use',
+    hint: 'Allowed in this country. Play also needs Games control switched on for the state and game.',
   },
   skill_competitions_enabled: {
     label: 'Skill competitions',
@@ -56,7 +56,7 @@ export const FLAG_COPY: Record<CountryCapabilityFlag, { label: string; hint: str
   },
   progressive_prizes_enabled: {
     label: 'Growing prizes',
-    hint: 'Prizes that grow with every points-paid play. Turn on only after legal sign-off for this market.',
+    hint: 'Prizes that grow with every play. Turn on only after legal sign-off for this market.',
   },
   chance_games_enabled: {
     label: 'Games of chance',

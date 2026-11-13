@@ -45,7 +45,7 @@ import {
 import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import { RewardBadge } from '@/features/points/reward-badge'
+import { EntriesBadge, SponsoredLabel } from '@/features/game-entries/entries-badge'
 
 export function ProductViewPage() {
   const { productId } = useParams()
@@ -323,10 +323,17 @@ export function ProductViewPage() {
               </p>
             ) : null}
 
-            {product.rewardPoints ? (
+            {product.sponsored ? (
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <RewardBadge points={product.rewardPoints} size="md" />
-                <span>per item, added to your points balance when you order.</span>
+                <SponsoredLabel />
+                {product.gameEntries ? (
+                  <>
+                    <EntriesBadge entries={product.gameEntries} />
+                    <span>
+                      per purchase, added once your payment is confirmed. Where games are available in your state.
+                    </span>
+                  </>
+                ) : null}
               </div>
             ) : null}
 

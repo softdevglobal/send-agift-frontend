@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Boxes,
-  Coins,
   Images,
   LoaderCircle,
   Package,
@@ -431,9 +430,9 @@ export function SellerProductsPage() {
                             {product.media?.length}
                           </span>
                         ) : null}
-                        {product.reward_points ? (
-                          <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-amber-300 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
-                            <Coins className="size-3" />+{product.reward_points}
+                        {product.sponsored ? (
+                          <span className="absolute bottom-2 left-2 rounded-md bg-brand-violet px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-white uppercase">
+                            Sponsored
                           </span>
                         ) : null}
                         {/* The price as a tag in the corner of the photo. */}

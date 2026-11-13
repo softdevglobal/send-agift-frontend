@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom'
 
 import { BackLink } from '@/components/common/back-link'
 import { getAdminCustomer, type AdminCustomerRecord } from '@/api/admin'
-import { getCustomerPoints, type PointsWallet } from '@/api/points'
+import { getCustomerGameEntries, type GameEntriesWallet } from '@/api/game-entries'
 import { FormAlert } from '@/components/common/form-alert'
 import { PageNav, TABLE_PAGE_SIZE, usePagedList } from '@/components/common/page-nav'
 import {
@@ -22,7 +22,7 @@ import { formatPriceAmount } from '@/lib/money'
 export function AdminCustomerDetailPage() {
   const { customerId = '' } = useParams()
   const [customer, setCustomer] = useState<AdminCustomerRecord | null>(null)
-  const [wallet, setWallet] = useState<PointsWallet | null>(null)
+  const [wallet, setWallet] = useState<GameEntriesWallet | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const orderPages = usePagedList(customer?.orders ?? [], TABLE_PAGE_SIZE, customerId)
@@ -46,9 +46,9 @@ export function AdminCustomerDetailPage() {
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
-    getCustomerPoints(customerId)
-      .then((points) => {
-        if (!cancelled) setWallet(points)
+    getCustomerGameEntries(customerId)
+      .then((entries) => {
+        if (!cancelled) setWallet(entries)
       })
       .catch(() => {
         if (!cancelled) setWallet(null)
@@ -92,7 +92,7 @@ export function AdminCustomerDetailPage() {
                 { label: 'Age check', value: customer.age_verified_at ? formatDate(customer.age_verified_at) : '' },
                 { label: 'Identity check', value: customer.identity_verified_at ? formatDate(customer.identity_verified_at) : '' },
                 { label: 'Password', value: customer.password_change_required ? 'Temporary password still in use' : 'Set by the customer' },
-                { label: 'Points', value: wallet ? wallet.balance.toLocaleString() : '' },
+                { label: 'Game entries', value: wallet ? wallet.balance.toLocaleString() : '' },
                 { label: 'Joined', value: formatDate(customer.created_at) },
                 { label: 'Closed', value: customer.deleted_at ? formatDate(customer.deleted_at) : '' },
               ]}

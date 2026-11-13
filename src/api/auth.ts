@@ -43,6 +43,8 @@ export function socialSignIn(body: {
 export function completeSocialSignup(body: {
   signup_token: string
   country_id: string
+  /** Required when the country has states. */
+  state_id?: string
   phone: string
   customer_type?: string
   display_name?: string

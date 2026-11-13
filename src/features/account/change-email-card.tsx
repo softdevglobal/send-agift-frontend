@@ -54,7 +54,7 @@ export function ChangeEmailCard({ role, email, onChanged }: ChangeEmailCardProps
 
   const id = (name: string) => `${role}-${name}`
   const holdAction =
-    role === 'seller' ? 'Buying points and raising rewards' : 'Prizes and gift points'
+    role === 'seller' ? 'Buying advertising packages' : 'Prize claims'
 
   function formProblem() {
     const trimmed = newEmail.trim()

@@ -73,7 +73,7 @@ export function ReauthDialog() {
               Confirm it is you
             </DialogTitle>
             <DialogDescription>
-              This action moves money or points. Enter your password to continue. You will not be asked again for a
+              This action moves money or changes what customers and sellers can earn. Enter your password to continue. You will not be asked again for a
               few minutes.
             </DialogDescription>
           </DialogHeader>

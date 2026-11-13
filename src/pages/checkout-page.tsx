@@ -67,7 +67,8 @@ import { optionalString } from '@/lib/form'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { isUuid } from '@/lib/uuid'
-import { RewardBadge } from '@/features/points/reward-badge'
+import { EntriesBadge } from '@/features/game-entries/entries-badge'
+import { useEntryOffers } from '@/features/game-entries/use-entry-offers'
 import {
   formatBps,
   memberDiscountMinor,
@@ -727,11 +728,11 @@ export function CheckoutPage() {
     }
   }
 
-  // What the lines promise, for the summary. The server decides the rest.
-  const rewardPoints = lines.reduce(
-    (sum, line) => sum + (line.product.rewardPoints ?? 0) * line.quantity,
-    0,
-  )
+  // What the lines would earn, worked out on the server for this customer.
+  // Each promoted line earns its award once, whatever the quantity; the
+  // order fixes the offer when it is placed.
+  const entryOffers = useEntryOffers(lines.map((line) => line.product.id))
+  const entriesNote = entryOffers?.offers.find((o) => o.game_entries === 0 && o.reason)?.reason
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -909,8 +910,7 @@ export function CheckoutPage() {
                         placeholder="jane@example.com"
                       />
                       <p className="text-xs text-muted-foreground">
-                        We email them when the gift is delivered, and it lets you send them
-                        points.
+                        We email them when the gift is delivered.
                       </p>
                     </div>
                     <div className="space-y-2 sm:col-span-2">
@@ -1474,14 +1474,18 @@ export function CheckoutPage() {
               </li>
             ))}
           </ul>
-          {rewardPoints > 0 ? (
+          {entryOffers && (entryOffers.total_game_entries > 0 || entriesNote) ? (
             <div className="mt-4 space-y-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground ring-1 ring-border/40">
-              {rewardPoints > 0 ? (
+              {entryOffers.total_game_entries > 0 ? (
                 <p className="flex items-center justify-between gap-2">
                   <span>You earn with this order</span>
-                  <RewardBadge points={rewardPoints} />
+                  <EntriesBadge entries={entryOffers.total_game_entries} />
                 </p>
               ) : null}
+              {entryOffers.total_game_entries > 0 ? (
+                <p>Added once your payment is confirmed. Taken back if the order is refunded or cancelled.</p>
+              ) : null}
+              {entriesNote ? <p>{entriesNote}</p> : null}
             </div>
           ) : null}
           <dl className="mt-4 space-y-2 border-t border-border/60 pt-4 text-sm">

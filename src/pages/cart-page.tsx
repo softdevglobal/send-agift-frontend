@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
+import { EntriesBadge } from '@/features/game-entries/entries-badge'
+import { useEntryOffers } from '@/features/game-entries/use-entry-offers'
 import {
   cartShops,
   CustomerEmptyState,
@@ -35,6 +37,7 @@ export function CartPage() {
   const memberBps = useMemberDiscountBps()
   const memberSavingMinor = currency ? memberDiscountMinor(lines, currency, memberBps) : 0
   const memberSaving = currency ? minorToMajor(memberSavingMinor, currency) : 0
+  const entryOffers = useEntryOffers(lines.map((line) => line.product.id))
 
   if (!lines.length) {
     return (
@@ -167,6 +170,12 @@ export function CartPage() {
 
         <aside className={cn(customerPanelClass, 'h-fit p-5')}>
           <h2 className="font-medium">Order summary</h2>
+          {entryOffers && entryOffers.total_game_entries > 0 ? (
+            <p className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+              <span>Estimated with this order, once paid</span>
+              <EntriesBadge entries={entryOffers.total_game_entries} />
+            </p>
+          ) : null}
           <dl className="mt-4 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Subtotal</dt>

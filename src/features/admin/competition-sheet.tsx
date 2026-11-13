@@ -125,9 +125,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const blocked = (comp?.schedule_blockers.length ?? 0) > 0
 
   const prize = comp
-    ? comp.prize_type === 'points'
-      ? `${(comp.prize_points ?? 0).toLocaleString()} points each`
-      : comp.prize_currency
+    ? comp.prize_currency
         ? formatPriceAmount(
             comp.final_prize_cents ?? (comp.status === 'draft' ? comp.start_prize_cents : comp.current_prize_cents),
             comp.prize_currency,
@@ -224,7 +222,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   </h3>
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <Fact label="Entry">
-                      {comp.points_per_attempt === 0 ? 'Free' : `${comp.points_per_attempt.toLocaleString()} pts a play`}
+                      {comp.entries_per_attempt === 0 ? 'Free' : `${comp.entries_per_attempt.toLocaleString()} ${comp.entries_per_attempt === 1 ? 'entry' : 'entries'} a play`}
                     </Fact>
                     <Fact label="Plays each">{comp.max_attempts_per_customer || 'No limit'}</Fact>
                     <Fact label="Plays so far">{comp.eligible_play_count.toLocaleString()}</Fact>
