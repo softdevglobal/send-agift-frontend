@@ -28,7 +28,7 @@ import { AdminEmptyState, AdminPageHeader } from '@/features/admin'
 import { WizardDialog, WizardField, WizardFields, type WizardStep } from '@/features/seller/wizard-dialog'
 import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
-import { selectClassName } from '@/lib/form-styles'
+import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
 import { askText } from '@/components/common/ask-dialog'
 
@@ -179,7 +179,7 @@ function PackagesPanel({ countries }: { countries: Country[] }) {
                 </span>
               </div>
               <p className="mt-2 text-lg font-bold">{formatCents(pkg.price_minor, pkg.currency)}</p>
-              {pkg.description ? <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p> : null}
+              {pkg.description ? <p className="mt-1 text-sm whitespace-pre-line text-muted-foreground">{pkg.description}</p> : null}
               <ul className="mt-3 space-y-1 text-sm">
                 {pkg.level_entries.map((n, i) => (
                   <li key={i} className="flex justify-between gap-3 text-muted-foreground">
@@ -367,7 +367,15 @@ function PackageDialog({
             <Input id="ad-name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="Starter" />
           </WizardField>
           <WizardField label="Description" htmlFor="ad-desc" hint="Optional." full>
-            <Input id="ad-desc" value={description} maxLength={600} onChange={(e) => setDescription(e.target.value)} placeholder="Promote your three best sellers" />
+            <textarea
+              id="ad-desc"
+              rows={3}
+              value={description}
+              maxLength={600}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Promote your three best sellers"
+              className={textareaClassName}
+            />
           </WizardField>
         </WizardFields>
       ),
@@ -441,7 +449,8 @@ function PackageDialog({
       description: 'Check the package, then save it as a draft. Publish it from the list.',
       icon: ClipboardCheck,
       content: (
-        <dl className="divide-y divide-border/60 rounded-xl border-2 border-brand-ink/10 text-sm">
+        <div className="space-y-3">
+          <dl className="divide-y divide-border/60 rounded-xl border-2 border-brand-ink/10 text-sm">
           {[
             ['Country', country?.name ?? '-'],
             ['Name', name.trim() || '-'],
@@ -456,7 +465,14 @@ function PackageDialog({
               <dd className="text-right font-semibold">{v}</dd>
             </div>
           ))}
-        </dl>
+          </dl>
+          {description.trim() ? (
+            <div className="rounded-xl border-2 border-brand-ink/10 px-4 py-3 text-sm">
+              <p className="mb-1 text-muted-foreground">Description</p>
+              <p className="whitespace-pre-line">{description.trim()}</p>
+            </div>
+          ) : null}
+        </div>
       ),
     },
   ]

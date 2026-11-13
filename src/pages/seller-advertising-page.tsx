@@ -230,7 +230,7 @@ export function SellerAdvertisingPage() {
                   <article key={pkg.id} className="flex flex-col rounded-xl border-2 border-brand-ink/15 bg-card p-5">
                     <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">{pkg.name}</p>
                     <p className="mt-1 font-poster text-3xl">{formatCents(pkg.price_minor, pkg.currency)}</p>
-                    {pkg.description ? <p className="mt-2 text-sm text-muted-foreground">{pkg.description}</p> : null}
+                    {pkg.description ? <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">{pkg.description}</p> : null}
                     <ul className="mt-4 space-y-1.5 text-sm">
                       <li>
                         Promotes up to <strong>{pkg.product_slots}</strong> {pkg.product_slots === 1 ? 'product' : 'products'}
