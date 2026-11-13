@@ -1,5 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BellRing, ClipboardCheck, Globe2, ListOrdered, LoaderCircle, Megaphone, Pencil, Plus, Timer, Trash2 } from 'lucide-react'
+import {
+  Award,
+  BellRing,
+  ClipboardCheck,
+  Crown,
+  Gift,
+  Globe2,
+  ListOrdered,
+  LoaderCircle,
+  Medal,
+  Megaphone,
+  Minus,
+  Pencil,
+  Plus,
+  Ticket,
+  Timer,
+  Trash2,
+} from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import { listCountries } from '@/api/countries'
@@ -183,7 +200,7 @@ function PackagesPanel({ countries }: { countries: Country[] }) {
               <ul className="mt-3 space-y-1 text-sm">
                 {pkg.level_entries.map((n, i) => (
                   <li key={i} className="flex justify-between gap-3 text-muted-foreground">
-                    <span>{levelName(i + 1, pkg.product_slots)}</span>
+                    <span>{levelName(i + 1, pkg.product_slots, pkg.level_names)}</span>
                     <span className="font-semibold text-foreground">{entriesLabel(n)}</span>
                   </li>
                 ))}
@@ -281,6 +298,10 @@ function PackageDialog({
   const [description, setDescription] = useState(pkg?.description ?? '')
   const [price, setPrice] = useState(pkg ? String(pkg.price_minor / 100) : '')
   const [levels, setLevels] = useState<string[]>(pkg ? pkg.level_entries.map(String) : ['3', '2', '1'])
+  /** The admin's names for the levels; a blank one uses the default name. */
+  const [levelNames, setLevelNames] = useState<string[]>(() =>
+    pkg ? pkg.level_entries.map((_, i) => pkg.level_names?.[i] ?? '') : ['', '', ''],
+  )
   const [pool, setPool] = useState(pkg ? String(pkg.entries_pool) : '')
   const [days, setDays] = useState(pkg ? String(pkg.validity_days) : '30')
   const [busy, setBusy] = useState(false)
@@ -298,6 +319,7 @@ function PackageDialog({
   function setSlots(n: number) {
     const count = Math.max(1, Math.min(20, n || 1))
     setLevels((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? prev[prev.length - 1] ?? '1'))
+    setLevelNames((prev) => Array.from({ length: count }, (_, i) => prev[i] ?? ''))
   }
 
   const marketBlocked = !countryId
@@ -327,6 +349,8 @@ function PackageDialog({
       currency,
       price_minor: priceMinor,
       level_entries: levelNumbers,
+      // Names only when at least one was given; the server fills blanks.
+      level_names: levelNames.some((n) => n.trim()) ? levelNames.map((n) => n.trim()) : [],
       entries_pool: poolNumber,
       validity_days: dayNumber,
     }
@@ -387,31 +411,14 @@ function PackageDialog({
       icon: ListOrdered,
       blockedReason: levelsBlocked,
       content: (
-        <div className="space-y-5">
-          <WizardField label="Products it promotes" htmlFor="ad-slots" hint="One priority level per product, highest first.">
-            <Input id="ad-slots" type="number" inputMode="numeric" min={1} max={20} value={levels.length} onChange={(e) => setSlots(Number(e.target.value))} className="sm:w-40" />
-          </WizardField>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Game entries a customer earns per purchase</p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {levels.map((value, i) => (
-                <label key={i} htmlFor={`ad-level-${i}`} className="flex items-center gap-3 rounded-xl border-2 border-brand-ink/10 px-3 py-2">
-                  <span className="w-24 shrink-0 text-sm font-semibold">{levelName(i + 1, levels.length)}</span>
-                  <Input
-                    id={`ad-level-${i}`}
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    max={1000}
-                    value={value}
-                    onChange={(e) => setLevels(levels.map((l, k) => (k === i ? e.target.value : l)))}
-                  />
-                  <span className="shrink-0 text-xs text-muted-foreground">entries</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
+        <LevelsEditor
+          levels={levels}
+          onLevels={setLevels}
+          names={levelNames}
+          onNames={setLevelNames}
+          onSlots={setSlots}
+          error={levelsBlocked}
+        />
       ),
     },
     {
@@ -456,7 +463,7 @@ function PackageDialog({
             ['Name', name.trim() || '-'],
             ['Price', priceLabel],
             ['Products', `${levels.length}`],
-            ...levelNumbers.map((n, i) => [`${levelName(i + 1, levels.length)} priority`, entriesLabel(n)]),
+            ...levelNumbers.map((n, i) => [`${levelName(i + 1, levels.length, levelNames)} priority`, entriesLabel(n)]),
             ['Budget', `${number.format(poolNumber || 0)} game entries`],
             ['Runs for', `${dayNumber || 0} days`],
           ].map(([k, v]) => (
@@ -593,7 +600,7 @@ function PurchasesPanel() {
                         .map((pr) => (
                           <li key={pr.product_id} className="flex justify-between gap-3">
                             <span className="truncate">
-                              <span className="text-muted-foreground">{levelName(pr.level, p.product_slots)}:</span> {pr.product_name}
+                              <span className="text-muted-foreground">{levelName(pr.level, p.product_slots, p.level_names)}:</span> {pr.product_name}
                             </span>
                             <span className="shrink-0 text-muted-foreground">{number.format(pr.entries_granted)} given</span>
                           </li>
@@ -647,5 +654,219 @@ function PurchasesPanel() {
         </div>
       )}
     </>
+  )
+}
+
+// ─── Products & levels ─────────────────────────────────────────────────────
+
+/** Rank looks: a crown, a medal and a ribbon for the top three. */
+const RANKS = [
+  { icon: Crown, badge: 'bg-amber-400 text-brand-ink', bar: 'from-amber-300 to-amber-500' },
+  { icon: Medal, badge: 'bg-slate-300 text-brand-ink', bar: 'from-slate-200 to-slate-400' },
+  { icon: Award, badge: 'bg-orange-300 text-brand-ink', bar: 'from-orange-200 to-orange-400' },
+]
+const OTHER_RANK = { icon: Ticket, badge: 'bg-brand-violet/15 text-brand-violet', bar: 'from-brand-violet/40 to-brand-violet' }
+
+/** A round − / + button. */
+function StepButton({ label, disabled, onClick, children }: { label: string; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="grid size-9 shrink-0 place-items-center rounded-full border-2 border-brand-ink/15 bg-surface text-brand-ink transition hover:border-brand-violet hover:text-brand-violet disabled:pointer-events-none disabled:opacity-30"
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * How many products a package promotes and what each priority level earns,
+ * as a ladder: the top product wears the crown, every level shows its share
+ * of entries as a bar, and the totals read back in plain words.
+ */
+function LevelsEditor({
+  levels,
+  onLevels,
+  names,
+  onNames,
+  onSlots,
+  error,
+}: {
+  levels: string[]
+  onLevels: (next: string[]) => void
+  names: string[]
+  onNames: (next: string[]) => void
+  onSlots: (count: number) => void
+  error: string | null
+}) {
+  const numbers = levels.map((l) => Math.max(0, Math.floor(Number(l)) || 0))
+  const top = Math.max(1, ...numbers)
+  const total = numbers.reduce((a, b) => a + b, 0)
+  const count = levels.length
+
+  const setLevel = (i: number, value: number | string) =>
+    onLevels(levels.map((l, k) => (k === i ? String(value) : l)))
+
+  const patterns: { label: string; make: (n: number, high: number) => number[] }[] = [
+    { label: 'Stepped', make: (n) => Array.from({ length: n }, (_, i) => n - i) },
+    { label: 'Equal', make: (n, high) => Array.from({ length: n }, () => Math.max(1, high)) },
+    { label: 'Top heavy', make: (n) => Array.from({ length: n }, (_, i) => (i === 0 ? n * 2 : Math.max(1, n - i))) },
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* How many products */}
+      <section className="rounded-2xl bg-brand-ink p-5 text-white">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold tracking-[0.16em] text-white/60 uppercase">Products it promotes</p>
+            <p className="mt-1 text-sm text-white/70">One priority level each, highest first.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="One product fewer"
+              disabled={count <= 1}
+              onClick={() => onSlots(count - 1)}
+              className="grid size-10 place-items-center rounded-full bg-white/10 transition hover:bg-white/20 disabled:opacity-30"
+            >
+              <Minus className="size-4" />
+            </button>
+            <span className="min-w-14 text-center font-poster text-4xl tabular-nums" aria-live="polite">
+              {count}
+            </span>
+            <button
+              type="button"
+              aria-label="One product more"
+              disabled={count >= 20}
+              onClick={() => onSlots(count + 1)}
+              className="grid size-10 place-items-center rounded-full bg-brand-teal text-brand-ink transition hover:bg-brand-teal/85 disabled:opacity-30"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-1.5" aria-hidden>
+          {levels.map((_, i) => (
+            <span
+              key={i}
+              className={cn(
+                'grid size-9 place-items-center rounded-lg transition',
+                i === 0 ? 'bg-amber-400 text-brand-ink' : 'bg-white/10 text-white/80',
+              )}
+            >
+              <Gift className="size-4" />
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* What each level earns */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-sm font-semibold">Levels and game entries</p>
+            <p className="text-xs text-muted-foreground">
+              Name each level the way sellers will see it, and set what a customer earns for buying its product.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {patterns.map((p) => (
+              <button
+                key={p.label}
+                type="button"
+                onClick={() => onLevels(p.make(count, top).map(String))}
+                className="rounded-full border border-brand-ink/15 px-2.5 py-1 text-xs font-semibold text-muted-foreground transition hover:border-brand-violet hover:text-brand-violet"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <ol className="space-y-2">
+          {levels.map((value, i) => {
+            const rank = RANKS[i] ?? OTHER_RANK
+            const Icon = rank.icon
+            const n = numbers[i]
+            const outOfOrder = (i > 0 && n > numbers[i - 1]) || n < 1
+            return (
+              <li
+                key={i}
+                className={cn(
+                  'rounded-2xl border-2 bg-surface p-3 transition',
+                  outOfOrder ? 'border-amber-400/70' : 'border-brand-ink/10',
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl', rank.badge)}>
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="shrink-0 text-sm font-bold text-muted-foreground">#{i + 1}</span>
+                      <label htmlFor={`ad-level-name-${i}`} className="sr-only">
+                        Name of level {i + 1}
+                      </label>
+                      <input
+                        id={`ad-level-name-${i}`}
+                        value={names[i] ?? ''}
+                        maxLength={40}
+                        onChange={(e) => onNames(names.map((n, k) => (k === i ? e.target.value : n)))}
+                        placeholder={levelName(i + 1, count)}
+                        className="h-8 w-full min-w-0 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-bold outline-none transition placeholder:text-brand-ink/40 hover:border-brand-ink/15 focus-visible:border-ring focus-visible:bg-surface focus-visible:ring-2 focus-visible:ring-ring/40"
+                      />
+                    </div>
+                    <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn('h-full rounded-full bg-gradient-to-r transition-all duration-300', rank.bar)}
+                        style={{ width: `${Math.min(100, (n / top) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <StepButton label={`Fewer entries for level ${i + 1}`} disabled={n <= 1} onClick={() => setLevel(i, Math.max(1, n - 1))}>
+                      <Minus className="size-3.5" />
+                    </StepButton>
+                    <label htmlFor={`ad-level-${i}`} className="sr-only">
+                      Entries for level {i + 1}
+                    </label>
+                    <input
+                      id={`ad-level-${i}`}
+                      inputMode="numeric"
+                      value={value}
+                      onChange={(e) => setLevel(i, e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      className="h-9 w-14 rounded-lg border border-input bg-surface text-center text-base font-bold tabular-nums outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    />
+                    <StepButton label={`More entries for level ${i + 1}`} disabled={n >= 1000} onClick={() => setLevel(i, n + 1)}>
+                      <Plus className="size-3.5" />
+                    </StepButton>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+
+        {/* The wizard says what is wrong; the card in question is outlined. */}
+        {error ? null : (
+          <p className="flex items-start gap-2 rounded-xl bg-brand-teal/15 px-3 py-2.5 text-sm">
+            <Ticket className="mt-0.5 size-4 shrink-0 text-brand-ink" />
+            <span>
+              A customer earns <strong>{entriesLabel(numbers[0] ?? 0)}</strong> for the top product
+              {count > 1 ? (
+                <>
+                  {' '}down to <strong>{entriesLabel(numbers[count - 1] ?? 0)}</strong> for the last
+                </>
+              ) : null}
+              . Buying one of each earns <strong>{entriesLabel(total)}</strong>.
+            </span>
+          </p>
+        )}
+      </section>
+    </div>
   )
 }

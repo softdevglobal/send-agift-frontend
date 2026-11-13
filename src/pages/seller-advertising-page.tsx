@@ -237,7 +237,7 @@ export function SellerAdvertisingPage() {
                       </li>
                       {pkg.level_entries.map((n, i) => (
                         <li key={i} className="flex items-center justify-between gap-3 text-muted-foreground">
-                          <span>{levelName(i + 1, pkg.product_slots)} priority</span>
+                          <span>{levelName(i + 1, pkg.product_slots, pkg.level_names)} priority</span>
                           <span className="font-semibold text-foreground">{entriesLabel(n)} per purchase</span>
                         </li>
                       ))}
@@ -439,14 +439,14 @@ function PurchaseCard({
             return (
               <li key={i} className="flex flex-wrap items-center gap-3 rounded-xl border-2 border-brand-ink/10 px-3 py-3">
                 <div className="w-28 shrink-0">
-                  <p className="text-sm font-bold">{levelName(i + 1, p.product_slots)}</p>
+                  <p className="text-sm font-bold">{levelName(i + 1, p.product_slots, p.level_names)}</p>
                   <p className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Ticket className="size-3.5" />
                     {entriesLabel(award)}
                   </p>
                 </div>
                 <select
-                  aria-label={`Product for ${levelName(i + 1, p.product_slots)} priority`}
+                  aria-label={`Product for ${levelName(i + 1, p.product_slots, p.level_names)} priority`}
                   className={cn(selectClassName, 'min-w-0 flex-1')}
                   value={id}
                   onChange={(e) => {

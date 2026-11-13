@@ -143,6 +143,8 @@ export type AdPackage = {
   product_slots: number
   /** Entries a customer earns per purchase at each level, top level first. */
   level_entries: number[]
+  /** The admin's names for the levels, top first; empty for the defaults. */
+  level_names?: string[] | null
   entries_pool: number
   validity_days: number
   status: AdPackageStatus
@@ -159,6 +161,8 @@ export type AdPackageInput = {
   currency: string
   price_minor: number
   level_entries: number[]
+  /** One name per level, or empty for the defaults. */
+  level_names: string[]
   entries_pool: number
   validity_days: number
 }
@@ -197,6 +201,7 @@ export type AdPurchase = {
   price_minor: number
   product_slots: number
   level_entries: number[]
+  level_names?: string[] | null
   entries_pool: number
   validity_days: number
   status: AdPurchaseStatus
@@ -243,8 +248,13 @@ export const AD_PURCHASE_LABEL: Record<AdPurchaseStatus, string> = {
   refunded: 'Refunded',
 }
 
-/** "High", "Medium", "Low" for three levels; "Level 1…n" otherwise. */
-export function levelName(level: number, slots: number) {
+/**
+ * A level's name: the admin's own when the package has one, else "High",
+ * "Medium", "Low" for three levels and "Level 1…n" otherwise.
+ */
+export function levelName(level: number, slots: number, names?: string[] | null) {
+  const own = names?.[level - 1]?.trim()
+  if (own) return own
   if (slots === 3) return ['High', 'Medium', 'Low'][level - 1] ?? `Level ${level}`
   if (slots === 2) return ['High', 'Low'][level - 1] ?? `Level ${level}`
   if (slots === 1) return 'Promoted'
