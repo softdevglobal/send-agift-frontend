@@ -1,6 +1,7 @@
 import { Star, Ticket } from 'lucide-react'
 
 import { entriesLabel } from '@/api/game-entries'
+import { useEntriesEarnable } from '@/features/game-entries/use-entries-earnable'
 import { cn } from '@/lib/utils'
 
 /**
@@ -60,7 +61,9 @@ export function SponsoredLabel({ className }: { className?: string }) {
 
 /** On a sponsored product's page: what buying it earns, as a slim gold strip. */
 export function EntriesRewardStrip({ entries, className }: { entries?: number; className?: string }) {
-  const earns = !!entries && entries > 0
+  // Not where this customer lives: say so rather than promise entries.
+  const available = useEntriesEarnable()
+  const earns = !!entries && entries > 0 && available
   return (
     <div
       className={cn(
@@ -82,6 +85,8 @@ export function EntriesRewardStrip({ entries, className }: { entries?: number; c
           <p className="mt-0.5 text-xs text-muted-foreground">
             Added once your payment is confirmed, where games are open in your state.
           </p>
+        ) : !available && entries ? (
+          <p className="mt-0.5 text-xs text-muted-foreground">Game entries are not available where you live yet.</p>
         ) : null}
       </div>
     </div>

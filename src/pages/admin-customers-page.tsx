@@ -146,6 +146,9 @@ export function AdminCustomersPage() {
 
       <CustomerPreview
         customer={viewing}
+        onBalance={(id, balance) =>
+          setResults((prev) => prev.map((c) => (c.customer_id === id ? { ...c, balance } : c)))
+        }
         onClose={() => setViewing(null)}
         onOpenWallet={() => {
           const customer = viewing
@@ -344,15 +347,20 @@ function initialsOf(name: string) {
 /** A quick look at one customer; the full record is its own page. */
 function CustomerPreview({
   customer,
+  onBalance,
   onClose,
   onOpenWallet,
 }: {
   customer: CustomerEntriesSummary | null
+  /** The balance read fresh when the panel opens, for the list behind it. */
+  onBalance: (customerId: string, balance: number) => void
   onClose: () => void
   onOpenWallet: () => void
 }) {
   const [record, setRecord] = useState<AdminCustomerRecord | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /** The live balance: the list's figure is as old as the search. */
+  const [balance, setBalance] = useState<number | null>(null)
   const customerId = customer?.customer_id ?? null
 
   useEffect(() => {
@@ -360,6 +368,7 @@ function CustomerPreview({
     let cancelled = false
     setRecord(null)
     setError(null)
+    setBalance(null)
     getAdminCustomer(customerId)
       .then((data) => {
         if (!cancelled) setRecord(data)
@@ -367,10 +376,23 @@ function CustomerPreview({
       .catch((err) => {
         if (!cancelled) setError(getErrorMessage(err, 'Could not load this customer.'))
       })
+    getCustomerGameEntries(customerId)
+      .then((wallet) => {
+        if (cancelled) return
+        setBalance(wallet.balance)
+        onBalance(customerId, wallet.balance)
+      })
+      .catch(() => {
+        // The list's figure stands in.
+      })
     return () => {
       cancelled = true
     }
+    // onBalance only updates the list; it does not decide what to load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId])
+
+  const entries = (balance ?? customer?.balance ?? 0).toLocaleString()
 
   const orders = record?.orders ?? []
   const recent = [...orders].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 3)
@@ -388,7 +410,7 @@ function CustomerPreview({
             <StatusPill tone={customer.status === 'active' ? 'good' : 'warn'}>{customer.status}</StatusPill>
             <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950">
               <Ticket className="size-3" />
-              {customer.balance.toLocaleString()} entries
+              {entries} entries
             </span>
           </>
         ) : null
@@ -421,7 +443,7 @@ function CustomerPreview({
               { label: 'Type', value: record?.customer_type },
               { label: 'Joined', value: formatDate(customer.created_at) },
               { label: 'State', value: customer.state_name ?? 'Not given' },
-              { label: 'Game entries', value: customer.balance.toLocaleString() },
+              { label: 'Game entries', value: entries },
             ]}
           />
           <FormAlert error={error} />

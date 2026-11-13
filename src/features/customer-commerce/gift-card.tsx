@@ -10,6 +10,7 @@ import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
 import { cn } from '@/lib/utils'
 import { EntriesBadge, SponsoredLabel } from '@/features/game-entries/entries-badge'
+import { useEntriesEarnable } from '@/features/game-entries/use-entries-earnable'
 import { formatPriceAmount } from '@/lib/money'
 import { getPublicSeller, getPublicSellerForShop } from '@/lib/public-sellers'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
@@ -74,6 +75,8 @@ export function GiftCard({ product, href }: GiftCardProps) {
       : undefined,
   }
 
+  const entriesEarnable = useEntriesEarnable()
+
   return (
     <article
       className={cn(
@@ -123,7 +126,9 @@ export function GiftCard({ product, href }: GiftCardProps) {
               </span>
             ) : null}
           </div>
-          {isCatalogProduct(product) ? <EntriesBadge entries={product.gameEntries} compact /> : null}
+          {isCatalogProduct(product) && entriesEarnable ? (
+            <EntriesBadge entries={product.gameEntries} compact />
+          ) : null}
           {isCatalogProduct(product) && product.stockLeft != null ? (
             <p className="text-xs font-medium text-amber-700">
               {product.stockLeft <= 0 ? 'Out of stock' : `Only ${product.stockLeft} left`}
