@@ -17,6 +17,7 @@ import {
   chatFileProblem,
   formatFileSize,
 } from './messaging-utils'
+import { FormAlert } from '@/components/common/form-alert'
 
 type PendingFile = {
   id: string
@@ -166,9 +167,7 @@ export function ChatComposer({
       className="border-t-2 border-brand-ink/10 bg-card px-3 pt-2.5 pb-3"
     >
       {error ? (
-        <p role="alert" className="mb-2 rounded-xl bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-          {error}
-        </p>
+        <FormAlert error={error} errorTitle="Message not sent" className="mb-2" />
       ) : null}
 
       {pending.length ? (

@@ -46,6 +46,7 @@ import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { formatPriceAmount, majorToMinor } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { FormAlert } from '@/components/common/form-alert'
 
 function isCategoryId(tag: string) {
   return giftCategories.some((item) => item.id === tag.toLowerCase())
@@ -1060,11 +1061,7 @@ export function ProductWizard({
       }
       completing={saving}
       error={
-        error ? (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {error}
-          </p>
-        ) : null
+        <FormAlert error={error} errorTitle="Couldn’t save yet" />
       }
     />
   )

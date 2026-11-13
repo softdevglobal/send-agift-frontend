@@ -998,7 +998,7 @@ function MemberDiscountCard({
               <code>STRIPE_PLATFORM_FEE_BPS</code> on the server (for 7.9% use 790) to offer one.
             </p>
           ) : over ? (
-            <p role="alert" className="mt-4 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <p role="alert" className="mt-4 text-xs font-medium text-rose-600 dark:text-rose-400">
               That&apos;s more than the {bpsLabel(feeBps)} commission that funds it. Choose {bpsLabel(feeBps)} or less.
             </p>
           ) : (
