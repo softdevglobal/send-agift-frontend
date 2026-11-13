@@ -48,6 +48,8 @@ export function completeSocialSignup(body: {
   phone: string
   customer_type?: string
   display_name?: string
+  /** The terms version the sign-up screen showed. */
+  terms_version?: string
 }) {
   return api<{ status: 'signed_in'; token: string; role: UserRole }>('/auth/social/complete', {
     method: 'POST',

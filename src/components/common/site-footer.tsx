@@ -6,6 +6,7 @@ import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { cn } from '@/lib/utils'
 
 const quickLinks = [
@@ -18,7 +19,7 @@ const quickLinks = [
 const serviceLinks = [
   { to: '/orders', label: 'Track order' },
   { to: '/legal', label: 'Terms & policies' },
-  { to: '/competitions', label: 'Games & competitions' },
+  { to: '/competitions', label: 'Games & competitions', competitions: true },
   { to: '/become-a-seller', label: 'Seller support' },
 ]
 
@@ -27,6 +28,7 @@ const footerLinkClass = 'text-sm text-white/60 transition-colors hover:text-bran
 
 export function SiteFooter() {
   const { isAuthenticated } = useAuth()
+  const competitionsOn = useCompetitionsEnabled()
 
   return (
     <footer>
@@ -77,8 +79,7 @@ export function SiteFooter() {
               <BrandLogo imgClassName="h-14" />
             </span>
             <p className="max-w-xs text-sm leading-relaxed text-white/60">
-              A social gifting marketplace with trusted delivery and
-              optional skill competitions.
+              A social gifting marketplace with trusted delivery.
             </p>
           </div>
 
@@ -98,7 +99,7 @@ export function SiteFooter() {
           <div>
             <h3 className={footerHeadingClass}>Customer service</h3>
             <ul className="space-y-3">
-              {serviceLinks.map((link) => (
+              {serviceLinks.filter((link) => competitionsOn || !link.competitions).map((link) => (
                 <li key={link.label}>
                   <Link to={link.to} className={footerLinkClass}>
                     {link.label}
@@ -129,7 +130,7 @@ export function SiteFooter() {
                 <div>
                   <p className="text-sm font-semibold">Always available</p>
                   <p className="text-sm text-white/60">
-                    Help for orders, payments, and competitions.
+                    Help for orders, payments, and delivery.
                   </p>
                 </div>
               </li>

@@ -27,6 +27,8 @@ export type CustomerAddress = Address
 
 export type CustomerRegisterRequest = {
   country_id: string
+  /** The terms version the sign-up screen showed. */
+  terms_version?: string
   /** Required when the country has states. */
   state_id?: string
   email: string

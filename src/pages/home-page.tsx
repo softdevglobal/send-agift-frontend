@@ -56,7 +56,7 @@ const homeFeatures = [
   {
     icon: Headphones,
     title: '24/7 Support',
-    description: 'Help for orders, payments, and competitions.',
+    description: 'Help for orders, payments, and delivery.',
   },
 ]
 

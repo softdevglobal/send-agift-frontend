@@ -13,6 +13,7 @@ import {
 } from '@/features/auth/seller-signup/options'
 import { optionalString, slugify } from '@/lib/form'
 import { currencyFractionDigits, majorToMinor } from '@/lib/money'
+import { sellerTermsVersion } from '@/features/legal/assent'
 
 export type AddressDraft = {
   line1: string
@@ -455,6 +456,7 @@ export function buildRegisterRequest(s: SignupState, country: Country): SellerRe
     },
 
     terms_accepted: s.termsAccepted,
+    terms_version: s.termsAccepted ? sellerTermsVersion : undefined,
     accept_free_gift_budget: s.freeGiftBudgetAccepted,
     marketing_opt_in: s.marketingOptIn,
   }

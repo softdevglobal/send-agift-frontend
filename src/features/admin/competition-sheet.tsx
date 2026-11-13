@@ -27,6 +27,8 @@ import {
 import { Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { flagOf } from '@/lib/country-options'
+import { CompetitionsOffBanner } from '@/features/capabilities/competitions-off-banner'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { isSuperAdmin } from '@/lib/auth'
 import { formatPriceAmount } from '@/lib/money'
 
@@ -63,6 +65,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const [busy, setBusy] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const superadmin = isSuperAdmin()
+  const competitionsOn = useCompetitionsEnabled()
 
   const load = useCallback(async (competitionId: string) => {
     setComp(await getAdminCompetition(competitionId))
@@ -182,6 +185,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
               </header>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                <CompetitionsOffBanner />
                 <FormAlert error={error} notice={notice} />
 
                 <CompetitionStandings comp={comp} />
@@ -308,11 +312,13 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                         title={
                           !superadmin
                             ? 'Only a super admin can publish'
-                            : blocked
+                            : !competitionsOn
+                              ? 'Competitions are switched off'
+                              : blocked
                               ? 'Finish the steps listed above first'
                               : undefined
                         }
-                        disabled={!superadmin || busy !== null || blocked}
+                        disabled={!superadmin || !competitionsOn || busy !== null || blocked}
                         onClick={() =>
                           run(
                             'schedule',

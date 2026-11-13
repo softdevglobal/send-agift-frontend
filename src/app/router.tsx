@@ -34,6 +34,7 @@ import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CompetitionEntryPage } from '@/pages/competition-entry-page'
 import { CompetitionsPage } from '@/pages/competitions-page'
+import { CompetitionsGate } from '@/features/capabilities/competitions-gate'
 import { CustomerMembershipPage } from '@/pages/customer-membership-page'
 import { MembershipPage } from '@/pages/membership-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
@@ -178,8 +179,8 @@ export function AppRouter() {
       </Route>
 
       <Route element={<CustomerAwareLayout />}>
-        <Route path="/competitions" element={<CompetitionsPage />} />
-        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
+        <Route path="/competitions" element={<CompetitionsGate><CompetitionsPage /></CompetitionsGate>} />
+        <Route path="/competitions/:id" element={<CompetitionsGate><CompetitionEntryPage /></CompetitionsGate>} />
       </Route>
 
       <Route

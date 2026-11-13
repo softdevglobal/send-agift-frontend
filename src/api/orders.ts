@@ -130,6 +130,9 @@ function compactCreateOrder(input: CreateOrderInput): CreateOrderInput {
     body.customer_type = input.customer_type
   }
   if (input.recipient_id) body.recipient_id = input.recipient_id
+  if (input.recipient_id && input.recipient_address_id) {
+    body.recipient_address_id = input.recipient_address_id
+  }
   const giftMessage = input.gift_message?.trim()
   if (giftMessage) body.gift_message = giftMessage
   if (input.media_greeting_id) body.media_greeting_id = input.media_greeting_id
@@ -167,10 +170,16 @@ export function getOrder(id: string) {
   return api<OrderDetails>(`/customers/me/orders/${id}`)
 }
 
-export function createOrder(body: CreateOrderInput) {
+/**
+ * Places an order. Pass the same `idempotencyKey` when retrying the same
+ * order (a timeout, a double tap): the server then returns the order it
+ * already made instead of a second one.
+ */
+export function createOrder(body: CreateOrderInput, idempotencyKey?: string) {
   return api<OrderDetails>('/customers/me/orders', {
     method: 'POST',
     body: compactCreateOrder(body),
+    ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
   })
 }
 

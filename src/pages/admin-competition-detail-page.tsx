@@ -95,6 +95,8 @@ import {
   VoidPlayDialog,
 } from '@/features/admin/prize-panels'
 import { prizeMoney, useLivePrize } from '@/features/admin/prize-live'
+import { CompetitionsOffBanner } from '@/features/capabilities/competitions-off-banner'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { isSuperAdmin } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
@@ -173,6 +175,7 @@ export function AdminCompetitionDetailPage() {
   const [settleOpen, setSettleOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
   const superadmin = isSuperAdmin()
+  const competitionsOn = useCompetitionsEnabled()
   const queuePages = usePagedList(queue, TABLE_PAGE_SIZE, id)
   const winnerPages = usePagedList(winners, TABLE_PAGE_SIZE, id)
   const boardPages = usePagedList(board.slice(3), TABLE_PAGE_SIZE, id)
@@ -264,6 +267,7 @@ export function AdminCompetitionDetailPage() {
         editNote={editable ? 'Only a superadmin can edit it now' : 'Rules are locked once it starts'}
       />
 
+      <CompetitionsOffBanner className="mb-4" />
       <FormAlert error={error} notice={notice} className="mb-5" />
 
       {status === 'cancelled' ? (
@@ -384,7 +388,8 @@ export function AdminCompetitionDetailPage() {
               <Button
                 type="button"
                 className="h-10"
-                disabled={busy !== null}
+                disabled={busy !== null || !competitionsOn}
+                title={competitionsOn ? undefined : 'Competitions are switched off'}
                 onClick={() => run('resume', () => resumeCompetition(comp.id), 'Resumed. Plays are open again.')}
               >
                 {spinner('resume')}
@@ -428,11 +433,13 @@ export function AdminCompetitionDetailPage() {
                 title={
                   !superadmin
                     ? 'Only a super admin can publish'
-                    : comp.schedule_blockers.length > 0
+                    : !competitionsOn
+                      ? 'Competitions are switched off'
+                      : comp.schedule_blockers.length > 0
                       ? 'Finish the steps listed below first'
                       : undefined
                 }
-                disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
+                disabled={!superadmin || !competitionsOn || busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() =>
                   setConfirming({
                     key: 'schedule',

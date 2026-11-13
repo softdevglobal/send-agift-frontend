@@ -33,6 +33,7 @@ import { SocialDivider, SocialSignInButtons } from '@/features/auth/social-sign-
 import type { CustomerTypeValue } from '@/features/auth/customer-register-options'
 import { getErrorMessage, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { customerTermsVersion } from '@/features/legal/assent'
 
 const giftingAs: {
   value: CustomerTypeValue
@@ -48,7 +49,7 @@ const giftingAs: {
 const perks: { icon: LucideIcon; label: string }[] = [
   { icon: Truck, label: 'Live tracking' },
   { icon: Star, label: 'Save favourites' },
-  { icon: Sparkles, label: 'Win prizes' },
+  { icon: Sparkles, label: 'Curated gifts' },
 ]
 
 /**
@@ -142,6 +143,7 @@ export function CustomerRegisterForm() {
         phone: phone.trim(),
         customer_type: customerType,
         display_name: displayName.trim(),
+        terms_version: customerTermsVersion,
       })
       login(result.token, 'customer', true)
     } catch (err) {
@@ -182,6 +184,7 @@ export function CustomerRegisterForm() {
         display_name: displayName.trim(),
         phone: phone.trim(),
         signup_token: codeSignup?.signup_token,
+        terms_version: customerTermsVersion,
       })
       const session = await loginCustomer({ email: trimmedEmail, password })
       login(session.token, 'customer', true)

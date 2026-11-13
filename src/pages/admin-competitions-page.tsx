@@ -21,6 +21,7 @@ import { CompetitionForm } from '@/features/admin/competition-form'
 import { CompetitionSheet } from '@/features/admin/competition-sheet'
 import { competitionStatusLabel, competitionStatusTone } from '@/features/admin/games-format'
 import { GameBadge, Loading, StatusPill } from '@/features/admin/games-ui'
+import { CompetitionsOffBanner } from '@/features/capabilities/competitions-off-banner'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -99,6 +100,7 @@ export function AdminCompetitionsPage() {
         }
       />
 
+      <CompetitionsOffBanner className="mb-5" />
       <FormAlert error={error} className="mb-6" />
 
       <SlidingToggle

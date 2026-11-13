@@ -74,6 +74,7 @@ import {
   memberDiscountMinor,
   useMemberDiscountBps,
 } from '@/features/competition-points/use-member-discount'
+import { newRequestKey } from '@/features/competition-points/format'
 import { cn } from '@/lib/utils'
 
 function blankRecipient(country = '') {
@@ -162,62 +163,42 @@ type AddressProbe = {
   line1?: string
   city?: string
   postalCode?: string
-  latitude?: number | null
-  longitude?: number | null
 }
 
-function coordsClose(
-  aLat?: number | null,
-  aLng?: number | null,
-  bLat?: number | null,
-  bLng?: number | null,
-) {
-  if (
-    typeof aLat !== 'number' ||
-    typeof aLng !== 'number' ||
-    typeof bLat !== 'number' ||
-    typeof bLng !== 'number'
-  ) {
-    return false
-  }
-  return Math.abs(aLat - bLat) < 0.001 && Math.abs(aLng - bLng) < 0.001
+/** The street part of a line, so "12 Main St, Colombo" compares as "12 main st". */
+function streetPart(value?: string | null) {
+  return normalizePart((value ?? '').split(',')[0])
 }
 
-/** True when the address being filled is one this recipient already has saved. */
+/**
+ * True only when the address being filled is this saved address: the same
+ * street line, and the same postcode (or, with no postcode on either side,
+ * the same city). No substrings ("12 Main" is not "112 Main") and no "close
+ * enough" coordinates. Neighbours share a building.
+ */
 function savedAddressMatches(probe: AddressProbe, address: RecipientAddress) {
-  if (coordsClose(probe.latitude, probe.longitude, address.latitude, address.longitude)) {
-    return true
-  }
   const savedLine = normalizePart(address.line1)
-  if (!savedLine) return false
-  const probeLine = normalizePart(probe.line1)
-  const probeAddress = normalizePart(probe.address)
-  const lineHit =
-    (probeLine !== '' &&
-      (probeLine === savedLine ||
-        probeLine.includes(savedLine) ||
-        savedLine.includes(probeLine))) ||
-    (probeAddress !== '' && probeAddress.includes(savedLine))
-  if (!lineHit) return false
+  const probeLine = streetPart(probe.line1) || streetPart(probe.address)
+  if (!savedLine || savedLine !== probeLine) return false
   const savedPostal = normalizePart(address.postal_code)
   const probePostal = normalizePart(probe.postalCode)
-  if (savedPostal && probePostal) {
-    return savedPostal === probePostal || probeAddress.includes(savedPostal)
-  }
-  if (savedPostal && probeAddress.includes(savedPostal)) return true
+  if (savedPostal || probePostal) return savedPostal === probePostal
   const savedCity = normalizePart(address.city)
   const probeCity = normalizePart(probe.city)
-  if (savedCity && probeCity) return savedCity === probeCity
-  if (savedCity && probeAddress.includes(savedCity)) return true
-  return false
+  return savedCity !== '' && savedCity === probeCity
 }
 
-function recipientForAddress(recipients: RecipientDetails[], probe: AddressProbe) {
-  return (
-    recipients.find((details) =>
-      details.addresses.some((address) => savedAddressMatches(probe, address)),
-    ) ?? null
+/**
+ * The one saved recipient address that is exactly this one. When none, or
+ * more than one, match, the customer chooses instead.
+ */
+function savedAddressFor(recipients: RecipientDetails[], probe: AddressProbe) {
+  const hits = recipients.flatMap((details) =>
+    details.addresses
+      .filter((address) => savedAddressMatches(probe, address))
+      .map((address) => ({ recipient: details, address })),
   )
+  return hits.length === 1 ? hits[0] : null
 }
 
 /** The address a recipient would actually be shipped to: their default, or their only one. */
@@ -227,6 +208,11 @@ function defaultAddress(details: RecipientDetails): RecipientAddress | null {
     details.addresses[0] ??
     null
   )
+}
+
+/** The picked address when it is one of theirs, otherwise their default. */
+function chosenAddress(details: RecipientDetails, addressId: string): RecipientAddress | null {
+  return (addressId && details.addresses.find((address) => address.id === addressId)) || defaultAddress(details)
 }
 
 /**
@@ -260,7 +246,7 @@ function formatStreetAddress(
 
 export function CheckoutPage() {
   const navigate = useNavigate()
-  const { lines, subtotal, clearCart, removeItem, mixedCustomerType, cartCustomerType } = useCart()
+  const { lines, hydrating, subtotal, clearCart, removeItem, mixedCustomerType, cartCustomerType } = useCart()
 
   const [countries, setCountries] = useState<Country[]>([])
   const [recipients, setRecipients] = useState<Recipient[]>([])
@@ -272,6 +258,12 @@ export function CheckoutPage() {
   const { intent } = useDeliveryIntent()
 
   const [recipientId, setRecipientId] = useState('')
+  /** One of the recipient's addresses; '' means their default. */
+  const [recipientAddressId, setRecipientAddressId] = useState('')
+  const recipientAddressIdRef = useRef('')
+  /** The Idempotency-Key for the order being placed, tied to its contents. */
+  const orderAttempt = useRef<{ fingerprint: string; key: string } | null>(null)
+  recipientAddressIdRef.current = recipientAddressId
   const [recipientDetails, setRecipientDetails] = useState<RecipientDetails | null>(null)
   const [recipientLoading, setRecipientLoading] = useState(false)
   const [addingRecipient, setAddingRecipient] = useState(false)
@@ -388,16 +380,15 @@ export function CheckoutPage() {
     if (!hasSearch) return
     if (!savedRecipientsReady) return
     appliedAddressMatch.current = true
-    const match = recipientForAddress(savedRecipients, {
+    const match = savedAddressFor(savedRecipients, {
       address: intent?.address,
       line1: intent?.line1,
       city: intent?.city,
       postalCode: intent?.postalCode,
-      latitude: intent?.latitude,
-      longitude: intent?.longitude,
     })
     if (match) {
-      setRecipientId(match.id)
+      setRecipientId(match.recipient.id)
+      setRecipientAddressId(match.address.id)
       setAddingRecipient(false)
       setNewRecipient(blankRecipient())
       return
@@ -421,7 +412,7 @@ export function CheckoutPage() {
         setRecipientDetails(details)
         // Match the delivery country to where the gift is actually going,
         // rather than leaving it on the buyer's own country by default.
-        const address = defaultAddress(details)
+        const address = chosenAddress(details, recipientAddressIdRef.current)
         if (address?.country_id) setCountryId(address.country_id)
       })
       .catch(() => {
@@ -447,7 +438,8 @@ export function CheckoutPage() {
       .filter((line) => isUuid(line.product.id))
       .map((line) => ({ product_id: line.product.id, quantity: line.quantity }))
 
-    const shipTo = recipientDetails?.id === recipientId ? defaultAddress(recipientDetails) : null
+    const shipTo =
+      recipientDetails?.id === recipientId ? chosenAddress(recipientDetails, recipientAddressId) : null
     if (!recipientId || !deliveryDate || items.length === 0 || !hasPoint(shipTo)) {
       setQuote(null)
       setQuoteSelections({})
@@ -460,6 +452,7 @@ export function CheckoutPage() {
     setQuoteSettled(false)
     quoteDelivery({
       recipient_id: recipientId,
+      recipient_address_id: shipTo!.id,
       delivery_date: deliveryDate,
       items,
     })
@@ -484,7 +477,7 @@ export function CheckoutPage() {
       cancelled = true
     }
     // quoteKey stands in for the cart contents; `lines` is a new array each render.
-  }, [recipientId, recipientDetails, deliveryDate, quoteKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [recipientId, recipientAddressId, recipientDetails, deliveryDate, quoteKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Only API-backed products can be ordered. Demo catalog entries have no server record.
   const unorderable = useMemo(
@@ -527,7 +520,9 @@ export function CheckoutPage() {
         Boolean(chargeableSelections[shop.shop_id]),
     )
   const shipToAddress =
-    recipientDetails && recipientDetails.id === recipientId ? defaultAddress(recipientDetails) : null
+    recipientDetails && recipientDetails.id === recipientId
+      ? chosenAddress(recipientDetails, recipientAddressId)
+      : null
   const needsPin = Boolean(recipientId) && shipToAddress != null && !hasPoint(shipToAddress)
   const awaitingDeliveryQuote = Boolean(recipientId) && !needsPin && !quoteSettled
   const noDeliveryOptions = Boolean(recipientId) && quoteSettled && !hasChargeableDelivery
@@ -584,9 +579,10 @@ export function CheckoutPage() {
     }))
   }
 
-  function selectSavedRecipient(id: string) {
+  function selectSavedRecipient(id: string, addressId = '') {
     skipAddressMatch.current = true
     setRecipientId(id)
+    setRecipientAddressId(addressId)
     setAddingRecipient(false)
     setNewRecipient(blankRecipient())
     setError(null)
@@ -608,16 +604,14 @@ export function CheckoutPage() {
       fields.city ||
       fields.region ||
       (parts.length > 1 ? parts[parts.length - 2] : '')
-    const existing = recipientForAddress(savedRecipients, {
+    const existing = savedAddressFor(savedRecipients, {
       address: place.formatted_address,
       line1: fields.line1 || place.formatted_address,
       city,
       postalCode: fields.postal_code,
-      latitude: fields.latitude,
-      longitude: fields.longitude,
     })
     if (existing) {
-      selectSavedRecipient(existing.id)
+      selectSavedRecipient(existing.recipient.id, existing.address.id)
       return
     }
     setNewRecipient((current) => ({
@@ -685,6 +679,7 @@ export function CheckoutPage() {
       ])
       setRecipientDetails(details)
       setRecipientId(details.id)
+      setRecipientAddressId(details.addresses[0]?.id ?? '')
       setAddingRecipient(false)
       setNewRecipient(blankRecipient(countryId))
     } catch (err) {
@@ -744,8 +739,10 @@ export function CheckoutPage() {
       // never sends its own delivery total.
       const shippingQuotes = selectionsToShippingQuotes(chargeableSelections)
 
-      const order = await createOrder({
+      const body = {
         ...(recipientId ? { recipient_id: recipientId } : {}),
+        // The exact address the delivery was quoted for.
+        ...(recipientId && shipToAddress ? { recipient_address_id: shipToAddress.id } : {}),
         country_id: countryId,
         customer_type: customerType,
         delivery_date: deliveryDate,
@@ -755,7 +752,14 @@ export function CheckoutPage() {
           product_id: line.product.id,
           quantity: line.quantity,
         })),
-      })
+      }
+      // Same order, same key: a retry after a timeout cannot place it twice.
+      // Anything changed is a new order and gets a new key.
+      const fingerprint = JSON.stringify(body)
+      if (orderAttempt.current?.fingerprint !== fingerprint) {
+        orderAttempt.current = { fingerprint, key: newRequestKey('order') }
+      }
+      const order = await createOrder(body, orderAttempt.current.key)
       setPlaced(true)
       clearCart()
       // The gift is only sent once it is paid, on Stripe's own page. If card
@@ -778,6 +782,14 @@ export function CheckoutPage() {
   if (placed || loading) {
     return (
       <div className="flex justify-center py-24">
+        <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (!lines.length && hydrating) {
+    return (
+      <div className="flex justify-center py-24" role="status" aria-label="Loading your cart">
         <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
       </div>
     )
@@ -822,6 +834,7 @@ export function CheckoutPage() {
                 onChange={(event) => {
                   skipAddressMatch.current = true
                   setRecipientId(event.target.value)
+                  setRecipientAddressId('')
                   if (event.target.value) setAddingRecipient(false)
                 }}
                 className={selectClassName}
@@ -1112,7 +1125,7 @@ export function CheckoutPage() {
                   </p>
                 ) : recipientDetails ? (
                   (() => {
-                    const address = defaultAddress(recipientDetails)
+                    const address = chosenAddress(recipientDetails, recipientAddressId)
                     if (!address) {
                       return (
                         <p className="flex items-start gap-2 rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">
@@ -1153,6 +1166,24 @@ export function CheckoutPage() {
                           ) : null}
                         </div>
                       </div>
+                      {recipientDetails.addresses.length > 1 ? (
+                        <div className="space-y-1.5">
+                          <Label htmlFor="checkout-recipient-address">Deliver to</Label>
+                          <select
+                            id="checkout-recipient-address"
+                            value={address.id}
+                            onChange={(event) => setRecipientAddressId(event.target.value)}
+                            className={selectClassName}
+                          >
+                            {recipientDetails.addresses.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {[option.label, formatStreetAddress(option)].filter(Boolean).join(' · ')}
+                                {option.id === recipientDetails.default_address_id ? ' (default)' : ''}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : null}
                       {hasPoint(address) ? null : (
                         <div className="space-y-3 rounded-xl border border-amber-300/70 bg-amber-50/60 p-3.5">
                           <p className="flex items-start gap-2 text-sm">
@@ -1335,9 +1366,7 @@ export function CheckoutPage() {
               ) : quote?.shops?.length ? (
                 <div className="space-y-5">
                   {quote.shops.map((shop) => {
-                    const toAddress = recipientDetails
-                      ? defaultAddress(recipientDetails)
-                      : null
+                    const toAddress = shipToAddress
                     const toCountry = toAddress
                       ? countries.find((country) => country.id === toAddress.country_id)?.name
                       : undefined

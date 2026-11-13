@@ -1,4 +1,4 @@
-import { Crown, Minus, Plus, ShoppingBag, Store, Trash2, TriangleAlert } from 'lucide-react'
+import { Crown, LoaderCircle, Minus, Plus, ShoppingBag, Store, Trash2, TriangleAlert } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -26,7 +26,7 @@ import { cn } from '@/lib/utils'
 export function CartPage() {
   const { isAuthenticated, role } = useAuth()
   const location = useLocation()
-  const { lines, itemCount, subtotal, total, setQuantity, removeItem } =
+  const { lines, hydrating, unavailable, itemCount, subtotal, total, setQuantity, removeItem } =
     useCart()
   const isCustomer = isAuthenticated && role === 'customer'
   const shops = cartShops(lines)
@@ -38,6 +38,14 @@ export function CartPage() {
   const memberSavingMinor = currency ? memberDiscountMinor(lines, currency, memberBps) : 0
   const memberSaving = currency ? minorToMajor(memberSavingMinor, currency) : 0
   const entryOffers = useEntryOffers(lines.map((line) => line.product.id))
+
+  if (!lines.length && hydrating) {
+    return (
+      <div className="flex justify-center py-24" role="status" aria-label="Loading your cart">
+        <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
 
   if (!lines.length) {
     return (
@@ -85,6 +93,24 @@ export function CartPage() {
         title="Cart"
         description={`${itemCount} item${itemCount === 1 ? '' : 's'} ready for checkout.`}
       />
+
+      {unavailable.length > 0 ? (
+        <p role="status" className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-amber-700 dark:text-amber-400">
+          <span className="flex items-start gap-2">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            {unavailable.length === 1
+              ? 'One gift you saved is no longer available.'
+              : `${unavailable.length} gifts you saved are no longer available.`}
+          </span>
+          <button
+            type="button"
+            className="font-semibold underline underline-offset-2"
+            onClick={() => unavailable.forEach((item) => removeItem(item.productId))}
+          >
+            Remove {unavailable.length === 1 ? 'it' : 'them'}
+          </button>
+        </p>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,1fr)]">
         <ul className="space-y-3">

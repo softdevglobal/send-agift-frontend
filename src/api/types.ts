@@ -847,6 +847,8 @@ export type DeliveryQuoteLine = {
 
 export type DeliveryQuoteInput = {
   recipient_id: string
+  /** The recipient's address picked at checkout; omitted means their default. */
+  recipient_address_id?: string
   /** The date it should arrive. Picks the cheapest service that makes it. */
   delivery_date?: string
   items: DeliveryQuoteLine[]
@@ -971,6 +973,8 @@ export type OrderShippingQuote = {
 
 export type CreateOrderInput = {
   recipient_id?: string
+  /** The same address the delivery was quoted for. */
+  recipient_address_id?: string
   country_id: string
   /** 'personal' | 'corporate'. Defaults to 'personal' server-side. */
   customer_type?: 'personal' | 'corporate'

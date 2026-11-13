@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
 import { StateSelect } from '@/features/game-entries/state-select'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -46,6 +47,7 @@ export function CustomerGameEntriesPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [filter, setFilter] = useState<Filter>('all')
   const [claiming, setClaiming] = useState(false)
+  const competitionsOn = useCompetitionsEnabled()
 
   const load = useCallback(async () => {
     try {
@@ -128,9 +130,11 @@ export function CustomerGameEntriesPage() {
                 ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button asChild className="h-11 rounded-full bg-white px-5 text-brand-ink hover:bg-white/90">
-                  <Link to="/competitions">See what&apos;s open</Link>
-                </Button>
+                {competitionsOn ? (
+                  <Button asChild className="h-11 rounded-full bg-white px-5 text-brand-ink hover:bg-white/90">
+                    <Link to="/competitions">See what&apos;s open</Link>
+                  </Button>
+                ) : null}
                 <Button asChild variant="outline" className="h-11 rounded-full border-white/30 bg-transparent px-5 text-white hover:bg-white/10 hover:text-white">
                   <Link to="/products">Shop gifts</Link>
                 </Button>

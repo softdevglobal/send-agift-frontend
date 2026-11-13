@@ -16,6 +16,29 @@ const PLACEHOLDER_IMAGE =
 const liveCatalog = new Map<string, CatalogProduct>()
 let marketplaceLoaded = false
 
+/**
+ * Bumped whenever products are added, so anything that joins IDs against the
+ * catalog (the cart) can redraw once the details arrive.
+ */
+let catalogVersion = 0
+const catalogListeners = new Set<() => void>()
+
+function catalogChanged() {
+  catalogVersion += 1
+  catalogListeners.forEach((listener) => listener())
+}
+
+export function subscribeCatalog(listener: () => void) {
+  catalogListeners.add(listener)
+  return () => {
+    catalogListeners.delete(listener)
+  }
+}
+
+export function getCatalogVersion() {
+  return catalogVersion
+}
+
 /** The public catalog came from the API, so a seller's local publish cache is not shown. */
 export function markMarketplaceLoaded() {
   marketplaceLoaded = true
@@ -24,6 +47,7 @@ export function markMarketplaceLoaded() {
 export function replaceCatalogProducts(products: CatalogProduct[]) {
   liveCatalog.clear()
   for (const product of products) liveCatalog.set(product.id, product)
+  catalogChanged()
 }
 
 /** Products come from the API only; there is no built-in sample catalog. */
@@ -145,6 +169,7 @@ export function registerCatalogProducts(products: CatalogProduct[]) {
   for (const product of products) {
     liveCatalog.set(product.id, product)
   }
+  if (products.length > 0) catalogChanged()
 }
 
 export function getCatalogProduct(id: string) {

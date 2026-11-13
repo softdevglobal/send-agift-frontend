@@ -34,7 +34,7 @@ import { isAdminRole, isUserRole, type UserRole } from '@/lib/auth'
 const perks: { icon: LucideIcon; label: string }[] = [
   { icon: Truck, label: 'Live tracking' },
   { icon: Star, label: 'Save favourites' },
-  { icon: Sparkles, label: 'Win prizes' },
+  { icon: Sparkles, label: 'Curated gifts' },
 ]
 
 type LoginFormProps = {

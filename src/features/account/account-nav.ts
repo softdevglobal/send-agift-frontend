@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import {
   Ticket,
   Crown,
@@ -13,6 +14,8 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
+
 export type AccountNavItem = {
   to: string
   label: string
@@ -21,6 +24,8 @@ export type AccountNavItem = {
   hint?: string
   /** When true, the nav item is only active on that exact path. */
   end?: boolean
+  /** Shown only while the server has competitions switched on. */
+  competitions?: boolean
 }
 
 export type AccountNavGroup = {
@@ -72,7 +77,7 @@ export const accountNavGroups: AccountNavGroup[] = [
     ],
   },
   {
-    label: 'Competitions',
+    label: 'Membership',
     items: [
       {
         to: '/account/membership',
@@ -85,6 +90,7 @@ export const accountNavGroups: AccountNavGroup[] = [
         label: 'Competitions',
         icon: Trophy,
         hint: 'Open competitions; play them in the app',
+        competitions: true,
       },
     ],
   },
@@ -116,3 +122,17 @@ export const accountNavGroups: AccountNavGroup[] = [
 export const accountNavItems: AccountNavItem[] = accountNavGroups.flatMap(
   (group) => group.items,
 )
+
+/** The account nav with competition links left out while they are off. */
+export function useAccountNav(): { groups: AccountNavGroup[]; items: AccountNavItem[] } {
+  const competitionsOn = useCompetitionsEnabled()
+  return useMemo(() => {
+    const groups = accountNavGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => competitionsOn || !item.competitions),
+      }))
+      .filter((group) => group.items.length > 0)
+    return { groups, items: groups.flatMap((group) => group.items) }
+  }, [competitionsOn])
+}

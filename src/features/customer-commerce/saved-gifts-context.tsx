@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -17,7 +18,7 @@ import {
 } from '@/api/savedGifts'
 import { useAuth } from '@/features/auth/auth-context'
 import { ApiError } from '@/lib/api'
-import { returnToState } from '@/lib/auth'
+import { getTokenSubject, returnToState } from '@/lib/auth'
 import { isUuid } from '@/lib/uuid'
 
 type SavedGiftsContextValue = {
@@ -36,41 +37,46 @@ type SavedGiftsProviderProps = {
 }
 
 export function SavedGiftsProvider({ children }: SavedGiftsProviderProps) {
-  const { role, isAuthenticated } = useAuth()
+  const { role, isAuthenticated, token } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [gifts, setGifts] = useState<SavedGiftDetails[]>([])
   const [loading, setLoading] = useState(false)
   const [pendingProductId, setPendingProductId] = useState<string | null>(null)
+  /** The signed-in customer these gifts belong to; null for anyone else. */
+  const account =
+    isAuthenticated && role === 'customer' && token ? (getTokenSubject() ?? token) : null
+  /** Bumped on every account change, so an older account's answer is dropped. */
+  const generation = useRef(0)
 
   const refresh = useCallback(async () => {
-    if (!isAuthenticated || role !== 'customer') {
+    const mine = generation.current
+    if (!account) {
       setGifts([])
       return
     }
     const list = await listSavedGifts()
+    if (mine !== generation.current) return
     setGifts(Array.isArray(list) ? list : [])
-  }, [isAuthenticated, role])
+  }, [account])
 
   useEffect(() => {
-    let cancelled = false
-    if (!isAuthenticated || role !== 'customer') {
-      setGifts([])
+    generation.current += 1
+    const mine = generation.current
+    setGifts([])
+    if (!account) {
       setLoading(false)
       return
     }
     setLoading(true)
     refresh()
       .catch(() => {
-        if (!cancelled) setGifts([])
+        if (mine === generation.current) setGifts([])
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (mine === generation.current) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, refresh, role])
+  }, [account, refresh])
 
   const savedByProductId = useMemo(() => {
     const map = new Map<string, SavedGiftDetails>()

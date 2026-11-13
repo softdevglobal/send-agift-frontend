@@ -43,8 +43,10 @@ export function nextActionLink(action: NextAction | undefined): { to: string; la
     case 'view_points':
     case 'view_earning_rules':
       return { to: '/account/game-entries', label: 'Game entries' }
+    // Competitions are not on offer at launch: send people shopping instead
+    // of to a page that says so.
     case 'view_competitions':
-      return { to: '/competitions', label: 'See competitions' }
+      return { to: '/products', label: 'Send a gift' }
     case 'contact_support':
       return { to: '/legal/complaints', label: 'Contact support' }
     default:
