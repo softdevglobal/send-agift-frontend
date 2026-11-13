@@ -52,6 +52,7 @@ import { publishSellerToMarketplace, syncShopPublishedProducts } from '@/lib/pub
 import { selectClassName } from '@/lib/form-styles'
 import { formatPriceAmount } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { SponsoredLabel } from '@/features/game-entries/entries-badge'
 
 const statusMeta: Record<
   ProductStatus,
@@ -431,9 +432,7 @@ export function SellerProductsPage() {
                           </span>
                         ) : null}
                         {product.sponsored ? (
-                          <span className="absolute bottom-2 left-2 rounded-md bg-brand-violet px-1.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-white uppercase">
-                            Sponsored
-                          </span>
+                          <SponsoredLabel className="absolute bottom-2 left-2" />
                         ) : null}
                         {/* The price as a tag in the corner of the photo. */}
                         <span className="absolute right-2 bottom-2 rounded-md bg-brand-ink px-2.5 py-1 font-poster text-base text-white">

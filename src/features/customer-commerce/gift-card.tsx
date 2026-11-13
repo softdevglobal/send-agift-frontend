@@ -79,7 +79,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
       className={cn(
         'group flex flex-col rounded-2xl border p-2 transition-colors sm:p-3 hover:border-brand-ink dark:border-border',
         isCatalogProduct(product) && product.sponsored
-          ? 'border-brand-violet/40 bg-brand-violet/[0.06]'
+          ? 'border-2 border-gold/70 bg-gold-soft hover:border-gold'
           : 'border-brand-ink/25 bg-card',
       )}
     >
@@ -123,7 +123,7 @@ export function GiftCard({ product, href }: GiftCardProps) {
               </span>
             ) : null}
           </div>
-          {isCatalogProduct(product) ? <EntriesBadge entries={product.gameEntries} /> : null}
+          {isCatalogProduct(product) ? <EntriesBadge entries={product.gameEntries} compact /> : null}
           {isCatalogProduct(product) && product.stockLeft != null ? (
             <p className="text-xs font-medium text-amber-700">
               {product.stockLeft <= 0 ? 'Out of stock' : `Only ${product.stockLeft} left`}

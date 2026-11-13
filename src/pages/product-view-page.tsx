@@ -45,7 +45,7 @@ import {
 import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import { EntriesBadge, SponsoredLabel } from '@/features/game-entries/entries-badge'
+import { EntriesRewardStrip } from '@/features/game-entries/entries-badge'
 
 export function ProductViewPage() {
   const { productId } = useParams()
@@ -323,19 +323,7 @@ export function ProductViewPage() {
               </p>
             ) : null}
 
-            {product.sponsored ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <SponsoredLabel />
-                {product.gameEntries ? (
-                  <>
-                    <EntriesBadge entries={product.gameEntries} />
-                    <span>
-                      per purchase, added once your payment is confirmed. Where games are available in your state.
-                    </span>
-                  </>
-                ) : null}
-              </div>
-            ) : null}
+            {product.sponsored ? <EntriesRewardStrip entries={product.gameEntries} className="mt-4" /> : null}
 
             <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-cream p-4">
               <ShopIdentity

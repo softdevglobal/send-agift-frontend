@@ -50,6 +50,10 @@
     --color-surface: var(--surface);
     --color-mist: var(--mist);
     --color-cream: var(--cream);
+    /* Gold: sponsored products and the game entries they earn. Flat colours only. */
+    --color-gold: var(--gold);
+    --color-gold-soft: var(--gold-soft);
+    --color-gold-ink: var(--gold-ink);
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -105,6 +109,9 @@
     --surface: oklch(0.99 0.006 95);
     --mist: oklch(0.94 0.02 95);
     --cream: oklch(0.965 0.02 95);
+    --gold: #e6b422;
+    --gold-soft: #fff7dd;
+    --gold-ink: #5c4200;
     --chart-1: #6d28d9;
     --chart-2: oklch(0.69 0.11 195);
     --chart-3: oklch(0.26 0.09 262);
@@ -151,6 +158,9 @@
     --surface: oklch(0.2 0.02 120);
     --mist: oklch(0.28 0.02 120);
     --cream: oklch(0.26 0.02 120);
+    --gold: #e6b422;
+    --gold-soft: #3a3014;
+    --gold-ink: #3d2c00;
     --chart-1: #8b5cf6;
     --chart-2: oklch(0.69 0.11 195);
     --chart-3: oklch(0.45 0.09 262);
