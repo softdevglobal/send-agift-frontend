@@ -30,6 +30,7 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { OPERATION_LABEL } from './labels'
 import { Field, StatusPill } from './shared'
+import { askText } from '@/components/common/ask-dialog'
 
 const NEEDS_PROVIDER: ApprovalOperation[] = [
   'membership_sale',
@@ -64,7 +65,16 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
   async function act(a: CapabilityApproval, action: 'approve' | 'reject' | 'revoke') {
     let reason = ''
     if (action === 'revoke') {
-      reason = window.prompt('Why is this approval being revoked? New affected operations stop at once.') ?? ''
+      reason =
+        (await askText({
+          title: 'Revoke this approval?',
+          description: `${OPERATION_LABEL[a.operation]} in ${a.country_name} stops for new operations at once.`,
+          confirmLabel: 'Revoke',
+          tone: 'danger',
+          label: 'Reason',
+          placeholder: 'Say briefly why',
+          hint: 'Recorded in the audit log with your name.',
+        })) ?? ''
       if (!reason.trim()) return
     }
     setBusy(a.id)

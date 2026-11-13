@@ -46,6 +46,7 @@ import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
+import { askText } from '@/components/common/ask-dialog'
 
 const TABS = [
   { id: 'switches', label: 'Where games are on' },
@@ -70,9 +71,18 @@ function StatePill({ state }: { state: SwitchState }) {
   )
 }
 
-function askReason(question: string) {
-  const reason = window.prompt(question)
-  return reason?.trim() || null
+type ReasonAsk = {
+  title: string
+  description: string
+  confirmLabel: string
+  tone?: 'default' | 'danger' | 'emergency'
+  label?: string
+  placeholder?: string
+}
+
+/** Asks why, in the site's own dialog. Null when cancelled. */
+function askReason({ label = 'Reason', placeholder = 'Say briefly why', ...rest }: ReasonAsk) {
+  return askText({ ...rest, label, placeholder, hint: 'Recorded in the audit log with your name.' })
 }
 
 /**
@@ -196,8 +206,12 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
               {program.state !== 'ON' ? (
                 <Button
                   disabled={busy}
-                  onClick={() => {
-                    const reason = askReason('Why is the programme being switched on? (recorded in the audit log)')
+                  onClick={async () => {
+                    const reason = await askReason({
+                      title: 'Switch the programme on?',
+                      description: 'Customers can then earn game entries and play wherever a country or state below is also on.',
+                      confirmLabel: 'Switch on',
+                    })
                     if (reason) void run('The programme is on.', () => setProgram(true, reason))
                   }}
                 >
@@ -208,8 +222,13 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
                 <Button
                   variant="outline"
                   disabled={busy}
-                  onClick={() => {
-                    const reason = askReason('Why is the programme being switched off?')
+                  onClick={async () => {
+                    const reason = await askReason({
+                      title: 'Switch the programme off?',
+                      description: 'Nobody can earn game entries or start a play anywhere until it is switched on again.',
+                      confirmLabel: 'Switch off',
+                      tone: 'danger',
+                    })
                     if (reason) void run('The programme is off.', () => setProgram(false, reason))
                   }}
                 >
@@ -220,8 +239,14 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
                 <Button
                   variant="destructive"
                   disabled={busy}
-                  onClick={() => {
-                    const reason = askReason('EMERGENCY OFF. This stops all earning and all new plays everywhere at once. Reason:')
+                  onClick={async () => {
+                    const reason = await askReason({
+                      title: 'Emergency off everywhere?',
+                      description: 'This stops all earning and all new plays in every country and state at once. Plays already started can finish.',
+                      confirmLabel: 'Stop everything',
+                      tone: 'emergency',
+                      placeholder: 'What happened?',
+                    })
                     if (reason) void run('Emergency off is in force everywhere.', () => stopProgram(reason))
                   }}
                 >
@@ -305,8 +330,12 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
                     <Button
                       size="sm"
                       disabled={busy}
-                      onClick={() => {
-                        const reason = askReason('Why is the stop being lifted?')
+                      onClick={async () => {
+                        const reason = await askReason({
+                          title: `Lift the stop for ${j.state_name ?? j.country_name}?`,
+                          description: 'Earning and play there go back to how they are set.',
+                          confirmLabel: 'Lift stop',
+                        })
                         if (reason) void run('Stop lifted.', () => liftJurisdiction(j.id, reason))
                       }}
                     >
@@ -317,8 +346,14 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
                       size="sm"
                       variant="destructive"
                       disabled={busy}
-                      onClick={() => {
-                        const reason = askReason(`EMERGENCY OFF for ${j.state_name ?? j.country_name}. Reason:`)
+                      onClick={async () => {
+                        const reason = await askReason({
+                          title: `Emergency off for ${j.state_name ?? j.country_name}?`,
+                          description: 'This stops all earning and all new plays there at once. Plays already started can finish.',
+                          confirmLabel: 'Stop it now',
+                          tone: 'emergency',
+                          placeholder: 'What happened?',
+                        })
                         if (reason) void run('Emergency off is in force there.', () => stopJurisdiction(j.id, reason))
                       }}
                     >
@@ -745,8 +780,14 @@ function ReviewPanel() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      const resolution = askReason('What was decided for this case?')
+                    onClick={async () => {
+                      const resolution = await askReason({
+                        title: 'Resolve this case',
+                        description: 'Write down what was decided, so the customer’s history explains it.',
+                        confirmLabel: 'Resolve case',
+                        label: 'Decision',
+                        placeholder: 'e.g. Balance written off; no further action',
+                      })
                       if (!resolution) return
                       resolveShortfall(c.id, resolution)
                         .then(() => {

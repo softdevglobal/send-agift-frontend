@@ -30,6 +30,7 @@ import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
+import { askText } from '@/components/common/ask-dialog'
 
 const TABS = [
   { id: 'packages', label: 'Packages' },
@@ -608,8 +609,15 @@ function PurchasesPanel() {
                       size="sm"
                       variant="outline"
                       disabled={busy === p.id}
-                      onClick={() => {
-                        const reference = window.prompt('Payment reference for this purchase (as it appears on the payment you received):')
+                      onClick={async () => {
+                        const reference = await askText({
+                          title: 'Confirm payment received',
+                          description: 'The package goes live as soon as you confirm. Only do this once the money has arrived.',
+                          confirmLabel: 'Confirm payment',
+                          label: 'Payment reference',
+                          placeholder: 'As it appears on the payment you received',
+                          singleLine: true,
+                        })
                         if (reference?.trim()) void run(p.id, 'Payment confirmed. The package is active.', () => confirmAdPurchase(p.id, reference.trim()))
                       }}
                     >

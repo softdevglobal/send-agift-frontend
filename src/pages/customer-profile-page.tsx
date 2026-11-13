@@ -32,6 +32,7 @@ import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { ProfileImage } from '@/components/common/profile-image'
 import { StateCard } from '@/features/game-entries/state-card'
+import { askConfirm } from '@/components/common/ask-dialog'
 
 export function CustomerProfilePage() {
   const { logout } = useAuth()
@@ -165,9 +166,12 @@ export function CustomerProfilePage() {
   }
 
   async function handleDeleteAccount() {
-    const confirmed = window.confirm(
-      'Delete your customer account? This cannot be undone.',
-    )
+    const confirmed = await askConfirm({
+      title: 'Delete your account?',
+      description: 'You will be signed out and your account closed. This cannot be undone.',
+      confirmLabel: 'Delete account',
+      tone: 'danger',
+    })
     if (!confirmed) return
     setError(null)
     try {

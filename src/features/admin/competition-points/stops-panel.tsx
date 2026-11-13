@@ -14,6 +14,7 @@ import { selectClassName } from '@/lib/form-styles'
 
 import { STOP_LABEL } from './labels'
 import { Field, StatusPill } from './shared'
+import { askText } from '@/components/common/ask-dialog'
 
 // ─── Emergency stops ──────────────────────────────────────────────────────
 
@@ -59,7 +60,15 @@ export function StopsPanel({ countries }: { countries: Country[] }) {
   }
 
   async function lift(s: EmergencyStop) {
-    const why = window.prompt('Why is this stop being lifted?') ?? ''
+    const why =
+      (await askText({
+        title: `Lift the ${STOP_LABEL[s.scope].toLowerCase()} stop?`,
+        description: 'What it stopped can start again straight away.',
+        confirmLabel: 'Lift stop',
+        label: 'Reason',
+        placeholder: 'Say briefly why',
+        hint: 'Recorded in the audit log with your name.',
+      })) ?? ''
     if (!why.trim()) return
     setBusy(true)
     setError(null)

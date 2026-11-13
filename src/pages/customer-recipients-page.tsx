@@ -56,6 +56,7 @@ import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { cn } from '@/lib/utils'
+import { askConfirm } from '@/components/common/ask-dialog'
 
 type AddressFormState = {
   country_id: string
@@ -558,9 +559,12 @@ export function CustomerRecipientsPage() {
   }
 
   async function handleDeleteRecipient(id: string, recipientName: string) {
-    const confirmed = window.confirm(
-      `Delete "${recipientName}"? This also deletes their addresses.`,
-    )
+    const confirmed = await askConfirm({
+      title: `Delete ${recipientName}?`,
+      description: 'Their saved addresses are deleted too. This cannot be undone.',
+      confirmLabel: 'Delete recipient',
+      tone: 'danger',
+    })
     if (!confirmed) return
     setError(null)
     setNotice(null)

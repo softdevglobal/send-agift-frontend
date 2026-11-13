@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 
+import { AskDialogHost } from '@/components/common/ask-dialog'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { CartProvider } from '@/features/customer-commerce'
 import { DeliveryIntentProvider } from '@/features/customer-commerce/delivery-intent-context'
@@ -18,7 +19,10 @@ export function AppProviders({ children }: AppProvidersProps) {
         <CustomerMessagesProvider>
           <SavedGiftsProvider>
             <CartProvider>
-              <DeliveryIntentProvider>{children}</DeliveryIntentProvider>
+              <DeliveryIntentProvider>
+                {children}
+                <AskDialogHost />
+              </DeliveryIntentProvider>
             </CartProvider>
           </SavedGiftsProvider>
         </CustomerMessagesProvider>
