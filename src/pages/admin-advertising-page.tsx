@@ -207,7 +207,7 @@ function PackagesPanel({ countries }: { countries: Country[] }) {
               </ul>
               <p className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
                 {pkg.product_slots} {pkg.product_slots === 1 ? 'product' : 'products'} · budget{' '}
-                {number.format(pkg.entries_pool)} entries · {pkg.validity_days} days · bought {number.format(pkg.purchases)}{' '}
+                {number.format(pkg.entries_pool)} entries · {pkg.validity_days ? `${pkg.validity_days} days` : 'until used'} · bought {number.format(pkg.purchases)}{' '}
                 {pkg.purchases === 1 ? 'time' : 'times'}
               </p>
               {canEdit ? (
@@ -303,7 +303,6 @@ function PackageDialog({
     pkg ? pkg.level_entries.map((_, i) => pkg.level_names?.[i] ?? '') : ['', '', ''],
   )
   const [pool, setPool] = useState(pkg ? String(pkg.entries_pool) : '')
-  const [days, setDays] = useState(pkg ? String(pkg.validity_days) : '30')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -313,7 +312,6 @@ function PackageDialog({
   const top = Math.max(0, ...levelNumbers)
   const priceMinor = Math.round(Number(price) * 100)
   const poolNumber = Math.floor(Number(pool))
-  const dayNumber = Math.floor(Number(days))
   const priceLabel = priceMinor > 0 && currency ? formatCents(priceMinor, currency) : '-'
 
   function setSlots(n: number) {
@@ -336,9 +334,7 @@ function PackageDialog({
       : null
   const limitsBlocked = !(poolNumber >= top && poolNumber > 0)
     ? `The budget must be at least ${top}, enough for one purchase at the top level.`
-    : !(dayNumber >= 1 && dayNumber <= 365)
-      ? 'The package must run for 1 to 365 days.'
-      : null
+    : null
 
   async function save() {
     setError(null)
@@ -352,7 +348,8 @@ function PackageDialog({
       // Names only when at least one was given; the server fills blanks.
       level_names: levelNames.some((n) => n.trim()) ? levelNames.map((n) => n.trim()) : [],
       entries_pool: poolNumber,
-      validity_days: dayNumber,
+      // No time limit: a package runs until its budget is used up.
+      validity_days: null,
     }
     setBusy(true)
     try {
@@ -423,8 +420,8 @@ function PackageDialog({
     },
     {
       id: 'limits',
-      title: 'Budget & time',
-      description: 'The package ends when its budget is used up or its days run out, whichever comes first.',
+      title: 'Budget',
+      description: 'The package runs until its budget of game entries is used up. It never expires by date.',
       icon: Timer,
       blockedReason: limitsBlocked,
       content: (
@@ -440,12 +437,9 @@ function PackageDialog({
           >
             <Input id="ad-pool" type="number" inputMode="numeric" min={1} value={pool} onChange={(e) => setPool(e.target.value)} placeholder="60" />
           </WizardField>
-          <WizardField label="Runs for (days)" htmlFor="ad-days" hint="From the day the seller pays.">
-            <Input id="ad-days" type="number" inputMode="numeric" min={1} max={365} value={days} onChange={(e) => setDays(e.target.value)} />
-          </WizardField>
           <p className="text-xs text-muted-foreground sm:col-span-2">
-            Unused budget or days are not refunded. Sellers are reminded at 80, 85, 90, 95 and 100% used, and nothing
-            renews by itself.
+            No end date: the package keeps promoting until customers have earned the whole budget. Sellers are reminded
+            at 80, 85, 90, 95 and 100% used, and nothing renews by itself.
           </p>
         </WizardFields>
       ),
@@ -465,7 +459,7 @@ function PackageDialog({
             ['Products', `${levels.length}`],
             ...levelNumbers.map((n, i) => [`${levelName(i + 1, levels.length, levelNames)} priority`, entriesLabel(n)]),
             ['Budget', `${number.format(poolNumber || 0)} game entries`],
-            ['Runs for', `${dayNumber || 0} days`],
+            ['Runs', 'Until the budget is used'],
           ].map(([k, v]) => (
             <div key={k} className="flex justify-between gap-4 px-4 py-2.5">
               <dt className="text-muted-foreground">{k}</dt>
@@ -591,7 +585,7 @@ function PurchasesPanel() {
                   <p className="mt-2 text-xs text-muted-foreground">
                     {number.format(p.entries_used)} of {number.format(p.entries_pool)} entries given
                     {p.entries_held > 0 ? ` · ${number.format(p.entries_held)} on unpaid orders` : ''} · paid {day(p.paid_at)} ·
-                    runs until {day(p.expires_at)}
+                    {p.expires_at ? `runs until ${day(p.expires_at)}` : 'runs until the budget is used'}
                   </p>
                   {(p.promotions ?? []).filter((pr) => pr.level > 0).length > 0 ? (
                     <ul className="mt-3 space-y-1 border-t border-border/60 pt-3 text-sm">

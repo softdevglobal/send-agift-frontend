@@ -245,7 +245,15 @@ export function SellerAdvertisingPage() {
                         Budget of <strong>{number.format(pkg.entries_pool)}</strong> game entries
                       </li>
                       <li>
-                        Runs for <strong>{pkg.validity_days} days</strong>, or until the budget is used
+                        {pkg.validity_days ? (
+                          <>
+                            Runs for <strong>{pkg.validity_days} days</strong>, or until the budget is used
+                          </>
+                        ) : (
+                          <>
+                            Runs <strong>until the budget is used</strong>, with no end date
+                          </>
+                        )}
                       </li>
                     </ul>
                     <Button className="mt-5 h-11" onClick={() => void buy(pkg)} disabled={busy === pkg.id}>
@@ -391,7 +399,7 @@ function PurchaseCard({
               <Receipt className="size-4" />
               Paid {formatCents(p.paid_amount_minor ?? p.price_minor, p.currency)} on {day(p.paid_at)}
             </span>
-            <span>Runs until {day(p.expires_at)}</span>
+            <span>{p.expires_at ? `Runs until ${day(p.expires_at)}` : 'Runs until the budget is used'}</span>
             <span>Receipt ref {p.id.slice(0, 8)}</span>
           </p>
         </div>

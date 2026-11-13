@@ -146,7 +146,8 @@ export type AdPackage = {
   /** The admin's names for the levels, top first; empty for the defaults. */
   level_names?: string[] | null
   entries_pool: number
-  validity_days: number
+  /** Days it runs; null runs until the budget of game entries is used up. */
+  validity_days?: number | null
   status: AdPackageStatus
   published_at?: string | null
   retired_at?: string | null
@@ -164,7 +165,8 @@ export type AdPackageInput = {
   /** One name per level, or empty for the defaults. */
   level_names: string[]
   entries_pool: number
-  validity_days: number
+  /** Days it runs; null runs until the budget of game entries is used up. */
+  validity_days?: number | null
 }
 
 export type AdPurchaseStatus =
@@ -203,7 +205,8 @@ export type AdPurchase = {
   level_entries: number[]
   level_names?: string[] | null
   entries_pool: number
-  validity_days: number
+  /** Days it runs; null runs until the budget of game entries is used up. */
+  validity_days?: number | null
   status: AdPurchaseStatus
   entries_used: number
   entries_held: number
