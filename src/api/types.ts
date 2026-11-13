@@ -115,6 +115,8 @@ export type PlaceDetails = {
   line2?: string
   city: string
   region?: string
+  /** The state's short form, e.g. "NSW" for New South Wales. */
+  region_code?: string
   postal_code?: string
   country_code?: string
   country_name?: string

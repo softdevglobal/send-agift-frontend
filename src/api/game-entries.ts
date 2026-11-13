@@ -381,7 +381,7 @@ export const updateState = (id: string, body: StateInput) =>
   api<State>(`/admin/states/${id}`, { method: 'PUT', body })
 export const deleteState = (id: string) => api<{ ok: boolean }>(`/admin/states/${id}`, { method: 'DELETE' })
 
-// ─── Admin: customers, review and legacy ───────────────────────────────────
+// ─── Admin: customers and review ───────────────────────────────────
 
 export type CustomerEntriesSummary = {
   customer_id: string
@@ -444,17 +444,3 @@ export const resolveShortfall = (id: string, resolution: string) =>
     method: 'POST',
     body: { resolution },
   })
-
-export type LegacyBalance = { id: string; name: string; email: string; points: number }
-
-export type LegacyPoints = {
-  customer_points: number
-  customers_holding: number
-  seller_points: number
-  sellers_holding: number
-  customers: LegacyBalance[]
-  sellers: LegacyBalance[]
-}
-
-/** What is still held in the retired points system. Read only. */
-export const getLegacyPoints = () => api<LegacyPoints>('/admin/legacy-points')

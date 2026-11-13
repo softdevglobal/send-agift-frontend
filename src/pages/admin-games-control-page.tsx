@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
@@ -7,7 +7,6 @@ import {
   createState,
   deleteState,
   getGamesControl,
-  getLegacyPoints,
   liftJurisdiction,
   listAdminStates,
   listShortfalls,
@@ -21,13 +20,13 @@ import {
   type GamesControl,
   type Jurisdiction,
   type JurisdictionInput,
-  type LegacyPoints,
   type State,
   type SwitchState,
 } from '@/api/game-entries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
-import type { Country } from '@/api/types'
+import type { Country, PlaceDetails } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
+import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -52,7 +51,6 @@ const TABS = [
   { id: 'switches', label: 'Where games are on' },
   { id: 'states', label: 'States and regions' },
   { id: 'review', label: 'Review cases' },
-  { id: 'legacy', label: 'Old points balances' },
 ] as const
 type Tab = (typeof TABS)[number]['id']
 
@@ -125,7 +123,6 @@ export function AdminGamesControlPage() {
       {tab === 'switches' ? <SwitchesPanel countries={countries} /> : null}
       {tab === 'states' ? <StatesPanel countries={countries} /> : null}
       {tab === 'review' ? <ReviewPanel /> : null}
-      {tab === 'legacy' ? <LegacyPanel /> : null}
     </>
   )
 }
@@ -587,10 +584,45 @@ function StatesPanel({ countries }: { countries: Country[] }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const canEdit = isSuperAdmin()
+  const codeRef = useRef<HTMLInputElement>(null)
+  const countryCode = countries.find((c) => c.id === countryId)?.iso_code
 
   useEffect(() => {
     if (!countryId && countries[0]) setCountryId(countries[0].id)
   }, [countries, countryId])
+
+  function addState(stateCode: string, stateName: string) {
+    const clean = { code: stateCode.trim().toUpperCase(), name: stateName.trim() }
+    if (!clean.code || !clean.name) return setError('Give the state a code and a name.')
+    const taken = (items ?? []).find(
+      (s) => s.name.toLowerCase() === clean.name.toLowerCase() || s.code.toUpperCase() === clean.code,
+    )
+    if (taken) return setError(`${taken.name} (${taken.code}) is already on the list.`)
+    void run(`${clean.name} added.`, () =>
+      createState({ country_id: countryId, code: clean.code, name: clean.name, is_active: true }),
+    ).then(() => {
+      setCode('')
+      setName('')
+    })
+  }
+
+  /** A state picked from Google: added at once when it comes with a short code. */
+  function pickState(place: PlaceDetails) {
+    const stateName = (place.region || place.name || '').trim()
+    const short = (place.region_code ?? '').trim()
+    // Some countries have no short form: Google repeats the name. Then the
+    // admin types a code.
+    const usable = short && short.length <= 10 && short.toLowerCase() !== stateName.toLowerCase()
+    if (stateName && usable) {
+      addState(short, stateName)
+      return
+    }
+    setName(stateName)
+    setCode('')
+    setNotice(null)
+    setError(stateName ? `Google has no short code for ${stateName}. Type one, then add it.` : null)
+    codeRef.current?.focus()
+  }
 
   const load = useCallback(async () => {
     if (!countryId) return
@@ -648,27 +680,43 @@ function StatesPanel({ countries }: { countries: Country[] }) {
           className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border-2 border-brand-ink/15 bg-card p-4"
           onSubmit={(e) => {
             e.preventDefault()
-            if (!code.trim() || !name.trim()) return setError('Give the state a code and a name.')
-            void run(`${name.trim()} added.`, () =>
-              createState({ country_id: countryId, code: code.trim().toUpperCase(), name: name.trim(), is_active: true }),
-            ).then(() => {
-              setCode('')
-              setName('')
-            })
+            addState(code, name)
           }}
         >
+          <AddressAutocomplete
+            key={countryId}
+            id="st-name"
+            className="min-w-60 flex-1"
+            types="states"
+            countryCode={countryCode}
+            value={name}
+            onQueryChange={setName}
+            onSelect={pickState}
+            disabled={busy || !countryId}
+            label="Find a state or region"
+            placeholder={`Start typing a state in ${countries.find((c) => c.id === countryId)?.name ?? 'this country'}…`}
+            helperText=""
+          />
           <div className="space-y-1.5">
             <Label htmlFor="st-code">Code</Label>
-            <Input id="st-code" className="w-28" value={code} maxLength={10} onChange={(e) => setCode(e.target.value)} placeholder="NSW" />
-          </div>
-          <div className="min-w-52 flex-1 space-y-1.5">
-            <Label htmlFor="st-name">Name</Label>
-            <Input id="st-name" value={name} maxLength={80} onChange={(e) => setName(e.target.value)} placeholder="New South Wales" />
+            <Input
+              id="st-code"
+              ref={codeRef}
+              className="w-28"
+              value={code}
+              maxLength={10}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="NSW"
+            />
           </div>
           <Button type="submit" className="h-10 px-4" disabled={busy || !countryId}>
             <Plus className="size-4" />
             Add state
           </Button>
+          <p className="basis-full text-xs text-muted-foreground">
+            Pick a state from the suggestions and it is added with its code straight away. Or type a name and code
+            yourself and press Add state.
+          </p>
         </form>
       ) : null}
 
@@ -805,80 +853,6 @@ function ReviewPanel() {
           ))}
         </ul>
       )}
-    </>
-  )
-}
-
-// ─── Legacy balances ───────────────────────────────────────────────────────
-
-function LegacyPanel() {
-  const [data, setData] = useState<LegacyPoints | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    getLegacyPoints()
-      .then(setData)
-      .catch((err) => setError(getErrorMessage(err, 'Could not load the old balances.')))
-  }, [])
-
-  if (error) return <FormAlert error={error} />
-  if (!data) {
-    return (
-      <div className="flex justify-center py-12">
-        <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  return (
-    <>
-      <p className="mb-4 max-w-3xl rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-        The old points system is retired. These balances are frozen: nothing can be earned, spent or changed. They are
-        kept, with their full history, until a decision is made to refund or convert them. Nothing has been deleted.
-      </p>
-      <div className="mb-5 grid gap-3 sm:grid-cols-2">
-        {(
-          [
-            ['Customers', data.customer_points, data.customers_holding],
-            ['Sellers', data.seller_points, data.sellers_holding],
-          ] as const
-        ).map(([label, points, holders]) => (
-          <div key={label} className="rounded-xl border-2 border-brand-ink/15 bg-card p-5">
-            <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">{label}</p>
-            <p className="mt-1 font-poster text-3xl">{number.format(points)}</p>
-            <p className="text-sm text-muted-foreground">
-              held by {number.format(holders)} {holders === 1 ? 'account' : 'accounts'}
-            </p>
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-5 lg:grid-cols-2">
-        {(
-          [
-            ['Customer balances', data.customers],
-            ['Seller balances', data.sellers],
-          ] as const
-        ).map(([title, rows]) => (
-          <section key={title} className="overflow-hidden rounded-xl border-2 border-brand-ink/15 bg-card">
-            <h3 className="border-b border-brand-ink/10 px-4 py-3 text-sm font-bold">{title}</h3>
-            {rows.length === 0 ? (
-              <p className="px-4 py-6 text-sm text-muted-foreground">No balances.</p>
-            ) : (
-              <ul className="max-h-96 divide-y divide-brand-ink/10 overflow-y-auto text-sm">
-                {rows.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{r.name || r.email}</span>
-                      <span className="block truncate text-xs text-muted-foreground">{r.email}</span>
-                    </span>
-                    <span className="shrink-0 font-bold">{number.format(r.points)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))}
-      </div>
     </>
   )
 }

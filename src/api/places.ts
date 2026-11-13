@@ -8,7 +8,7 @@ import type {
 export type { PlaceDetails, PlaceSuggestion }
 
 /** Narrows what kind of place is suggested. */
-export type PlaceTypeFilter = 'address' | 'cities' | 'regions' | 'establishment'
+export type PlaceTypeFilter = 'address' | 'cities' | 'regions' | 'states' | 'establishment'
 
 type AutocompleteOptions = {
   /** Groups keystrokes + the follow-up details call into one billed session. */
