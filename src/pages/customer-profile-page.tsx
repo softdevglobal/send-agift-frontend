@@ -31,7 +31,9 @@ import { countryOptionLabel } from '@/lib/country-options'
 import { optionalString, toDateInputValue } from '@/lib/form'
 import { selectClassName } from '@/lib/form-styles'
 import { ProfileImage } from '@/components/common/profile-image'
-import { StateCard } from '@/features/game-entries/state-card'
+import { StateSelect } from '@/features/game-entries/state-select'
+import { getMyState, setMyState, type CustomerState } from '@/api/game-entries'
+import { DatePicker, inDays } from '@/components/common/date-picker'
 import { askConfirm } from '@/components/common/ask-dialog'
 
 export function CustomerProfilePage() {
@@ -49,16 +51,23 @@ export function CustomerProfilePage() {
   const [customerType, setCustomerType] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [status, setStatus] = useState('')
+  /** The state on the account, and the one chosen in the form. */
+  const [stateInfo, setStateInfo] = useState<CustomerState | null>(null)
+  const [stateId, setStateId] = useState('')
+  const [stateRequired, setStateRequired] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
   const [pendingImage, setPendingImage] = useState<{ src: string; name: string } | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const photoInput = useRef<HTMLInputElement>(null)
 
   const load = useCallback(async () => {
-    const [me, countryList] = await Promise.all([
+    const [me, countryList, myState] = await Promise.all([
       getCustomerMe(),
       listCountries(),
+      getMyState().catch(() => null),
     ])
+    setStateInfo(myState)
+    setStateId(myState?.state?.id ?? '')
     setProfile(me)
     setCountries(Array.isArray(countryList) ? countryList : [])
     setCountryId(me.country_id)
@@ -85,10 +94,26 @@ export function CustomerProfilePage() {
     }
   }, [load])
 
+  // A state already given is locked during its cooldown, and changing it
+  // needs a verified phone; the server enforces both, this explains them.
+  const savedState = stateInfo?.state ?? null
+  const stateUntil = stateInfo?.can_change_at ? new Date(stateInfo.can_change_at) : null
+  const stateLocked = Boolean(
+    savedState && countryId === stateInfo?.country_id && stateUntil && stateUntil > new Date(),
+  )
+  const stateNeedsPhone = Boolean(
+    savedState && countryId === stateInfo?.country_id && !stateInfo?.phone_verified,
+  )
+  const stateEditable = !stateLocked && !stateNeedsPhone
+
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
     setNotice(null)
+    if (stateEditable && stateRequired && !stateId) {
+      setError('Choose your state or region.')
+      return
+    }
     setSaving(true)
     try {
       const updated = await updateCustomerMe({
@@ -105,6 +130,11 @@ export function CustomerProfilePage() {
           ? { ...prev, ...updated, addresses: prev.addresses }
           : { ...updated, addresses: [] },
       )
+      // The state has its own rules (a cooldown and a verified phone), so it
+      // is saved after the country it belongs to.
+      if (stateEditable && stateId && stateId !== stateInfo?.state?.id) {
+        await setMyState(stateId)
+      }
       // Reload so what is shown (the verified badge in particular) is what the
       // server holds: changing the phone clears its verification.
       await load().catch(() => undefined)
@@ -321,6 +351,31 @@ export function CustomerProfilePage() {
               </div>
             </div>
 
+            {stateEditable ? (
+              <StateSelect
+                id="profile-state"
+                countryId={countryId}
+                value={stateId}
+                onChange={setStateId}
+                onRequired={setStateRequired}
+              />
+            ) : savedState ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="profile-state">State or region</Label>
+                <div
+                  id="profile-state"
+                  className="flex h-11 items-center rounded-md border border-input bg-muted/40 px-3 text-sm"
+                >
+                  {savedState.name}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {stateLocked && stateUntil
+                    ? `It can be changed again on ${stateUntil.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}.`
+                    : 'Verify your phone number below to change it.'}
+                </p>
+              </div>
+            ) : null}
+
             <div className="space-y-2">
               <Label htmlFor="profile-display-name">Display name</Label>
               <Input
@@ -346,12 +401,17 @@ export function CustomerProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-dob">Date of birth</Label>
-                <Input
+                <DatePicker
                   id="profile-dob"
-                  type="date"
+                  variant="field"
+                  display="long"
+                  jumps
                   value={dateOfBirth}
-                  onChange={(event) => setDateOfBirth(event.target.value)}
-                  className="h-11 bg-surface px-3"
+                  onChange={setDateOfBirth}
+                  min="1900-01-01"
+                  max={inDays(0)}
+                  placeholder="Choose your date of birth"
+                  clearLabel="Clear date"
                 />
               </div>
             </div>
@@ -412,8 +472,6 @@ export function CustomerProfilePage() {
           />
 
           <ChangePasswordCard temporary={Boolean(profile?.password_change_required)} />
-
-          <StateCard />
 
           <section className="rounded-2xl border border-destructive/40 bg-card p-6">
             <h2 className="font-poster text-xl">Delete account</h2>

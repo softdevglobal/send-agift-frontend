@@ -31,6 +31,7 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 import { OPERATION_LABEL } from './labels'
 import { Field, StatusPill } from './shared'
 import { askText } from '@/components/common/ask-dialog'
+import { DatePicker } from '@/components/common/date-picker'
 
 const NEEDS_PROVIDER: ApprovalOperation[] = [
   'membership_sale',
@@ -302,7 +303,16 @@ function ApprovalDialog({
             <Input id="ap-age" inputMode="numeric" value={minAge} onChange={(e) => setMinAge(e.target.value.replace(/\D/g, ''))} placeholder="None" />
           </Field>
           <Field label="Expires" htmlFor="ap-exp">
-            <Input id="ap-exp" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+            <DatePicker
+              id="ap-exp"
+              variant="field"
+              display="long"
+              jumps
+              value={expires}
+              onChange={setExpires}
+              placeholder="No expiry"
+              clearLabel="No expiry"
+            />
           </Field>
           <Field label="Evidence reference" htmlFor="ap-ev" className="sm:col-span-2">
             <Input id="ap-ev" value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder="e.g. Legal advice LA-2026-014, Stripe acceptance email 12 Nov" />

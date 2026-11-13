@@ -1,4 +1,9 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -65,6 +70,17 @@ type DatePickerProps = {
   onChange: (value: string) => void;
   /** Earliest selectable day as `yyyy-mm-dd`. Defaults to today. */
   min?: string;
+  /** Latest selectable day as `yyyy-mm-dd`. No limit when left out. */
+  max?: string;
+  /**
+   * `inline` (the default) is the bare trigger the gift search uses;
+   * `field` looks like the form's other inputs, with a calendar icon.
+   */
+  variant?: "inline" | "field";
+  /** Month and year dropdowns in the header, for dates years away. */
+  jumps?: boolean;
+  /** `friendly` says "Tomorrow"; `long` says "12 March 1995". */
+  display?: "friendly" | "long";
   /** One-tap options above the grid. */
   presets?: DatePickerPreset[];
   /** What the trigger says when nothing is chosen. */
@@ -87,6 +103,10 @@ export function DatePicker({
   value,
   onChange,
   min,
+  max,
+  variant = "inline",
+  jumps = false,
+  display = "friendly",
   presets = [],
   placeholder = "Any day",
   clearLabel = "Any day",
@@ -105,9 +125,28 @@ export function DatePicker({
 
   const floor = min ?? inDays(0);
   const selected = parseDay(value);
+  const ceiling = max ? parseDay(max) : null;
   const [month, setMonth] = useState(
-    () => selected ?? parseDay(floor) ?? new Date(),
+    () => selected ?? ceiling ?? parseDay(floor) ?? new Date(),
   );
+  const label = value
+    ? display === "long"
+      ? (parseDay(value)?.toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }) ?? value)
+      : friendlyDate(value)
+    : placeholder;
+  const floorDay = parseDay(floor);
+  const years = useMemo(() => {
+    const first = floorDay?.getFullYear() ?? new Date().getFullYear() - 100;
+    const last = ceiling?.getFullYear() ?? new Date().getFullYear() + 5;
+    const out: number[] = [];
+    for (let y = last; y >= first; y--) out.push(y);
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [floor, max]);
 
   // Reopening on a chosen date should land on that date's month, not
   // wherever the calendar was left last time.
@@ -205,6 +244,11 @@ export function DatePicker({
       parseDay(floor)?.getMonth() ?? 0,
       1,
     );
+  // Nor a month entirely after the ceiling.
+  const canGoForward =
+    !ceiling ||
+    new Date(month.getFullYear(), month.getMonth(), 1) <
+      new Date(ceiling.getFullYear(), ceiling.getMonth(), 1);
 
   function pick(day: Date) {
     onChange(toDateValue(day));
@@ -220,11 +264,21 @@ export function DatePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          "flex h-7 w-full items-center text-left text-base",
-          value ? "font-medium" : "text-muted-foreground",
+          variant === "field"
+            ? "flex h-11 w-full items-center gap-2.5 rounded-md border border-input bg-surface px-3 text-left text-sm outline-none transition focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            : "flex h-7 w-full items-center text-left text-base",
+          value
+            ? variant === "field"
+              ? "text-foreground"
+              : "font-medium"
+            : "text-muted-foreground",
+          open && variant === "field" && "border-ring ring-[3px] ring-ring/50",
         )}
       >
-        {value ? friendlyDate(value) : placeholder}
+        {variant === "field" ? (
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" />
+        ) : null}
+        <span className="truncate">{label}</span>
       </button>
 
       {open
@@ -305,21 +359,84 @@ export function DatePicker({
                   >
                     <ChevronLeft className="size-4" />
                   </button>
-                  <p className="text-sm font-semibold">
-                    {month.toLocaleDateString(undefined, {
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </p>
+                  {jumps ? (
+                    <div className="flex gap-1.5">
+                      <span className="relative">
+                        <select
+                          aria-label="Month"
+                          value={month.getMonth()}
+                          onChange={(e) =>
+                            setMonth(
+                              new Date(
+                                month.getFullYear(),
+                                Number(e.target.value),
+                                1,
+                              ),
+                            )
+                          }
+                          className="h-8 cursor-pointer appearance-none rounded-lg border border-border bg-surface pr-7 pl-2.5 text-sm font-semibold outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                        >
+                          {Array.from({ length: 12 }, (_, m) => (
+                            <option key={m} value={m}>
+                              {new Date(2000, m, 1).toLocaleDateString(
+                                undefined,
+                                {
+                                  month: "short",
+                                },
+                              )}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          aria-hidden
+                          className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                        />
+                      </span>
+                      <span className="relative">
+                        <select
+                          aria-label="Year"
+                          value={month.getFullYear()}
+                          onChange={(e) =>
+                            setMonth(
+                              new Date(
+                                Number(e.target.value),
+                                month.getMonth(),
+                                1,
+                              ),
+                            )
+                          }
+                          className="h-8 cursor-pointer appearance-none rounded-lg border border-border bg-surface pr-7 pl-2.5 text-sm font-semibold outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+                        >
+                          {years.map((y) => (
+                            <option key={y} value={y}>
+                              {y}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown
+                          aria-hidden
+                          className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                        />
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold">
+                      {month.toLocaleDateString(undefined, {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
                   <button
                     type="button"
+                    disabled={!canGoForward}
                     onClick={() =>
                       setMonth(
                         new Date(month.getFullYear(), month.getMonth() + 1, 1),
                       )
                     }
                     aria-label="Next month"
-                    className="grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                    className="grid size-8 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
                   >
                     <ChevronRight className="size-4" />
                   </button>
@@ -338,7 +455,8 @@ export function DatePicker({
                   {cells.map((day, index) => {
                     if (!day) return <span key={`pad-${index}`} />;
                     const dayValue = toDateValue(day);
-                    const disabled = dayValue < floor;
+                    const disabled =
+                      dayValue < floor || (max ? dayValue > max : false);
                     const picked = dayValue === value;
                     const isToday = dayValue === todayValue;
                     return (

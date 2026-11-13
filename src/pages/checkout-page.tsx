@@ -76,6 +76,7 @@ import {
 } from '@/features/competition-points/use-member-discount'
 import { newRequestKey } from '@/features/competition-points/format'
 import { cn } from '@/lib/utils'
+import { DatePicker } from '@/components/common/date-picker'
 
 function blankRecipient(country = '') {
   return {
@@ -1280,14 +1281,15 @@ export function CheckoutPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="checkout-delivery-date">Delivery date</Label>
-                <Input
+                <DatePicker
                   id="checkout-delivery-date"
-                  type="date"
+                  variant="field"
+                  display="long"
                   value={deliveryDate}
                   min={toDateInputValue(new Date())}
-                  onChange={(event) => setDeliveryDate(event.target.value)}
-                  className="h-11 bg-surface px-3"
-                  required
+                  onChange={(value) => setDeliveryDate(value || tomorrow())}
+                  placeholder="Choose a delivery date"
+                  clearLabel="Tomorrow"
                 />
                 <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {DATE_PRESETS.map((preset) => {
