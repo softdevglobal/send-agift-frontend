@@ -255,6 +255,11 @@ export const AD_PURCHASE_LABEL: Record<AdPurchaseStatus, string> = {
  * A level's name: the admin's own when the package has one, else "High",
  * "Medium", "Low" for three levels and "Level 1…n" otherwise.
  */
+/** What one game entry costs the seller, in the package's minor units. */
+export function costPerEntry(pkg: AdPackage) {
+  return pkg.entries_pool > 0 ? pkg.price_minor / pkg.entries_pool : Infinity
+}
+
 export function levelName(level: number, slots: number, names?: string[] | null) {
   const own = names?.[level - 1]?.trim()
   if (own) return own

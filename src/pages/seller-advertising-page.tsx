@@ -21,6 +21,7 @@ import {
   AD_PURCHASE_LABEL,
   buyAdPackage,
   cancelAdPurchase,
+  costPerEntry,
   entriesLabel,
   formatCents,
   getSellerAdvertising,
@@ -39,6 +40,7 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { SellerEmptyState, SellerPageHeader, sellerPanelClass } from '@/features/seller'
+import { AdPackageCard, BandChip } from '@/features/seller/ad-package-card'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -61,8 +63,8 @@ const STATUS_TONE: Record<AdPurchase['status'], string> = {
 /**
  * The seller's advertising: buy a package, put products in its priority
  * levels, and watch how much of its budget has gone to customers as game
- * entries. A package ends when its budget is used or its time is up; a new
- * one is only ever bought by the seller.
+ * entries. A package ends when its budget is used; a new one is only ever
+ * bought by the seller.
  */
 export function SellerAdvertisingPage() {
   const [data, setData] = useState<SellerAdvertising | null>(null)
@@ -170,6 +172,12 @@ export function SellerAdvertisingPage() {
   const live = purchases.filter((p) => p.status === 'active' || p.status === 'pending')
   const past = purchases.filter((p) => p.status !== 'active' && p.status !== 'pending')
   const unread = (data?.reminders ?? []).filter((r) => !r.read_at)
+  // The package where a game entry costs least, when there is a choice.
+  const bestValue = useMemo(() => {
+    const list = data?.packages ?? []
+    if (list.length < 2) return null
+    return list.reduce((best, p) => (costPerEntry(p) < costPerEntry(best) ? p : best)).id
+  }, [data])
   const promotedElsewhere = useMemo(() => {
     const map = new Map<string, string>()
     for (const p of purchases) {
@@ -240,50 +248,28 @@ export function SellerAdvertisingPage() {
                 description="Advertising packages are not available in your country yet. Check back soon."
               />
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {data!.packages.map((pkg) => (
-                  <article key={pkg.id} className="flex flex-col rounded-xl border-2 border-brand-ink/15 bg-card p-5">
-                    <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">{pkg.name}</p>
-                    <p className="mt-1 font-poster text-3xl">{formatCents(pkg.price_minor, pkg.currency)}</p>
-                    {pkg.description ? <p className="mt-2 text-sm whitespace-pre-line text-muted-foreground">{pkg.description}</p> : null}
-                    <ul className="mt-4 space-y-1.5 text-sm">
-                      <li>
-                        Promotes up to <strong>{pkg.product_slots}</strong> {pkg.product_slots === 1 ? 'product' : 'products'}
-                      </li>
-                      {pkg.level_entries.map((n, i) => (
-                        <li key={i} className="flex items-center justify-between gap-3 text-muted-foreground">
-                          <span>{levelName(i + 1, pkg.product_slots, pkg.level_names)} priority</span>
-                          <span className="font-semibold text-foreground">{entriesLabel(n)} per purchase</span>
-                        </li>
-                      ))}
-                      <li className="border-t border-border/60 pt-1.5">
-                        Budget of <strong>{number.format(pkg.entries_pool)}</strong> game entries
-                      </li>
-                      <li>
-                        {pkg.validity_days ? (
-                          <>
-                            Runs for <strong>{pkg.validity_days} days</strong>, or until the budget is used
-                          </>
-                        ) : (
-                          <>
-                            Runs <strong>until the budget is used</strong>, with no end date
-                          </>
-                        )}
-                      </li>
-                    </ul>
-                    <Button className="mt-5 h-11" onClick={() => void buy(pkg)} disabled={busy === pkg.id}>
-                      {busy === pkg.id ? <LoaderCircle className="size-4 animate-spin" /> : null}
-                      Buy for {formatCents(pkg.price_minor, pkg.currency)}
-                    </Button>
-                  </article>
+              <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {data!.packages.map((pkg, index) => (
+                  <AdPackageCard
+                    key={pkg.id}
+                    pkg={pkg}
+                    index={index}
+                    highlight={pkg.id === bestValue}
+                    badge={pkg.id === bestValue ? <BandChip tone="gold">Best value</BandChip> : null}
+                    actions={
+                      <Button className="h-11 w-full" onClick={() => void buy(pkg)} disabled={busy === pkg.id}>
+                        {busy === pkg.id ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                        Buy for {formatCents(pkg.price_minor, pkg.currency)}
+                      </Button>
+                    }
+                  />
                 ))}
               </div>
             )}
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              A package ends when its budget is used up or its time runs out, whichever comes first. Unused budget or
-              time is not refunded. Nothing renews automatically: a new package starts only when you buy one. Entries
-              are given to customers where games are available; a customer elsewhere can still buy your product, without
-              entries.
+              A package runs until its budget of game entries is used up; unused budget is not refunded. Nothing renews
+              automatically: a new package starts only when you buy one. Entries are given to customers where games are
+              available; a customer elsewhere can still buy your product, without entries.
             </p>
           </section>
 
