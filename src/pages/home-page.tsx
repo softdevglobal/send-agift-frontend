@@ -18,10 +18,8 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/features/auth/auth-context'
 import { CategoryItem } from '@/features/marketing/category-item'
 import { homePathForRole } from '@/lib/auth'
-import {
-  giftCategories,
-  type GiftProduct,
-} from '@/features/marketing/data'
+import { giftCategories } from '@/features/marketing/data'
+import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { FeatureBar } from '@/features/marketing/feature-bar'
 import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
 import { ReelsStrip } from '@/features/reels/reels-strip'
@@ -29,6 +27,7 @@ import { GiftCard, GiftSearchBar } from '@/features/customer-commerce'
 import {
   catalogProductFromApi,
   registerCatalogProducts,
+  sponsoredFirst,
 } from '@/features/customer-commerce/catalog'
 import { loadMarketplaceIntoCatalog } from '@/lib/marketplace'
 import { cn } from '@/lib/utils'
@@ -88,7 +87,7 @@ export function HomePage() {
   const isGuest = !isAuthenticated
   const isCustomer = isAuthenticated && role === 'customer'
   // The shelf shows real published gifts only, and hides until there are some.
-  const [published, setPublished] = useState<GiftProduct[]>([])
+  const [published, setPublished] = useState<CatalogProduct[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -123,7 +122,8 @@ export function HomePage() {
   }, [])
 
   const hasPublished = published.length > 0
-  const shelfGifts = published.slice(0, 5)
+  // Promoted gifts lead the shelf, the higher priority level first.
+  const shelfGifts = sponsoredFirst(published).slice(0, 5)
 
   return (
     <SiteLayout>
