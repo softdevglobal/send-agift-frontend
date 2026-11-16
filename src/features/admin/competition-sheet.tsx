@@ -27,6 +27,8 @@ import {
 import { Loading, StatusPill } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { flagOf } from '@/lib/country-options'
+import { CompetitionsOffBanner } from '@/features/capabilities/competitions-off-banner'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { isSuperAdmin } from '@/lib/auth'
 import { formatPriceAmount } from '@/lib/money'
 
@@ -63,6 +65,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const [busy, setBusy] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const superadmin = isSuperAdmin()
+  const competitionsOn = useCompetitionsEnabled()
 
   const load = useCallback(async (competitionId: string) => {
     setComp(await getAdminCompetition(competitionId))
@@ -125,9 +128,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
   const blocked = (comp?.schedule_blockers.length ?? 0) > 0
 
   const prize = comp
-    ? comp.prize_type === 'points'
-      ? `${(comp.prize_points ?? 0).toLocaleString()} points each`
-      : comp.prize_currency
+    ? comp.prize_currency
         ? formatPriceAmount(
             comp.final_prize_cents ?? (comp.status === 'draft' ? comp.start_prize_cents : comp.current_prize_cents),
             comp.prize_currency,
@@ -184,6 +185,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
               </header>
 
               <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                <CompetitionsOffBanner />
                 <FormAlert error={error} notice={notice} />
 
                 <CompetitionStandings comp={comp} />
@@ -224,7 +226,7 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                   </h3>
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     <Fact label="Entry">
-                      {comp.points_per_attempt === 0 ? 'Free' : `${comp.points_per_attempt.toLocaleString()} pts a play`}
+                      {comp.entries_per_attempt === 0 ? 'Free' : `${comp.entries_per_attempt.toLocaleString()} ${comp.entries_per_attempt === 1 ? 'entry' : 'entries'} a play`}
                     </Fact>
                     <Fact label="Plays each">{comp.max_attempts_per_customer || 'No limit'}</Fact>
                     <Fact label="Plays so far">{comp.eligible_play_count.toLocaleString()}</Fact>
@@ -310,11 +312,13 @@ export function CompetitionSheet({ id, onClose, onChanged, games, countries }: C
                         title={
                           !superadmin
                             ? 'Only a super admin can publish'
-                            : blocked
+                            : !competitionsOn
+                              ? 'Competitions are switched off'
+                              : blocked
                               ? 'Finish the steps listed above first'
                               : undefined
                         }
-                        disabled={!superadmin || busy !== null || blocked}
+                        disabled={!superadmin || !competitionsOn || busy !== null || blocked}
                         onClick={() =>
                           run(
                             'schedule',

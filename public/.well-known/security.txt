@@ -1,0 +1,5 @@
+# Found a security problem in SendAGift? Please tell us privately.
+Contact: mailto:support@sendagift.win
+Expires: 2027-11-12T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://sendagift.win/.well-known/security.txt

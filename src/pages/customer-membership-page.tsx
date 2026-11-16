@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BadgeCheck, CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt, RotateCcw } from 'lucide-react'
+import { CalendarClock, Crown, FlaskConical, LoaderCircle, Percent, Receipt, RotateCcw } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 
 import {
@@ -9,7 +9,6 @@ import {
   getMembershipOffers,
   refusalOf,
   resumeMembership,
-  type BonusSlot,
   type MembershipOffers,
   type MembershipStatus,
 } from '@/api/competition-points'
@@ -25,14 +24,7 @@ import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { OfferCard } from '@/pages/membership-page'
 
-const SLOT_LABEL: Record<BonusSlot['status'], string> = {
-  unawarded: 'Ready to unlock',
-  awarded: 'Unlocked',
-  reversed: 'Taken back',
-  restored: 'Restored',
-}
-
-/** The customer's membership: the period in force, its bonus and the next charge. */
+/** The customer's membership: the period in force and the next charge. */
 export function CustomerMembershipPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
@@ -60,10 +52,9 @@ export function CustomerMembershipPage() {
     void load()
   }, [load])
 
-  // Back from an older checkout link: the points page confirms the payment
-  // and welcomes the member.
+  // Back from an older checkout link: the welcome confirms the payment.
   useEffect(() => {
-    if (returned) navigate('/account/points?welcome=membership', { replace: true })
+    if (returned) navigate('/account/membership?welcome=membership', { replace: true })
   }, [returned, navigate])
 
   // While the payment is being confirmed, check again every few seconds; the
@@ -85,7 +76,7 @@ export function CustomerMembershipPage() {
     setError(null)
     try {
       await confirmTestPayment()
-      navigate('/account/points?welcome=membership', { replace: true })
+      navigate('/account/membership?welcome=membership', { replace: true })
     } catch (err) {
       setError(refusalOf(err)?.message ?? getErrorMessage(err, 'Could not confirm the test payment.'))
     } finally {
@@ -139,12 +130,7 @@ export function CustomerMembershipPage() {
     <>
       <CustomerPageHeader
         title="My membership"
-        description="Your paid periods, your member bonus and your next renewal."
-        action={
-          <Button asChild variant="outline" className="h-10 px-4">
-            <Link to="/account/points">My points</Link>
-          </Button>
-        }
+        description="Your paid periods and your next renewal."
       />
       <MembershipWelcome onConfirmed={() => void load()} />
       <FormAlert error={error} notice={notice} className="mb-4" />
@@ -210,17 +196,6 @@ export function CustomerMembershipPage() {
               value={period ? `${formatDate(period.period_start)} – ${formatDate(period.period_end)}` : 'No paid period now'}
             />
             <Fact
-              icon={BadgeCheck}
-              label="Member bonus"
-              value={
-                period?.bonus_slot
-                  ? `${period.bonus_slot.bonus_points.toLocaleString()} points · ${SLOT_LABEL[period.bonus_slot.status]}`
-                  : period
-                    ? 'No bonus on this plan'
-                    : '-'
-              }
-            />
-            <Fact
               icon={Receipt}
               label="Next charge"
               value={
@@ -271,7 +246,6 @@ export function CustomerMembershipPage() {
                   </span>
                   <span className="text-muted-foreground">
                     {formatMoney(p.amount_minor, p.currency)} · {p.status}
-                    {p.bonus_slot ? ` · bonus ${SLOT_LABEL[p.bonus_slot.status].toLowerCase()}` : ''}
                   </span>
                 </div>
               ))}

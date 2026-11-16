@@ -11,7 +11,7 @@ import { GameBadge } from '@/features/admin/games-ui'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-const MAX_PRICE = 1_000_000
+const MAX_PRICE = 1000
 
 function parsePrice(raw: string): number | null {
   if (raw.trim() === '') return null
@@ -20,7 +20,7 @@ function parsePrice(raw: string): number | null {
 }
 
 function describe(points: number) {
-  return points === 0 ? 'nothing' : `${points.toLocaleString()} points`
+  return points === 0 ? 'nothing' : `${points.toLocaleString()} game ${points === 1 ? 'entry' : 'entries'}`
 }
 
 /** One-tap prices for the commonest choices. */
@@ -34,12 +34,12 @@ function PriceTag({ points }: { points: number }) {
   ) : (
     <span className="inline-flex items-center gap-1 rounded-md bg-amber-300 px-2 py-0.5 text-[10px] font-bold text-amber-950">
       <Coins className="size-3" />
-      {points.toLocaleString()} pts
+      {points.toLocaleString()} {points === 1 ? 'entry' : 'entries'}
     </span>
   )
 }
 
-/** A points field with Save and Cancel, shown only while editing. */
+/** A game entries field with Save and Cancel, shown only while editing. */
 function PriceEditor({
   label,
   initial,
@@ -75,10 +75,10 @@ function PriceEditor({
           onChange={(e) => setDraft(e.target.value.replace(/[^0-9]/g, ''))}
           onFocus={(e) => e.target.select()}
           aria-invalid={(draft !== '' && price === null) || undefined}
-          className="h-9 w-24 border-2 border-brand-ink bg-surface pr-9 text-right font-bold tabular-nums focus-visible:ring-0"
+          className="h-9 w-28 border-2 border-brand-ink bg-surface pr-14 text-right font-bold tabular-nums focus-visible:ring-0"
         />
         <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-muted-foreground">
-          pts
+          entries
         </span>
       </div>
       <Button
@@ -113,7 +113,7 @@ type GamePricesPanelProps = {
 }
 
 /**
- * What one play of each game costs, in points. The server takes it from the
+ * What one play of each game costs, in game entries. The server takes it from the
  * player's balance when a game starts, so a price set here applies to the
  * very next play. Only games customers can play on their own are listed.
  * chance games and quizzes run inside competitions, priced there.
@@ -133,7 +133,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
   }
 
   async function save(game: AdminGameSummary, price: number) {
-    if (price === game.play_cost_points) {
+    if (price === game.entry_cost) {
       setEditing(null)
       return
     }
@@ -155,7 +155,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
     setError(null)
     try {
       for (const game of practice) {
-        if (game.play_cost_points === price) continue
+        if (game.entry_cost === price) continue
         onSaved(await setGamePlayCost(game.slug, price))
       }
       setNotice(`Every game now costs ${describe(price)} a play.`)
@@ -169,10 +169,10 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
 
   if (practice.length === 0) return null
 
-  const freeCount = practice.filter((g) => g.play_cost_points === 0).length
-  const paid = practice.filter((g) => g.play_cost_points > 0)
+  const freeCount = practice.filter((g) => g.entry_cost === 0).length
+  const paid = practice.filter((g) => g.entry_cost > 0)
   const average = paid.length
-    ? Math.round(paid.reduce((sum, g) => sum + g.play_cost_points, 0) / paid.length)
+    ? Math.round(paid.reduce((sum, g) => sum + g.entry_cost, 0) / paid.length)
     : 0
 
   return (
@@ -185,10 +185,10 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
             <Coins className="size-3.5 text-amber-300" />
             Price to play
           </p>
-          <p className="mt-3 font-poster text-3xl sm:text-4xl">Points per play</p>
+          <p className="mt-3 font-poster text-3xl sm:text-4xl">Entries per play</p>
           <p className="mt-2 max-w-xl text-sm font-medium text-amber-950/75">
-            Taken from the player&apos;s points when a game starts. 0 makes a game free, and guests
-            can play free games too. A change applies to the very next play.
+            Taken from the player&apos;s game entries when a game starts. 0 makes a game free. Games are played by signed-in
+            customers in the mobile app, where the game is switched on. A change applies to the very next play.
           </p>
         </div>
         <div className="flex flex-wrap items-stretch gap-2 p-4 sm:p-5 lg:w-[26rem]">
@@ -252,11 +252,11 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
                 <p className="text-xs text-muted-foreground">{game.plays.toLocaleString()} plays</p>
               </div>
               <div className="text-right">
-                {game.play_cost_points === 0 ? (
+                {game.entry_cost === 0 ? (
                   <span className="font-poster text-2xl text-brand-teal">FREE</span>
                 ) : (
                   <span className="font-poster text-2xl">
-                    {game.play_cost_points.toLocaleString()}
+                    {game.entry_cost.toLocaleString()}
                     <span className="ml-0.5 font-sans text-[11px] font-bold text-muted-foreground">PTS</span>
                   </span>
                 )}
@@ -267,7 +267,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
               {editing === game.slug ? (
                 <PriceEditor
                   label={`Price for ${game.name}`}
-                  initial={String(game.play_cost_points)}
+                  initial={String(game.entry_cost)}
                   busy={busy}
                   onSave={(price) => void save(game, price)}
                   onCancel={() => setEditing(null)}
@@ -275,7 +275,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
               ) : editable ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   {PRESETS.map((price) => {
-                    const current = game.play_cost_points === price
+                    const current = game.entry_cost === price
                     return (
                       <button
                         key={price}
@@ -305,7 +305,7 @@ export function GamePricesPanel({ games, editable, onSaved }: GamePricesPanelPro
                   </button>
                 </div>
               ) : (
-                <PriceTag points={game.play_cost_points} />
+                <PriceTag points={game.entry_cost} />
               )}
             </div>
           </li>

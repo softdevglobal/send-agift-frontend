@@ -492,7 +492,7 @@ function StockDialog({
           </div>
 
           {belowReserved ? (
-            <p className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm font-medium text-destructive">
+            <p className="flex items-start gap-2 text-sm font-medium text-rose-600 dark:text-rose-400">
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               It cannot be lower than the {reserved} units already reserved for orders.
             </p>

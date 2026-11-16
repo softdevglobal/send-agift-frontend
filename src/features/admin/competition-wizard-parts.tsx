@@ -8,7 +8,6 @@ import {
   Gift as GiftIcon,
   Package,
   Search,
-  Sparkles,
   Ticket,
   Trophy,
   X,
@@ -25,7 +24,7 @@ import { cn } from '@/lib/utils'
 
 /** "50 pts a play", or "Free". */
 function priceLabel(points: number): string {
-  return points === 0 ? 'Free' : `${points.toLocaleString()} pts a play`
+  return points === 0 ? 'Free' : `${points.toLocaleString()} ${points === 1 ? 'entry' : 'entries'} a play`
 }
 
 /**
@@ -112,7 +111,7 @@ export function GamePicker({
                   <p className="truncate text-sm font-semibold">{game.name}</p>
                   <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-800">
                     <Coins className="size-3" />
-                    {priceLabel(game.play_cost_points)}
+                    {priceLabel(game.entry_cost)}
                   </span>
                 </div>
               </button>
@@ -268,7 +267,6 @@ const prizeIcons: Record<PrizeType, LucideIcon> = {
   product: Package,
   voucher: Ticket,
   gift: GiftIcon,
-  points: Sparkles,
   other: Trophy,
 }
 

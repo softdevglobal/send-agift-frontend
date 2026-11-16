@@ -27,8 +27,10 @@ export type CatalogProduct = GiftProduct & {
   catalogCustomerType?: CartCustomerType
   /** Gallery from API `media[]` (images + videos). */
   media?: CatalogProductMedia[]
-  /** Points earned per unit on delivery; 0 when the seller can't fund a reward. */
-  rewardPoints?: number
+  /** Game entries one purchase earns; 0 when the product is not promoted. */
+  gameEntries?: number
+  /** On a seller's promoted list: listed higher and labelled Sponsored. */
+  sponsored?: boolean
   /** Sellable quantity, present only while stock is low. */
   stockLeft?: number
 }

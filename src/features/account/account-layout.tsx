@@ -2,7 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 import { SiteLayout } from '@/components/common/site-layout'
 import { storefrontFrameClass } from '@/components/common/site-styles'
-import { accountNavGroups } from '@/features/account/account-nav'
+import { useAccountNav } from '@/features/account/account-nav'
 import { TemporaryPasswordBanner } from '@/features/account/temporary-password-banner'
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { FreeGiftBanner } from '@/features/free-gift/free-gift-banner'
@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
  */
 export function AccountLayout() {
   const { gifts } = useSavedGifts()
+  const { groups: accountNavGroups } = useAccountNav()
 
   return (
     <SiteLayout>

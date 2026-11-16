@@ -45,7 +45,7 @@ import {
 import { getPublicShop, subscribePublicSellers } from '@/lib/public-sellers'
 import { homePathForRole, returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
-import { RewardBadge } from '@/features/points/reward-badge'
+import { EntriesRewardStrip } from '@/features/game-entries/entries-badge'
 
 export function ProductViewPage() {
   const { productId } = useParams()
@@ -323,12 +323,7 @@ export function ProductViewPage() {
               </p>
             ) : null}
 
-            {product.rewardPoints ? (
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <RewardBadge points={product.rewardPoints} size="md" />
-                <span>per item, added to your points balance when you order.</span>
-              </div>
-            ) : null}
+            {product.sponsored ? <EntriesRewardStrip entries={product.gameEntries} className="mt-4" /> : null}
 
             <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl bg-cream p-4">
               <ShopIdentity

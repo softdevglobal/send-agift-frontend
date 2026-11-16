@@ -1,4 +1,5 @@
 import { clearSession, getToken } from '@/lib/auth'
+import { friendlyError } from '@/lib/friendly-errors'
 
 const rawBase = import.meta.env.VITE_API_BASE_URL
 const API_BASE = (rawBase === undefined || rawBase === '' ? '/api/v1' : rawBase).replace(
@@ -23,10 +24,10 @@ export function apiUrl(path: string): string {
   return `${API_BASE}${path}`
 }
 
-export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
-  if (error instanceof ApiError) return error.message
-  if (error instanceof Error && error.message) return error.message
-  return fallback
+export function getErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
+  if (error instanceof ApiError) return friendlyError(error.message, error.status)
+  if (error instanceof Error && error.message) return friendlyError(error.message)
+  return friendlyError(fallback)
 }
 
 type ApiOptions = {

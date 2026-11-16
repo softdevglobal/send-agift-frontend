@@ -113,7 +113,7 @@ export function AdminGameDetailPage() {
         action={
           game ? (
             <div className="flex items-center gap-3">
-              {game.practice ? <PriceTag points={game.play_cost_points} /> : null}
+              {game.practice ? <PriceTag points={game.entry_cost} /> : null}
               <GameBadge slug={game.slug} className="size-14" />
             </div>
           ) : null

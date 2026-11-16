@@ -29,6 +29,7 @@ LABEL org.opencontainers.image.title="sendagift-web" \
 
 # The official image fills in ${API_UPSTREAM} from the environment at start.
 COPY docker/nginx.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
 ENV API_UPSTREAM=http://api:8080

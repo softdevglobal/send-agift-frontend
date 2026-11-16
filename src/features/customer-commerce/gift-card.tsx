@@ -8,7 +8,9 @@ import { ShopIdentity } from '@/features/customer-commerce/shop-identity'
 import type { CatalogProduct } from '@/features/customer-commerce/types'
 import { categoryName, formatMoney } from '@/features/customer-commerce/utils'
 import type { GiftProduct } from '@/features/marketing/data'
-import { RewardBadge } from '@/features/points/reward-badge'
+import { cn } from '@/lib/utils'
+import { EntriesBadge, SponsoredLabel } from '@/features/game-entries/entries-badge'
+import { useEntriesEarnable } from '@/features/game-entries/use-entries-earnable'
 import { formatPriceAmount } from '@/lib/money'
 import { getPublicSeller, getPublicSellerForShop } from '@/lib/public-sellers'
 import { getSellerReviewStats } from '@/lib/seller-reviews'
@@ -73,8 +75,17 @@ export function GiftCard({ product, href }: GiftCardProps) {
       : undefined,
   }
 
+  const entriesEarnable = useEntriesEarnable()
+
   return (
-    <article className="group flex flex-col rounded-2xl border border-brand-ink/25 bg-card p-2 transition-colors sm:p-3 hover:border-brand-ink dark:border-border">
+    <article
+      className={cn(
+        'group flex flex-col rounded-2xl border p-2 transition-colors sm:p-3 hover:border-brand-ink dark:border-border',
+        isCatalogProduct(product) && product.sponsored
+          ? 'border-2 border-gold/70 bg-gold-soft hover:border-gold'
+          : 'border-brand-ink/25 bg-card',
+      )}
+    >
       <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
         <Link to={to} className="block size-full">
           <img
@@ -90,8 +101,8 @@ export function GiftCard({ product, href }: GiftCardProps) {
           </span>
         ) : null}
         <SaveGiftButton productId={product.id} className="absolute top-2 right-2 z-10 size-8 sm:top-3 sm:right-3 sm:size-9" />
-        {isCatalogProduct(product) ? (
-          <RewardBadge points={product.rewardPoints} className="absolute top-2 left-2 sm:top-3 sm:left-3" />
+        {isCatalogProduct(product) && product.sponsored ? (
+          <SponsoredLabel className="absolute top-2 left-2 sm:top-3 sm:left-3" />
         ) : null}
       </div>
 
@@ -115,6 +126,9 @@ export function GiftCard({ product, href }: GiftCardProps) {
               </span>
             ) : null}
           </div>
+          {isCatalogProduct(product) && entriesEarnable ? (
+            <EntriesBadge entries={product.gameEntries} compact />
+          ) : null}
           {isCatalogProduct(product) && product.stockLeft != null ? (
             <p className="text-xs font-medium text-amber-700">
               {product.stockLeft <= 0 ? 'Out of stock' : `Only ${product.stockLeft} left`}

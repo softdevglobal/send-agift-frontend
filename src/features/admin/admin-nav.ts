@@ -1,13 +1,13 @@
 import {
-  Coins,
   Crown,
   Gamepad2,
   Gift,
   Globe2,
   LayoutDashboard,
   Medal,
+  Megaphone,
   MessageSquare,
-  Package,
+  Power,
   ShieldCheck,
   Store,
   Trophy,
@@ -54,8 +54,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/sellers', label: 'Sellers', icon: Store },
       { to: '/admin/customers', label: 'Customers', icon: Users },
-      { to: '/admin/points', label: 'Seller points', icon: Coins, end: true },
-      { to: '/admin/points/packages', label: 'Point packages', icon: Package },
+      { to: '/admin/advertising', label: 'Advertising packages', icon: Megaphone },
       { to: '/admin/free-gifts', label: 'Free gifts', icon: Gift },
       { to: '/admin/memberships', label: 'Memberships', icon: Crown },
     ],
@@ -65,7 +64,8 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { to: '/admin/games', label: 'Games & scores', icon: Gamepad2 },
       { to: '/admin/competitions', label: 'Competitions', icon: Trophy },
-      { to: '/admin/competition-points', label: 'Competition points', icon: Medal },
+      { to: '/admin/games-control', label: 'Games control', icon: Power },
+      { to: '/admin/competition-points', label: 'Membership approvals', icon: Medal },
     ],
   },
   {

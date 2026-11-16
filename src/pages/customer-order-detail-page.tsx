@@ -3,13 +3,12 @@ import {
   ArrowLeft,
   ArrowRight,
   CalendarDays,
-  Coins,
+  Ticket,
   Gift,
   LoaderCircle,
   MessageSquare,
   Quote,
   Receipt,
-  Sparkles,
 } from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 
@@ -40,7 +39,6 @@ import {
 } from "@/features/customer-commerce/order-tracking";
 import { ParcelTracking } from "@/features/customer-commerce/parcel-tracking";
 import { useCustomerMessages } from "@/features/messaging";
-import { formatPoints } from "@/features/points/format";
 import { useMyReviews } from "@/features/reviews/my-reviews";
 import { ReviewOrderItemButton } from "@/features/reviews/review-order-item-button";
 import { ApiError, getErrorMessage } from "@/lib/api";
@@ -204,14 +202,11 @@ export function CustomerOrderDetailPage() {
         ? "Payment received. Your gift order is placed. Track its progress below."
         : null;
 
-  const rewardPoints = order.items.reduce(
-    (sum, item) =>
-      item.reward_status && item.reward_status !== "none"
-        ? sum + (item.reward_points ?? 0)
-        : sum,
-    0,
+  const entryLines = order.items.filter(
+    (item) => item.entries_status && item.entries_status !== "none" && (item.game_entries ?? 0) > 0,
   );
-  const rewardEarned = order.items.some((i) => i.reward_status === "awarded");
+  const gameEntries = entryLines.reduce((sum, item) => sum + (item.game_entries ?? 0), 0);
+  const entriesGranted = entryLines.some((i) => i.entries_status === "granted");
 
   return (
     <div>
@@ -249,14 +244,10 @@ export function CustomerOrderDetailPage() {
             }
           />
           <HeroFact
-            icon={Coins}
-            label="Points"
-            value={
-              rewardPoints > 0
-                ? `${rewardEarned ? "+" : ""}${formatPoints(rewardPoints)}`
-                : "-"
-            }
-            highlight={rewardPoints > 0}
+            icon={Ticket}
+            label="Game entries"
+            value={gameEntries > 0 ? `${entriesGranted ? "+" : ""}${gameEntries.toLocaleString()}` : "-"}
+            highlight={gameEntries > 0}
           />
         </div>
       </section>
@@ -301,37 +292,25 @@ export function CustomerOrderDetailPage() {
         )
       ) : null}
 
-      {rewardPoints > 0 || (order.gift_points && order.gift_points_status !== "none") ? (
-        <section className="relative mb-6 overflow-hidden rounded-2xl bg-amber-100 p-5 sm:p-6">
-          <Sparkles
-            aria-hidden
-            className="pointer-events-none absolute -right-3 -bottom-4 size-28 text-[oklch(0.8_0.13_78)]/40"
-          />
+      {gameEntries > 0 ? (
+        <section className="relative mb-6 overflow-hidden rounded-2xl bg-brand-teal/15 p-5 sm:p-6">
           <div className="relative flex flex-wrap items-center gap-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-amber-400 text-amber-950">
-              <Coins className="size-6" />
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-teal text-brand-ink">
+              <Ticket className="size-6" />
             </span>
             <div className="min-w-[12rem] flex-1">
-              <p className="text-[11px] font-semibold tracking-[0.16em] text-[oklch(0.45_0.1_70)] uppercase">
-                Points from this order
+              <p className="text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+                Game entries from this order
               </p>
-              {rewardPoints > 0 ? (
-                <p className="font-poster text-xl tracking-tight text-[oklch(0.3_0.07_60)] sm:text-2xl">
-                  {rewardEarned
-                    ? `+${formatPoints(rewardPoints)} points added to your balance`
-                    : rewardLine(order.items.find((i) => i.reward_points)?.reward_status, rewardPoints)}
-                </p>
-              ) : null}
-              {order.gift_points && order.gift_points_status !== "none" ? (
-                <p className="mt-1 flex items-center gap-1.5 text-sm text-[oklch(0.4_0.08_65)]">
-                  <Gift className="size-4" />
-                  {giftPointsLine(order.gift_points_status, order.gift_points)}
-                </p>
-              ) : null}
+              <p className="font-poster text-xl tracking-tight sm:text-2xl">
+                {entriesGranted
+                  ? `+${gameEntries.toLocaleString()} game ${gameEntries === 1 ? "entry" : "entries"} added`
+                  : entriesLine(entryLines[0]?.entries_status, gameEntries)}
+              </p>
             </div>
-            <Button asChild className="h-10 rounded-full bg-[oklch(0.32_0.07_60)] px-4 text-white hover:bg-[oklch(0.28_0.07_60)]">
-              <Link to="/account/points">
-                My points
+            <Button asChild className="h-10 rounded-full px-4">
+              <Link to="/account/game-entries">
+                Game entries
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -392,10 +371,10 @@ export function CustomerOrderDetailPage() {
                         {formatPriceAmount(item.unit_amount, order.currency)} ·{" "}
                         {fulfilmentStatusLabel(item.fulfilment_status)}
                       </p>
-                      {item.reward_points && item.reward_status !== "none" ? (
-                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-[oklch(0.45_0.12_75)]">
-                          <Coins className="size-3.5" />
-                          {rewardLine(item.reward_status, item.reward_points)}
+                      {item.game_entries && item.entries_status && item.entries_status !== "none" ? (
+                        <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Ticket className="size-3.5" />
+                          {entriesLine(item.entries_status, item.game_entries)}
                         </p>
                       ) : null}
                       <div className="mt-3 flex flex-wrap gap-2">
@@ -592,12 +571,6 @@ export function CustomerOrderDetailPage() {
                 </blockquote>
               </figure>
             ) : null}
-            {order.gift_points && order.gift_points_status !== "none" ? (
-              <p className="mt-3 flex items-start gap-2 rounded-lg bg-[oklch(0.96_0.05_85)] px-3 py-2 text-sm text-[oklch(0.4_0.1_70)]">
-                <Coins className="mt-0.5 size-4 shrink-0" />
-                {giftPointsLine(order.gift_points_status, order.gift_points)}
-              </p>
-            ) : null}
           </section>
         </div>
       </div>
@@ -605,37 +578,20 @@ export function CustomerOrderDetailPage() {
   );
 }
 
-/** Where a line's reward points are, in words. */
-function rewardLine(status: string | undefined, points: number) {
-  const n = formatPoints(points);
+/** Where a line's game entries are, in words. */
+function entriesLine(status: string | undefined, n: number) {
+  const label = `${n.toLocaleString()} game ${n === 1 ? "entry" : "entries"}`;
   switch (status) {
     case "reserved":
-      return `Earns ${n} points when delivered`;
-    case "awarded":
-      return `${n} points added to your balance`;
+      return `Earns ${label} once your payment is confirmed`;
+    case "granted":
+      return `${label} added`;
     case "released":
-      return `${n} points not earned. Item cancelled`;
+      return `${label} not earned. The order was not paid`;
     case "reversed":
-      return `${n} points taken back after a refund`;
+      return `${label} taken back after a refund or cancellation`;
     default:
-      return `${n} points`;
-  }
-}
-
-/** Where the points sent with the gift are, in words. */
-function giftPointsLine(status: string | undefined, points: number) {
-  const n = formatPoints(points);
-  switch (status) {
-    case "held":
-      return `${n} points are travelling with this gift.`;
-    case "delivered":
-      return `${n} points reached the recipient’s account.`;
-    case "returned":
-      return `${n} points came back to you. The recipient has no SendAGift account, or the gift was cancelled.`;
-    case "reversed":
-      return `${n} points were returned after a refund.`;
-    default:
-      return `${n} points sent with this gift.`;
+      return label;
   }
 }
 
@@ -645,7 +601,7 @@ function HeroFact({
   value,
   highlight = false,
 }: {
-  icon: typeof Coins;
+  icon: typeof Ticket;
   label: string;
   value: string;
   highlight?: boolean;

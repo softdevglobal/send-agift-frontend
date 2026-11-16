@@ -18,8 +18,8 @@ import { AdminCountriesPage } from '@/pages/admin-countries-page'
 import { AdminCountryDetailPage } from '@/pages/admin-country-detail-page'
 import { AdminCustomerDetailPage } from '@/pages/admin-customer-detail-page'
 import { AdminCustomersPage } from '@/pages/admin-customers-page'
-import { AdminPointPackagesPage } from '@/pages/admin-point-packages-page'
-import { AdminPointsPage } from '@/pages/admin-points-page'
+import { AdminAdvertisingPage } from '@/pages/admin-advertising-page'
+import { AdminGamesControlPage } from '@/pages/admin-games-control-page'
 import { AdminDashboardPage } from '@/pages/admin-dashboard-page'
 import { AdminFreeGiftsPage } from '@/pages/admin-free-gifts-page'
 import { AdminInboxPage } from '@/pages/admin-inbox-page'
@@ -34,6 +34,7 @@ import { CheckoutPage } from '@/pages/checkout-page'
 import { CheckoutResultPage } from '@/pages/checkout-result-page'
 import { CompetitionEntryPage } from '@/pages/competition-entry-page'
 import { CompetitionsPage } from '@/pages/competitions-page'
+import { CompetitionsGate } from '@/features/capabilities/competitions-gate'
 import { CustomerMembershipPage } from '@/pages/customer-membership-page'
 import { MembershipPage } from '@/pages/membership-page'
 import { CustomerLoginPage } from '@/pages/customer-login-page'
@@ -46,7 +47,7 @@ import { CustomerOrdersPage } from '@/pages/customer-orders-page'
 import { CustomerProfilePage } from '@/pages/customer-profile-page'
 import { CustomerRecipientsPage } from '@/pages/customer-recipients-page'
 import { CustomerRegisterPage } from '@/pages/customer-register-page'
-import { CustomerPointsPage } from '@/pages/customer-points-page'
+import { CustomerGameEntriesPage } from '@/pages/customer-game-entries-page'
 import { CustomerReceivedGiftsPage } from '@/pages/customer-received-gifts-page'
 import { CustomerReviewsPage } from '@/pages/customer-reviews-page'
 import { CustomerSavedGiftsPage } from '@/pages/customer-saved-gifts-page'
@@ -66,8 +67,9 @@ import { SellerFreeGiftsPage } from '@/pages/seller-free-gifts-page'
 import { SellerInventoryPage } from '@/pages/seller-inventory-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerCustomersPage } from '@/pages/seller-customers-page'
 import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
-import { SellerPointsPage } from '@/pages/seller-points-page'
+import { SellerAdvertisingPage } from '@/pages/seller-advertising-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
 import { SellerReelsPage } from '@/pages/seller-reels-page'
 import { SellerReviewsPage } from '@/pages/seller-reviews-page'
@@ -76,12 +78,14 @@ import { SellerRegisterPage } from '@/pages/seller-register-page'
 import { SellerVerifyEmailPage } from '@/pages/seller-verify-email-page'
 import { SellerShopsPage } from '@/pages/seller-shops-page'
 import { ScrollToTop } from '@/app/scroll-to-top'
+import { StatePrompt } from '@/features/game-entries/state-prompt'
 
-// Competition points are part of My points now; keep old links (and the
-// ?welcome=membership return) working.
-function RedirectToPoints() {
+// Points are retired. Old links to the points pages go to game entries, and
+// an old membership checkout return still reaches its welcome.
+function RedirectFromPoints() {
   const { search } = useLocation()
-  return <Navigate to={`/account/points${search}`} replace />
+  const welcome = new URLSearchParams(search).get('welcome') === 'membership'
+  return <Navigate to={welcome ? `/account/membership${search}` : '/account/game-entries'} replace />
 }
 
 // Competitions are open to guests, but a signed-in customer gets the same side
@@ -130,6 +134,7 @@ export function AppRouter() {
   return (
     <>
       <ScrollToTop />
+      <StatePrompt />
       <Routes>
       {/* Storefront. The same pages for guests and signed-in customers. */}
       <Route path="/" element={<HomePage />} />
@@ -175,8 +180,8 @@ export function AppRouter() {
       </Route>
 
       <Route element={<CustomerAwareLayout />}>
-        <Route path="/competitions" element={<CompetitionsPage />} />
-        <Route path="/competitions/:id" element={<CompetitionEntryPage />} />
+        <Route path="/competitions" element={<CompetitionsGate><CompetitionsPage /></CompetitionsGate>} />
+        <Route path="/competitions/:id" element={<CompetitionsGate><CompetitionEntryPage /></CompetitionsGate>} />
       </Route>
 
       <Route
@@ -238,9 +243,10 @@ export function AppRouter() {
         <Route path="gifts" element={<CustomerReceivedGiftsPage />} />
         <Route path="saved-gifts" element={<CustomerSavedGiftsPage />} />
         <Route path="reviews" element={<CustomerReviewsPage />} />
-        <Route path="points" element={<CustomerPointsPage />} />
+        <Route path="game-entries" element={<CustomerGameEntriesPage />} />
+        <Route path="points" element={<RedirectFromPoints />} />
         <Route path="membership" element={<CustomerMembershipPage />} />
-        <Route path="competition-points" element={<RedirectToPoints />} />
+        <Route path="competition-points" element={<RedirectFromPoints />} />
         <Route path="addresses" element={<AccountAddressesPage />} />
         <Route path="recipients" element={<CustomerRecipientsPage />} />
         <Route path="profile" element={<CustomerProfilePage />} />
@@ -344,10 +350,13 @@ export function AppRouter() {
         <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
         {/* The detail used to be its own page; keep those links working. */}
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
+        {/* Same pattern as orders: the param opens a customer over the list. */}
+        <Route path="customers/:customerId?" element={<SellerCustomersPage />} />
         <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="payouts" element={<SellerPayoutsPage />} />
-        <Route path="points" element={<SellerPointsPage />} />
+        <Route path="advertising" element={<SellerAdvertisingPage />} />
+        <Route path="points" element={<Navigate to="/seller/advertising" replace />} />
         <Route path="free-gifts" element={<SellerFreeGiftsPage />} />
         <Route path="inventory" element={<SellerInventoryPage />} />
         <Route path="analytics" element={<SellerAnalyticsPage />} />
@@ -368,8 +377,9 @@ export function AppRouter() {
         <Route path="sellers/:sellerId" element={<AdminSellerDetailPage />} />
         <Route path="customers" element={<AdminCustomersPage />} />
         <Route path="customers/:customerId" element={<AdminCustomerDetailPage />} />
-        <Route path="points" element={<AdminPointsPage />} />
-        <Route path="points/packages" element={<AdminPointPackagesPage />} />
+        <Route path="advertising" element={<AdminAdvertisingPage />} />
+        <Route path="games-control" element={<AdminGamesControlPage />} />
+        <Route path="points/*" element={<Navigate to="/admin/advertising" replace />} />
         <Route path="free-gifts" element={<AdminFreeGiftsPage />} />
         <Route path="competition-points" element={<AdminCompetitionPointsPage />} />
         <Route path="memberships" element={<AdminMembershipsPage />} />

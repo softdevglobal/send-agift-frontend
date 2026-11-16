@@ -52,7 +52,8 @@ export type AdminCompetition = {
   starts_at: string
   ends_at: string
   timezone: string
-  points_per_attempt: number
+  /** Game entries one play costs. */
+  entries_per_attempt: number
   max_attempts_per_customer: number
   min_age: number
   requires_identity_verification: boolean
@@ -91,8 +92,6 @@ export type AdminCompetition = {
   winner_method: 'score' | 'instant' | 'draw' | 'admin_approved'
   /** Instant-win rounds: each play wins with probability 1 in win_odds. */
   win_odds?: number
-  /** Points prizes: points each validated winner receives. */
-  prize_points?: number
   /** Quiz rounds: the questions with their answers (admins only). */
   quiz_questions?: QuizQuestion[]
   start_prize_cents: number
@@ -111,8 +110,8 @@ export type AdminCompetition = {
   config_version: number
   paused_at?: string
   closed_at?: string
-  /** `competition`: entered with competition points through a reserved entry. */
-  points_unit?: 'legacy' | 'competition'
+  /** States the round is limited to; empty means every state of its countries. */
+  states?: { state_id: string; country_id: string; code: string; name: string }[]
   cp_allowed_sources?: ('gift' | 'member_bonus' | 'sponsored' | 'compensation')[]
 }
 
@@ -129,7 +128,6 @@ export const PRIZE_TYPES = [
   { value: 'product', label: 'Product' },
   { value: 'voucher', label: 'Voucher' },
   { value: 'gift', label: 'Gift' },
-  { value: 'points', label: 'Points' },
   { value: 'other', label: 'Other' },
 ] as const
 
@@ -159,14 +157,9 @@ export type CompetitionInput = {
   daily_play_limit: number | null
   min_plays_to_win: number | null
   win_odds: number | null
-  /** Points prizes only: credited to each winner when validated. */
-  prize_points: number | null
   quiz_questions: QuizQuestion[] | null
-  /** `competition` makes entry cost competition points (skill games on the website only). */
-  points_unit?: 'legacy' | 'competition'
-  /** The published cost of one entry, for a competition-points round. */
-  entry_cost_points?: number | null
-  cp_allowed_sources?: ('gift' | 'member_bonus' | 'sponsored' | 'compensation')[]
+  /** Limits the round to these states. Empty opens it to every state of its countries. */
+  state_ids?: string[]
   /** The version being edited; a stale save is refused. */
   config_version?: number
 }
@@ -312,7 +305,7 @@ export type AdminPlay = {
   display_name?: string
   attempt_number: number
   status: 'started' | 'submitted' | 'accepted' | 'rejected' | 'voided'
-  points_spent: number
+  entries_spent: number
   prize_increment_cents: number
   prize_after_cents?: number
   score?: number
@@ -364,9 +357,9 @@ export type CompetitionAnalytics = {
   unique_players: number
   repeat_players: number
   repeat_play_rate: number
-  points_spent: number
-  points_refunded: number
-  net_points_consumed: number
+  entries_spent: number
+  entries_refunded: number
+  net_entries_consumed: number
   increments_cents: number
   adjustments_cents: number
   reversals_cents: number
@@ -506,7 +499,7 @@ export function adjustPrize(id: string, amountDeltaCents: number, reason: string
 export function voidPlay(
   id: string,
   playId: string,
-  body: { reason: string; refund_points: boolean; reverse_prize: boolean },
+  body: { reason: string; refund_entries: boolean; reverse_prize: boolean },
 ) {
   return api<null>(`${base(id)}/plays/${playId}/void`, { method: 'POST', body })
 }

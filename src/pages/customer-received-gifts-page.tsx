@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Gift, Quote, Star } from 'lucide-react'
+import { Gift, Quote } from 'lucide-react'
 
 import { listReceivedGifts } from '@/api/orders'
 import type { ReceivedGift } from '@/api/types'
@@ -80,12 +80,6 @@ export function CustomerReceivedGiftsPage() {
                   Delivered {new Date(gift.delivered_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}
                 </p>
                 <h2 className="mt-1 font-poster text-2xl">From {gift.sender_name}</h2>
-                {gift.gift_points > 0 ? (
-                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-brand-teal px-2.5 py-1 text-xs font-bold text-brand-ink">
-                    <Star className="size-3.5 fill-current" />
-                    {gift.gift_points.toLocaleString()} points included
-                  </span>
-                ) : null}
               </header>
 
               <div className="space-y-4 px-5 py-5 sm:px-6">

@@ -8,6 +8,7 @@ import { workingDays } from '@/features/auth/seller-signup/options'
 import { newBand, type BandDraft } from '@/features/auth/seller-signup/signup-state'
 import type { StepProps } from '@/features/auth/seller-signup/steps/step-props'
 import { textareaClassName } from '@/lib/form-styles'
+import { TimePicker } from '@/components/common/time-picker'
 
 export function DeliveryStep({ state, update, country, disabled }: StepProps) {
   const currency = country?.default_currency ?? ''
@@ -60,13 +61,12 @@ export function DeliveryStep({ state, update, country, disabled }: StepProps) {
                   />
                 </div>
                 {sameDay ? (
-                  <div className="w-32 space-y-1">
+                  <div className="w-36 space-y-1">
                     <Label htmlFor={`band-cutoff-${band.key}`}>Order by</Label>
-                    <Input
+                    <TimePicker
                       id={`band-cutoff-${band.key}`}
-                      type="time"
                       value={band.cutoff_time}
-                      onChange={(event) => setBand(band.key, { cutoff_time: event.target.value })}
+                      onChange={(cutoff_time) => setBand(band.key, { cutoff_time })}
                       disabled={disabled}
                     />
                   </div>

@@ -58,6 +58,7 @@ import {
 } from '@/api/competitions'
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
+import { CompetitionRegions } from '@/features/admin/competition-regions'
 import type { Country } from '@/api/types'
 import { BackLink } from '@/components/common/back-link'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
@@ -95,6 +96,8 @@ import {
   VoidPlayDialog,
 } from '@/features/admin/prize-panels'
 import { prizeMoney, useLivePrize } from '@/features/admin/prize-live'
+import { CompetitionsOffBanner } from '@/features/capabilities/competitions-off-banner'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { isSuperAdmin } from '@/lib/auth'
 import { getErrorMessage } from '@/lib/api'
 import { selectClassName, textareaClassName } from '@/lib/form-styles'
@@ -173,6 +176,7 @@ export function AdminCompetitionDetailPage() {
   const [settleOpen, setSettleOpen] = useState(false)
   const [voiding, setVoiding] = useState<AdminPlay | null>(null)
   const superadmin = isSuperAdmin()
+  const competitionsOn = useCompetitionsEnabled()
   const queuePages = usePagedList(queue, TABLE_PAGE_SIZE, id)
   const winnerPages = usePagedList(winners, TABLE_PAGE_SIZE, id)
   const boardPages = usePagedList(board.slice(3), TABLE_PAGE_SIZE, id)
@@ -264,6 +268,7 @@ export function AdminCompetitionDetailPage() {
         editNote={editable ? 'Only a superadmin can edit it now' : 'Rules are locked once it starts'}
       />
 
+      <CompetitionsOffBanner className="mb-4" />
       <FormAlert error={error} notice={notice} className="mb-5" />
 
       {status === 'cancelled' ? (
@@ -307,9 +312,7 @@ export function AdminCompetitionDetailPage() {
                 <>
                   {comp.prize_description}
                   <span className="block text-xs font-normal text-muted-foreground">
-                    {comp.prize_type === 'points'
-                      ? `${(comp.prize_points ?? 0).toLocaleString()} points each`
-                      : comp.prize_growth_enabled
+                    {comp.prize_growth_enabled
                         ? `${prizeMoney(comp.start_prize_cents, comp.prize_currency)} + ${prizeMoney(comp.increment_per_play_cents, comp.prize_currency)}/play, max ${prizeMoney(comp.max_prize_cents, comp.prize_currency)}`
                         : prizeMoney(comp.start_prize_cents, comp.prize_currency)}{' '}
                     · {comp.number_of_winners} {comp.number_of_winners === 1 ? 'winner' : 'winners'}
@@ -322,7 +325,7 @@ export function AdminCompetitionDetailPage() {
               value={
                 <>
                   {comp.max_attempts_per_customer ? `${comp.max_attempts_per_customer} plays` : 'No play limit'} ·{' '}
-                  {comp.points_per_attempt} pts each
+                  {comp.entries_per_attempt} {comp.entries_per_attempt === 1 ? 'entry' : 'entries'} each
                   <span className="block text-xs font-normal text-muted-foreground">
                     {comp.daily_play_limit ? `${comp.daily_play_limit}/day · ` : ''}
                     {comp.min_plays_to_win ? `${comp.min_plays_to_win} to win · ` : ''}
@@ -350,6 +353,8 @@ export function AdminCompetitionDetailPage() {
             <p className="mt-5 text-sm text-amber-700">No official rules yet. They must be published before scheduling.</p>
           )}
         </Panel>
+
+        <CompetitionRegions comp={comp} games={games} />
 
         {status !== 'draft' ? <PrizeDashboard comp={comp} analytics={analytics} live={live} /> : null}
 
@@ -386,7 +391,8 @@ export function AdminCompetitionDetailPage() {
               <Button
                 type="button"
                 className="h-10"
-                disabled={busy !== null}
+                disabled={busy !== null || !competitionsOn}
+                title={competitionsOn ? undefined : 'Competitions are switched off'}
                 onClick={() => run('resume', () => resumeCompetition(comp.id), 'Resumed. Plays are open again.')}
               >
                 {spinner('resume')}
@@ -430,11 +436,13 @@ export function AdminCompetitionDetailPage() {
                 title={
                   !superadmin
                     ? 'Only a super admin can publish'
-                    : comp.schedule_blockers.length > 0
+                    : !competitionsOn
+                      ? 'Competitions are switched off'
+                      : comp.schedule_blockers.length > 0
                       ? 'Finish the steps listed below first'
                       : undefined
                 }
-                disabled={!superadmin || busy !== null || comp.schedule_blockers.length > 0}
+                disabled={!superadmin || !competitionsOn || busy !== null || comp.schedule_blockers.length > 0}
                 onClick={() =>
                   setConfirming({
                     key: 'schedule',
@@ -680,12 +688,7 @@ export function AdminCompetitionDetailPage() {
                       </p>
                     </div>
                     <StatusPill tone={winnerTone(w.status)}>{scoreStatusLabel(w.status)}</StatusPill>
-                    {comp.prize_type === 'points' ? (
-                      <StatusPill tone={w.status === 'validated' ? 'good' : 'info'}>
-                        {(comp.prize_points ?? 0).toLocaleString()} pts ·{' '}
-                        {w.status === 'validated' ? 'credited' : 'on validation'}
-                      </StatusPill>
-                    ) : w.prize_value_cents !== undefined ? (
+                    {w.prize_value_cents !== undefined ? (
                       <StatusPill tone={w.settlement_status === 'settled' ? 'good' : 'info'}>
                         {prizeMoney(w.prize_value_cents, comp.prize_currency)} ·{' '}
                         {w.settlement_status === 'settled' ? 'paid' : w.settlement_status === 'pending' ? 'unpaid' : 'n/a'}

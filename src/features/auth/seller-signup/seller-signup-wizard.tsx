@@ -296,7 +296,7 @@ export function SellerSignupWizard() {
         {errors.length ? (
           <div
             role="alert"
-            className="mb-6 rounded-lg bg-destructive/10 px-4 py-3 text-sm text-destructive ring-1 ring-destructive/25"
+            className="mb-6 text-sm font-medium text-rose-600 dark:text-rose-400"
           >
             <p className="font-medium">Please check the following:</p>
             <ul className="mt-1 list-disc space-y-0.5 pl-5">

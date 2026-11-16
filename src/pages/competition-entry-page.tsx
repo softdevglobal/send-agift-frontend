@@ -9,7 +9,7 @@ import { useAuth } from '@/features/auth/auth-context'
 import { formatDateTime, formatMoney } from '@/features/competition-points/format'
 import { PlayInApp } from '@/features/competition-points/play-in-app'
 import { customerPanelClass } from '@/features/customer-commerce/customer-styles'
-import { formatPoints } from '@/features/points/format'
+import { entriesLabel } from '@/api/game-entries'
 import { getErrorMessage } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
@@ -69,7 +69,7 @@ export function CompetitionEntryPage() {
       <PlayInApp />
 
       <section className={cn(customerPanelClass, 'grid gap-4 px-5 py-5 text-sm sm:grid-cols-2')}>
-        <Rule icon={Ticket} label="Cost to play" value={`${formatPoints(competition.points_per_attempt)} points per play`} />
+        <Rule icon={Ticket} label="Cost to play" value={competition.entries_per_attempt > 0 ? `${entriesLabel(competition.entries_per_attempt)} per play` : 'Free to play'} />
         <Rule
           icon={Trophy}
           label="How the winner is decided"
@@ -81,7 +81,7 @@ export function CompetitionEntryPage() {
           value={
             competition.max_attempts_per_customer > 0
               ? `${competition.max_attempts_per_customer} plays per person`
-              : 'No limit beyond your points'
+              : 'No limit beyond your game entries'
           }
         />
         <Rule icon={ScrollText} label="Open to" value={competition.countries.map((c) => c.name).join(', ')} />
@@ -95,7 +95,7 @@ export function CompetitionEntryPage() {
 
       {signedIn ? null : (
         <section className={cn(customerPanelClass, 'flex flex-wrap items-center justify-between gap-4 px-5 py-5')}>
-          <p className="text-sm">Sign in to see your points and the competitions open in your country.</p>
+          <p className="text-sm">Sign in to see your game entries and the competitions open where you live.</p>
           <Button asChild className="h-10 px-4">
             <Link to="/login" state={returnToState(location.pathname, location.search)}>
               <LogIn className="size-4" />

@@ -65,7 +65,7 @@ function GameCard({ game, onOpen }: { game: AdminGameSummary; onOpen: () => void
           {!game.playable ? (
             <StatusPill tone="neutral">No engine</StatusPill>
           ) : game.practice ? (
-            <PriceTag points={game.play_cost_points} />
+            <PriceTag points={game.entry_cost} />
           ) : null}
         </div>
 
@@ -119,7 +119,7 @@ function GamePreview({ game, onClose }: { game: AdminGameSummary | null; onClose
             {!game.playable ? (
               <StatusPill tone="neutral">No engine</StatusPill>
             ) : game.practice ? (
-              <PriceTag points={game.play_cost_points} />
+              <PriceTag points={game.entry_cost} />
             ) : null}
             <StatusPill tone={game.status === 'active' ? 'good' : 'neutral'}>{game.status}</StatusPill>
           </>
@@ -163,7 +163,7 @@ function GamePreview({ game, onClose }: { game: AdminGameSummary | null; onClose
             items={[
               { label: 'Verified scores', value: game.scores.toLocaleString() },
               { label: 'Rejected', value: game.rejected.toLocaleString() },
-              { label: 'Play cost', value: game.practice ? `${game.play_cost_points} pts` : 'Competitions only' },
+              { label: 'Play cost', value: game.practice ? `${game.entry_cost} pts` : 'Competitions only' },
               { label: 'Last played', value: game.last_played_at ? formatDate(game.last_played_at) : 'Never' },
             ]}
           />

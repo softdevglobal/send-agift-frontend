@@ -2,26 +2,43 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/features/auth/auth-context'
-import { getCatalogProduct } from '@/features/customer-commerce/catalog'
+import { getPublicProduct } from '@/api/products'
+import {
+  catalogProductFromApi,
+  getCatalogProduct,
+  getCatalogVersion,
+  registerCatalogProducts,
+  subscribeCatalog,
+} from '@/features/customer-commerce/catalog'
 import {
   clearCartStorage,
   readCart,
   writeCart,
 } from '@/features/customer-commerce/cart-storage'
 import type { CartCustomerType, CartItem, CartLine } from '@/features/customer-commerce/types'
+import { ApiError } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
 import { getMarketplaceCustomerType } from '@/lib/marketplace'
 
 type CartContextValue = {
   items: CartItem[]
   lines: CartLine[]
+  /**
+   * True while saved items are still being looked up after a reload. An
+   * empty `lines` then means "not loaded yet", not "empty cart".
+   */
+  hydrating: boolean
+  /** Saved items whose product could not be found (removed or unpublished). */
+  unavailable: CartItem[]
   itemCount: number
   subtotal: number
   /**
@@ -72,6 +89,41 @@ export function CartProvider({ children }: CartProviderProps) {
   const location = useLocation()
   const [items, setItems] = useState<CartItem[]>(() => readCart())
   const isCustomer = isAuthenticated && role === 'customer'
+  const catalogVersion = useSyncExternalStore(subscribeCatalog, getCatalogVersion, getCatalogVersion)
+  /** Product IDs looked up and not found, so they are not asked for again. */
+  const [missing, setMissing] = useState<ReadonlySet<string>>(() => new Set())
+  const [hydrating, setHydrating] = useState(false)
+
+  // A reload keeps only IDs and quantities. Fetch the details of any saved
+  // product the catalog does not have yet, before the cart can call itself
+  // empty.
+  useEffect(() => {
+    const wanted = items
+      .map((item) => item.productId)
+      .filter((id) => !getCatalogProduct(id) && !missing.has(id))
+    if (wanted.length === 0) {
+      setHydrating(false)
+      return
+    }
+    let cancelled = false
+    setHydrating(true)
+    void Promise.allSettled(wanted.map((id) => getPublicProduct(id, 'personal'))).then((results) => {
+      if (cancelled) return
+      const found = results.flatMap((r) => (r.status === 'fulfilled' ? [catalogProductFromApi(r.value)] : []))
+      // Only a 404 means the gift is gone; a network blip is not remembered.
+      const notFound = wanted.filter((_, i) => {
+        const r = results[i]
+        return r.status === 'rejected' && r.reason instanceof ApiError && r.reason.status === 404
+      })
+      registerCatalogProducts(found)
+      if (notFound.length > 0) setMissing((prev) => new Set([...prev, ...notFound]))
+      setHydrating(false)
+    })
+    return () => {
+      cancelled = true
+    }
+    // catalogVersion: a product page may register the item meanwhile.
+  }, [items, missing, catalogVersion])
 
   const persist = useCallback((next: CartItem[]) => {
     setItems(next)
@@ -120,19 +172,27 @@ export function CartProvider({ children }: CartProviderProps) {
     [items, persist],
   )
 
-  const removeItem = useCallback(
-    (productId: string) => {
-      persist(items.filter((item) => item.productId !== productId))
-    },
-    [items, persist],
-  )
+  const removeItem = useCallback((productId: string) => {
+    // From the latest list, so several removals in a row all stick.
+    setItems((prev) => {
+      const next = prev.filter((item) => item.productId !== productId)
+      writeCart(next)
+      return next
+    })
+  }, [])
 
   const clearCart = useCallback(() => {
     setItems([])
     clearCartStorage()
   }, [])
 
-  const lines = useMemo(() => toLines(items), [items])
+  // catalogVersion is a dependency on purpose: the join must rerun when product
+  // details arrive, even though the saved items did not change.
+  const lines = useMemo(() => toLines(items), [items, catalogVersion])
+  const unavailable = useMemo(
+    () => items.filter((item) => missing.has(item.productId) && !getCatalogProduct(item.productId)),
+    [items, missing, catalogVersion],
+  )
   const subtotal = useMemo(
     () => lines.reduce((sum, line) => sum + line.lineTotal, 0),
     [lines],
@@ -152,6 +212,8 @@ export function CartProvider({ children }: CartProviderProps) {
     () => ({
       items,
       lines,
+      hydrating,
+      unavailable,
       itemCount,
       subtotal,
       total: subtotal,
@@ -166,6 +228,8 @@ export function CartProvider({ children }: CartProviderProps) {
     [
       items,
       lines,
+      hydrating,
+      unavailable,
       itemCount,
       subtotal,
       customerTypes,

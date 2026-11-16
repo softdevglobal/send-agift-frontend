@@ -22,7 +22,7 @@ import { getAdminMe, listAdminSellers, type Admin, type AdminSeller } from '@/ap
 import { listAdminCompetitions, type AdminCompetition } from '@/api/competitions'
 import { listCountries, type Country } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
-import { listPointsPurchasesForAdmin, searchCustomers, type CustomerPointsSummary } from '@/api/points'
+import { listAdminAdPurchases, searchCustomers, type CustomerEntriesSummary } from '@/api/game-entries'
 import { FormAlert } from '@/components/common/form-alert'
 import { Dot, Marker, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
@@ -144,7 +144,7 @@ export function AdminDashboardPage() {
   const [customerTotal, setCustomerTotal] = useState<number | null>(null)
   const [competitions, setCompetitions] = useState<AdminCompetition[] | null>(null)
   const [recentSellers, setRecentSellers] = useState<AdminSeller[] | null>(null)
-  const [newestCustomers, setNewestCustomers] = useState<CustomerPointsSummary[] | null>(null)
+  const [newestCustomers, setNewestCustomers] = useState<CustomerEntriesSummary[] | null>(null)
   const [games, setGames] = useState<AdminGameSummary[] | null>(null)
   const [pendingPurchases, setPendingPurchases] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -212,9 +212,9 @@ export function AdminDashboardPage() {
       .catch(() => {
         if (!cancelled) setGames([])
       })
-    listPointsPurchasesForAdmin('pending')
-      .then((res) => {
-        if (!cancelled) setPendingPurchases(res.items.length)
+    listAdminAdPurchases('pending')
+      .then((items) => {
+        if (!cancelled) setPendingPurchases(items.length)
       })
       .catch(() => {})
     listAdminCompetitions()
@@ -259,7 +259,7 @@ export function AdminDashboardPage() {
   const competitionReviews = (competitions ?? []).reduce((sum, c) => sum + c.under_review, 0)
   const attention = [
     { label: 'Sellers waiting to be verified', count: awaitingReview ?? 0, to: '/admin/sellers', icon: ShieldCheck, tone: 'bg-brand-violet text-white' },
-    { label: 'Points purchases waiting for payment', count: pendingPurchases ?? 0, to: '/admin/points', icon: Coins, tone: 'bg-amber-300 text-amber-950' },
+    { label: 'Advertising purchases waiting for payment', count: pendingPurchases ?? 0, to: '/admin/advertising?tab=sellers', icon: Coins, tone: 'bg-amber-300 text-amber-950' },
     { label: 'Game scores held for review', count: scoresToReview, to: '/admin/games', icon: ShieldAlert, tone: 'bg-brand-violet text-white' },
     { label: 'Competition entries to review', count: competitionReviews, to: '/admin/competitions', icon: Trophy, tone: 'bg-brand-teal text-brand-ink' },
     { label: 'Suspended sellers', count: suspendedTotal ?? 0, to: '/admin/sellers', icon: Ban, tone: 'bg-brand-ink text-white' },

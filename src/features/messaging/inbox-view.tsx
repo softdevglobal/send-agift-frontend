@@ -11,6 +11,7 @@ import { ChatThread, type ChatDraft } from './chat-thread'
 import { ConversationList } from './conversation-list'
 import type { ChatViewerRole } from './messaging-utils'
 import { useResolvedConversation } from './use-inbox'
+import { FormAlert } from '@/components/common/form-alert'
 
 type EmptyCopy = { title: string; description: string }
 
@@ -80,9 +81,7 @@ export function InboxView({
               <LoaderCircle className="size-5 animate-spin text-muted-foreground" />
             </div>
           ) : error && conversations.length === 0 ? (
-            <p role="alert" className="m-4 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {error}
-            </p>
+            <FormAlert error={error} errorTitle="Couldn’t load messages" className="m-4" />
           ) : conversations.length === 0 ? (
             <EmptyPane icon={Inbox} {...emptyList} />
           ) : (

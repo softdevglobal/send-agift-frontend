@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { formatDateTime, formatMoney } from '@/features/competition-points/format'
 import { PlayInApp } from '@/features/competition-points/play-in-app'
 import { CustomerEmptyState, CustomerPageHeader } from '@/features/customer-commerce'
-import { formatPoints } from '@/features/points/format'
+import { entriesLabel } from '@/api/game-entries'
 import { getErrorMessage } from '@/lib/api'
 
 /**
@@ -71,7 +71,7 @@ export function CompetitionsPage() {
               <p className="mt-1 text-sm text-muted-foreground">{c.prize_description}</p>
               <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span className="rounded-lg bg-accent px-2 py-1 font-semibold text-brand-ink">
-                  {formatPoints(c.points_per_attempt)} points per play
+                  {c.entries_per_attempt > 0 ? `${entriesLabel(c.entries_per_attempt)} per play` : 'Free to play'}
                 </span>
                 <span className="flex items-center gap-1">
                   <CalendarClock className="size-3.5" />

@@ -65,6 +65,8 @@ export type SellerRegisterRequest = {
   contact_job_title?: string
   authority_confirmed?: boolean
   terms_accepted?: boolean
+  /** The seller agreement version the terms step showed. */
+  terms_version?: string
   /** Must be true: the seller agrees to the marketing budget SendAGift sets for free gifts. */
   accept_free_gift_budget?: boolean
   marketing_opt_in?: boolean

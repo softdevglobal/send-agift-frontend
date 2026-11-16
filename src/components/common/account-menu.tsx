@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { getCustomerMe, type CustomerDetails } from '@/api/customers'
 import { SignOutDialog } from '@/components/common/sign-out-dialog'
 import { Button } from '@/components/ui/button'
-import { accountNavGroups } from '@/features/account/account-nav'
+import { useAccountNav } from '@/features/account/account-nav'
 import { useAuth } from '@/features/auth/auth-context'
 import { customerDisplayName, customerFirstName, customerInitials } from '@/features/customer-commerce'
 import { useCustomerMessages } from '@/features/messaging'
@@ -26,6 +26,7 @@ const menuItemClass =
 export function AccountMenu({ compact = false, className }: AccountMenuProps) {
   const { isAuthenticated, role, logout } = useAuth()
   const { unreadCount, openMessages } = useCustomerMessages()
+  const { groups: accountNavGroups } = useAccountNav()
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [signOutOpen, setSignOutOpen] = useState(false)

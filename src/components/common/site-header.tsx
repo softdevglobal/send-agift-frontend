@@ -20,7 +20,8 @@ import { storefrontFrameClass } from '@/components/common/site-styles'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@/components/ui/sheet'
-import { accountNavItems } from '@/features/account/account-nav'
+import { useAccountNav } from '@/features/account/account-nav'
+import { useCompetitionsEnabled } from '@/features/capabilities/use-competitions-enabled'
 import { useAuth } from '@/features/auth/auth-context'
 import { useCart } from '@/features/customer-commerce'
 import { useCustomerMessages } from '@/features/messaging'
@@ -38,6 +39,8 @@ export function SiteHeader() {
   const location = useLocation()
   const loginState = returnToState(location.pathname, location.search)
   const isCustomer = isAuthenticated && role === 'customer'
+  const { items: accountNavItems } = useAccountNav()
+  const competitionsOn = useCompetitionsEnabled()
   const isGuest = !isAuthenticated
   // Guests see the offer, customers claim it. Sellers and admins cannot.
   const canClaimFreeGift = isGuest || isCustomer
@@ -284,15 +287,17 @@ export function SiteHeader() {
               Reels
             </Link>
 
-            <Link
-              to="/competitions"
-              onClick={closeMenu}
-              aria-current={isCurrent('/competitions') ? 'page' : undefined}
-              className={menuRowClass(isCurrent('/competitions'))}
-            >
-              <Trophy className="size-4" />
-              Competitions
-            </Link>
+            {competitionsOn ? (
+              <Link
+                to="/competitions"
+                onClick={closeMenu}
+                aria-current={isCurrent('/competitions') ? 'page' : undefined}
+                className={menuRowClass(isCurrent('/competitions'))}
+              >
+                <Trophy className="size-4" />
+                Competitions
+              </Link>
+            ) : null}
 
             {isGuest ? (
               <div className="mt-2 grid grid-cols-2 gap-2">

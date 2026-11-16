@@ -26,12 +26,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/features/auth/auth-context'
 import { CountrySelectField } from '@/features/auth/country-select-field'
+import { StateSelect } from '@/features/game-entries/state-select'
 import { PasswordStrengthMeter } from '@/features/auth/password-strength'
 import { PhoneField } from '@/features/auth/phone-field'
 import { SocialDivider, SocialSignInButtons } from '@/features/auth/social-sign-in'
 import type { CustomerTypeValue } from '@/features/auth/customer-register-options'
 import { getErrorMessage, ApiError } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { customerTermsVersion } from '@/features/legal/assent'
 
 const giftingAs: {
   value: CustomerTypeValue
@@ -46,8 +48,8 @@ const giftingAs: {
 
 const perks: { icon: LucideIcon; label: string }[] = [
   { icon: Truck, label: 'Live tracking' },
-  { icon: Star, label: 'Earn points' },
-  { icon: Sparkles, label: 'Win prizes' },
+  { icon: Star, label: 'Save favourites' },
+  { icon: Sparkles, label: 'Curated gifts' },
 ]
 
 /**
@@ -75,7 +77,7 @@ export function CustomerRegisterForm() {
   const { login } = useAuth()
   const location = useLocation()
   // Someone who chose Google or Facebook: the provider vouched for their
-  // email, so only a country and phone are still needed.
+  // email, so only a country, state and phone are still needed.
   const [social, setSocial] = useState<SocialSignup | null>(() => socialFromState(location.state))
   const [imageFailed, setImageFailed] = useState(false)
   const [codeSignup] = useState(() => codeSignupFromState(location.state))
@@ -87,6 +89,8 @@ export function CustomerRegisterForm() {
       : '',
   )
   const [countryId, setCountryId] = useState('')
+  const [stateId, setStateId] = useState('')
+  const [stateRequired, setStateRequired] = useState(false)
   const [phone, setPhone] = useState(() =>
     codeSignupFromState(location.state)?.channel === 'sms'
       ? codeSignupFromState(location.state)!.destination
@@ -127,6 +131,7 @@ export function CustomerRegisterForm() {
     if (!displayName.trim()) return setError('Tell us your name.')
     if (phone.replace(/\D/g, '').length < 7) return setError('Enter your phone number.')
     if (!countryId) return setError('Choose the country you’re gifting from.')
+    if (stateRequired && !stateId) return setError('Choose your state or region.')
     if (registrationBlocked) return setError(blockedByCountry[countryId])
 
     setIsSubmitting(true)
@@ -134,9 +139,11 @@ export function CustomerRegisterForm() {
       const result = await completeSocialSignup({
         signup_token: signup.signup_token,
         country_id: countryId,
+        state_id: stateId || undefined,
         phone: phone.trim(),
         customer_type: customerType,
         display_name: displayName.trim(),
+        terms_version: customerTermsVersion,
       })
       login(result.token, 'customer', true)
     } catch (err) {
@@ -161,6 +168,7 @@ export function CustomerRegisterForm() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) return setError('Enter a valid email.')
     if (phone.replace(/\D/g, '').length < 7) return setError('Enter your phone number.')
     if (!countryId) return setError('Choose the country you’re gifting from.')
+    if (stateRequired && !stateId) return setError('Choose your state or region.')
     if (registrationBlocked) return setError(blockedByCountry[countryId])
     if (password.length < 8) return setError('Your password needs at least 8 characters.')
     if (password !== confirmPassword) return setError('The passwords don’t match.')
@@ -169,12 +177,14 @@ export function CustomerRegisterForm() {
     try {
       await registerCustomer({
         country_id: countryId,
+        state_id: stateId || undefined,
         email: trimmedEmail,
         password,
         customer_type: customerType,
         display_name: displayName.trim(),
         phone: phone.trim(),
         signup_token: codeSignup?.signup_token,
+        terms_version: customerTermsVersion,
       })
       const session = await loginCustomer({ email: trimmedEmail, password })
       login(session.token, 'customer', true)
@@ -245,7 +255,7 @@ export function CustomerRegisterForm() {
             <p className="font-medium text-foreground">Almost there{social.name ? `, ${social.name.split(' ')[0]}` : ''}!</p>
             <p className="truncate text-sm text-muted-foreground">
               Signing up as <span className="font-medium text-foreground">{social.email}</span>. Just add your
-              country and phone.
+              country, state and phone.
             </p>
           </div>
           <button
@@ -344,10 +354,19 @@ export function CustomerRegisterForm() {
           disabled={isSubmitting}
         />
 
+        <StateSelect
+          id="customer-state"
+          countryId={countryId}
+          value={stateId}
+          onChange={setStateId}
+          onRequired={setStateRequired}
+        />
+
         <div>
           <Field id="customer-phone" label="Phone number">
             <PhoneField
               id="customer-phone"
+              countryId={countryId}
               value={phone}
               onChange={setPhone}
               disabled={isSubmitting || codeSignup?.channel === 'sms'}

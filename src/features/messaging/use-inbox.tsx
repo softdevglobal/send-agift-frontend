@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -14,7 +15,9 @@ import {
   type ConversationDetails,
   type ConversationSummary,
 } from '@/api/messaging'
+import { useAuth } from '@/features/auth/auth-context'
 import { getErrorMessage } from '@/lib/api'
+import { getTokenSubject } from '@/lib/auth'
 
 import { usePolling } from './use-polling'
 
@@ -35,33 +38,53 @@ type UseInboxOptions = {
   intervalMs?: number
 }
 
-/** The caller's conversations, kept fresh by polling. */
+/**
+ * The caller's conversations, kept fresh by polling.
+ *
+ * The list belongs to one signed-in account. When the account changes (sign
+ * out, sign in as someone else, or the inbox is switched off) the list is
+ * cleared, requests still on their way are cancelled, and any answer that
+ * started under the earlier account is thrown away instead of shown.
+ */
 export function useInbox({ enabled = true, intervalMs = 20_000 }: UseInboxOptions = {}): InboxState {
+  const { token } = useAuth()
+  const account = enabled && token ? (getTokenSubject() ?? token) : null
   const [conversations, setConversations] = useState<ConversationSummary[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /** Bumped on every account change; a response from an older one is stale. */
+  const generation = useRef(0)
+  const inflight = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    generation.current += 1
+    inflight.current?.abort()
+    inflight.current = null
+    setConversations(null)
+    setError(null)
+  }, [account])
 
   const refresh = useCallback(async () => {
+    if (!account) return null
+    const mine = generation.current
+    const controller = new AbortController()
+    inflight.current = controller
     try {
-      const data = await listConversations()
+      const data = await listConversations(controller.signal)
+      if (mine !== generation.current) return null
       const list = Array.isArray(data) ? data : []
       setConversations(list)
       setError(null)
       return list
     } catch (err) {
+      if (mine !== generation.current || controller.signal.aborted) return null
       setError(getErrorMessage(err, 'Could not load your messages.'))
       return null
+    } finally {
+      if (inflight.current === controller) inflight.current = null
     }
-  }, [])
+  }, [account])
 
-  useEffect(() => {
-    // Signing out (or switching role) must not leave the last user's threads behind.
-    if (!enabled) {
-      setConversations(null)
-      setError(null)
-    }
-  }, [enabled])
-
-  usePolling(refresh, enabled ? intervalMs : null)
+  usePolling(refresh, account ? intervalMs : null, account)
 
   const unreadTotal = useMemo(
     () => (conversations ?? []).reduce((total, item) => total + (item.unread_count || 0), 0),

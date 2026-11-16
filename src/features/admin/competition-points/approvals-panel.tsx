@@ -9,7 +9,6 @@ import {
   type ApprovalChannel,
   type ApprovalOperation,
   type CapabilityApproval,
-  type LotSource,
 } from '@/api/competition-points'
 import type { Country } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
@@ -31,12 +30,12 @@ import { selectClassName, textareaClassName } from '@/lib/form-styles'
 
 import { OPERATION_LABEL } from './labels'
 import { Field, StatusPill } from './shared'
+import { askText } from '@/components/common/ask-dialog'
+import { DatePicker } from '@/components/common/date-picker'
 
 const NEEDS_PROVIDER: ApprovalOperation[] = [
   'membership_sale',
   'membership_renewal',
-  'winner_payout',
-  'seller_campaign_funding',
 ]
 
 /**
@@ -67,7 +66,16 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
   async function act(a: CapabilityApproval, action: 'approve' | 'reject' | 'revoke') {
     let reason = ''
     if (action === 'revoke') {
-      reason = window.prompt('Why is this approval being revoked? New affected operations stop at once.') ?? ''
+      reason =
+        (await askText({
+          title: 'Revoke this approval?',
+          description: `${OPERATION_LABEL[a.operation]} in ${a.country_name} stops for new operations at once.`,
+          confirmLabel: 'Revoke',
+          tone: 'danger',
+          label: 'Reason',
+          placeholder: 'Say briefly why',
+          hint: 'Recorded in the audit log with your name.',
+        })) ?? ''
       if (!reason.trim()) return
     }
     setBusy(a.id)
@@ -108,7 +116,7 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
         <AdminEmptyState
           icon={ShieldCheck}
           title="No approvals recorded"
-          description="Every competition points operation is unavailable everywhere until one is recorded and approved."
+          description="Memberships are not sold anywhere until an approval is recorded for the country."
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-brand-ink/15">
@@ -127,8 +135,7 @@ export function ApprovalsPanel({ countries }: { countries: Country[] }) {
               {items.map((a) => (
                 <tr key={a.id}>
                   <td className="px-3 py-2.5 font-semibold">
-                    {OPERATION_LABEL[a.operation]}
-                    {a.point_source ? <span className="block text-xs text-muted-foreground">{a.point_source} only</span> : null}
+                    {OPERATION_LABEL[a.operation] ?? a.operation}
                   </td>
                   <td className="px-3 py-2.5">
                     {a.country_name} · {a.channel}
@@ -192,11 +199,10 @@ function ApprovalDialog({
   countries: Country[]
   onSaved: (approvedNow: boolean) => void
 }) {
-  const [operation, setOperation] = useState<ApprovalOperation>('gift_points_earning')
+  const [operation, setOperation] = useState<ApprovalOperation>('membership_sale')
   const [countryId, setCountryId] = useState('')
   const [channel, setChannel] = useState<ApprovalChannel>('any')
   const [provider, setProvider] = useState('stripe')
-  const [source, setSource] = useState<'' | LotSource>('')
   const [minAge, setMinAge] = useState('')
   const [evidence, setEvidence] = useState('')
   const [notes, setNotes] = useState('')
@@ -213,9 +219,9 @@ function ApprovalDialog({
     setCountryId((prev) => prev || countries[0]?.id || '')
   }, [open, countries])
 
-  // Earning runs on the server; it is approved for any channel.
+  // Renewals run on the server; they are approved for any channel.
   useEffect(() => {
-    if (operation === 'gift_points_earning' || operation === 'membership_renewal') setChannel('any')
+    if (operation === 'membership_renewal') setChannel('any')
     else if (channel === 'any') setChannel('web')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [operation])
@@ -233,7 +239,6 @@ function ApprovalDialog({
         country_id: countryId,
         channel,
         provider: needsProvider ? provider : null,
-        point_source: source || null,
         min_age: minAge ? Number(minAge) : null,
         evidence_ref: evidence.trim(),
         notes: notes.trim() || null,
@@ -294,20 +299,20 @@ function ApprovalDialog({
               </select>
             </Field>
           ) : null}
-          <Field label="Point source" htmlFor="ap-source" hint="Leave as all unless the approval is narrower.">
-            <select id="ap-source" className={selectClassName} value={source} onChange={(e) => setSource(e.target.value as '' | LotSource)}>
-              <option value="">All sources</option>
-              <option value="gift">Gift points</option>
-              <option value="member_bonus">Member bonus</option>
-              <option value="sponsored">Sponsored</option>
-              <option value="compensation">Compensation</option>
-            </select>
-          </Field>
           <Field label="Minimum age" htmlFor="ap-age">
             <Input id="ap-age" inputMode="numeric" value={minAge} onChange={(e) => setMinAge(e.target.value.replace(/\D/g, ''))} placeholder="None" />
           </Field>
           <Field label="Expires" htmlFor="ap-exp">
-            <Input id="ap-exp" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+            <DatePicker
+              id="ap-exp"
+              variant="field"
+              display="long"
+              jumps
+              value={expires}
+              onChange={setExpires}
+              placeholder="No expiry"
+              clearLabel="No expiry"
+            />
           </Field>
           <Field label="Evidence reference" htmlFor="ap-ev" className="sm:col-span-2">
             <Input id="ap-ev" value={evidence} onChange={(e) => setEvidence(e.target.value)} placeholder="e.g. Legal advice LA-2026-014, Stripe acceptance email 12 Nov" />
