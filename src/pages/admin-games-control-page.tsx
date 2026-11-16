@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Globe2, LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
+import { Globe2, LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import { listCountries } from '@/api/countries'
@@ -12,7 +12,6 @@ import {
   listAdminStates,
   listShortfalls,
   resolveShortfall,
-  saveJurisdiction,
   setProgram,
   stopJurisdiction,
   stopProgram,
@@ -20,7 +19,6 @@ import {
   type EntryShortfall,
   type GamesControl,
   type Jurisdiction,
-  type JurisdictionInput,
   type State,
   type SwitchState,
 } from '@/api/game-entries'
@@ -29,22 +27,15 @@ import type { Country, PlaceDetails } from '@/api/types'
 import { FormAlert } from '@/components/common/form-alert'
 import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { AdminEmptyState, AdminPageHeader } from '@/features/admin'
+import { JurisdictionWizard } from '@/features/admin/jurisdiction-wizard'
 import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
 import { selectClassName } from '@/lib/form-styles'
+import { flagOf } from '@/lib/country-options'
 import { cn } from '@/lib/utils'
 import { askText } from '@/components/common/ask-dialog'
 
@@ -259,8 +250,8 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          A state does not inherit from its country: each one is switched on by itself. A country with no states is
-          switched on as a whole.
+          Grouped by country. A state does not inherit from its country: each one is switched on by itself. A
+          country with no states is switched on as a whole.
         </p>
         {canEdit ? (
           <Button className="h-11 px-5" onClick={() => setEditing('new')}>
@@ -277,97 +268,50 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
           description="Add a country or state, set its minimum age and official rules, and choose the games that can be played there."
         />
       ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {control.jurisdictions.map((j) => (
-            <article key={j.id} className="rounded-xl border-2 border-brand-ink/15 bg-card p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-poster text-xl">{j.state_name ? `${j.state_name}, ${j.country_name}` : j.country_name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Minimum age {j.min_age}
-                    {j.customer_daily_cap ? ` · up to ${j.customer_daily_cap} entries a customer a day` : ''}
-                    {j.product_daily_cap ? ` · ${j.product_daily_cap} a product a day` : ''}
-                    {j.free_entries_per_day > 0 ? ` · ${j.free_entries_per_day} free a day` : ''}
-                  </p>
-                </div>
-                <StatePill state={j.state} />
-              </div>
-              <dl className="mt-3 grid grid-cols-3 gap-2 text-sm">
-                {(
-                  [
-                    ['Earning entries', j.earning_enabled],
-                    ['Playing games', j.play_enabled],
-                    ['Chance games', j.chance_games_enabled],
-                  ] as const
-                ).map(([label, on]) => (
-                  <div key={label} className="rounded-lg bg-muted/60 px-3 py-2">
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                    <dd className="font-bold">{j.state === 'STOPPED' ? 'STOPPED' : on ? 'ON' : 'OFF'}</dd>
-                  </div>
-                ))}
-              </dl>
-              <p className="mt-3 text-sm">
-                <span className="text-muted-foreground">Games on: </span>
-                {j.game_ids.length === 0
-                  ? 'none'
-                  : j.game_ids.map((id) => games.find((g) => g.id === id)?.name ?? 'a game').join(', ')}
-              </p>
-              {j.state === 'STOPPED' ? (
-                <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-950">Stopped: {j.stopped_reason}</p>
-              ) : null}
-              {!j.official_rules ? (
-                <p className="mt-2 text-xs text-amber-800">No official rules yet: required before anything is switched on.</p>
-              ) : null}
-              {canEdit ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setEditing(j)}>
-                    <Pencil className="size-3.5" />
-                    Edit
-                  </Button>
-                  {j.state === 'STOPPED' ? (
-                    <Button
-                      size="sm"
-                      disabled={busy}
-                      onClick={async () => {
-                        const reason = await askReason({
-                          title: `Lift the stop for ${j.state_name ?? j.country_name}?`,
-                          description: 'Earning and play there go back to how they are set.',
-                          confirmLabel: 'Lift stop',
-                        })
-                        if (reason) void run('Stop lifted.', () => liftJurisdiction(j.id, reason))
-                      }}
-                    >
-                      Lift stop
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={busy}
-                      onClick={async () => {
-                        const reason = await askReason({
-                          title: `Emergency off for ${j.state_name ?? j.country_name}?`,
-                          description: 'This stops all earning and all new plays there at once. Plays already started can finish.',
-                          confirmLabel: 'Stop it now',
-                          tone: 'emergency',
-                          placeholder: 'What happened?',
-                        })
-                        if (reason) void run('Emergency off is in force there.', () => stopJurisdiction(j.id, reason))
-                      }}
-                    >
-                      <OctagonX className="size-3.5" />
-                      Emergency off
-                    </Button>
-                  )}
-                </div>
-              ) : null}
-            </article>
+        <div className="space-y-4">
+          {groupByCountry(control.jurisdictions).map((group) => (
+            <CountryCard
+              key={group.countryId}
+              group={group}
+              iso={countries.find((c) => c.id === group.countryId)?.iso_code}
+              games={games}
+              canEdit={canEdit}
+              busy={busy}
+              onEdit={setEditing}
+              onStop={async (places) => {
+                const one = places.length === 1 ? places[0] : null
+                const reason = await askReason({
+                  title: one
+                    ? `Emergency off for ${one.state_name ?? one.country_name}?`
+                    : `Emergency off for all of ${group.countryName}?`,
+                  description: one
+                    ? 'This stops all earning and all new plays there at once. Plays already started can finish.'
+                    : `This stops all earning and all new plays in ${places.length} places at once. Plays already started can finish.`,
+                  confirmLabel: 'Stop it now',
+                  tone: 'emergency',
+                  placeholder: 'What happened?',
+                })
+                if (reason) {
+                  void run('Emergency off is in force there.', async () => {
+                    for (const j of places) await stopJurisdiction(j.id, reason)
+                  })
+                }
+              }}
+              onLift={async (j) => {
+                const reason = await askReason({
+                  title: `Lift the stop for ${j.state_name ?? j.country_name}?`,
+                  description: 'Earning and play there go back to how they are set.',
+                  confirmLabel: 'Lift stop',
+                })
+                if (reason) void run('Stop lifted.', () => liftJurisdiction(j.id, reason))
+              }}
+            />
           ))}
         </div>
       )}
 
       {editing ? (
-        <JurisdictionDialog
+        <JurisdictionWizard
           existing={editing === 'new' ? null : editing}
           countries={countries}
           games={games}
@@ -383,202 +327,204 @@ function SwitchesPanel({ countries }: { countries: Country[] }) {
   )
 }
 
-function JurisdictionDialog({
-  existing,
-  countries,
-  games,
-  onClose,
-  onSaved,
-}: {
-  existing: Jurisdiction | null
-  countries: Country[]
-  games: AdminGameSummary[]
-  onClose: () => void
-  onSaved: () => void | Promise<void>
-}) {
-  const [countryId, setCountryId] = useState(existing?.country_id ?? countries[0]?.id ?? '')
-  const [stateId, setStateId] = useState(existing?.state_id ?? '')
-  /** A new place can cover several states of the country at once. */
-  const [stateIds, setStateIds] = useState<string[]>([])
-  const [states, setStates] = useState<State[]>([])
-  const [earning, setEarning] = useState(existing?.earning_enabled ?? false)
-  const [play, setPlay] = useState(existing?.play_enabled ?? false)
-  const [chance, setChance] = useState(existing?.chance_games_enabled ?? false)
-  const [minAge, setMinAge] = useState(String(existing?.min_age ?? 18))
-  const [rules, setRules] = useState(existing?.official_rules ?? '')
-  const [customerCap, setCustomerCap] = useState(existing?.customer_daily_cap ? String(existing.customer_daily_cap) : '')
-  const [productCap, setProductCap] = useState(existing?.product_daily_cap ? String(existing.product_daily_cap) : '')
-  const [free, setFree] = useState(String(existing?.free_entries_per_day ?? 0))
-  const [gameIds, setGameIds] = useState<string[]>(existing?.game_ids ?? [])
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+// ─── Places grouped by country ────────────────────────────────────────────
 
-  useEffect(() => {
-    if (!countryId) return setStates([])
-    listAdminStates(countryId)
-      .then((list) => setStates(list.filter((s) => s.is_active)))
-      .catch(() => setStates([]))
-  }, [countryId])
+type CountryGroup = { countryId: string; countryName: string; places: Jurisdiction[] }
 
-  async function save() {
-    setError(null)
-    const body: JurisdictionInput = {
-      country_id: countryId,
-      state_id: existing ? stateId || null : null,
-      state_ids: !existing && states.length > 0 ? stateIds : undefined,
-      earning_enabled: earning,
-      play_enabled: play,
-      chance_games_enabled: chance,
-      min_age: Math.floor(Number(minAge)) || 18,
-      official_rules: rules.trim() || null,
-      customer_daily_cap: customerCap ? Math.floor(Number(customerCap)) : null,
-      product_daily_cap: productCap ? Math.floor(Number(productCap)) : null,
-      free_entries_per_day: Math.floor(Number(free)) || 0,
-      game_ids: gameIds,
+function groupByCountry(list: Jurisdiction[]): CountryGroup[] {
+  const groups = new Map<string, CountryGroup>()
+  for (const j of list) {
+    let g = groups.get(j.country_id)
+    if (!g) {
+      g = { countryId: j.country_id, countryName: j.country_name, places: [] }
+      groups.set(j.country_id, g)
     }
-    if (!body.country_id) return setError('Choose a country.')
-    if (states.length > 0 && !body.state_id && !body.state_ids?.length)
-      return setError('This country has states: pick the states to switch on.')
-    if ((earning || play) && !body.official_rules) return setError('Add the official rules before switching earning or play on.')
-    setBusy(true)
-    try {
-      await saveJurisdiction(body)
-      await onSaved()
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not save the settings.'))
-      setBusy(false)
-    }
+    g.places.push(j)
   }
+  const out = [...groups.values()]
+  for (const g of out) g.places.sort((a, b) => (a.state_name ?? '').localeCompare(b.state_name ?? ''))
+  return out.sort((a, b) => a.countryName.localeCompare(b.countryName))
+}
+
+/** The settings two places can share, as one comparable string. */
+function settingsKey(j: Jurisdiction) {
+  return [
+    j.earning_enabled,
+    j.play_enabled,
+    j.chance_games_enabled,
+    j.min_age,
+    j.customer_daily_cap ?? '',
+    j.product_daily_cap ?? '',
+    j.free_entries_per_day,
+    [...j.game_ids].sort().join(','),
+  ].join('|')
+}
+
+function limitsOf(j: Jurisdiction) {
+  return [
+    `Minimum age ${j.min_age}`,
+    j.customer_daily_cap ? `up to ${j.customer_daily_cap} entries a customer a day` : null,
+    j.product_daily_cap ? `${j.product_daily_cap} a product a day` : null,
+    j.free_entries_per_day > 0 ? `${j.free_entries_per_day} free a day` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/** One country: what is on across its places, then each place on its own row. */
+function CountryCard({
+  group,
+  iso,
+  games,
+  canEdit,
+  busy,
+  onEdit,
+  onStop,
+  onLift,
+}: {
+  group: CountryGroup
+  iso?: string
+  games: AdminGameSummary[]
+  canEdit: boolean
+  busy: boolean
+  onEdit: (j: Jurisdiction) => void
+  onStop: (places: Jurisdiction[]) => void
+  onLift: (j: Jurisdiction) => void
+}) {
+  const { places } = group
+  const whole = places.length === 1 && !places[0].state_name
+  const stopped = places.filter((j) => j.state === 'STOPPED')
+  const running = places.filter((j) => j.state !== 'STOPPED')
+  const shared = new Set(places.map(settingsKey)).size === 1
+  const gameNames = (j: Jurisdiction) =>
+    j.game_ids.length === 0 ? 'none' : j.game_ids.map((id) => games.find((g) => g.id === id)?.name ?? 'a game').join(', ')
+  const count = (pick: (j: Jurisdiction) => boolean) => places.filter((j) => j.state !== 'STOPPED' && pick(j)).length
 
   return (
-    <Dialog open onOpenChange={(open) => !open && !busy && onClose()}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>
-            {existing ? `Edit ${existing.state_name ?? existing.country_name}` : 'Add a country or state'}
-          </DialogTitle>
-          <DialogDescription>
-            Switch things on only where they have been approved. Everything stays off until the whole programme is on
-            too.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="j-country">Country</Label>
-            <select id="j-country" className={selectClassName} value={countryId} disabled={!!existing} onChange={(e) => { setCountryId(e.target.value); setStateId(''); setStateIds([]) }}>
-              <option value="">Choose a country</option>
-              {countries.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {existing || states.length === 0 ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="j-state">State or region</Label>
-            <select id="j-state" className={selectClassName} value={stateId} disabled={!!existing || states.length === 0} onChange={(e) => setStateId(e.target.value)}>
-              <option value="">{states.length === 0 ? 'This country has no states' : 'Choose a state'}</option>
-              {states.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          ) : (
-            <StatePicker states={states} value={stateIds} onChange={setStateIds} />
-          )}
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-3">
-          {(
-            [
-              ['Earning entries', earning, setEarning],
-              ['Playing games', play, setPlay],
-              ['Chance games', chance, setChance],
-            ] as const
-          ).map(([label, on, set]) => (
-            <label key={label} className="flex items-center justify-between gap-3 rounded-lg border-2 border-brand-ink/10 px-3 py-2">
-              <span className="text-sm font-medium">
-                {label}
-                <span className="block text-xs font-bold text-muted-foreground">{on ? 'ON' : 'OFF'}</span>
-              </span>
-              <Switch checked={on} onCheckedChange={set} />
-            </label>
-          ))}
-        </div>
-        <p className="-mt-1 text-xs text-muted-foreground">
-          Leave chance games off unless counsel has approved them for this place. Skill games do not need it.
-        </p>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="j-age">Minimum age</Label>
-            <Input id="j-age" type="number" inputMode="numeric" min={13} max={25} value={minAge} onChange={(e) => setMinAge(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="j-free">Free entries a day</Label>
-            <Input id="j-free" type="number" inputMode="numeric" min={0} max={100} value={free} onChange={(e) => setFree(e.target.value)} />
-            <p className="text-xs text-muted-foreground">A no-purchase route, where counsel requires one. 0 is off.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="j-ccap">Most entries a customer earns a day</Label>
-            <Input id="j-ccap" type="number" inputMode="numeric" min={1} value={customerCap} onChange={(e) => setCustomerCap(e.target.value)} placeholder="No cap" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="j-pcap">Most from one product a day</Label>
-            <Input id="j-pcap" type="number" inputMode="numeric" min={1} value={productCap} onChange={(e) => setProductCap(e.target.value)} placeholder="No cap" />
+    <article className="overflow-hidden rounded-xl border-2 border-brand-ink/15 bg-card">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-brand-ink/10 px-5 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="text-3xl leading-none">{flagOf(iso)}</span>
+          <div className="min-w-0">
+            <p className="truncate font-poster text-2xl">{group.countryName}</p>
+            <p className="text-xs text-muted-foreground">
+              {whole
+                ? 'Whole country'
+                : `${places.length} ${places.length === 1 ? 'state' : 'states'} switched on${
+                    stopped.length ? ` · ${stopped.length} stopped` : ''
+                  }`}
+            </p>
           </div>
         </div>
+        {canEdit && running.length > 1 ? (
+          <Button size="sm" variant="destructive" disabled={busy} onClick={() => onStop(running)}>
+            <OctagonX className="size-3.5" />
+            Emergency off for all
+          </Button>
+        ) : null}
+      </header>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="j-rules">Official rules shown before entry</Label>
-          <textarea
-            id="j-rules"
-            className="min-h-28 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm"
-            value={rules}
-            maxLength={20000}
-            onChange={(e) => setRules(e.target.value)}
-            placeholder="Who can enter, how winners are decided, prizes, and how to contact us."
-          />
+      <div className="grid gap-2 px-5 pt-4 sm:grid-cols-3">
+        {(
+          [
+            ['Earning entries', count((j) => j.earning_enabled)],
+            ['Playing games', count((j) => j.play_enabled)],
+            ['Chance games', count((j) => j.chance_games_enabled)],
+          ] as const
+        ).map(([label, n]) => (
+          <div key={label} className="rounded-lg bg-muted/60 px-3 py-2">
+            <p className="text-xs text-muted-foreground">{label}</p>
+            <p className="font-bold">
+              {n === 0 ? 'OFF' : whole ? 'ON' : n === places.length ? `ON in all ${n}` : `ON in ${n} of ${places.length}`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {shared ? (
+        <div className="px-5 pt-3 text-sm">
+          <p className="text-muted-foreground">
+            {whole ? '' : 'Same settings in every state · '}
+            {limitsOf(places[0])}
+          </p>
+          <details className="mt-1">
+            <summary className="cursor-pointer font-medium">
+              {places[0].game_ids.length} {places[0].game_ids.length === 1 ? 'game' : 'games'} on
+            </summary>
+            <p className="mt-1 text-muted-foreground">{gameNames(places[0])}</p>
+          </details>
         </div>
+      ) : (
+        <p className="px-5 pt-3 text-sm text-amber-800 dark:text-amber-300">Settings differ between states; see each row.</p>
+      )}
 
-        <fieldset className="rounded-xl border-2 border-brand-ink/10 p-4">
-          <legend className="px-1 text-sm font-semibold">Games that can be played here</legend>
-          {games.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No games found.</p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {games.map((g) => (
-                <label key={g.id} className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={gameIds.includes(g.id)}
-                    onCheckedChange={(on) => setGameIds(on ? [...gameIds, g.id] : gameIds.filter((id) => id !== g.id))}
-                  />
+      <ul className="mt-4 divide-y divide-brand-ink/10 border-t-2 border-brand-ink/10">
+        {places.map((j) => (
+          <li key={j.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="flex items-center gap-2 font-semibold">
+                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">{j.state_name ?? 'Whole country'}</span>
+                <StatePill state={j.state} />
+              </p>
+              <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <OnBadge label="Earning" on={j.earning_enabled} />
+                <OnBadge label="Playing" on={j.play_enabled} />
+                <OnBadge label="Chance" on={j.chance_games_enabled} />
+                {!shared ? (
                   <span>
-                    {g.name}
-                    {g.game_type === 'chance' ? <span className="text-xs text-muted-foreground"> (chance)</span> : null}
+                    · {limitsOf(j)} · {j.game_ids.length} games
                   </span>
-                </label>
-              ))}
+                ) : null}
+              </p>
+              {j.state === 'STOPPED' ? (
+                <p className="mt-1 text-xs text-red-800">Stopped: {j.stopped_reason}</p>
+              ) : null}
+              {!j.official_rules ? (
+                <p className="mt-1 text-xs text-amber-800">No official rules yet: required before anything is switched on.</p>
+              ) : null}
             </div>
-          )}
-        </fieldset>
+            {canEdit ? (
+              <div className="flex shrink-0 gap-2">
+                <Button size="sm" variant="outline" onClick={() => onEdit(j)}>
+                  <Pencil className="size-3.5" />
+                  Edit
+                </Button>
+                {j.state === 'STOPPED' ? (
+                  <Button size="sm" disabled={busy} onClick={() => onLift(j)}>
+                    Lift stop
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
+                    disabled={busy}
+                    onClick={() => onStop([j])}
+                  >
+                    <OctagonX className="size-3.5" />
+                    Off
+                  </Button>
+                )}
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </article>
+  )
+}
 
-        <FormAlert error={error} />
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
-            Cancel
-          </Button>
-          <Button onClick={() => void save()} disabled={busy}>
-            {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Save settings
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+function OnBadge({ label, on }: { label: string; on: boolean }) {
+  return (
+    <span
+      className={cn(
+        'rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase',
+        on ? 'bg-emerald-100 text-emerald-900' : 'bg-muted text-muted-foreground line-through',
+      )}
+    >
+      {label}
+    </span>
   )
 }
 
@@ -883,64 +829,3 @@ function ReviewPanel() {
   )
 }
 
-/**
- * The states a new place covers. Each picked state is saved as its own
- * place with these settings; a state that already has settings has them
- * replaced.
- */
-function StatePicker({
-  states,
-  value,
-  onChange,
-}: {
-  states: State[]
-  value: string[]
-  onChange: (ids: string[]) => void
-}) {
-  const chosen = new Set(value)
-  const all = states.length > 0 && states.every((s) => chosen.has(s.id))
-  return (
-    <div className="space-y-2 sm:col-span-2">
-      <div className="flex items-center justify-between gap-3">
-        <Label>
-          States or regions{' '}
-          <span className="font-normal text-muted-foreground">
-            · {value.length} of {states.length}
-          </span>
-        </Label>
-        <button
-          type="button"
-          onClick={() => onChange(all ? [] : states.map((s) => s.id))}
-          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
-        >
-          {all ? 'Clear' : 'Select all states'}
-        </button>
-      </div>
-      <div className="flex flex-wrap gap-2 rounded-xl border border-input p-3">
-        {states.map((s) => {
-          const on = chosen.has(s.id)
-          return (
-            <button
-              key={s.id}
-              type="button"
-              aria-pressed={on}
-              onClick={() => onChange(on ? value.filter((id) => id !== s.id) : [...value, s.id])}
-              className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors',
-                on
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'border-input bg-card hover:border-primary/60 hover:bg-primary/5',
-              )}
-            >
-              {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
-              {s.name}
-            </button>
-          )
-        })}
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Each state is saved as its own place with these settings. A state that already has settings has them replaced.
-      </p>
-    </div>
-  )
-}
