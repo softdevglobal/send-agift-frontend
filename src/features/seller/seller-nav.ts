@@ -12,6 +12,7 @@ import {
   Star,
   Store,
   User,
+  Users,
   Wallet,
   type LucideIcon,
 } from 'lucide-react'
@@ -37,6 +38,7 @@ export const sellerPrimaryNav: SellerNavItem[] = [
   { to: '/seller/inventory', label: 'Inventory', icon: Boxes },
   { to: '/seller/reels', label: 'Reels', icon: Clapperboard },
   { to: '/seller/orders', label: 'Orders', icon: ShoppingBag },
+  { to: '/seller/customers', label: 'Customers', icon: Users },
   { to: '/seller/reviews', label: 'Reviews', icon: Star },
   { to: '/seller/earnings', label: 'Earnings', icon: Wallet },
   { to: '/seller/payouts', label: 'Payouts', icon: Landmark },

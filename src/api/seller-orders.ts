@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import type {
   LocalDeliveryInput,
   OrderItem,
+  OrderStatus,
   SellerOrderItemDetails,
   SellerOrderItemSummary,
   Shipment,
@@ -62,3 +63,54 @@ export function completeLocalDelivery(parcel: ShopParcel) {
   })
 }
 
+
+/** Someone who has ordered from this seller: name, region and what they
+ *  bought here. No contact details or game entries. */
+export type SellerCustomer = {
+  customer_id: string
+  name: string
+  country_name: string
+  state_name?: string
+  orders_count: number
+  /** Units bought, cancelled lines left out. */
+  items_count: number
+  /** Paid for this seller's lines, per currency; free gifts left out. */
+  spent: { currency: string; amount: number }[]
+  first_order_at: string
+  last_order_at: string
+}
+
+export type SellerCustomerOrderLine = {
+  /** The order item; opens at /seller/orders/:id. */
+  id: string
+  product_name: string
+  product_image_url?: string
+  shop_name: string
+  quantity: number
+  total_amount: number
+  fulfilment_status: string
+  recipient_name?: string
+}
+
+/** An order as far as it concerns this seller: only their lines. */
+export type SellerCustomerOrder = {
+  order_id: string
+  order_number: string
+  status: OrderStatus
+  order_kind: string
+  currency: string
+  amount: number
+  delivery_date: string
+  created_at: string
+  items: SellerCustomerOrderLine[]
+}
+
+export type SellerCustomerDetail = SellerCustomer & { orders: SellerCustomerOrder[] }
+
+export function listSellerCustomers() {
+  return api<SellerCustomer[]>('/sellers/me/customers')
+}
+
+export function getSellerCustomer(id: string) {
+  return api<SellerCustomerDetail>(`/sellers/me/customers/${id}`)
+}

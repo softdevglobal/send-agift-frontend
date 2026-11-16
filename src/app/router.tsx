@@ -67,6 +67,7 @@ import { SellerFreeGiftsPage } from '@/pages/seller-free-gifts-page'
 import { SellerInventoryPage } from '@/pages/seller-inventory-page'
 import { SellerLoginPage } from '@/pages/seller-login-page'
 import { SellerOrdersPage } from '@/pages/seller-orders-page'
+import { SellerCustomersPage } from '@/pages/seller-customers-page'
 import { SellerPayoutsPage } from '@/pages/seller-payouts-page'
 import { SellerAdvertisingPage } from '@/pages/seller-advertising-page'
 import { SellerProductsPage } from '@/pages/seller-products-page'
@@ -349,6 +350,8 @@ export function AppRouter() {
         <Route path="orders/:orderItemId?" element={<SellerOrdersPage />} />
         {/* The detail used to be its own page; keep those links working. */}
         <Route path="order-items/:orderItemId" element={<RedirectOrderItem />} />
+        {/* Same pattern as orders: the param opens a customer over the list. */}
+        <Route path="customers/:customerId?" element={<SellerCustomersPage />} />
         <Route path="reviews" element={<SellerReviewsPage />} />
         <Route path="earnings" element={<SellerEarningsPage />} />
         <Route path="payouts" element={<SellerPayoutsPage />} />
