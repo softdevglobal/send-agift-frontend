@@ -1,12 +1,14 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   CalendarClock,
+  Check,
   Coins,
   Dices,
   Earth,
   Eye,
   Gamepad2,
   ScrollText,
+  TriangleAlert,
   Trophy,
   Wand2,
 } from 'lucide-react'
@@ -46,7 +48,6 @@ import { CurrencySelect } from '@/components/common/currency-select'
 import { DateTimePicker } from '@/components/common/datetime-picker'
 import { FormAlert } from '@/components/common/form-alert'
 import { TimezoneSelect } from '@/components/common/timezone-select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { getErrorMessage } from '@/lib/api'
@@ -848,32 +849,118 @@ function StatesField({
 
   const withStates = countries.filter((c) => (byCountry[c.id] ?? []).length > 0)
   if (withStates.length === 0) return null
+
+  const chosen = new Set(value)
+  const allIds = withStates.flatMap((c) => byCountry[c.id].map((s) => s.id))
+  const everyTicked = allIds.length > 0 && allIds.every((id) => chosen.has(id))
+  // With any state ticked, only ticked states can play, so a country with
+  // none ticked is shut out. Say so rather than let it happen quietly.
+  const shutOut =
+    value.length === 0 ? [] : withStates.filter((c) => !byCountry[c.id].some((s) => chosen.has(s.id)))
+
+  const toggle = (id: string) => onChange(chosen.has(id) ? value.filter((v) => v !== id) : [...value, id])
+  const setCountry = (c: Country, on: boolean) => {
+    const ids = new Set(byCountry[c.id].map((s) => s.id))
+    const rest = value.filter((id) => !ids.has(id))
+    onChange(on ? [...rest, ...ids] : rest)
+  }
+
+  const smallButton =
+    'h-8 rounded-lg px-3 text-xs font-bold tracking-wide whitespace-nowrap uppercase transition-colors disabled:pointer-events-none disabled:opacity-40'
+
   return (
-    <div className="mt-4 space-y-3 rounded-xl border border-input bg-surface p-4">
-      <div>
-        <p className="text-sm font-medium">States and regions</p>
-        <p className="text-xs text-muted-foreground">
-          {value.length === 0
-            ? 'Open to every state. Tick states to limit the competition to them.'
-            : 'Only customers in the ticked states see this competition and can play it.'}
-        </p>
+    <div className="mt-4 overflow-hidden rounded-xl border border-input bg-surface">
+      <div className="flex flex-col gap-3 border-b border-input p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold">States and regions</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {value.length === 0
+              ? 'Open to every state. Pick states to limit the competition to them.'
+              : everyTicked
+                ? 'Every state is picked: open to all of them.'
+                : `Only players in the ${value.length} picked ${value.length === 1 ? 'state' : 'states'} see and play this competition.`}
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => onChange(allIds)}
+            disabled={everyTicked}
+            className={cn(smallButton, 'bg-primary text-primary-foreground hover:bg-primary/90')}
+          >
+            Select all states
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange([])}
+            disabled={value.length === 0}
+            className={cn(smallButton, 'border border-input text-foreground hover:bg-accent')}
+          >
+            Clear
+          </button>
+        </div>
       </div>
-      {withStates.map((c) => (
-        <fieldset key={c.id}>
-          <legend className="mb-1.5 text-xs font-bold tracking-[0.1em] text-muted-foreground uppercase">{c.name}</legend>
-          <div className="grid gap-1.5 sm:grid-cols-2">
-            {byCountry[c.id].map((s) => (
-              <label key={s.id} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={value.includes(s.id)}
-                  onCheckedChange={(on) => onChange(on ? [...value, s.id] : value.filter((id) => id !== s.id))}
-                />
-                {s.name}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ))}
+
+      {withStates.map((c) => {
+        const states = byCountry[c.id]
+        const picked = states.filter((s) => chosen.has(s.id)).length
+        const all = picked === states.length
+        return (
+          <section key={c.id} className="border-b border-input p-4 last:border-b-0">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="flex min-w-0 items-center gap-2">
+                <span className="text-base leading-none">{flagOf(c.iso_code)}</span>
+                <span className="truncate text-xs font-bold tracking-[0.1em] uppercase">{c.name}</span>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums',
+                    picked ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+                  )}
+                >
+                  {picked} of {states.length}
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setCountry(c, !all)}
+                className="shrink-0 text-xs font-bold text-primary underline-offset-4 hover:underline"
+              >
+                {all ? 'Clear' : 'Select all'}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {states.map((s) => {
+                const on = chosen.has(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggle(s.id)}
+                    className={cn(
+                      'inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors',
+                      on
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-input bg-card text-foreground hover:border-primary/60 hover:bg-primary/5',
+                    )}
+                  >
+                    {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+                    {s.name}
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
+
+      {shutOut.length ? (
+        <p className="flex items-start gap-2 border-t border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+          No state is picked in {shutOut.map((c) => c.name).join(' or ')}, so players there cannot enter. Pick its
+          states, or select all of them to keep it open.
+        </p>
+      ) : null}
     </div>
   )
 }

@@ -58,6 +58,7 @@ import {
 } from '@/api/competitions'
 import { listCountries } from '@/api/countries'
 import { listAdminGames, type AdminGameSummary } from '@/api/games'
+import { CompetitionRegions } from '@/features/admin/competition-regions'
 import type { Country } from '@/api/types'
 import { BackLink } from '@/components/common/back-link'
 import { ConfirmDialog } from '@/components/common/confirm-dialog'
@@ -352,6 +353,8 @@ export function AdminCompetitionDetailPage() {
             <p className="mt-5 text-sm text-amber-700">No official rules yet. They must be published before scheduling.</p>
           )}
         </Panel>
+
+        <CompetitionRegions comp={comp} games={games} />
 
         {status !== 'draft' ? <PrizeDashboard comp={comp} analytics={analytics} live={live} /> : null}
 

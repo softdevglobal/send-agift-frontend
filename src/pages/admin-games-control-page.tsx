@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Globe2, LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, Globe2, LoaderCircle, MapPin, OctagonX, Pencil, Plus, Power, ShieldCheck, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import { listCountries } from '@/api/countries'
@@ -398,6 +398,8 @@ function JurisdictionDialog({
 }) {
   const [countryId, setCountryId] = useState(existing?.country_id ?? countries[0]?.id ?? '')
   const [stateId, setStateId] = useState(existing?.state_id ?? '')
+  /** A new place can cover several states of the country at once. */
+  const [stateIds, setStateIds] = useState<string[]>([])
   const [states, setStates] = useState<State[]>([])
   const [earning, setEarning] = useState(existing?.earning_enabled ?? false)
   const [play, setPlay] = useState(existing?.play_enabled ?? false)
@@ -422,7 +424,8 @@ function JurisdictionDialog({
     setError(null)
     const body: JurisdictionInput = {
       country_id: countryId,
-      state_id: stateId || null,
+      state_id: existing ? stateId || null : null,
+      state_ids: !existing && states.length > 0 ? stateIds : undefined,
       earning_enabled: earning,
       play_enabled: play,
       chance_games_enabled: chance,
@@ -434,7 +437,8 @@ function JurisdictionDialog({
       game_ids: gameIds,
     }
     if (!body.country_id) return setError('Choose a country.')
-    if (states.length > 0 && !body.state_id) return setError('This country has states: choose the state.')
+    if (states.length > 0 && !body.state_id && !body.state_ids?.length)
+      return setError('This country has states: pick the states to switch on.')
     if ((earning || play) && !body.official_rules) return setError('Add the official rules before switching earning or play on.')
     setBusy(true)
     try {
@@ -462,7 +466,7 @@ function JurisdictionDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="j-country">Country</Label>
-            <select id="j-country" className={selectClassName} value={countryId} disabled={!!existing} onChange={(e) => { setCountryId(e.target.value); setStateId('') }}>
+            <select id="j-country" className={selectClassName} value={countryId} disabled={!!existing} onChange={(e) => { setCountryId(e.target.value); setStateId(''); setStateIds([]) }}>
               <option value="">Choose a country</option>
               {countries.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -471,6 +475,7 @@ function JurisdictionDialog({
               ))}
             </select>
           </div>
+          {existing || states.length === 0 ? (
           <div className="space-y-1.5">
             <Label htmlFor="j-state">State or region</Label>
             <select id="j-state" className={selectClassName} value={stateId} disabled={!!existing || states.length === 0} onChange={(e) => setStateId(e.target.value)}>
@@ -482,6 +487,9 @@ function JurisdictionDialog({
               ))}
             </select>
           </div>
+          ) : (
+            <StatePicker states={states} value={stateIds} onChange={setStateIds} />
+          )}
         </div>
 
         <div className="grid gap-2 sm:grid-cols-3">
@@ -872,5 +880,67 @@ function ReviewPanel() {
         </ul>
       )}
     </>
+  )
+}
+
+/**
+ * The states a new place covers. Each picked state is saved as its own
+ * place with these settings; a state that already has settings has them
+ * replaced.
+ */
+function StatePicker({
+  states,
+  value,
+  onChange,
+}: {
+  states: State[]
+  value: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const chosen = new Set(value)
+  const all = states.length > 0 && states.every((s) => chosen.has(s.id))
+  return (
+    <div className="space-y-2 sm:col-span-2">
+      <div className="flex items-center justify-between gap-3">
+        <Label>
+          States or regions{' '}
+          <span className="font-normal text-muted-foreground">
+            · {value.length} of {states.length}
+          </span>
+        </Label>
+        <button
+          type="button"
+          onClick={() => onChange(all ? [] : states.map((s) => s.id))}
+          className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold tracking-wide text-primary-foreground uppercase hover:bg-primary/90"
+        >
+          {all ? 'Clear' : 'Select all states'}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2 rounded-xl border border-input p-3">
+        {states.map((s) => {
+          const on = chosen.has(s.id)
+          return (
+            <button
+              key={s.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(on ? value.filter((id) => id !== s.id) : [...value, s.id])}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors',
+                on
+                  ? 'border-primary bg-primary text-primary-foreground'
+                  : 'border-input bg-card hover:border-primary/60 hover:bg-primary/5',
+              )}
+            >
+              {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+              {s.name}
+            </button>
+          )
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Each state is saved as its own place with these settings. A state that already has settings has them replaced.
+      </p>
+    </div>
   )
 }

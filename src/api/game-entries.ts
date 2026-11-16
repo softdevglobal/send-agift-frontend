@@ -365,6 +365,8 @@ export type Jurisdiction = {
 export type JurisdictionInput = {
   country_id: string
   state_id: string | null
+  /** The same settings for several states at once, each its own place. */
+  state_ids?: string[]
   earning_enabled: boolean
   play_enabled: boolean
   chance_games_enabled: boolean
