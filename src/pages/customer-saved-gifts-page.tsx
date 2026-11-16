@@ -9,15 +9,24 @@ import {
   CustomerPageHeader,
   customerListRowClass,
 } from '@/features/customer-commerce'
+import { sponsoredFirst } from '@/features/customer-commerce/catalog'
 import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
 import { getPublicSellerForShop } from '@/lib/public-sellers'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 export function CustomerSavedGiftsPage() {
-  const { gifts, loading, toggleSave, pendingProductId } = useSavedGifts()
+  const { gifts: saved, loading, toggleSave, pendingProductId } = useSavedGifts()
   const [error, setError] = useState<string | null>(null)
+  // Promoted gifts first, as everywhere gifts are listed.
+  const gifts = useMemo(
+    () =>
+      sponsoredFirst(
+        saved.map((gift) => ({ gift, sponsored: gift.product.sponsored, gameEntries: gift.product.game_entries })),
+      ).map(({ gift }) => gift),
+    [saved],
+  )
   const pages = usePagedList(gifts, GRID_PAGE_SIZE)
 
   async function handleRemove(productId: string) {

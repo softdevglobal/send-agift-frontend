@@ -158,7 +158,8 @@ export function listCatalogProductsForSeller(sellerId: string): CatalogProduct[]
   for (const product of liveCatalog.values()) {
     if (belongsToSeller(product, sellerIds, shopIds)) byId.set(product.id, product)
   }
-  return [...byId.values()]
+  // Seller and shop pages, and "More from this shop", list promoted gifts first.
+  return sponsoredFirst([...byId.values()])
 }
 
 export function getCatalogSeller(id: string) {
@@ -188,13 +189,20 @@ export function getCatalogProduct(id: string) {
 }
 
 /**
- * Promoted products first, keeping the order they came in otherwise. A
- * stable sort, so search, filters and paging keep the same order.
+ * Promoted products first, wherever gifts are listed: among them the higher
+ * priority level (more game entries per purchase) leads, and everything else
+ * keeps the order it came in. A stable sort, so search, filters and paging
+ * keep the same order.
  */
-export function sponsoredFirst<T extends { sponsored?: boolean }>(list: T[]): T[] {
+export function sponsoredFirst<T extends { sponsored?: boolean; gameEntries?: number }>(list: T[]): T[] {
   return list
     .map((item, index) => ({ item, index }))
-    .sort((a, b) => Number(!!b.item.sponsored) - Number(!!a.item.sponsored) || a.index - b.index)
+    .sort(
+      (a, b) =>
+        Number(!!b.item.sponsored) - Number(!!a.item.sponsored) ||
+        (a.item.sponsored ? (b.item.gameEntries ?? 0) - (a.item.gameEntries ?? 0) : 0) ||
+        a.index - b.index,
+    )
     .map(({ item }) => item)
 }
 
@@ -208,7 +216,7 @@ export function filterCatalog({
   const normalizedQuery = query.trim().toLowerCase()
   const normalizedCategory = category.trim().toLowerCase()
 
-  return catalogProducts.filter((product) => {
+  return sponsoredFirst(catalogProducts.filter((product) => {
     const matchesCategory =
       !normalizedCategory ||
       normalizedCategory === 'all' ||
@@ -227,7 +235,7 @@ export function filterCatalog({
       .toLowerCase()
 
     return haystack.includes(normalizedQuery)
-  })
+  }))
 }
 
 function categoryNameFromId(categoryId: string) {
