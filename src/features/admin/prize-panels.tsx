@@ -1,5 +1,21 @@
 import { useState, type ReactNode } from 'react'
-import { Activity, Download, LoaderCircle, RefreshCw, Scale, ShieldAlert, Undo2 } from 'lucide-react'
+import {
+  Activity,
+  CircleCheck,
+  Download,
+  Gamepad2,
+  LoaderCircle,
+  RefreshCw,
+  Scale,
+  ShieldAlert,
+  SlidersHorizontal,
+  Sprout,
+  Ticket,
+  TriangleAlert,
+  Trophy,
+  Undo2,
+  Wrench,
+} from 'lucide-react'
 
 import {
   adjustPrize,
@@ -10,6 +26,7 @@ import {
   type CompetitionAnalytics,
   type PrizeDraw,
   type PrizeLedgerEntry,
+  type PrizeLedgerEntryType,
   type PrizeLedgerView,
 } from '@/api/competitions'
 import { FormAlert } from '@/components/common/form-alert'
@@ -312,6 +329,7 @@ export function LedgerPanel({
         </div>
       }
     >
+      {entries.length ? <LedgerSummary entries={entries} cur={cur} /> : null}
       {rec ? (
         <div
           className={cn(
@@ -319,7 +337,12 @@ export function LedgerPanel({
             rec.status === 'ok' ? 'bg-emerald-50 text-emerald-900 ring-emerald-200' : 'bg-red-50 text-red-900 ring-red-200',
           )}
         >
-          <p className="font-medium">
+          <p className="flex items-start gap-2 font-medium">
+            {rec.status === 'ok' ? (
+              <CircleCheck className="mt-0.5 size-4 shrink-0" />
+            ) : (
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+            )}
             {rec.status === 'ok'
               ? `Reconciled: the ledger adds up to ${prizeMoney(rec.ledger_total_cents, cur)}, matching the prize shown.`
               : 'Discrepancy. Nothing has been corrected automatically. Investigate before paying out.'}
@@ -341,44 +364,55 @@ export function LedgerPanel({
         <p className="py-6 text-center text-sm text-muted-foreground">The ledger starts when the round is published.</p>
       ) : (
         <>
-        <div className="max-h-[420px] overflow-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead className="sticky top-0 bg-card">
-              <tr className="border-b border-border/60 text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
-                <th className="py-2 pr-3 font-medium">#</th>
-                <th className="py-2 pr-3 font-medium">Entry</th>
-                <th className="py-2 pr-3 text-right font-medium">Change</th>
-                <th className="py-2 pr-3 text-right font-medium">Prize after</th>
-                <th className="py-2 pr-3 font-medium">Reason</th>
-                <th className="py-2 font-medium">When</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entryPages.visible.map((e) => (
-                <tr key={e.id} className="border-b border-border/30 last:border-0">
-                  <td className="py-2 pr-3 text-muted-foreground tabular-nums">{e.seq}</td>
-                  <td className="py-2 pr-3">
-                    {ENTRY_LABEL[e.entry_type]}
-                    <span className="block text-xs text-muted-foreground">{e.actor_type}</span>
-                  </td>
-                  <td
-                    className={cn(
-                      'py-2 pr-3 text-right font-medium tabular-nums',
-                      e.amount_delta_cents < 0 ? 'text-red-700' : 'text-emerald-700',
-                    )}
-                  >
-                    {signed(e.amount_delta_cents, cur)}
-                  </td>
-                  <td className="py-2 pr-3 text-right tabular-nums">{prizeMoney(e.balance_after_cents, cur)}</td>
-                  <td className="max-w-[240px] truncate py-2 pr-3 text-muted-foreground" title={e.reason}>
-                    {e.reason || ''}
-                  </td>
-                  <td className="py-2 whitespace-nowrap text-muted-foreground">{formatDate(e.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ol className="relative space-y-2 before:absolute before:top-3 before:bottom-3 before:left-[21px] before:w-0.5 before:bg-border/70">
+          {entryPages.visible.map((e) => {
+            const look = ENTRY_LOOK[e.entry_type]
+            const Icon = look.icon
+            const down = e.amount_delta_cents < 0
+            return (
+              <li key={e.id} className="relative flex items-start gap-3">
+                <span
+                  className={cn(
+                    'relative z-10 flex size-11 shrink-0 items-center justify-center rounded-xl ring-4 ring-card',
+                    look.tone,
+                  )}
+                >
+                  <Icon className="size-5" />
+                </span>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border/60 bg-card px-4 py-3 transition-colors hover:border-border">
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">{ENTRY_LABEL[e.entry_type]}</span>
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground tabular-nums">
+                        #{e.seq}
+                      </span>
+                      <span className="rounded-md border border-border/70 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase">
+                        {e.actor_type}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground" title={e.reason}>
+                      {e.reason ? `${e.reason} · ` : ''}
+                      <span title={formatDate(e.created_at)}>{ago(e.created_at)}</span>
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p
+                      className={cn(
+                        'font-poster text-lg leading-none tabular-nums',
+                        down ? 'text-red-700' : 'text-emerald-700',
+                      )}
+                    >
+                      {signed(e.amount_delta_cents, cur)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+                      prize {prizeMoney(e.balance_after_cents, cur)}
+                    </p>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
         <PageNav
           page={entryPages.page}
           pageCount={entryPages.pageCount}
@@ -389,6 +423,64 @@ export function LedgerPanel({
         </>
       )}
     </Section>
+  )
+}
+
+/** How each kind of ledger entry looks on the timeline. */
+const ENTRY_LOOK: Record<PrizeLedgerEntryType, { icon: typeof Sprout; tone: string }> = {
+  seed: { icon: Sprout, tone: 'bg-brand-violet text-white' },
+  play_increment: { icon: Gamepad2, tone: 'bg-emerald-500 text-white' },
+  admin_adjustment: { icon: SlidersHorizontal, tone: 'bg-sky-500 text-white' },
+  play_reversal: { icon: Undo2, tone: 'bg-amber-400 text-amber-950' },
+  winner_settlement: { icon: Trophy, tone: 'bg-amber-300 text-amber-950' },
+  correction: { icon: Wrench, tone: 'bg-rose-500 text-white' },
+}
+
+/** The prize now, where it came from, and a line of how it moved. */
+function LedgerSummary({ entries, cur }: { entries: PrizeLedgerEntry[]; cur?: string }) {
+  const sum = (types: PrizeLedgerEntryType[]) =>
+    entries.filter((e) => types.includes(e.entry_type)).reduce((t, e) => t + e.amount_delta_cents, 0)
+  const now = entries[entries.length - 1]?.balance_after_cents ?? 0
+  const tiles = [
+    ['Prize now', prizeMoney(now, cur), 'bg-brand-ink text-white'],
+    ['Started at', prizeMoney(sum(['seed']), cur), 'bg-brand-violet/10 text-brand-violet'],
+    ['Added by plays', prizeMoney(sum(['play_increment', 'play_reversal']), cur), 'bg-emerald-100 text-emerald-900'],
+    ['Adjusted', prizeMoney(sum(['admin_adjustment', 'correction']), cur), 'bg-sky-100 text-sky-900'],
+  ] as const
+
+  // A small line of the prize after each entry.
+  const points = entries.map((e) => e.balance_after_cents)
+  const max = Math.max(...points, 1)
+  const w = 240
+  const h = 56
+  const step = points.length > 1 ? w / (points.length - 1) : 0
+  const xy = points.map((v, i) => [points.length > 1 ? i * step : w / 2, h - 4 - (v / max) * (h - 8)] as const)
+  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+
+  return (
+    <div className="mb-4 grid gap-2 lg:grid-cols-[1fr_auto]">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {tiles.map(([label, value, tone]) => (
+          <div key={label} className={cn('rounded-xl px-4 py-3', tone)}>
+            <p className="text-[10px] font-bold tracking-[0.14em] uppercase opacity-80">{label}</p>
+            <p className="mt-0.5 truncate font-poster text-lg tabular-nums">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center rounded-xl bg-muted/40 px-3">
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-14 w-full lg:w-60" role="img" aria-label="The prize after each entry">
+          {points.length > 1 ? (
+            <>
+              <polygon points={`0,${h} ${line} ${w},${h}`} className="fill-emerald-500/15" />
+              <polyline points={line} fill="none" className="stroke-emerald-600" strokeWidth={2} strokeLinejoin="round" />
+            </>
+          ) : null}
+          {xy.length ? (
+            <circle cx={xy[xy.length - 1][0]} cy={xy[xy.length - 1][1]} r={3.5} className="fill-emerald-600" />
+          ) : null}
+        </svg>
+      </div>
+    </div>
   )
 }
 
@@ -438,7 +530,57 @@ export function DrawPanel({ draw }: { draw: PrizeDraw }) {
   )
 }
 
-/** Recent plays, with the void tool for Super Admins. */
+/** Colours for player avatars, picked by id so a player keeps theirs. */
+const AVATAR_TONES = [
+  'bg-brand-violet text-white',
+  'bg-brand-teal text-brand-ink',
+  'bg-amber-300 text-amber-950',
+  'bg-sky-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-emerald-500 text-white',
+]
+
+function avatarTone(id: string) {
+  let h = 0
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return AVATAR_TONES[h % AVATAR_TONES.length]
+}
+
+function initialsOf(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0] ?? '')
+      .join('')
+      .toUpperCase() || '?'
+  )
+}
+
+/** "just now", "4 min ago", "3 h ago", or the date beyond a day. */
+function ago(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime()
+  if (!Number.isFinite(ms)) return ''
+  const min = Math.floor(ms / 60000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min} min ago`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} h ago`
+  return formatDate(iso)
+}
+
+type PlayFilter = 'all' | 'accepted' | 'pending' | 'voided'
+
+const PLAY_TONE: Record<AdminPlay['status'], string> = {
+  accepted: 'bg-emerald-100 text-emerald-900',
+  started: 'bg-sky-100 text-sky-900',
+  submitted: 'bg-sky-100 text-sky-900',
+  rejected: 'bg-amber-100 text-amber-950',
+  voided: 'bg-red-100 text-red-900',
+}
+
+/** Recent plays as cards, with the void tool for Super Admins. */
 export function PlaysPanel({
   comp,
   plays,
@@ -448,58 +590,172 @@ export function PlaysPanel({
   plays: AdminPlay[]
   onVoid?: (play: AdminPlay) => void
 }) {
-  const playPages = usePagedList(plays, TABLE_PAGE_SIZE, comp.id)
+  const [filter, setFilter] = useState<PlayFilter>('all')
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+  const shown = plays.filter((p) => {
+    if (filter === 'accepted' && p.status !== 'accepted') return false
+    if (filter === 'voided' && p.status !== 'voided') return false
+    if (filter === 'pending' && !['started', 'submitted'].includes(p.status)) return false
+    return !q || (p.display_name ?? p.customer_id).toLowerCase().includes(q)
+  })
+  const playPages = usePagedList(shown, TABLE_PAGE_SIZE, `${comp.id}:${filter}:${q}`)
   if (plays.length === 0) return null
+
   const cur = comp.prize_currency
   const canVoid = ['live', 'paused', 'closed', 'frozen'].includes(comp.effective_status)
+  const scored = plays.filter((p) => p.status === 'accepted' && p.score !== undefined && !p.result)
+  const best = scored.reduce((max, p) => Math.max(max, p.score ?? 0), 0)
+  const players = new Set(plays.map((p) => p.customer_id)).size
+  const entries = plays.filter((p) => !p.refunded_at).reduce((sum, p) => sum + p.entries_spent, 0)
+  const added = plays.reduce((sum, p) => sum + (p.prize_increment_cents || 0), 0)
+  const counts: Record<PlayFilter, number> = {
+    all: plays.length,
+    accepted: plays.filter((p) => p.status === 'accepted').length,
+    pending: plays.filter((p) => p.status === 'started' || p.status === 'submitted').length,
+    voided: plays.filter((p) => p.status === 'voided').length,
+  }
+
   return (
     <Section title={`Plays (${comp.attempts})`} icon={<Activity className="size-5 text-primary" />}>
-      <div className="max-h-[420px] overflow-auto">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="sticky top-0 bg-card">
-            <tr className="border-b border-border/60 text-left text-[11px] tracking-[0.12em] text-muted-foreground uppercase">
-              <th className="py-2 pr-3 font-medium">Player</th>
-              <th className="py-2 pr-3 text-right font-medium">Entries</th>
-              <th className="py-2 pr-3 text-right font-medium">Added</th>
-              <th className="py-2 pr-3 text-right font-medium">Result</th>
-              <th className="py-2 pr-3 font-medium">Status</th>
-              <th className="py-2 pr-3 font-medium">When</th>
-              <th className="py-2" />
-            </tr>
-          </thead>
-          <tbody>
-            {playPages.visible.map((p) => (
-              <tr key={p.id} className="border-b border-border/30 last:border-0">
-                <td className="py-2 pr-3">
-                  {p.display_name || p.customer_id.slice(0, 8)}
-                  <span className="block text-xs text-muted-foreground">play #{p.attempt_number}</span>
-                </td>
-                <td className="py-2 pr-3 text-right tabular-nums">{p.entries_spent}</td>
-                <td className="py-2 pr-3 text-right tabular-nums">
-                  {p.prize_increment_cents ? prizeMoney(p.prize_increment_cents, cur) : '-'}
-                </td>
-                <td className="py-2 pr-3 text-right tabular-nums">{playOutcome(p)}</td>
-                <td className="py-2 pr-3">
-                  <StatusPill tone={p.status === 'voided' ? 'bad' : p.status === 'accepted' ? 'good' : 'info'}>
+      <div className="mb-4 grid gap-2 sm:grid-cols-4">
+        {(
+          [
+            ['Players', players.toLocaleString(), 'bg-brand-violet/10 text-brand-violet'],
+            ['Best score', best ? best.toLocaleString() : '-', 'bg-amber-100 text-amber-950'],
+            ['Entries spent', entries.toLocaleString(), 'bg-brand-teal/15 text-brand-ink'],
+            ['Added to prize', added ? prizeMoney(added, cur) : '-', 'bg-emerald-100 text-emerald-900'],
+          ] as const
+        ).map(([label, value, tone]) => (
+          <div key={label} className={cn('rounded-xl px-4 py-3', tone)}>
+            <p className="text-[10px] font-bold tracking-[0.14em] uppercase opacity-80">{label}</p>
+            <p className="mt-0.5 font-poster text-xl tabular-nums">{value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {(['all', 'accepted', 'pending', 'voided'] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              onClick={() => setFilter(f)}
+              aria-pressed={filter === f}
+              className={cn(
+                'rounded-full border px-3 py-1 text-xs font-semibold capitalize transition-colors',
+                filter === f
+                  ? 'border-brand-ink bg-brand-ink text-white'
+                  : 'border-border text-muted-foreground hover:border-brand-ink/40 hover:text-foreground',
+              )}
+            >
+              {f === 'pending' ? 'In progress' : f} · {counts[f]}
+            </button>
+          ))}
+        </div>
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Find a player"
+          aria-label="Find a player"
+          className="h-9 sm:max-w-56"
+        />
+      </div>
+
+      {shown.length === 0 ? (
+        <p className="rounded-xl bg-muted/40 px-4 py-8 text-center text-sm text-muted-foreground">No plays match.</p>
+      ) : (
+        <ul className="space-y-2">
+          {playPages.visible.map((p) => {
+            const name = p.display_name || p.customer_id.slice(0, 8)
+            const isBest = best > 0 && p.status === 'accepted' && !p.result && p.score === best
+            const share = best > 0 && p.score !== undefined && !p.result ? Math.max(0.04, p.score / best) : 0
+            const voided = p.status === 'voided'
+            return (
+              <li
+                key={p.id}
+                className={cn(
+                  'flex flex-wrap items-center gap-x-4 gap-y-3 rounded-xl border-2 p-3 transition-colors sm:flex-nowrap',
+                  isBest ? 'border-amber-300 bg-amber-50/60 dark:bg-amber-950/20' : 'border-border/60 hover:border-border',
+                  voided && 'opacity-70',
+                )}
+              >
+                <span
+                  className={cn(
+                    'relative flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold',
+                    avatarTone(p.customer_id),
+                  )}
+                >
+                  {initialsOf(name)}
+                  {isBest ? (
+                    <span className="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow">
+                      <Trophy className="size-3.5" />
+                    </span>
+                  ) : null}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2">
+                    <span className="truncate font-semibold">{name}</span>
+                    <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                      PLAY #{p.attempt_number}
+                    </span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground" title={formatDate(p.started_at)}>
+                    {ago(p.started_at)}
+                    {p.void_reason ? ` · ${p.void_reason}` : ''}
+                  </p>
+                  {share > 0 ? (
+                    <div className="mt-2 h-1.5 max-w-64 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn('h-full rounded-full', isBest ? 'bg-amber-400' : 'bg-brand-violet/70')}
+                        style={{ width: `${share * 100}%` }}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-brand-teal/15 px-2.5 py-1 text-xs font-semibold text-brand-ink tabular-nums">
+                    <Ticket className="size-3.5" />−{p.entries_spent}
+                  </span>
+                  {p.prize_increment_cents ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900 tabular-nums">
+                      +{prizeMoney(p.prize_increment_cents, cur)}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="w-28 shrink-0 text-right">
+                  <p className={cn('font-poster tabular-nums', p.result ? 'text-sm' : 'text-2xl leading-none')}>
+                    {playOutcome(p)}
+                  </p>
+                  <span
+                    className={cn(
+                      'mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase',
+                      PLAY_TONE[p.status],
+                    )}
+                  >
                     {p.status}
                     {p.refunded_at ? ' · refunded' : ''}
-                  </StatusPill>
-                  {p.void_reason ? <span className="block text-xs text-muted-foreground">{p.void_reason}</span> : null}
-                </td>
-                <td className="py-2 pr-3 whitespace-nowrap text-muted-foreground">{formatDate(p.started_at)}</td>
-                <td className="py-2 text-right">
-                  {onVoid && canVoid && p.status !== 'voided' ? (
-                    <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => onVoid(p)}>
-                      <Undo2 className="size-3.5" />
-                      Void
-                    </Button>
-                  ) : null}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  </span>
+                </div>
+
+                {onVoid && canVoid ? (
+                  <div className="w-20 shrink-0 text-right">
+                    {!voided ? (
+                      <Button type="button" size="sm" variant="outline" className="h-8" onClick={() => onVoid(p)}>
+                        <Undo2 className="size-3.5" />
+                        Void
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
+      )}
       <PageNav
         page={playPages.page}
         pageCount={playPages.pageCount}
