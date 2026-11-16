@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  Archive,
   Award,
   BellRing,
   ClipboardCheck,
@@ -13,6 +14,8 @@ import {
   Minus,
   Pencil,
   Plus,
+  Send,
+  ShoppingBag,
   Ticket,
   Timer,
   Trash2,
@@ -42,6 +45,7 @@ import { FormAlert } from '@/components/common/form-alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AdminEmptyState, AdminPageHeader } from '@/features/admin'
+import { AdPackageCard, BandChip } from '@/features/seller/ad-package-card'
 import { WizardDialog, WizardField, WizardFields, type WizardStep } from '@/features/seller/wizard-dialog'
 import { getErrorMessage } from '@/lib/api'
 import { isSuperAdmin } from '@/lib/auth'
@@ -57,10 +61,10 @@ type Tab = (typeof TABS)[number]['id']
 
 const number = new Intl.NumberFormat()
 
-const PACKAGE_TONE: Record<AdPackage['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  published: 'bg-emerald-100 text-emerald-900',
-  retired: 'bg-muted text-muted-foreground',
+const STATUS_LABEL: Record<AdPackage['status'], string> = {
+  draft: 'Draft',
+  published: 'On sale',
+  retired: 'Retired',
 }
 
 function day(iso?: string | null) {
@@ -174,67 +178,51 @@ function PackagesPanel({ countries }: { countries: Country[] }) {
           description="Create a package, for example a 3-product one and a 5-product one, then publish it for sellers to buy."
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {items.map((pkg) => (
-            <article
+        <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {items.map((pkg, index) => (
+            <AdPackageCard
               key={pkg.id}
-              className={cn(
-                'flex flex-col rounded-xl border-2 bg-card p-5',
-                pkg.status === 'published' ? 'border-brand-ink/15' : 'border-dashed border-brand-ink/15',
-                pkg.status === 'retired' && 'opacity-70',
-              )}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.18em] text-muted-foreground uppercase">
-                    {pkg.country_name} · v{pkg.version}
-                  </p>
-                  <p className="mt-1 truncate font-poster text-2xl">{pkg.name}</p>
-                </div>
-                <span className={cn('rounded-md px-2 py-0.5 text-[10px] font-bold tracking-[0.1em] uppercase', PACKAGE_TONE[pkg.status])}>
-                  {pkg.status === 'published' ? 'On sale' : pkg.status}
-                </span>
-              </div>
-              <p className="mt-2 text-lg font-bold">{formatCents(pkg.price_minor, pkg.currency)}</p>
-              {pkg.description ? <p className="mt-1 text-sm whitespace-pre-line text-muted-foreground">{pkg.description}</p> : null}
-              <ul className="mt-3 space-y-1 text-sm">
-                {pkg.level_entries.map((n, i) => (
-                  <li key={i} className="flex justify-between gap-3 text-muted-foreground">
-                    <span>{levelName(i + 1, pkg.product_slots, pkg.level_names)}</span>
-                    <span className="font-semibold text-foreground">{entriesLabel(n)}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                {pkg.product_slots} {pkg.product_slots === 1 ? 'product' : 'products'} · budget{' '}
-                {number.format(pkg.entries_pool)} entries · {pkg.validity_days ? `${pkg.validity_days} days` : 'until used'} · bought {number.format(pkg.purchases)}{' '}
-                {pkg.purchases === 1 ? 'time' : 'times'}
-              </p>
-              {canEdit ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {pkg.status === 'draft' ? (
-                    <>
-                      <Button size="sm" disabled={busy === pkg.id} onClick={() => void run(pkg.id, `${pkg.name} is on sale.`, () => adPackageAction(pkg.id, 'publish'))}>
+              pkg={pkg}
+              index={index}
+              muted={pkg.status === 'retired'}
+              eyebrow={`${pkg.country_name ?? 'Country'} · version ${pkg.version}`}
+              badge={<BandChip tone={pkg.status === 'published' ? 'gold' : 'light'}>{STATUS_LABEL[pkg.status]}</BandChip>}
+              footnote={
+                <p className="flex items-center gap-1.5">
+                  <ShoppingBag className="size-3.5 shrink-0" />
+                  Bought {number.format(pkg.purchases)} {pkg.purchases === 1 ? 'time' : 'times'}
+                </p>
+              }
+              actions={
+                canEdit ? (
+                  pkg.status === 'draft' ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <Button
+                        className="h-10"
+                        disabled={busy === pkg.id}
+                        onClick={() => void run(pkg.id, `${pkg.name} is on sale.`, () => adPackageAction(pkg.id, 'publish'))}
+                      >
+                        <Send className="size-3.5" />
                         Publish
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditing(pkg)}>
+                      <Button className="h-10" variant="outline" onClick={() => setEditing(pkg)}>
                         <Pencil className="size-3.5" />
                         Edit
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        className="h-10"
+                        variant="outline"
                         disabled={busy === pkg.id}
                         onClick={() => void run(pkg.id, 'Draft deleted.', () => deleteAdPackage(pkg.id))}
                       >
                         <Trash2 className="size-3.5" />
                         Delete
                       </Button>
-                    </>
+                    </div>
                   ) : (
-                    <>
+                    <div className={cn('grid gap-2', pkg.status === 'published' ? 'grid-cols-2' : 'grid-cols-1')}>
                       <Button
-                        size="sm"
+                        className="h-10"
                         variant="outline"
                         disabled={busy === pkg.id}
                         onClick={async () => {
@@ -245,23 +233,24 @@ function PackagesPanel({ countries }: { countries: Country[] }) {
                         }}
                       >
                         <Pencil className="size-3.5" />
-                        Change (new version)
+                        New version
                       </Button>
                       {pkg.status === 'published' ? (
                         <Button
-                          size="sm"
-                          variant="ghost"
+                          className="h-10"
+                          variant="outline"
                           disabled={busy === pkg.id}
                           onClick={() => void run(pkg.id, `${pkg.name} is no longer on sale.`, () => adPackageAction(pkg.id, 'retire'))}
                         >
+                          <Archive className="size-3.5" />
                           Retire
                         </Button>
                       ) : null}
-                    </>
-                  )}
-                </div>
-              ) : null}
-            </article>
+                    </div>
+                  )
+                ) : null
+              }
+            />
           ))}
         </div>
       )}
