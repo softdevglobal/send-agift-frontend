@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Check, LoaderCircle, MapPin, Store, Truck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CircleAlert, LoaderCircle, MapPin, Store, Truck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -7,6 +7,7 @@ import { checkShopSlug, registerSeller } from '@/api/sellers'
 import { FormAlert } from '@/components/common/form-alert'
 import { Dot, Sparkle } from '@/components/common/storefront-decor'
 import { Button } from '@/components/ui/button'
+import { FieldIssuesContext } from '@/features/auth/seller-signup/field-issues'
 import { shopCategories, signupSteps } from '@/features/auth/seller-signup/options'
 import {
   buildRegisterRequest,
@@ -15,7 +16,8 @@ import {
   loadDraft,
   publicLocationText,
   saveDraft,
-  validateStep,
+  stepIssues,
+  type FieldIssue,
   type SignupState,
   type SlugStatus,
 } from '@/features/auth/seller-signup/signup-state'
@@ -56,7 +58,7 @@ export function SellerSignupWizard() {
   const [furthest, setFurthest] = useState(() => draft?.step ?? 0)
   const [countries, setCountries] = useState<Country[]>([])
   const [countriesError, setCountriesError] = useState<string | null>(null)
-  const [errors, setErrors] = useState<string[]>([])
+  const [issues, setIssues] = useState<FieldIssue[]>([])
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [blockedByCountry, setBlockedByCountry] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -65,6 +67,9 @@ export function SellerSignupWizard() {
     status: 'idle',
   })
   const formTop = useRef<HTMLDivElement>(null)
+  // Set when a check fails, so the effect below can scroll to the problem
+  // once the step holding it has rendered.
+  const focusPending = useRef(false)
 
   const country = useMemo(
     () => countries.find((item) => item.id === state.countryId) ?? null,
@@ -95,6 +100,46 @@ export function SellerSignupWizard() {
   useEffect(() => {
     saveDraft(step, state)
   }, [step, state])
+
+  // Problem fields by id, for the fields to show their own message.
+  const issueMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const issue of issues) {
+      if (issue.field && !map.has(issue.field)) map.set(issue.field, issue.message)
+    }
+    return map
+  }, [issues])
+
+  // Mark the problem fields so inputs, selects, text areas and checkboxes
+  // draw their red error state, and take the mark off once fixed.
+  useEffect(() => {
+    const marked: HTMLElement[] = []
+    for (const field of issueMap.keys()) {
+      const element = document.getElementById(field)
+      if (!element) continue
+      element.setAttribute('aria-invalid', 'true')
+      marked.push(element)
+    }
+    return () => marked.forEach((element) => element.removeAttribute('aria-invalid'))
+  }, [issueMap, step])
+
+  // After a failed check, bring the highest problem on the page into view
+  // and put the cursor in it, rather than scrolling to a list at the top.
+  useEffect(() => {
+    if (!focusPending.current) return
+    focusPending.current = false
+    const targets = [...issueMap.keys()]
+      .map((field) => document.getElementById(field))
+      .filter((element): element is HTMLElement => element !== null)
+      .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
+    const first = targets[0]
+    if (first) {
+      first.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      first.focus({ preventScroll: true })
+    } else {
+      formTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [issueMap, step])
 
   useEffect(() => {
     const slug = state.shopSlug
@@ -128,27 +173,52 @@ export function SellerSignupWizard() {
       }
       return next
     })
-    if (errors.length) setErrors([])
+    // Field problems clear one by one as each field is edited (see
+    // clearIssueFor); a general problem clears on any change.
+    setIssues((current) => (current.some((issue) => !issue.field) ? current.filter((issue) => issue.field) : current))
     if (submitError) setSubmitError(null)
+  }
+
+  /** Editing a marked field takes its red off. */
+  function clearIssueFor(target: EventTarget) {
+    if (!(target instanceof HTMLElement)) return
+    const field = target.closest<HTMLElement>('[id]')?.id
+    if (!field) return
+    setIssues((current) =>
+      current.some((issue) => issue.field === field) ? current.filter((issue) => issue.field !== field) : current,
+    )
+  }
+
+  /** Shows these problems, marked on their fields, and scrolls to the first. */
+  function showIssues(found: FieldIssue[]) {
+    focusPending.current = true
+    setIssues(found)
+  }
+
+  function jumpTo(field: string) {
+    const element = document.getElementById(field)
+    if (!element) return
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    element.focus({ preventScroll: true })
   }
 
   function goTo(target: number) {
     setStep(target)
     setFurthest((value) => Math.max(value, target))
-    setErrors([])
+    setIssues([])
     formTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  function stepErrors(index: number): string[] {
-    return validateStep(index, state, { country, slugStatus })
+  function issuesOn(index: number): FieldIssue[] {
+    return stepIssues(index, state, { country, slugStatus })
   }
 
   async function submit() {
     for (let index = 0; index <= LAST_STEP; index++) {
-      const found = stepErrors(index)
+      const found = issuesOn(index)
       if (found.length) {
         goTo(index)
-        setErrors(found)
+        showIssues(found)
         return
       }
     }
@@ -174,7 +244,7 @@ export function SellerSignupWizard() {
       const target = stepForServerError(err)
       if (target !== null && target !== step) {
         goTo(target)
-        setErrors([message])
+        showIssues([{ field: null, message }])
       } else {
         setSubmitError(message)
       }
@@ -186,17 +256,16 @@ export function SellerSignupWizard() {
     event.preventDefault()
     if (isSubmitting) return
     if (blockedMessage) {
-      setErrors([blockedMessage])
+      showIssues([{ field: 'signup-country', message: blockedMessage }])
       return
     }
     if (step === LAST_STEP) {
       void submit()
       return
     }
-    const found = stepErrors(step)
+    const found = issuesOn(step)
     if (found.length) {
-      setErrors(found)
-      formTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      showIssues(found)
       return
     }
     goTo(step + 1)
@@ -275,6 +344,8 @@ export function SellerSignupWizard() {
 
       <form
         onSubmit={handleSubmit}
+        onChangeCapture={(event) => clearIssueFor(event.target)}
+        onClickCapture={(event) => clearIssueFor(event.target)}
         noValidate
         className="min-w-0 rounded-[1.75rem] border border-brand-ink/20 bg-card p-5 sm:p-8"
       >
@@ -293,32 +364,22 @@ export function SellerSignupWizard() {
             <FormAlert error={countriesError} />
           </div>
         ) : null}
-        {errors.length ? (
-          <div
-            role="alert"
-            className="mb-6 text-sm font-medium text-rose-600 dark:text-rose-400"
-          >
-            <p className="font-medium">Please check the following:</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-5">
-              {errors.map((message) => (
-                <li key={message}>{message}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        {blockedMessage && step === 0 && !errors.length ? (
+        {issues.length ? <IssueSummary issues={issues} onJump={jumpTo} /> : null}
+        {blockedMessage && step === 0 && !issues.length ? (
           <div className="mb-6">
             <FormAlert error={blockedMessage} />
           </div>
         ) : null}
 
-        {step === 0 ? <BusinessStep {...stepProps} /> : null}
-        {step === 1 ? <ContactStep {...stepProps} /> : null}
-        {step === 2 ? <AddressesStep {...stepProps} /> : null}
-        {step === 3 ? <ShopStep {...stepProps} slugStatus={slugStatus} /> : null}
-        {step === 4 ? <DeliveryStep {...stepProps} /> : null}
-        {step === 5 ? <VerificationStep {...stepProps} /> : null}
-        {step === 6 ? <ReviewStep {...stepProps} onEdit={goTo} /> : null}
+        <FieldIssuesContext.Provider value={issueMap}>
+          {step === 0 ? <BusinessStep {...stepProps} /> : null}
+          {step === 1 ? <ContactStep {...stepProps} /> : null}
+          {step === 2 ? <AddressesStep {...stepProps} /> : null}
+          {step === 3 ? <ShopStep {...stepProps} slugStatus={slugStatus} /> : null}
+          {step === 4 ? <DeliveryStep {...stepProps} /> : null}
+          {step === 5 ? <VerificationStep {...stepProps} /> : null}
+          {step === 6 ? <ReviewStep {...stepProps} onEdit={goTo} /> : null}
+        </FieldIssuesContext.Provider>
 
         {submitError ? (
           <div className="mt-6">
@@ -366,12 +427,52 @@ export function SellerSignupWizard() {
   )
 }
 
+/**
+ * Every problem on the step, once each. A line tied to a field jumps to it;
+ * the field itself is marked in red with the same message underneath.
+ */
+function IssueSummary({ issues, onJump }: { issues: FieldIssue[]; onJump: (field: string) => void }) {
+  const lines: FieldIssue[] = []
+  for (const issue of issues) {
+    if (!lines.some((line) => line.message === issue.message)) lines.push(issue)
+  }
+  return (
+    <div
+      role="alert"
+      className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive"
+    >
+      <p className="flex items-center gap-2 font-semibold">
+        <CircleAlert className="size-4 shrink-0" aria-hidden />
+        {lines.length === 1 ? 'Please fix this to continue:' : `Please fix these ${lines.length} things to continue:`}
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-6">
+        {lines.map((line) => (
+          <li key={line.message}>
+            {line.field ? (
+              <button
+                type="button"
+                onClick={() => onJump(line.field!)}
+                className="text-left underline decoration-destructive/40 underline-offset-2 hover:decoration-destructive"
+              >
+                {line.message}
+              </button>
+            ) : (
+              line.message
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function ShopPreview({ state, country }: { state: SignupState; country: Country | null }) {
   const firstBand = state.bands[0]
   const currency = country?.default_currency ?? ''
-  const price = firstBand ? Number(firstBand.price_major) : NaN
+  // A blank price is free delivery, the same as 0.
+  const price = firstBand ? Number(firstBand.price_major.trim() || '0') : NaN
   const delivery =
-    firstBand && firstBand.max_km && currency && Number.isFinite(price) && firstBand.price_major.trim()
+    firstBand && firstBand.max_km && currency && Number.isFinite(price)
       ? `${price === 0 ? 'Free' : formatPriceAmount(majorToMinor(price, currency), currency)} within ${firstBand.max_km} km`
       : 'Set up on the delivery step'
   const location = country ? publicLocationText(state, country.name) : ''

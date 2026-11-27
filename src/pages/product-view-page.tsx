@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
+  Check,
   Clock,
   LoaderCircle,
   MessageSquare,
@@ -55,6 +56,13 @@ export function ProductViewPage() {
   const { askAboutProduct } = useCustomerMessages()
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
+  // The button reads "Added" for a moment after each add.
+  const [justAdded, setJustAdded] = useState(false)
+  useEffect(() => {
+    if (!justAdded) return
+    const timer = window.setTimeout(() => setJustAdded(false), 1600)
+    return () => window.clearTimeout(timer)
+  }, [justAdded])
   const [activeMedia, setActiveMedia] = useState(0)
   const [product, setProduct] = useState(() =>
     productId ? getCatalogProduct(productId) : null,
@@ -245,8 +253,9 @@ export function ProductViewPage() {
       : null
 
   function handleAdd() {
-    addItem(gift.id, quantity)
+    if (!addItem(gift.id, quantity)) return
     setAdded(true)
+    setJustAdded(true)
   }
 
   return (
@@ -398,11 +407,14 @@ export function ProductViewPage() {
                     </div>
                     <Button
                       type="button"
-                      className="h-12 flex-1 px-7 sm:flex-none"
+                      className={cn(
+                        'h-12 flex-1 px-7 transition-colors sm:flex-none',
+                        justAdded && 'bg-emerald-600 text-white hover:bg-emerald-600',
+                      )}
                       onClick={handleAdd}
                     >
-                      <ShoppingBag className="size-4" />
-                      Add to cart
+                      {justAdded ? <Check className="size-4" /> : <ShoppingBag className="size-4" />}
+                      {justAdded ? 'Added' : 'Add to cart'}
                     </Button>
                   </div>
                   <p

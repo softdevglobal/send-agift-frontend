@@ -197,7 +197,11 @@ export function SiteHeader() {
             <Link to="/cart">
               <ShoppingBag className="size-4.5" />
               {itemCount > 0 ? (
-                <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                // Keyed on the count, so the badge pops each time it changes.
+                <span
+                  key={itemCount}
+                  className="absolute top-1 right-1 flex size-4 animate-cart-bump items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground"
+                >
                   {itemCount}
                 </span>
               ) : null}

@@ -164,7 +164,7 @@ export function BusinessStep({ state, update, country, countries, disabled }: St
                 <Input
                   id={`signup-id-type-${item.key}`}
                   list="signup-identifier-types"
-                  placeholder={suggestions[0]?.value ?? 'Business registration number'}
+                  placeholder={`e.g. ${suggestions[0]?.value ?? 'Business registration number'}`}
                   maxLength={60}
                   value={item.type}
                   onChange={(event) => setIdentifier(item.key, { type: event.target.value })}

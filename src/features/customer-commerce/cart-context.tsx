@@ -51,11 +51,18 @@ type CartContextValue = {
   customerTypes: CartCustomerType[]
   mixedCustomerType: boolean
   cartCustomerType: CartCustomerType | null
-  addItem: (productId: string, quantity?: number) => void
+  /** True when the gift went into the cart (false when sign-in is needed first). */
+  addItem: (productId: string, quantity?: number) => boolean
+  /** The gift just added, for the "added to your cart" confirmation. */
+  lastAdded: CartAdded | null
+  dismissAdded: () => void
   setQuantity: (productId: string, quantity: number) => void
   removeItem: (productId: string) => void
   clearCart: () => void
 }
+
+/** One add to the cart; `at` tells two adds of the same gift apart. */
+export type CartAdded = { productId: string; quantity: number; at: number }
 
 const CartContext = createContext<CartContextValue | null>(null)
 
@@ -93,6 +100,7 @@ export function CartProvider({ children }: CartProviderProps) {
   /** Product IDs looked up and not found, so they are not asked for again. */
   const [missing, setMissing] = useState<ReadonlySet<string>>(() => new Set())
   const [hydrating, setHydrating] = useState(false)
+  const [lastAdded, setLastAdded] = useState<CartAdded | null>(null)
 
   // A reload keeps only IDs and quantities. Fetch the details of any saved
   // product the catalog does not have yet, before the cart can call itself
@@ -138,9 +146,9 @@ export function CartProvider({ children }: CartProviderProps) {
             state: returnToState(location.pathname, location.search),
           })
         }
-        return
+        return false
       }
-      if (!getCatalogProduct(productId) || quantity < 1) return
+      if (!getCatalogProduct(productId) || quantity < 1) return false
       const customerType = customerTypeForProduct(productId)
       persist(
         (() => {
@@ -153,6 +161,8 @@ export function CartProvider({ children }: CartProviderProps) {
           )
         })(),
       )
+      setLastAdded({ productId, quantity, at: Date.now() })
+      return true
     },
     [isAuthenticated, isCustomer, items, location.pathname, location.search, navigate, persist],
   )
@@ -180,6 +190,8 @@ export function CartProvider({ children }: CartProviderProps) {
       return next
     })
   }, [])
+
+  const dismissAdded = useCallback(() => setLastAdded(null), [])
 
   const clearCart = useCallback(() => {
     setItems([])
@@ -221,6 +233,8 @@ export function CartProvider({ children }: CartProviderProps) {
       mixedCustomerType,
       cartCustomerType,
       addItem,
+      lastAdded,
+      dismissAdded,
       setQuantity,
       removeItem,
       clearCart,
@@ -236,6 +250,8 @@ export function CartProvider({ children }: CartProviderProps) {
       mixedCustomerType,
       cartCustomerType,
       addItem,
+      lastAdded,
+      dismissAdded,
       setQuantity,
       removeItem,
       clearCart,

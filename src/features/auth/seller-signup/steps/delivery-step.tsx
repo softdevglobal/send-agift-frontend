@@ -3,9 +3,10 @@ import { Clock, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { CheckRow, ChipGroup, Field, Notice, Section } from '@/features/auth/seller-signup/fields'
+import { useFieldIssues } from '@/features/auth/seller-signup/field-issues'
+import { CheckRow, ChipGroup, Field, FieldMessage, Notice, Section } from '@/features/auth/seller-signup/fields'
 import { workingDays } from '@/features/auth/seller-signup/options'
-import { newBand, type BandDraft } from '@/features/auth/seller-signup/signup-state'
+import { nextBand, type BandDraft } from '@/features/auth/seller-signup/signup-state'
 import type { StepProps } from '@/features/auth/seller-signup/steps/step-props'
 import { textareaClassName } from '@/lib/form-styles'
 import { TimePicker } from '@/components/common/time-picker'
@@ -34,89 +35,93 @@ export function DeliveryStep({ state, update, country, disabled }: StepProps) {
         </div>
 
         <ul className="space-y-3">
-          {state.bands.map((band, index) => {
+          {state.bands.map((band) => {
             const sameDay = band.estimated_days === '0'
             return (
-              <li key={band.key} className="flex flex-wrap items-end gap-2 rounded-xl border border-border/60 p-3">
-                <div className="min-w-[6.5rem] flex-1 space-y-1">
-                  <Label htmlFor={`band-km-${band.key}`}>Up to (km)</Label>
-                  <Input
-                    id={`band-km-${band.key}`}
-                    inputMode="decimal"
-                    placeholder={index === 0 ? '5' : '15'}
-                    value={band.max_km}
-                    onChange={(event) => setBand(band.key, { max_km: event.target.value })}
-                    disabled={disabled}
-                  />
-                </div>
-                <div className="min-w-[6.5rem] flex-1 space-y-1">
-                  <Label htmlFor={`band-price-${band.key}`}>Price ({currency || '-'})</Label>
-                  <Input
-                    id={`band-price-${band.key}`}
-                    inputMode="decimal"
-                    placeholder="0 for free"
-                    value={band.price_major}
-                    onChange={(event) => setBand(band.key, { price_major: event.target.value })}
-                    disabled={disabled}
-                  />
-                </div>
-                {sameDay ? (
-                  <div className="w-36 space-y-1">
-                    <Label htmlFor={`band-cutoff-${band.key}`}>Order by</Label>
-                    <TimePicker
-                      id={`band-cutoff-${band.key}`}
-                      value={band.cutoff_time}
-                      onChange={(cutoff_time) => setBand(band.key, { cutoff_time })}
-                      disabled={disabled}
-                    />
-                  </div>
-                ) : (
-                  <div className="w-24 space-y-1">
-                    <Label htmlFor={`band-days-${band.key}`}>Days</Label>
+              <li key={band.key} className="rounded-xl border border-border/60 p-3">
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-[6.5rem] flex-1 space-y-1">
+                    <Label htmlFor={`band-km-${band.key}`}>Up to (km)</Label>
                     <Input
-                      id={`band-days-${band.key}`}
-                      inputMode="numeric"
-                      value={band.estimated_days}
-                      onChange={(event) => setBand(band.key, { estimated_days: event.target.value })}
+                      id={`band-km-${band.key}`}
+                      inputMode="decimal"
+                      placeholder="e.g. 10"
+                      value={band.max_km}
+                      onChange={(event) => setBand(band.key, { max_km: event.target.value })}
                       disabled={disabled}
                     />
                   </div>
-                )}
-                <Button
-                  type="button"
-                  variant={sameDay ? 'default' : 'outline'}
-                  className="h-10 rounded-full px-3"
-                  aria-pressed={sameDay}
-                  onClick={() =>
-                    setBand(
-                      band.key,
-                      sameDay ? { estimated_days: '1', cutoff_time: '' } : { estimated_days: '0', cutoff_time: '14:00' },
-                    )
-                  }
-                  disabled={disabled}
-                >
-                  Same day
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 rounded-full px-3 text-muted-foreground"
-                  disabled={disabled || state.bands.length === 1}
-                  onClick={() => update({ bands: state.bands.filter((other) => other.key !== band.key) })}
-                  aria-label="Remove band"
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                  <div className="min-w-[6.5rem] flex-1 space-y-1">
+                    <Label htmlFor={`band-price-${band.key}`}>Price ({currency || '-'})</Label>
+                    <Input
+                      id={`band-price-${band.key}`}
+                      inputMode="decimal"
+                      placeholder="0 = free"
+                      value={band.price_major}
+                      onChange={(event) => setBand(band.key, { price_major: event.target.value })}
+                      disabled={disabled}
+                    />
+                  </div>
+                  {sameDay ? (
+                    <div className="w-36 space-y-1">
+                      <Label htmlFor={`band-cutoff-${band.key}`}>Order by</Label>
+                      <TimePicker
+                        id={`band-cutoff-${band.key}`}
+                        value={band.cutoff_time}
+                        onChange={(cutoff_time) => setBand(band.key, { cutoff_time })}
+                        disabled={disabled}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 space-y-1">
+                      <Label htmlFor={`band-days-${band.key}`}>Days</Label>
+                      <Input
+                        id={`band-days-${band.key}`}
+                        inputMode="numeric"
+                        value={band.estimated_days}
+                        onChange={(event) => setBand(band.key, { estimated_days: event.target.value })}
+                        disabled={disabled}
+                      />
+                    </div>
+                  )}
+                  <Button
+                    type="button"
+                    variant={sameDay ? 'default' : 'outline'}
+                    className="h-10 rounded-full px-3"
+                    aria-pressed={sameDay}
+                    onClick={() =>
+                      setBand(
+                        band.key,
+                        sameDay ? { estimated_days: '1', cutoff_time: '' } : { estimated_days: '0', cutoff_time: '14:00' },
+                      )
+                    }
+                    disabled={disabled}
+                  >
+                    Same day
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-10 rounded-full px-3 text-muted-foreground"
+                    disabled={disabled || state.bands.length === 1}
+                    onClick={() => update({ bands: state.bands.filter((other) => other.key !== band.key) })}
+                    aria-label="Remove band"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+                <BandMessages band={band} />
               </li>
             )
           })}
         </ul>
         {state.bands.length < 20 ? (
           <Button
+            id="signup-add-band"
             type="button"
             variant="outline"
             className="h-8 rounded-full px-3"
-            onClick={() => update({ bands: [...state.bands, newBand()] })}
+            onClick={() => update({ bands: [...state.bands, nextBand(state.bands)] })}
             disabled={disabled}
           >
             <Plus className="size-3.5" />
@@ -124,13 +129,15 @@ export function DeliveryStep({ state, update, country, disabled }: StepProps) {
           </Button>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          Bands must increase in distance. A same-day band takes orders until its cutoff; later orders
-          arrive the next day. Recipients beyond your last band can’t order delivery from you.
+          A price of 0 is free delivery. Bands must increase in distance. A same-day band takes
+          orders until its cutoff; later orders arrive the next day. Recipients beyond your last band
+          can’t order delivery from you.
         </p>
       </div>
 
       <Section title="Working days">
         <ChipGroup
+          id="signup-working-days"
           label="Working days"
           options={workingDays}
           value={state.workingDays}
@@ -172,6 +179,24 @@ export function DeliveryStep({ state, update, country, disabled }: StepProps) {
           />
         </Field>
       </Section>
+    </div>
+  )
+}
+
+/** What is wrong with one band, under its row, so the seller sees which band to fix. */
+function BandMessages({ band }: { band: BandDraft }) {
+  const messages = useFieldIssues([
+    `band-km-${band.key}`,
+    `band-price-${band.key}`,
+    `band-days-${band.key}`,
+    `band-cutoff-${band.key}`,
+  ])
+  if (!messages.length) return null
+  return (
+    <div className="mt-2 space-y-1">
+      {messages.map((message) => (
+        <FieldMessage key={message} message={message} />
+      ))}
     </div>
   )
 }

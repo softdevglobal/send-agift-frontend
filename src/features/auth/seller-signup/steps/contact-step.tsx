@@ -68,7 +68,7 @@ export function ContactStep({ state, update, disabled }: StepProps) {
             id="signup-email"
             type="email"
             autoComplete="email"
-            placeholder="you@yourbusiness.com"
+            placeholder="e.g. you@yourbusiness.com"
             maxLength={254}
             value={state.email}
             onChange={(event) => update({ email: event.target.value })}
