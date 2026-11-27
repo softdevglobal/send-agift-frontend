@@ -28,6 +28,7 @@ export {
   sellerInitials,
   sellerVerificationLabel,
   sellerVerificationTone,
+  sellerVerificationHint,
   sellerSetupSteps,
   sellerSetupProgress,
 } from './seller-utils'

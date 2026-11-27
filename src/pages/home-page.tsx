@@ -275,21 +275,20 @@ export function HomePage() {
             )}
           >
             <div className="space-y-6 lg:py-20">
+              {/* No sale prices exist in the catalog, so this promotes what
+                  the link really opens: hampers and gift sets. */}
               <h2 className="font-poster text-5xl sm:text-6xl lg:text-7xl">
                 <Marker tone="white">Gift sets</Marker>
                 <br />
-                up to 50% off
+                and hampers
               </h2>
               <p className="max-w-md text-base leading-relaxed font-medium text-brand-ink/75">
                 Seasonal hampers, keepsakes, and wellness gifts from
-                local sellers.
-              </p>
-              <p className="text-sm font-extrabold tracking-wide">
-                *While stocks last, selected sellers only
+                local sellers, wrapped and ready to send.
               </p>
               <Button asChild size="lg" className="h-12 px-7">
-                <Link to="/products">
-                  Shop the sale
+                <Link to="/products?category=hampers">
+                  Shop hampers
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
@@ -297,7 +296,7 @@ export function HomePage() {
             <div className="relative lg:self-stretch">
               <img
                 src="https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=1000&q=80"
-                alt="Gift bag with seasonal offer"
+                alt="A wrapped gift set"
                 className="h-72 w-full rounded-[1.5rem] object-cover sm:h-96 lg:absolute lg:inset-y-10 lg:h-auto"
                 loading="lazy"
               />

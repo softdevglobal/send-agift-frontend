@@ -1,5 +1,7 @@
-import { Smartphone } from 'lucide-react'
+import { Apple, Play, Smartphone } from 'lucide-react'
 
+import { Button } from '@/components/ui/button'
+import { appStoreUrl, phonePlatform, playStoreUrl } from '@/lib/app-links'
 import { cn } from '@/lib/utils'
 
 /**
@@ -24,7 +26,30 @@ export function PlayInApp({ className, compact }: { className?: string; compact?
             ? 'Games are played on your phone.'
             : 'Games can only be played in the SendAGift mobile app. Open the app on your phone, sign in with this account and find the competition under Competitions. Your points are the same in the app.'}
         </p>
+        {compact ? null : <StoreButtons />}
       </div>
+    </div>
+  )
+}
+
+/** Get-the-app buttons, the visitor's own phone store first. */
+function StoreButtons() {
+  const stores = [
+    appStoreUrl ? { key: 'ios', label: 'Download on the App Store', href: appStoreUrl, icon: Apple } : null,
+    { key: 'android', label: 'Get it on Google Play', href: playStoreUrl, icon: Play },
+  ].filter((store): store is NonNullable<typeof store> => store !== null)
+  const platform = phonePlatform()
+  stores.sort((a, b) => Number(b.key === platform) - Number(a.key === platform))
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {stores.map((store) => (
+        <Button key={store.key} asChild size="sm" className="h-9 rounded-full px-4">
+          <a href={store.href} target="_blank" rel="noreferrer">
+            <store.icon className="size-4" />
+            {store.label}
+          </a>
+        </Button>
+      ))}
     </div>
   )
 }

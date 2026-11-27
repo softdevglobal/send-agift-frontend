@@ -20,7 +20,8 @@ const serviceLinks = [
   { to: '/orders', label: 'Track order' },
   { to: '/legal', label: 'Terms & policies' },
   { to: '/competitions', label: 'Games & competitions', competitions: true },
-  { to: '/become-a-seller', label: 'Seller support' },
+  // Existing sellers reach SendAGift support from their inbox (sign-in first).
+  { to: '/seller/inbox?support=1', label: 'Seller support' },
 ]
 
 const footerHeadingClass = 'mb-5 text-[11px] font-bold tracking-[0.18em] text-white uppercase'

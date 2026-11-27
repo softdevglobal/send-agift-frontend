@@ -27,6 +27,36 @@ type PhoneFieldProps = {
 }
 
 const codeByIso2 = new Map(dialCodes.map((code) => [code.iso2, code]))
+
+/**
+ * A mobile number in each country's own national format, shown as the
+ * example after its calling code (+61 shows an Australian number, not a Sri
+ * Lankan one). Other countries get a neutral hint.
+ */
+const nationalExamples: Record<string, string> = {
+  LK: '77 123 4567',
+  AU: '412 345 678',
+  NZ: '21 123 4567',
+  GB: '7400 123456',
+  IE: '85 123 4567',
+  US: '201 555 0123',
+  CA: '506 234 5678',
+  IN: '81234 56789',
+  SG: '8123 4567',
+  MY: '12-345 6789',
+  AE: '50 123 4567',
+  QA: '3312 3456',
+  SA: '51 234 5678',
+  DE: '1512 3456789',
+  FR: '6 12 34 56 78',
+  JP: '90-1234-5678',
+  CN: '131 2345 6789',
+}
+
+function phoneExample(iso2: string): string {
+  const example = nationalExamples[iso2.toUpperCase()]
+  return example ? `e.g. ${example}` : 'Mobile number'
+}
 const defaultIso2 =
   dialCodes.find((code) => code.dial === defaultDialCode)?.iso2 ??
   dialCodes[0].iso2
@@ -131,7 +161,7 @@ export function PhoneField({
         type="tel"
         inputMode="tel"
         autoComplete="tel-national"
-        placeholder="77 123 4567"
+        placeholder={phoneExample(iso2)}
         value={number}
         onChange={(event) => {
           touched.current = true

@@ -64,6 +64,7 @@ import {
   sellerSetupProgress,
   sellerSetupSteps,
 } from '@/features/seller'
+import { VerificationNotice } from '@/features/seller/verification-notice'
 import { VerifiedSellerBadge } from '@/features/customer-commerce/verified-seller-badge'
 import { getErrorMessage } from '@/lib/api'
 import { countryOptionLabel } from '@/lib/country-options'
@@ -947,6 +948,9 @@ export function SellerProfilePage() {
                       )
                     })}
                   </ul>
+                  {/* "Get verified" is not something the seller can tick
+                      off: say who does it and what to do meanwhile. */}
+                  <VerificationNotice status={profile.verification_status} className="mt-4" />
                 </section>
               ) : null}
 

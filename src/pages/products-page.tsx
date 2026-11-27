@@ -116,7 +116,10 @@ export function ProductsPage() {
   const [buttonFinding, setButtonFinding] = useState(false)
   const [searchGeneration, setSearchGeneration] = useState(0)
   const [availabilityError, setAvailabilityError] = useState(false)
-  const giftsLoading = buttonFinding || checkingAvailability
+  // The first catalog load, so the page says it is loading instead of
+  // flashing "0 gifts" before the gifts arrive.
+  const [catalogLoading, setCatalogLoading] = useState(true)
+  const giftsLoading = buttonFinding || checkingAvailability || catalogLoading
 
   const destinationLat = intent?.latitude
   const destinationLng = intent?.longitude
@@ -126,7 +129,10 @@ export function ProductsPage() {
 
   useEffect(() => {
     // A searched address owns the shelf. The zone search loads only its gifts.
-    if (hasDestination) return
+    if (hasDestination) {
+      setCatalogLoading(false)
+      return
+    }
     let cancelled = false
     let fromApi = false
 
@@ -147,6 +153,7 @@ export function ProductsPage() {
 
     void loadFromApi().then(() => {
       if (!fromApi) loadLocal()
+      if (!cancelled) setCatalogLoading(false)
     })
     const unsubCatalog = subscribePublishedCatalog(loadLocal)
     return () => {
@@ -237,7 +244,9 @@ export function ProductsPage() {
           <h1 className="font-poster text-[8vw] text-brand-ink sm:text-5xl lg:text-6xl dark:text-foreground">
             {activeCategoryName ? (
               <>
-                <Marker tone="violet">{activeCategoryName}</Marker> gifts
+                <Marker tone="violet">{activeCategoryName}</Marker>
+                {/* "Tech gifts" already says gifts: no "Tech gifts gifts". */}
+                {/gifts?$/i.test(activeCategoryName.trim()) ? null : ' gifts'}
               </>
             ) : (
               <>
@@ -296,7 +305,9 @@ export function ProductsPage() {
 
         <div className="mb-6 flex items-center justify-between gap-4">
           <p className="min-w-0 flex-1 text-xs font-semibold tracking-[0.1em] text-muted-foreground uppercase">
-            {giftsLoading
+            {catalogLoading
+              ? 'Loading gifts…'
+              : giftsLoading
               ? 'Checking which gifts can be delivered there…'
               : products.length === 0
                 ? `0 gifts${filteredByDelivery ? ' that can be delivered there' : ''}${

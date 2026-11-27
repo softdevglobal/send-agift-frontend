@@ -218,15 +218,17 @@ export function CartPage() {
             ) : null}
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Delivery</dt>
-              <dd className="text-muted-foreground">Calculated at dispatch</dd>
+              <dd className="text-muted-foreground">Priced at checkout</dd>
             </div>
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 font-medium">
-              <dt>Total</dt>
+              {/* Delivery is not known yet, so this is not the final total. */}
+              <dt>Total before delivery</dt>
               <dd>{formatMoney(total - memberSaving, currency)}</dd>
             </div>
           </dl>
           <p className="mt-3 text-xs text-muted-foreground">
-            Delivery is priced at checkout for the shop these gifts ship from.
+            Delivery is priced at checkout, from the shop to the address of the person you are
+            sending to.
           </p>
           {mixedShops ? (
             <div

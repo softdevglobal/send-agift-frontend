@@ -92,6 +92,17 @@ export function SellerInboxPage() {
     setSupportOpen(true)
   }
 
+  // "Seller support" in the site footer lands here with ?support=1: open the
+  // support conversation (or start one) as soon as the inbox has loaded.
+  const wantsSupport = params.get('support') === '1'
+  useEffect(() => {
+    if (!wantsSupport || !inbox.loaded) return
+    setParams({}, { replace: true })
+    handleContactSupport()
+    // Runs once per arrival with the flag.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsSupport, inbox.loaded])
+
   return (
     <div className="space-y-6">
       <SellerPageHeader

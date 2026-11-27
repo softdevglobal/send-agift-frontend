@@ -24,6 +24,7 @@ import { giftCategories } from '@/features/marketing/data'
 import {
   coverImageUrl,
   emptyForm,
+  formatPrepMinutes,
   isProductImageMedia,
   isProductVideoMime,
   joinPrepMinutes,
@@ -850,7 +851,16 @@ export function ProductWizard({
               className={textareaClassName}
             />
           </WizardField>
-          <WizardField label="Status" htmlFor="wizard-status" full>
+          <WizardField
+            label="Status"
+            htmlFor="wizard-status"
+            full
+            hint={
+              form.status === 'published'
+                ? 'Customers can find and buy it as soon as you save.'
+                : 'Saved privately. Choose Published when it is ready to sell.'
+            }
+          >
             <select
               id="wizard-status"
               value={form.status}
@@ -859,8 +869,8 @@ export function ProductWizard({
               }
               className={selectClassName}
             >
-              <option value="published">Published. Live in the catalog</option>
               <option value="draft">Draft. Only you can see it</option>
+              <option value="published">Published. Live in the catalog</option>
             </select>
           </WizardField>
         </WizardFields>
@@ -1016,7 +1026,7 @@ export function ProductWizard({
               />
               <SummaryRow
                 label="Preparation"
-                value={`${prepParts.hours}h ${prepParts.minutes}m (${prepTotalLabel} min)`}
+                value={formatPrepMinutes(form.prep_minutes)}
               />
               <SummaryRow label="In stock" value={form.available_qty || '0'} />
               <SummaryRow
