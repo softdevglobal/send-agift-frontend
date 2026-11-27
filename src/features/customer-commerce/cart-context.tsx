@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -27,6 +28,7 @@ import {
 import type { CartCustomerType, CartItem, CartLine } from '@/features/customer-commerce/types'
 import { ApiError } from '@/lib/api'
 import { returnToState } from '@/lib/auth'
+import { clearPendingCartAdd, readPendingCartAdd, savePendingCartAdd } from '@/lib/pending-intent'
 import { getMarketplaceCustomerType } from '@/lib/marketplace'
 
 type CartContextValue = {
@@ -142,6 +144,17 @@ export function CartProvider({ children }: CartProviderProps) {
     (productId: string, quantity = 1) => {
       if (!isCustomer) {
         if (!isAuthenticated) {
+          // Remember the gift, so sign-in can show it and add it once done.
+          const product = getCatalogProduct(productId)
+          if (product && quantity >= 1) {
+            savePendingCartAdd({
+              productId,
+              quantity,
+              name: product.name,
+              image: product.image,
+              returnTo: `${location.pathname}${location.search}`,
+            })
+          }
           navigate('/login', {
             state: returnToState(location.pathname, location.search),
           })
@@ -192,6 +205,28 @@ export function CartProvider({ children }: CartProviderProps) {
   }, [])
 
   const dismissAdded = useCallback(() => setLastAdded(null), [])
+
+  // A guest pressed "Add to cart" and was sent to sign in: add that gift now,
+  // exactly once. The saved add is cleared before adding, so a re-render or
+  // a second tab can never add it again.
+  const fetchingPending = useRef<string | null>(null)
+  useEffect(() => {
+    if (!isCustomer) return
+    const pending = readPendingCartAdd()
+    if (!pending) return
+    if (!getCatalogProduct(pending.productId)) {
+      // Not loaded yet (for example after signing up): fetch it once; the
+      // catalog update runs this again.
+      if (fetchingPending.current === pending.productId) return
+      fetchingPending.current = pending.productId
+      void getPublicProduct(pending.productId, 'personal')
+        .then((product) => registerCatalogProducts([catalogProductFromApi(product)]))
+        .catch(() => clearPendingCartAdd())
+      return
+    }
+    clearPendingCartAdd()
+    addItem(pending.productId, pending.quantity)
+  }, [isCustomer, catalogVersion, addItem])
 
   const clearCart = useCallback(() => {
     setItems([])

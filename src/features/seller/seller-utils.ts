@@ -64,3 +64,11 @@ export function sellerVerificationTone(status: string) {
   if (status === 'rejected') return 'bg-destructive text-white'
   return 'bg-muted text-muted-foreground'
 }
+
+/** A short verification status line for small places such as a stat card. */
+export function sellerVerificationHint(status: string): string {
+  if (status === 'verified') return 'Approved by SendAGift'
+  if (status === 'pending') return 'In review by SendAGift'
+  if (status === 'rejected') return 'Not approved. Contact support'
+  return 'SendAGift reviews your details'
+}

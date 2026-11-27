@@ -4,6 +4,7 @@ import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
 import { LoginForm } from '@/features/auth/login-form'
+import { SignInReason } from '@/features/auth/sign-in-reason'
 import { loginCopy } from '@/features/auth/copy'
 import type { AuthRole } from '@/features/auth/types'
 import { cn } from '@/lib/utils'
@@ -35,7 +36,8 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
           <div className="flex items-center gap-4">
             {copy.registerTo ? (
               <Button asChild size="sm" className="h-9 rounded-full px-4 font-medium">
-                <Link to={copy.registerTo}>
+                {/* Keeps where to return after signing up. */}
+                <Link to={copy.registerTo} state={location.state}>
                   {isSeller ? 'Register' : 'Create account'}
                 </Link>
               </Button>
@@ -55,6 +57,7 @@ export function AuthLoginPage({ initialRole = 'customer' }: AuthLoginPageProps) 
         </header>
 
         <div className="my-auto w-full min-w-0 px-5 py-6 sm:px-10 sm:py-8">
+          {role === 'customer' ? <SignInReason /> : null}
           <LoginForm role={role} />
         </div>
 

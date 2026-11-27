@@ -27,6 +27,7 @@ import { useCart } from '@/features/customer-commerce'
 import { useCustomerMessages } from '@/features/messaging'
 import { returnToState } from '@/lib/auth'
 import { cn } from '@/lib/utils'
+import { useFreeGiftAvailable } from '@/features/free-gift/use-free-gift-available'
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false)
@@ -43,7 +44,9 @@ export function SiteHeader() {
   const competitionsOn = useCompetitionsEnabled()
   const isGuest = !isAuthenticated
   // Guests see the offer, customers claim it. Sellers and admins cannot.
-  const canClaimFreeGift = isGuest || isCustomer
+  // Only while gifts are on offer (and unused), so it never opens an empty page.
+  const freeGiftAvailable = useFreeGiftAvailable()
+  const canClaimFreeGift = (isGuest || isCustomer) && freeGiftAvailable
   const activeCategory = new URLSearchParams(location.search).get('category')
   const path = location.pathname
 
@@ -176,7 +179,7 @@ export function SiteHeader() {
                 size="icon"
                 className="hidden sm:inline-flex"
                 asChild
-                aria-label="Watchlist"
+                aria-label="Saved gifts"
               >
                 <Link to={isCustomer ? '/account/saved-gifts' : '/login'}>
                   <Heart className="size-4.5" />

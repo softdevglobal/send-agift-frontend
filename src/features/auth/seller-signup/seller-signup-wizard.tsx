@@ -275,8 +275,10 @@ export function SellerSignupWizard() {
   const stepProps = { state, update, country, countries, disabled: isSubmitting }
 
   return (
-    <div className="mx-auto grid w-full max-w-7xl gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_18rem]">
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+    // One shrinkable column below lg, so the step list scrolls inside its own
+    // row instead of stretching the page wider than the screen.
+    <div className="mx-auto grid w-full max-w-7xl grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_18rem]">
+      <aside className="min-w-0 lg:sticky lg:top-6 lg:self-start">
         <div className="mb-4 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] font-bold tracking-[0.14em] text-brand-ink uppercase dark:text-foreground">
             <span>

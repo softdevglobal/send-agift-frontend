@@ -14,6 +14,7 @@ import { useSavedGifts } from '@/features/customer-commerce/saved-gifts-context'
 import { getErrorMessage } from '@/lib/api'
 import { formatPriceAmount } from '@/lib/money'
 import { getPublicSellerForShop } from '@/lib/public-sellers'
+import { cn } from '@/lib/utils'
 import { useMemo, useState } from 'react'
 
 export function CustomerSavedGiftsPage() {
@@ -56,11 +57,11 @@ export function CustomerSavedGiftsPage() {
             <>
             <ul className="space-y-3">
               {pages.visible.map((gift) => (
-                <li key={gift.id} className={customerListRowClass}>
-                  <Link
-                    to={`/products/${gift.product_id}`}
-                    className="flex min-w-0 flex-1 items-center gap-4"
-                  >
+                <li key={gift.id} className={cn(customerListRowClass, 'relative')}>
+                  {/* The link is named by the gift's title alone; its overlay
+                      still makes the whole row clickable. Description, price
+                      and seller are read as plain text beside it. */}
+                  <div className="flex min-w-0 flex-1 items-center gap-4">
                     <div className="size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
                       {gift.product?.image_url ? (
                         <img
@@ -76,7 +77,12 @@ export function CustomerSavedGiftsPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">
-                        {gift.product?.name ?? 'Saved gift'}
+                        <Link
+                          to={`/products/${gift.product_id}`}
+                          className="outline-none after:absolute after:inset-0 after:rounded-2xl hover:underline focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                        >
+                          {gift.product?.name ?? 'Saved gift'}
+                        </Link>
                       </p>
                       {gift.product?.description ? (
                         <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">
@@ -97,12 +103,13 @@ export function CustomerSavedGiftsPage() {
                           : gift.product_id}
                       </p>
                     </div>
-                  </Link>
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    aria-label="Remove saved gift"
+                    className="relative z-10"
+                    aria-label={`Remove ${gift.product?.name ?? 'this gift'} from saved gifts`}
                     disabled={pendingProductId === gift.product_id}
                     onClick={() => handleRemove(gift.product_id)}
                   >

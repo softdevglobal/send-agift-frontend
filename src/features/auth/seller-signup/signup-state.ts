@@ -392,7 +392,7 @@ export function stepIssues(step: number, s: SignupState, ctx: StepContext): Fiel
   if (step === 5) {
     push(
       !s.freeGiftBudgetAccepted,
-      'Agree to the marketing budget SendAGift sets for the free gift program.',
+      'Agree to the free gift program terms to continue.',
       'signup-free-gift-budget',
     )
   }

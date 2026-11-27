@@ -27,8 +27,10 @@ import {
   sellerSetupProgress,
   sellerSetupSteps,
   SellerStat,
+  sellerVerificationHint,
 } from '@/features/seller'
 import { AdvertisingAlert } from '@/features/seller/advertising-alert'
+import { VerificationNotice } from '@/features/seller/verification-notice'
 import { getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
@@ -196,18 +198,22 @@ export function SellerDashboardPage() {
                 Add a gift
               </Link>
             </Button>
+            {/* With a shop already open, managing it is the next step, not
+                opening another. */}
             <Button
               asChild
               className="h-11 bg-white px-5 text-brand-ink hover:bg-brand-teal"
             >
               <Link to="/seller/shops">
-                <Plus className="size-4" />
-                Create a shop
+                {shops.length ? <Store className="size-4" /> : <Plus className="size-4" />}
+                {shops.length === 1 ? 'Manage shop' : shops.length > 1 ? 'Manage shops' : 'Create a shop'}
               </Link>
             </Button>
           </div>
         </div>
       </section>
+
+      <VerificationNotice status={profile.verification_status} />
 
       <AdvertisingAlert />
 
@@ -219,7 +225,7 @@ export function SellerDashboardPage() {
           icon={BadgeCheck}
           label="Verification"
           value={profile.verification_status === 'verified' ? 'Verified seller' : 'Not verified'}
-          hint={profile.status}
+          hint={sellerVerificationHint(profile.verification_status)}
           to="/seller/profile"
         />
         <SellerStat

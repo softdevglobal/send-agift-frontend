@@ -198,7 +198,8 @@ export function CustomerProfilePage() {
   async function handleDeleteAccount() {
     const confirmed = await askConfirm({
       title: 'Delete your account?',
-      description: 'You will be signed out and your account closed. This cannot be undone.',
+      description:
+        'Your account is closed and your details, addresses, recipients and saved gifts are removed. Order records are kept without your name. You will be signed out, and this cannot be undone.',
       confirmLabel: 'Delete account',
       tone: 'danger',
     })
@@ -476,10 +477,12 @@ export function CustomerProfilePage() {
           <section className="rounded-2xl border border-destructive/40 bg-card p-6">
             <h2 className="font-poster text-xl">Delete account</h2>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
-              Permanently delete this customer account.
+              Closes your account for good and removes your details, addresses, recipients and saved
+              gifts. Order and payment records are kept without your name, as the law requires. It
+              cannot be done while a gift is still on its way, and it cannot be undone.
             </p>
             <Button type="button" variant="destructive" onClick={handleDeleteAccount}>
-              Delete customer
+              Delete account
             </Button>
           </section>
         </div>

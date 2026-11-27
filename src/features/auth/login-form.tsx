@@ -11,7 +11,7 @@ import {
   Truck,
   type LucideIcon,
 } from 'lucide-react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 import { loginAdmin, type CodeLoginResult } from '@/api/auth'
 import { loginCustomer } from '@/api/customers'
@@ -95,6 +95,7 @@ export function LoginForm({ role }: LoginFormProps) {
   const copy = loginCopy[role]
   const { login, isAuthenticated, role: sessionRole } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
   // Emails link here with the address filled in (e.g. a gift recipient's).
   const [email, setEmail] = useState(() => searchParams.get('email') ?? '')
@@ -358,6 +359,8 @@ export function LoginForm({ role }: LoginFormProps) {
             {copy.registerHint}{' '}
             <Link
               to={copy.registerTo}
+              // Keeps where to return after signing up.
+              state={location.state}
               className="font-semibold text-primary hover:underline"
             >
               {copy.registerLabel}

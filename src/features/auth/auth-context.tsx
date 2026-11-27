@@ -18,6 +18,7 @@ import {
   type AuthLocationState,
   type UserRole,
 } from '@/lib/auth'
+import { readPendingCartAdd } from '@/lib/pending-intent'
 
 type AuthContextValue = {
   token: string | null
@@ -47,9 +48,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(nextToken)
       setRole(nextRole)
       // A page that sent you to sign in, or a ?next= link from an email.
+      // A customer who signed up after pressing "Add to cart" goes back to
+      // that gift's page too.
       const from =
         (location.state as AuthLocationState | null)?.from ??
         new URLSearchParams(location.search).get('next') ??
+        (nextRole === 'customer' ? readPendingCartAdd()?.returnTo : undefined) ??
         undefined
       navigate(postLoginPath(from, nextRole), { replace: true })
     },

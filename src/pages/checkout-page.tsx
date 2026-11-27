@@ -571,6 +571,19 @@ export function CheckoutPage() {
               : 'Delivery for this order is not priced in the cart currency, so it cannot be placed.'
             : null
 
+  // Delivery is priced to the recipient's address: with nobody saved yet,
+  // open the add-recipient form straight away rather than an empty list.
+  const autoOpenedRecipient = useRef(false)
+  useEffect(() => {
+    if (loading || autoOpenedRecipient.current) return
+    if (recipients.length === 0 && !recipientId && !addingRecipient) {
+      autoOpenedRecipient.current = true
+      openAddRecipient()
+    }
+    // Once, after the account details load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading])
+
   function openAddRecipient() {
     skipAddressMatch.current = true
     setAddingRecipient(true)
@@ -733,6 +746,10 @@ export function CheckoutPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (blocker) return
+    if (!recipientId) {
+      setError('Choose who this gift is for, so delivery can be priced to their address.')
+      return
+    }
     setError(null)
     setSubmitting(true)
     try {
@@ -840,7 +857,11 @@ export function CheckoutPage() {
                 }}
                 className={selectClassName}
               >
-                <option value="">Send without a recipient</option>
+                {/* Delivery is priced to the recipient's address, so one is
+                    needed before the order can be placed. */}
+                <option value="" disabled>
+                  Choose who it’s for
+                </option>
                 {recipients.map((recipient) => (
                   <option key={recipient.id} value={recipient.id}>
                     {recipientLabel(recipient)}
@@ -1559,7 +1580,7 @@ export function CheckoutPage() {
                     {formatPriceAmount(selectedDeliveryAmount, deliveryCurrency)}
                   </>
                 ) : !recipientId ? (
-                  'Pick a recipient'
+                  'Priced once you choose a recipient'
                 ) : (
                   'Not available'
                 )}
@@ -1595,7 +1616,8 @@ export function CheckoutPage() {
             })}
 
             <div className="flex justify-between gap-4 border-t border-border/60 pt-3 text-base font-medium">
-              <dt>Total</dt>
+              {/* Not a total until delivery is priced. */}
+              <dt>{hasPricedDelivery ? 'Total' : 'Total before delivery'}</dt>
               <dd className="text-right">
                 {hasPricedDelivery
                   ? formatPriceAmount(
@@ -1624,6 +1646,7 @@ export function CheckoutPage() {
             disabled={
               submitting ||
               Boolean(blocker) ||
+              !recipientId ||
               awaitingDeliveryQuote
             }
             className="mt-5 h-11 w-full rounded-full"
@@ -1637,6 +1660,11 @@ export function CheckoutPage() {
               'Send A Gift'
             )}
           </Button>
+          {!recipientId && !blocker ? (
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Choose who the gift is for. Delivery is priced to their address, then you can send it.
+            </p>
+          ) : null}
           <p className="mt-3 text-center text-xs text-muted-foreground">
             Or{' '}
             <Link to="/cart" className="font-medium text-primary hover:underline">

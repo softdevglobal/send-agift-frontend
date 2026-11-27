@@ -5,6 +5,7 @@ import { BrandLogo } from '@/components/common/brand-logo'
 import { Button } from '@/components/ui/button'
 import { CustomerRegisterForm } from '@/features/auth/customer-register-form'
 import { LoginBrandPanel } from '@/features/auth/login-brand-panel'
+import { SignInReason } from '@/features/auth/sign-in-reason'
 
 export function AuthCustomerRegisterPage() {
   return (
@@ -34,7 +35,8 @@ export function AuthCustomerRegisterPage() {
           </div>
         </header>
 
-        <div className="flex min-w-0 flex-1 items-start px-5 py-4 sm:items-center sm:px-10 sm:py-8">
+        <div className="flex min-w-0 flex-1 flex-col items-stretch justify-start px-5 py-4 sm:justify-center sm:px-10 sm:py-8">
+          <SignInReason />
           <CustomerRegisterForm />
         </div>
 

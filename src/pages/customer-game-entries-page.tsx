@@ -204,11 +204,14 @@ export function CustomerGameEntriesPage() {
           <section className={cn(customerPanelClass, 'overflow-hidden')}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
               <h2 className="font-poster text-xl">History</h2>
-              <div className="flex gap-1 rounded-full bg-muted p-1">
+              <div role="group" aria-label="Show entries" className="flex gap-1 rounded-full bg-muted p-1">
                 {filters.map((f) => (
                   <button
                     key={f.id}
                     type="button"
+                    // Screen readers announce which filter is on, and it stays
+                    // on after focus moves away.
+                    aria-pressed={filter === f.id}
                     onClick={() => setFilter(f.id)}
                     className={cn(
                       'rounded-full px-3 py-1 text-xs font-semibold transition-colors',

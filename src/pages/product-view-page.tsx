@@ -246,6 +246,8 @@ export function ProductViewPage() {
           <MediaThumb
             key={item.id}
             item={item}
+            position={index + 1}
+            count={gallery.length}
             active={index === activeMedia}
             onSelect={() => setActiveMedia(index)}
           />
@@ -525,10 +527,15 @@ function isVideoMedia(item: CatalogProductMedia) {
 /** One photo or video in the gallery strip. */
 function MediaThumb({
   item,
+  position,
+  count,
   active,
   onSelect,
 }: {
   item: CatalogProductMedia
+  /** 1-based place in the gallery, so each control has its own name. */
+  position: number
+  count: number
   active: boolean
   onSelect: () => void
 }) {
@@ -537,8 +544,9 @@ function MediaThumb({
     <button
       type="button"
       onClick={onSelect}
-      aria-label={video ? 'Show video' : 'Show photo'}
-      aria-pressed={active}
+      // "Photo 2 of 3": distinct names, and aria-current marks the one shown.
+      aria-label={`${video ? 'Video' : 'Photo'} ${position} of ${count}`}
+      aria-current={active ? 'true' : undefined}
       className={cn(
         'relative aspect-square w-16 shrink-0 overflow-hidden rounded-lg bg-accent transition-opacity lg:w-full',
         active ? 'opacity-100' : 'opacity-70 hover:opacity-100',

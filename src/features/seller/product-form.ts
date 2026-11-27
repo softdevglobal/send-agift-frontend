@@ -76,7 +76,8 @@ export const emptyForm: ProductFormState = {
   product_type: 'gift',
   price_major: '',
   currency: 'USD',
-  status: 'published',
+  // A new gift stays private until the seller chooses to publish it.
+  status: 'draft',
   occasion_tags: '',
   customer_type_visibility: 'both',
   prep_minutes: '',
@@ -110,6 +111,15 @@ export function splitPrepMinutes(totalMinutes: string): { hours: string; minutes
     hours: blankIfZero(Math.floor(total / 60)),
     minutes: blankIfZero(total % 60),
   }
+}
+
+/** A preparation time people can read: "0 min", "45 min", "2 h", "2 h 30 min". */
+export function formatPrepMinutes(totalMinutes: string): string {
+  const total = parseNonNegativeInt(totalMinutes, 0)
+  const hours = Math.floor(total / 60)
+  const minutes = total % 60
+  if (hours === 0) return `${minutes} min`
+  return minutes === 0 ? `${hours} h` : `${hours} h ${minutes} min`
 }
 
 /** Hours and minutes become the total minutes the API stores on the gift. */
