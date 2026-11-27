@@ -1,4 +1,4 @@
-import { CircleCheck, MapPinOff } from 'lucide-react'
+import { CircleAlert, CircleCheck, MapPinOff } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { addressFieldsFromPlace } from '@/api/places'
@@ -6,6 +6,7 @@ import { AddressAutocomplete } from '@/components/common/place-autocomplete'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useFieldIssue } from '@/features/auth/seller-signup/field-issues'
 import type { AddressDraft } from '@/features/auth/seller-signup/signup-state'
 import { cn } from '@/lib/utils'
 
@@ -22,9 +23,10 @@ type FieldProps = {
 }
 
 export function Field({ id, label, required, optional, hint, className, children }: FieldProps) {
+  const issue = useFieldIssue(id)
   return (
     <div className={cn('min-w-0 space-y-2', className)}>
-      <Label htmlFor={id}>
+      <Label htmlFor={id} className={cn(issue && 'text-destructive')}>
         {label}
         {required ? <span className="text-destructive"> *</span> : null}
         {optional ? (
@@ -32,12 +34,32 @@ export function Field({ id, label, required, optional, hint, className, children
         ) : null}
       </Label>
       {children}
+      <FieldMessage message={issue} id={id} />
       {hint ? <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }
 
+/**
+ * A field's problem, in red under it. The field itself is marked
+ * aria-invalid by the wizard, which draws its red border.
+ */
+export function FieldMessage({ message, id }: { message?: string; id?: string }) {
+  if (!message) return null
+  return (
+    <p
+      id={id ? `${id}-error` : undefined}
+      className="flex items-start gap-1.5 text-xs font-medium text-destructive"
+    >
+      <CircleAlert className="mt-px size-3.5 shrink-0" aria-hidden />
+      {message}
+    </p>
+  )
+}
+
 type ChipGroupProps = {
+  /** Ties the group to a validation message, which shows under it. */
+  id?: string
   label: string
   options: { value: string; label: string }[]
   value: string[]
@@ -46,35 +68,47 @@ type ChipGroupProps = {
 }
 
 /** Toggle chips for a multi-choice list. Order follows `options`, not click order. */
-export function ChipGroup({ label, options, value, onChange, disabled }: ChipGroupProps) {
+export function ChipGroup({ id, label, options, value, onChange, disabled }: ChipGroupProps) {
+  const issue = useFieldIssue(id)
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-      {options.map((option) => {
-        const active = value.includes(option.value)
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={active}
-            disabled={disabled}
-            onClick={() =>
-              onChange(
+    <div className="space-y-2">
+      <div
+        id={id}
+        role="group"
+        aria-label={label}
+        className={cn(
+          'flex flex-wrap gap-2 rounded-lg',
+          issue && 'ring-2 ring-destructive/60 ring-offset-4 ring-offset-card',
+        )}
+      >
+        {options.map((option) => {
+          const active = value.includes(option.value)
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              disabled={disabled}
+              onClick={() =>
+                onChange(
+                  active
+                    ? value.filter((item) => item !== option.value)
+                    : options.map((o) => o.value).filter((v) => v === option.value || value.includes(v)),
+                )
+              }
+              className={cn(
+                'rounded-md border-2 px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50',
                 active
-                  ? value.filter((item) => item !== option.value)
-                  : options.map((o) => o.value).filter((v) => v === option.value || value.includes(v)),
-              )
-            }
-            className={cn(
-              'rounded-md border-2 px-3.5 py-1.5 text-sm font-semibold transition-colors disabled:opacity-50',
-              active
-                ? 'border-brand-ink bg-brand-ink text-white'
-                : 'border-brand-ink/15 bg-surface text-foreground hover:border-brand-ink',
-            )}
-          >
-            {option.label}
-          </button>
-        )
-      })}
+                  ? 'border-brand-ink bg-brand-ink text-white'
+                  : 'border-brand-ink/15 bg-surface text-foreground hover:border-brand-ink',
+              )}
+            >
+              {option.label}
+            </button>
+          )
+        })}
+      </div>
+      <FieldMessage message={issue} id={id} />
     </div>
   )
 }
@@ -89,6 +123,7 @@ type CheckRowProps = {
 }
 
 export function CheckRow({ id, checked, onChange, label, hint, disabled }: CheckRowProps) {
+  const issue = useFieldIssue(id)
   return (
     <div className="flex items-start gap-3">
       <Checkbox
@@ -99,10 +134,11 @@ export function CheckRow({ id, checked, onChange, label, hint, disabled }: Check
         className="mt-0.5"
       />
       <div className="space-y-0.5">
-        <Label htmlFor={id} className="leading-snug font-medium">
+        <Label htmlFor={id} className={cn('leading-snug font-medium', issue && 'text-destructive')}>
           {label}
         </Label>
         {hint ? <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
+        <FieldMessage message={issue} id={id} />
       </div>
     </div>
   )
@@ -127,6 +163,7 @@ export function AddressFields({
   disabled,
 }: AddressFieldsProps) {
   const located = value.latitude !== null && value.longitude !== null
+  const searchIssue = useFieldIssue(`${idPrefix}-search`)
 
   // A typed change to the street or city moves the address, so the old pin no longer fits.
   function setText(field: 'line1' | 'line2' | 'city' | 'region' | 'postal_code', text: string) {
@@ -157,6 +194,7 @@ export function AddressFields({
           })
         }}
       />
+      <FieldMessage message={searchIssue} id={`${idPrefix}-search`} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id={`${idPrefix}-line1`} label="Address line 1" required className="sm:col-span-2">
           <Input

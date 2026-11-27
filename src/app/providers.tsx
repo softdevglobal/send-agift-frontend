@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AskDialogHost } from '@/components/common/ask-dialog'
 import { AuthProvider } from '@/features/auth/auth-context'
 import { CartProvider } from '@/features/customer-commerce'
+import { CartAddedToast } from '@/features/customer-commerce/cart-added-toast'
 import { DeliveryIntentProvider } from '@/features/customer-commerce/delivery-intent-context'
 import { SavedGiftsProvider } from '@/features/customer-commerce/saved-gifts-context'
 import { CustomerMessagesProvider } from '@/features/messaging'
@@ -22,6 +23,7 @@ export function AppProviders({ children }: AppProvidersProps) {
               <DeliveryIntentProvider>
                 {children}
                 <AskDialogHost />
+                <CartAddedToast />
               </DeliveryIntentProvider>
             </CartProvider>
           </SavedGiftsProvider>

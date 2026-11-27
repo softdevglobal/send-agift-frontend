@@ -1,4 +1,5 @@
-import { ShoppingCart } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -35,6 +36,14 @@ function priceLabel(product: CatalogProduct | GiftProduct) {
 
 export function GiftCard({ product, href }: GiftCardProps) {
   const { addItem } = useCart()
+  // The button reads "Added" for a moment after a click, as well as the
+  // confirmation that slides in.
+  const [justAdded, setJustAdded] = useState(false)
+  useEffect(() => {
+    if (!justAdded) return
+    const timer = window.setTimeout(() => setJustAdded(false), 1600)
+    return () => window.clearTimeout(timer)
+  }, [justAdded])
   const to = href ?? `/products/${product.id}`
   const category = isCatalogProduct(product) ? categoryName(product.categoryId) : null
   const sellerId = isCatalogProduct(product) ? product.sellerId || product.shopId : undefined
@@ -138,11 +147,16 @@ export function GiftCard({ product, href }: GiftCardProps) {
 
         <Button
           type="button"
-          className="mt-auto h-10 w-full gap-1.5 sm:h-11 sm:gap-2"
-          onClick={() => addItem(product.id)}
+          className={cn(
+            'mt-auto h-10 w-full gap-1.5 transition-colors sm:h-11 sm:gap-2',
+            justAdded && 'bg-emerald-600 text-white hover:bg-emerald-600',
+          )}
+          onClick={() => {
+            if (addItem(product.id)) setJustAdded(true)
+          }}
         >
-          <ShoppingCart className="size-4" />
-          Add to cart
+          {justAdded ? <Check className="size-4" /> : <ShoppingCart className="size-4" />}
+          {justAdded ? 'Added' : 'Add to cart'}
         </Button>
       </div>
     </article>

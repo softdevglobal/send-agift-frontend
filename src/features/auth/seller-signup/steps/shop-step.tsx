@@ -64,7 +64,7 @@ export function ShopStep({
         >
           <Input
             id="signup-shop-slug"
-            placeholder="your-gift-shop"
+            placeholder="e.g. your-gift-shop"
             maxLength={60}
             value={state.shopSlug}
             onChange={(event) =>
@@ -107,6 +107,7 @@ export function ShopStep({
           What will you sell?<span className="text-destructive"> *</span>
         </p>
         <ChipGroup
+          id="signup-categories"
           label="Product categories"
           options={shopCategories}
           value={state.categories}
@@ -124,7 +125,7 @@ export function ShopStep({
             <Input
               id="signup-website"
               type="url"
-              placeholder="https://"
+              placeholder="e.g. https://instagram.com/yourshop"
               maxLength={500}
               value={state.website}
               onChange={(event) => update({ website: event.target.value })}
@@ -176,7 +177,7 @@ export function ShopStep({
             <Input
               id="signup-support-email"
               type="email"
-              placeholder="support@yourbusiness.com"
+              placeholder="e.g. support@yourbusiness.com"
               maxLength={254}
               value={state.supportEmail}
               onChange={(event) => update({ supportEmail: event.target.value })}

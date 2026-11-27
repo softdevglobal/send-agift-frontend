@@ -132,8 +132,24 @@ export function newTax(countryId = ''): TaxDraft {
   return { key: newKey(), country_id: countryId, jurisdiction: '', scheme: '', number: '' }
 }
 
-export function newBand(maxKm = '', days = '1'): BandDraft {
-  return { key: newKey(), max_km: maxKm, price_major: '', estimated_days: days, cutoff_time: '' }
+/** A band starts free ("0"): a real value, not an empty box that only looks filled. */
+export function newBand(maxKm = '', days = '1', price = '0'): BandDraft {
+  return { key: newKey(), max_km: maxKm, price_major: price, estimated_days: days, cutoff_time: '' }
+}
+
+/**
+ * The band "Add delivery band" appends: 10 km further than the last one and a
+ * day slower (a same-day band is followed by next day), at the last band's
+ * price. Every box holds a value the seller can keep or change.
+ */
+export function nextBand(bands: BandDraft[]): BandDraft {
+  const last = bands[bands.length - 1]
+  const lastKm = Number(last?.max_km)
+  const km = Number.isFinite(lastKm) && lastKm > 0 ? String(Math.round(lastKm + 10)) : '10'
+  const lastDays = Number(last?.estimated_days)
+  const days = Number.isInteger(lastDays) && lastDays >= 0 ? String(Math.min(lastDays + 1, 30)) : '1'
+  const price = last?.price_major.trim() ? last.price_major.trim() : '0'
+  return newBand(km, days, price)
 }
 
 export function initialSignupState(): SignupState {
@@ -204,38 +220,54 @@ function hasCoordinates(address: AddressDraft): boolean {
   return address.latitude !== null && address.longitude !== null
 }
 
-function addressErrors(address: AddressDraft, name: string): string[] {
-  const errors: string[] = []
-  if (!address.line1.trim()) errors.push(`Add the street line of the ${name}.`)
-  if (!address.city.trim()) errors.push(`Add the city or town of the ${name}.`)
-  return errors
+/**
+ * One reason a step cannot continue: the message for the seller, and the id
+ * of the field it is about, so the form can mark that field in red, show the
+ * message under it and scroll to it. field is null when no one box is at
+ * fault (for example, a server error).
+ */
+export type FieldIssue = { field: string | null; message: string }
+
+function addressIssues(address: AddressDraft, name: string, idPrefix: string): FieldIssue[] {
+  const issues: FieldIssue[] = []
+  if (!address.line1.trim()) issues.push({ field: `${idPrefix}-line1`, message: `Add the street line of the ${name}.` })
+  if (!address.city.trim()) issues.push({ field: `${idPrefix}-city`, message: `Add the city or town of the ${name}.` })
+  return issues
 }
 
-/** Every reason the step cannot continue, worded for the seller. Empty means valid. */
-export function validateStep(step: number, s: SignupState, ctx: StepContext): string[] {
-  const errors: string[] = []
-  const push = (condition: boolean, message: string) => {
-    if (condition) errors.push(message)
+/** Every reason the step cannot continue, each tied to its field. Empty means valid. */
+export function stepIssues(step: number, s: SignupState, ctx: StepContext): FieldIssue[] {
+  const issues: FieldIssue[] = []
+  const push = (condition: boolean, message: string, field: string | null) => {
+    if (condition) issues.push({ field, message })
   }
 
   if (step === 0) {
-    push(!s.countryId, 'Choose the country where your business is registered.')
-    push(!s.sellerType, 'Choose your business type.')
-    push(!s.legalName.trim(), 'Add your legal business name.')
-    push(!s.registrationStatus, 'Choose your business registration status.')
+    push(!s.countryId, 'Choose the country where your business is registered.', 'signup-country')
+    push(!s.sellerType, 'Choose your business type.', 'signup-business-type')
+    push(!s.legalName.trim(), 'Add your legal business name.', 'signup-legal-name')
+    push(!s.registrationStatus, 'Choose your business registration status.', 'signup-registration-status')
     if (s.registrationStatus === 'registered') {
       const filled = s.identifiers.filter((item) => item.type.trim() || item.value.trim())
-      push(filled.length === 0, 'Add at least one business identifier.')
+      push(
+        filled.length === 0,
+        'Add at least one business identifier.',
+        s.identifiers[0] ? `signup-id-value-${s.identifiers[0].key}` : null,
+      )
       const known = suggestionsFor(ctx.country)
       for (const item of filled) {
         if (!item.type.trim() || !item.value.trim()) {
-          errors.push('Each business identifier needs a type and a number.')
+          push(
+            true,
+            'Each business identifier needs a type and a number.',
+            !item.type.trim() ? `signup-id-type-${item.key}` : `signup-id-value-${item.key}`,
+          )
           continue
         }
         const rule = known.find((k) => k.value.toUpperCase() === item.type.trim().toUpperCase())
         const digits = item.value.replace(/[\s.-]/g, '')
         if (rule?.digits && !new RegExp(`^\\d{${rule.digits}}$`).test(digits)) {
-          errors.push(`Check the ${rule.value} format: ${rule.digits} digits.`)
+          push(true, `Check the ${rule.value} format: ${rule.digits} digits.`, `signup-id-value-${item.key}`)
         }
       }
     }
@@ -243,14 +275,22 @@ export function validateStep(step: number, s: SignupState, ctx: StepContext): st
       push(
         s.registrationNote.trim().length < 10,
         'Tell us about your registration status in at least 10 characters.',
+        'signup-registration-note',
       )
     }
-    push(!s.taxStatus, 'Choose your tax registration status.')
+    push(!s.taxStatus, 'Choose your tax registration status.', 'signup-tax-status')
     if (s.taxStatus === 'registered') {
-      push(s.taxes.length === 0, 'Add at least one tax registration.')
+      push(s.taxes.length === 0, 'Add at least one tax registration.', 'signup-tax-status')
       for (const tax of s.taxes) {
-        if (!tax.country_id || !tax.scheme.trim() || !tax.number.trim()) {
-          errors.push('Each tax registration needs a country, a tax type and a number.')
+        const missing = !tax.country_id
+          ? `signup-tax-country-${tax.key}`
+          : !tax.scheme.trim()
+            ? `signup-tax-scheme-${tax.key}`
+            : !tax.number.trim()
+              ? `signup-tax-number-${tax.key}`
+              : null
+        if (missing) {
+          push(true, 'Each tax registration needs a country, a tax type and a number.', missing)
           break
         }
       }
@@ -258,88 +298,116 @@ export function validateStep(step: number, s: SignupState, ctx: StepContext): st
   }
 
   if (step === 1) {
-    push(!s.contactName.trim(), 'Add the full name of the person managing this account.')
-    push(!s.contactRole, 'Choose your role in the business.')
-    push(!emailPattern.test(s.email.trim()), 'Enter a valid business email.')
-    push(s.phone.replace(/\D/g, '').length < 7, 'Enter a contact phone number.')
-    push(s.password.length < 8, 'Your password needs at least 8 characters.')
-    push(s.password !== s.confirmPassword, 'The passwords don’t match.')
-    push(!s.authorityConfirmed, 'Confirm you’re authorised to set up this seller account.')
+    push(!s.contactName.trim(), 'Add the full name of the person managing this account.', 'signup-contact-name')
+    push(!s.contactRole, 'Choose your role in the business.', 'signup-contact-role')
+    push(!emailPattern.test(s.email.trim()), 'Enter a valid business email.', 'signup-email')
+    push(s.phone.replace(/\D/g, '').length < 7, 'Enter a contact phone number.', 'signup-phone')
+    push(s.password.length < 8, 'Your password needs at least 8 characters.', 'signup-password')
+    push(s.password !== s.confirmPassword, 'The passwords don’t match.', 'signup-confirm-password')
+    push(!s.authorityConfirmed, 'Confirm you’re authorised to set up this seller account.', 'signup-authority')
   }
 
   if (step === 2) {
-    errors.push(...addressErrors(s.registered, 'registered business address'))
-    if (!s.pickupSame) errors.push(...addressErrors(s.pickup, 'pickup address'))
-    if (!s.returnSame) errors.push(...addressErrors(s.returns, 'return address'))
+    issues.push(...addressIssues(s.registered, 'registered business address', 'signup-registered'))
+    if (!s.pickupSame) issues.push(...addressIssues(s.pickup, 'pickup address', 'signup-pickup'))
+    if (!s.returnSame) issues.push(...addressIssues(s.returns, 'return address', 'signup-returns'))
     push(
       !hasCoordinates(pickupOrigin(s)),
       'Choose your pickup address from the search results. Delivery distance is measured from it.',
+      s.pickupSame ? 'signup-registered-search' : 'signup-pickup-search',
     )
   }
 
   if (step === 3) {
-    push(!s.shopName.trim(), 'Add a shop display name.')
+    push(!s.shopName.trim(), 'Add a shop display name.', 'signup-shop-name')
     push(
       !slugPattern.test(s.shopSlug),
       'Use lowercase letters, numbers and single hyphens for the shop URL name.',
+      'signup-shop-slug',
     )
-    push(ctx.slugStatus === 'taken', 'That shop URL name is taken. Try another.')
-    push(s.description.trim().length < 20, 'Tell customers about your shop in at least 20 characters.')
-    push(s.categories.length === 0, 'Choose at least one product category.')
+    push(ctx.slugStatus === 'taken', 'That shop URL name is taken. Try another.', 'signup-shop-slug')
+    push(
+      s.description.trim().length < 20,
+      'Tell customers about your shop in at least 20 characters.',
+      'signup-description',
+    )
+    push(s.categories.length === 0, 'Choose at least one product category.', 'signup-categories')
     push(
       Boolean(s.website.trim()) && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(s.website.trim()),
       'Use an http:// or https:// website address.',
+      'signup-website',
     )
     push(
       Boolean(s.supportEmail.trim()) && !emailPattern.test(s.supportEmail.trim()),
       'Enter a valid public support email, or leave it blank.',
+      'signup-support-email',
     )
-    push(!s.timezone, 'Choose your business time zone.')
+    push(!s.timezone, 'Choose your business time zone.', 'signup-timezone')
   }
 
   if (step === 4) {
     const currency = ctx.country?.default_currency ?? ''
     const decimals = currency ? currencyFractionDigits(currency) : 2
-    push(s.bands.length === 0, 'Add at least one delivery band.')
+    push(s.bands.length === 0, 'Add at least one delivery band.', 'signup-add-band')
     let previous = 0
     for (const band of s.bands) {
       const km = Number(band.max_km)
       if (!band.max_km.trim() || !Number.isFinite(km) || km <= 0) {
-        errors.push('Each delivery band needs a distance above 0 km.')
+        push(true, 'Each delivery band needs a distance above 0 km.', `band-km-${band.key}`)
         continue
       }
-      if (km <= previous) errors.push('Each band must cover more kilometres than the one before it.')
+      push(km <= previous, 'Each band must cover more kilometres than the one before it.', `band-km-${band.key}`)
       previous = km
-      const price = Number(band.price_major)
-      if (!band.price_major.trim() || !Number.isFinite(price) || price < 0) {
-        errors.push('Each delivery band needs a price. Use 0 for free delivery.')
-      } else if ((band.price_major.split('.')[1] ?? '').length > decimals) {
-        errors.push(`${currency} prices use ${decimals} decimal places.`)
+      // A blank price is free delivery, the same as 0.
+      const priceText = band.price_major.trim() || '0'
+      const price = Number(priceText)
+      if (!Number.isFinite(price) || price < 0) {
+        push(true, 'Each delivery band needs a price. Use 0 for free delivery.', `band-price-${band.key}`)
+      } else {
+        push(
+          (priceText.split('.')[1] ?? '').length > decimals,
+          `${currency} prices use ${decimals} decimal places.`,
+          `band-price-${band.key}`,
+        )
       }
       if (band.estimated_days === '0') {
-        push(!timePattern.test(band.cutoff_time), 'A same-day band needs a cutoff time.')
+        push(!timePattern.test(band.cutoff_time), 'A same-day band needs a cutoff time.', `band-cutoff-${band.key}`)
       } else {
         const days = Number(band.estimated_days)
-        push(!Number.isInteger(days) || days < 1, 'Delivery days must be a whole number of 1 or more.')
+        push(
+          !Number.isInteger(days) || days < 1,
+          'Delivery days must be a whole number of 1 or more.',
+          `band-days-${band.key}`,
+        )
       }
     }
-    push(s.workingDays.length === 0, 'Choose at least one working day.')
-    push(s.returnsPolicy.trim().length < 10, 'Describe your returns process in at least 10 characters.')
+    push(s.workingDays.length === 0, 'Choose at least one working day.', 'signup-working-days')
+    push(
+      s.returnsPolicy.trim().length < 10,
+      'Describe your returns process in at least 10 characters.',
+      'signup-returns-policy',
+    )
   }
 
   if (step === 5) {
     push(
       !s.freeGiftBudgetAccepted,
       'Agree to the marketing budget SendAGift sets for the free gift program.',
+      'signup-free-gift-budget',
     )
   }
 
   if (step === 6) {
-    push(!s.detailsConfirmed, 'Confirm your details are accurate.')
-    push(!s.termsAccepted, 'Accept the seller terms and privacy notice.')
+    push(!s.detailsConfirmed, 'Confirm your details are accurate.', 'signup-details-confirmed')
+    push(!s.termsAccepted, 'Accept the seller terms and privacy notice.', 'signup-terms')
   }
 
-  return [...new Set(errors)]
+  return issues
+}
+
+/** The step's problems as messages only, each once. Empty means valid. */
+export function validateStep(step: number, s: SignupState, ctx: StepContext): string[] {
+  return [...new Set(stepIssues(step, s, ctx).map((issue) => issue.message))]
 }
 
 export function publicLocationText(s: SignupState, countryName: string): string {
